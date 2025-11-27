@@ -6,11 +6,6 @@ import (
 )
 
 var (
-	Field744      bool
-	Field745      int8   = 25
-	Field746      int32  = 3
-	Field747      bool   = true
-	Field748      int32  = 629
 	Builder       []rune = make([]rune, 12)
 	BASE37_LOOKUP []rune = []rune{'_', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 )
@@ -34,16 +29,13 @@ func ToBase37(arg0 string) int64 {
 	return var1
 }
 
-func FromBase37(arg0 int64, arg1 bool) string {
+func FromBase37(arg0 int64) string {
 	if arg0 < 0 || arg0 >= 6582952005840035281 {
 		return "invalid_name"
 	} else if arg0%37 == 0 {
 		return "invalid_name"
 	} else {
 		var3 := 0
-		if arg1 {
-			Field748 = -363
-		}
 		for arg0 != 0 {
 			var4 := arg0
 			arg0 /= 37
@@ -54,10 +46,7 @@ func FromBase37(arg0 int64, arg1 bool) string {
 	}
 }
 
-func HashCode(arg0 int32, arg1 string) int64 {
-	if arg0 != 0 {
-		panic("null pointer exception")
-	}
+func HashCode(arg1 string) int64 {
 	var5 := strings.ToUpper(arg1)
 	var2 := int64(0)
 	for var4 := 0; var4 < len(var5); var4++ {
@@ -67,10 +56,7 @@ func HashCode(arg0 int32, arg1 string) int64 {
 	return var2
 }
 
-func FormatIPv4(arg0 int32, arg1 int32) string {
-	if arg0 >= 0 {
-		Field744 = !Field744
-	}
+func FormatIPv4(arg1 int32) string {
 	return fmt.Sprintf("%d.%d.%d.%d", arg1>>24&0xFF, arg1>>16&0xFF, arg1>>8&0xFF, arg1&0xFF)
 }
 
@@ -96,11 +82,8 @@ func FormatName(arg0 int32, arg1 string) string {
 	}
 }
 
-func ToSentenceCase(arg0 string, arg1 int32) string {
+func ToSentenceCase(arg0 string) string {
 	var7 := strings.ToLower(arg0)
-	if arg1 != 0 {
-		Field746 = -18
-	}
 	var2 := []rune(var7)
 	var3 := len(var2)
 	var4 := true

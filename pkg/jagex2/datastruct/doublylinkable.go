@@ -3,9 +3,8 @@ package datastruct
 type DoublyLinkable struct {
 	Linkable
 
-	Next2    *DoublyLinkable
-	Prev2    *DoublyLinkable
-	Field440 int32
+	Next2 *DoublyLinkable
+	Prev2 *DoublyLinkable
 }
 
 func (d *DoublyLinkable) Uncache() {

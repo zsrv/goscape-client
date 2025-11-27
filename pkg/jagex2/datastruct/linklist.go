@@ -2,9 +2,6 @@ package datastruct
 
 type LinkList struct {
 	Field661 bool
-	Field662 int8
-	Field663 int32
-	Field664 int32
 	Sentinel *Linkable
 	Cursor   *Linkable
 }
@@ -12,9 +9,6 @@ type LinkList struct {
 func NewLinkList(arg0 int32) *LinkList {
 	l := &LinkList{
 		Field661: true,
-		Field662: 2,
-		Field663: -546,
-		Field664: -676,
 		Sentinel: new(Linkable),
 	}
 	if arg0 != 0 {
@@ -68,16 +62,13 @@ func (l *LinkList) Head() *Linkable {
 	}
 }
 
-func (l *LinkList) Tail(arg0 int8) *Linkable {
+func (l *LinkList) Tail() *Linkable {
 	var2 := l.Sentinel.Prev
 	if var2 == l.Sentinel {
 		l.Cursor = nil
 		return nil
 	}
 	l.Cursor = var2.Prev
-	if arg0 != l.Field662 {
-		l.Field664 = 112
-	}
 	return var2
 }
 
@@ -95,12 +86,8 @@ func (l *LinkList) Next(arg0 int8) *Linkable {
 	}
 }
 
-func (l *LinkList) Prev(arg0 bool) *Linkable {
+func (l *LinkList) Prev() *Linkable {
 	var2 := l.Cursor
-	if arg0 {
-		for var3 := 1; var3 > 0; var3++ {
-		}
-	}
 	if var2 == l.Sentinel {
 		l.Cursor = nil
 		return nil

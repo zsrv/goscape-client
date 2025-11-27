@@ -2,16 +2,12 @@ package datastruct
 
 type DoublyLinkList struct {
 	Field667 int32
-	Field668 int8
-	Field669 bool
 	Head     *DoublyLinkable
 }
 
 func NewDoublyLinkList(arg0 int32) *DoublyLinkList {
 	l := &DoublyLinkList{
 		Field667: 679,
-		Field668: 2,
-		Field669: true,
 		Head:     new(DoublyLinkable),
 	}
 	l.Head.Next2 = l.Head

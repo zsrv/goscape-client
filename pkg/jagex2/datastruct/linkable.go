@@ -1,10 +1,9 @@
 package datastruct
 
 type Linkable struct {
-	Key      int64
-	Next     *Linkable
-	Prev     *Linkable
-	Field295 int32
+	Key  int64
+	Next *Linkable
+	Prev *Linkable
 }
 
 func (l *Linkable) Unlink() {
