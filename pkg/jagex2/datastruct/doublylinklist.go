@@ -1,14 +1,14 @@
 package datastruct
 
-type DoublyLinkList struct {
+type DoublyLinkList[T any] struct {
 	Field667 int32
-	Head     *DoublyLinkable
+	Head     *DoublyLinkable[T]
 }
 
-func NewDoublyLinkList(arg0 int32) *DoublyLinkList {
-	l := &DoublyLinkList{
+func NewDoublyLinkList[T any](arg0 int32) *DoublyLinkList[T] {
+	l := &DoublyLinkList[T]{
 		Field667: 679,
-		Head:     new(DoublyLinkable),
+		Head:     new(DoublyLinkable[T]),
 	}
 	l.Head.Next2 = l.Head
 	if arg0 < 5 || arg0 > 5 {
@@ -18,7 +18,7 @@ func NewDoublyLinkList(arg0 int32) *DoublyLinkList {
 	return l
 }
 
-func (l *DoublyLinkList) Push(arg0 *DoublyLinkable) {
+func (l *DoublyLinkList[T]) Push(arg0 *DoublyLinkable[T]) {
 	if arg0.Prev2 != nil {
 		arg0.Uncache()
 	}
@@ -28,7 +28,7 @@ func (l *DoublyLinkList) Push(arg0 *DoublyLinkable) {
 	arg0.Next2.Prev2 = arg0
 }
 
-func (l *DoublyLinkList) Pop() *DoublyLinkable {
+func (l *DoublyLinkList[T]) Pop() *DoublyLinkable[T] {
 	var1 := l.Head.Next2
 	if var1 == l.Head {
 		return nil

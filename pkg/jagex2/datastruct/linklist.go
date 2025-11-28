@@ -1,25 +1,20 @@
 package datastruct
 
-type LinkList struct {
-	Field661 bool
-	Sentinel *Linkable
-	Cursor   *Linkable
+type LinkList[T any] struct {
+	Sentinel *Linkable[T]
+	Cursor   *Linkable[T]
 }
 
-func NewLinkList(arg0 int32) *LinkList {
-	l := &LinkList{
-		Field661: true,
-		Sentinel: new(Linkable),
-	}
-	if arg0 != 0 {
-		l.Field661 = !l.Field661
+func NewLinkList[T any]() *LinkList[T] {
+	l := &LinkList[T]{
+		Sentinel: new(Linkable[T]),
 	}
 	l.Sentinel.Next = l.Sentinel
 	l.Sentinel.Prev = l.Sentinel
 	return l
 }
 
-func (l *LinkList) AddTail(arg0 *Linkable) {
+func (l *LinkList[T]) AddTail(arg0 *Linkable[T]) {
 	if arg0.Prev != nil {
 		arg0.Unlink()
 	}
@@ -29,7 +24,7 @@ func (l *LinkList) AddTail(arg0 *Linkable) {
 	arg0.Next.Prev = arg0
 }
 
-func (l *LinkList) AddHead(arg0 *Linkable, arg1 int32) {
+func (l *LinkList[T]) AddHead(arg0 *Linkable[T], arg1 int32) {
 	if arg0.Prev != nil {
 		arg0.Unlink()
 	}
@@ -41,7 +36,7 @@ func (l *LinkList) AddHead(arg0 *Linkable, arg1 int32) {
 	}
 }
 
-func (l *LinkList) RemoveHead() *Linkable {
+func (l *LinkList[T]) RemoveHead() *Linkable[T] {
 	var1 := l.Sentinel.Next
 	if var1 == l.Sentinel {
 		return nil
@@ -51,7 +46,7 @@ func (l *LinkList) RemoveHead() *Linkable {
 	}
 }
 
-func (l *LinkList) Head() *Linkable {
+func (l *LinkList[T]) Head() *Linkable[T] {
 	var1 := l.Sentinel.Next
 	if var1 == l.Sentinel {
 		l.Cursor = nil
@@ -62,7 +57,7 @@ func (l *LinkList) Head() *Linkable {
 	}
 }
 
-func (l *LinkList) Tail() *Linkable {
+func (l *LinkList[T]) Tail() *Linkable[T] {
 	var2 := l.Sentinel.Prev
 	if var2 == l.Sentinel {
 		l.Cursor = nil
@@ -72,10 +67,7 @@ func (l *LinkList) Tail() *Linkable {
 	return var2
 }
 
-func (l *LinkList) Next(arg0 int8) *Linkable {
-	if arg0 <= 0 {
-		panic("null pointer exception")
-	}
+func (l *LinkList[T]) Next() *Linkable[T] {
 	var2 := l.Cursor
 	if var2 == l.Sentinel {
 		l.Cursor = nil
@@ -86,7 +78,7 @@ func (l *LinkList) Next(arg0 int8) *Linkable {
 	}
 }
 
-func (l *LinkList) Prev() *Linkable {
+func (l *LinkList[T]) Prev() *Linkable[T] {
 	var2 := l.Cursor
 	if var2 == l.Sentinel {
 		l.Cursor = nil
@@ -97,7 +89,7 @@ func (l *LinkList) Prev() *Linkable {
 	}
 }
 
-func (l *LinkList) Clear() {
+func (l *LinkList[T]) Clear() {
 	for {
 		var1 := l.Sentinel.Next
 		if var1 == l.Sentinel {
