@@ -267,7 +267,7 @@ func (p *Packet) GBit(arg1 int32) int32 {
 	if arg1 == var4 {
 		var5 += int32(p.Data[var3]) & BITMASK[var4]
 	} else {
-		var5 += p.Data[var3]>>var4 - arg1&BITMASK[arg1]
+		var5 += int32(p.Data[var3])>>var4 - arg1&BITMASK[arg1]
 	}
 	return int32(var5)
 }

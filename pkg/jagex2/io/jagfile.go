@@ -16,11 +16,7 @@ type Jagfile struct {
 	Unpacked         bool
 }
 
-func NewJagfile(arg0 []byte, arg1 bool) Jagfile {
-	if arg1 {
-		for var3 := 1; var3 > 0; var3++ {
-		}
-	}
+func NewJagfile(arg0 []byte) Jagfile {
 	var j Jagfile
 	j.Load(true, arg0)
 	return j
