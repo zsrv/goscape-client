@@ -1,0 +1,367 @@
+package loctype
+
+import (
+	"strings"
+
+	"goscape-client/pkg/jagex2/datastruct"
+	"goscape-client/pkg/jagex2/graphics/model"
+	"goscape-client/pkg/jagex2/io"
+)
+
+var (
+	Reset             bool
+	Count             int
+	Offsets           []int
+	Dat               *io.Packet
+	Cache             []*LocType
+	CachePos          int
+	ModelCacheStatic  *datastruct.LruCache[*model.Model]
+	ModelCacheDynamic *datastruct.LruCache[*model.Model]
+)
+
+func init() {
+	ModelCacheStatic = datastruct.NewLruCache[*model.Model](500)
+	ModelCacheDynamic = datastruct.NewLruCache[*model.Model](30)
+}
+
+type LocType struct {
+	Index         int
+	Models        []int
+	Shapes        []int
+	Name          string
+	Desc          []byte
+	RecolS        []int
+	RecolD        []int
+	Width         int
+	Length        int
+	BlockWalk     bool
+	BlockRange    bool
+	Active        bool
+	HillSkew      bool
+	ShareLight    bool
+	Occlude       bool
+	Anim          int
+	WallWidth     int
+	Ambient       byte
+	Contrast      byte
+	MapFunction   int
+	MapScene      int
+	ResizeX       int
+	ResizeY       int
+	ResizeZ       int
+	OffsetX       int
+	OffsetY       int
+	OffsetZ       int
+	ForceApproach int
+	AnimHasAlpha  bool
+	Mirror        bool
+	Shadow        bool
+	ForceDecor    bool
+	Op            []string
+}
+
+func NewLocType() *LocType {
+	return &LocType{
+		Index: -1,
+	}
+}
+
+func Unpack(arg0 io.Jagfile) {
+	Dat = io.NewPacket(arg0.Read("loc.dat", nil))
+	var1 := io.NewPacket(arg0.Read("loc.idx", nil))
+	Count = var1.G2()
+	Offsets = make([]int, Count)
+	var2 := 2
+	for i := range Count {
+		Offsets[i] = var2
+		var2 += var1.G2()
+	}
+	Cache = make([]*LocType, 10)
+	for i := range 10 {
+		Cache[i] = NewLocType()
+	}
+}
+
+func Unload(arg0 bool) {
+	ModelCacheStatic = nil
+	ModelCacheDynamic = nil
+	if arg0 {
+		Offsets = nil
+		Cache = nil
+		Dat = nil
+	}
+}
+
+func Get(arg0 int) *LocType {
+	for i := range 10 {
+		if Cache[i].Index == arg0 {
+			return Cache[i]
+		}
+	}
+	CachePos = (CachePos + 1) % 10
+	var2 := Cache[CachePos]
+	Dat.Pos = Offsets[arg0]
+	var2.Index = arg0
+	var2.Reset()
+	var2.Decode(Dat)
+	return var2
+}
+
+func (loc *LocType) Reset() {
+	loc.Models = nil
+	loc.Shapes = nil
+	loc.Name = ""
+	loc.Desc = nil
+	loc.RecolS = nil
+	loc.RecolD = nil
+	loc.Width = 1
+	loc.Length = 1
+	loc.BlockWalk = true
+	loc.BlockRange = true
+	loc.Active = false
+	loc.HillSkew = false
+	loc.ShareLight = false
+	loc.Occlude = false
+	loc.Anim = -1
+	loc.WallWidth = 16
+	loc.Ambient = 0
+	loc.Contrast = 0
+	loc.Op = nil
+	loc.AnimHasAlpha = false
+	loc.MapFunction = -1
+	loc.MapScene = -1
+	loc.Mirror = false
+	loc.Shadow = true
+	loc.ResizeX = 128
+	loc.ResizeY = 128
+	loc.ResizeZ = 128
+	loc.ForceApproach = 0
+	loc.OffsetX = 0
+	loc.OffsetY = 0
+	loc.OffsetZ = 0
+	loc.ForceDecor = false
+}
+
+func (loc *LocType) Decode(arg1 *io.Packet) {
+	var3 := -1
+	for {
+		var4 := arg1.G1()
+		switch var4 {
+		case 0:
+			if loc.Shapes == nil {
+				loc.Shapes = make([]int, 0)
+			}
+			if var3 == -1 {
+				loc.Active = false
+				if len(loc.Shapes) > 0 && loc.Shapes[0] == 10 {
+					loc.Active = true
+				}
+				if loc.Op != nil {
+					loc.Active = true
+					return
+				}
+			}
+			return
+		case 1:
+			var5 := arg1.G1()
+			loc.Shapes = make([]int, var5)
+			loc.Models = make([]int, var5)
+			for i := range var5 {
+				loc.Models[i] = arg1.G2()
+				loc.Shapes[i] = arg1.G1()
+			}
+		case 2:
+			loc.Name = arg1.GJStr()
+		case 3:
+			loc.Desc = arg1.GStrByte()
+		case 14:
+			loc.Width = arg1.G1()
+		case 15:
+			loc.Length = arg1.G1()
+		case 17:
+			loc.BlockWalk = false
+		case 18:
+			loc.BlockRange = false
+		case 19:
+			var3 = arg1.G1()
+			if var3 == 1 {
+				loc.Active = true
+			}
+		case 21:
+			loc.HillSkew = true
+		case 22:
+			loc.ShareLight = true
+		case 23:
+			loc.Occlude = true
+		case 24:
+			loc.Anim = arg1.G2()
+			if loc.Anim == 65535 {
+				loc.Anim = -1
+			}
+		case 25:
+			loc.AnimHasAlpha = true
+		case 28:
+			loc.WallWidth = arg1.G1()
+		case 29:
+			loc.Ambient = arg1.G1B()
+		case 39:
+			loc.Contrast = arg1.G1B()
+		case 30, 31, 32, 33, 34, 35, 36, 37, 38:
+			if loc.Op == nil {
+				loc.Op = make([]string, 5)
+			}
+			loc.Op[var4-30] = arg1.GJStr()
+			if strings.ToLower(loc.Op[var4-30]) == "hidden" {
+				loc.Op[var4-30] = "" // TODO: use string pointer?
+			}
+		case 40:
+			var5 := arg1.G1()
+			loc.RecolS = make([]int, var5)
+			loc.RecolD = make([]int, var5)
+			for i := range var5 {
+				loc.RecolS[i] = arg1.G2()
+				loc.RecolD[i] = arg1.G2()
+			}
+		case 60:
+			loc.MapFunction = arg1.G2()
+		case 62:
+			loc.Mirror = true
+		case 64:
+			loc.Shadow = false
+		case 65:
+			loc.ResizeX = arg1.G2()
+		case 66:
+			loc.ResizeY = arg1.G2()
+		case 67:
+			loc.ResizeZ = arg1.G2()
+		case 68:
+			loc.MapScene = arg1.G2()
+		case 69:
+			loc.ForceApproach = arg1.G1()
+		case 70:
+			loc.OffsetX = arg1.G2B()
+		case 71:
+			loc.OffsetY = arg1.G2B()
+		case 72:
+			loc.OffsetZ = arg1.G2B()
+		case 73:
+			loc.ForceDecor = true
+		}
+	}
+}
+
+func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *model.Model {
+	var8 := -1
+	for i := range len(loc.Shapes) {
+		if loc.Shapes[i] == arg0 {
+			var8 = i
+			break
+		}
+	}
+	if var8 == -1 {
+		return nil
+	}
+	var10 := int64(((loc.Index << 6) + (var8 << 3) + arg1)) + int64(((arg6 + 1) << 32))
+	if Reset {
+		var10 = 0
+	}
+	var12 := ModelCacheDynamic.Get(var10).Value
+	if var12 == nil {
+		if var8 >= len(loc.Models) {
+			return nil
+		}
+		var13 := loc.Models[var8]
+		if var13 == -1 {
+			return nil
+		}
+		mirrorInt := 0
+		if loc.Mirror {
+			mirrorInt = 1
+		}
+		var14 := mirrorInt^arg1 > 3
+		if var14 {
+			var13 += 65536
+		}
+		var15 := ModelCacheStatic.Get(int64(var13)).Value
+		if var15 == nil {
+			var15 = model.NewModel1(var13 & 0xFFFF)
+			if var14 {
+				var15.RotateY180()
+			}
+			//ModelCacheStatic.Put() // TODO
+		}
+		var var16 bool
+		if loc.ResizeX == 128 && loc.ResizeY == 128 && loc.ResizeZ == 128 {
+			var16 = false
+		} else {
+			var16 = true
+		}
+		var var17 bool
+		if loc.OffsetX == 0 && loc.OffsetY == 0 && loc.OffsetZ == 0 {
+			var17 = false
+		} else {
+			var17 = true
+		}
+		var18 := model.NewModel4(var15, loc.RecolS == nil, !loc.AnimHasAlpha, arg1 == 0 && arg6 == -1 && !var16 && !var17)
+		if arg6 != -1 {
+			var18.CreateLabelReferences()
+			var18.ApplyTransform(arg6)
+			var18.LabelFaces = nil
+			var18.LabelVertices = nil
+		}
+		for ; arg1 > 0; arg1-- {
+			var18.RotateY90()
+		}
+		if loc.RecolS != nil {
+			for i := range len(loc.RecolS) {
+				var18.Recolor(loc.RecolS[i], loc.RecolD[i])
+			}
+		}
+		if var16 {
+			var18.Scale(loc.ResizeZ, loc.ResizeY, loc.ResizeX)
+		}
+		if var17 {
+			var18.Translate(loc.OffsetY, loc.OffsetX, loc.OffsetZ)
+		}
+		var18.CalculateNormals(int(loc.Ambient)+64, int(loc.Contrast)*5+768, -50, -10, -50, !loc.ShareLight)
+		if loc.BlockWalk {
+			var18.ObjRaise = var18.MaxY
+		}
+		//ModelCacheDynamic.Put(var10, var18) // TODO
+		if loc.HillSkew || loc.ShareLight {
+			var18 = model.NewModel5(var18, loc.HillSkew, loc.ShareLight)
+		}
+		if loc.HillSkew {
+			var19 := (arg2 + arg3 + arg4 + arg5) / 4
+			for i := range var18.VertexCount {
+				var21 := var18.VertexX[i]
+				var22 := var18.VertexZ[i]
+				var23 := arg2 + (arg3-arg2)*(var21+64)/128
+				var24 := arg5 + (arg4-arg5)*(var21+64)/128
+				var25 := var23 + (var24-var23)*(var22+64)/128
+				var18.VertexY[i] += var25 - var19
+			}
+			var18.CalculateBoundsY()
+		}
+		return var18
+	} else if Reset {
+		return var12
+	} else {
+		if loc.HillSkew || loc.ShareLight {
+			var12 = model.NewModel5(var12, loc.HillSkew, loc.ShareLight)
+		}
+		if loc.HillSkew {
+			var13 := (arg2 + arg3 + arg4 + arg5) / 4
+			for i := range var12.VertexCount {
+				var27 := var12.VertexX[i]
+				var28 := var12.VertexZ[i]
+				var29 := arg2 + (arg3-arg2)*(var27+64)/128
+				var30 := arg5 + (arg4-arg5)*(var27+64)/128
+				var19 := var29 + (var30-var29)*(var28+64)/128
+				var12.VertexY[i] += var19 - var13
+			}
+			var12.CalculateBoundsY()
+		}
+		return var12
+	}
+}

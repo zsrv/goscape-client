@@ -1,7 +1,6 @@
 package datastruct
 
 type LruCache[T any] struct {
-	Field282  bool
 	Capacity  int32
 	Available int32
 	HashTable map[int64]*DoublyLinkable[T]
@@ -10,7 +9,6 @@ type LruCache[T any] struct {
 
 func NewLruCache[T any](arg1 int32) *LruCache[T] {
 	l := &LruCache[T]{
-		Field282:  false,
 		Capacity:  arg1,
 		HashTable: make(map[int64]*DoublyLinkable[T]),
 		History:   NewDoublyLinkList[T](5),
@@ -27,7 +25,7 @@ func (l *LruCache[T]) Get(arg0 int64) *DoublyLinkable[T] {
 	return var3
 }
 
-func (l *LruCache[T]) Put(arg0 int32, arg1 int64, arg2 *DoublyLinkable[T]) {
+func (l *LruCache[T]) Put(arg1 int64, arg2 *DoublyLinkable[T]) {
 	if l.Available == 0 {
 		var5 := l.History.Pop()
 		var5.Unlink()
@@ -36,9 +34,6 @@ func (l *LruCache[T]) Put(arg0 int32, arg1 int64, arg2 *DoublyLinkable[T]) {
 		l.Available--
 	}
 	l.HashTable[arg1] = arg2
-	if arg0 != 6 {
-		l.Field282 = !l.Field282
-	}
 	l.History.Push(arg2)
 }
 
