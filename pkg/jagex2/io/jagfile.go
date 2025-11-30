@@ -8,11 +8,11 @@ import (
 type Jagfile struct {
 	Field734         int8
 	Buffer           []byte
-	FileCount        int32
-	FileHash         []int32
-	FileUnpackedSize []int32
-	FilePackedSize   []int32
-	FileOffset       []int32
+	FileCount        int
+	FileHash         []int
+	FileUnpackedSize []int
+	FilePackedSize   []int
+	FileOffset       []int
 	Unpacked         bool
 }
 
@@ -39,16 +39,16 @@ func (jf *Jagfile) Load(arg0 bool, dataIn []byte) {
 		var3 = NewPacket(jf.Buffer)
 		jf.Unpacked = true
 	}
-	jf.FileCount = int32(var3.G2())
-	jf.FileHash = make([]int32, jf.FileCount)
-	jf.FileUnpackedSize = make([]int32, jf.FileCount)
-	jf.FilePackedSize = make([]int32, jf.FileCount)
-	jf.FileOffset = make([]int32, jf.FileCount)
+	jf.FileCount = int(var3.G2())
+	jf.FileHash = make([]int, jf.FileCount)
+	jf.FileUnpackedSize = make([]int, jf.FileCount)
+	jf.FilePackedSize = make([]int, jf.FileCount)
+	jf.FileOffset = make([]int, jf.FileCount)
 	if !arg0 {
 		return
 	}
 	var8 := var3.Pos + jf.FileCount*10
-	for i := int32(0); i < jf.FileCount; i++ {
+	for i := int(0); i < jf.FileCount; i++ {
 		jf.FileHash[i] = var3.G4()
 		jf.FileUnpackedSize[i] = var3.G3()
 		jf.FilePackedSize[i] = var3.G3()
@@ -58,10 +58,10 @@ func (jf *Jagfile) Load(arg0 bool, dataIn []byte) {
 }
 
 func (jf *Jagfile) Read(arg0 string, arg1 []byte) []byte {
-	var4 := int32(0)
+	var4 := int(0)
 	var8 := strings.ToUpper(arg0)
 	for i := 0; i < len(var8); i++ {
-		var4 = var4*61 + int32(var8[i]) - 32
+		var4 = var4*61 + int(var8[i]) - 32
 	}
 	for i := 0; i < int(jf.FileCount); i++ {
 		if jf.FileHash[i] == var4 {
