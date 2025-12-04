@@ -12,3 +12,7 @@ type LocAddEntity struct {
 	LastAngle    int
 	LastShape    int
 }
+
+func NewLocAddEntity() *LocAddEntity {
+	return &LocAddEntity{}
+}
