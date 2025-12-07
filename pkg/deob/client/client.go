@@ -7,6 +7,7 @@ import (
 	"goscape-client/pkg/jagex2/config/npctype"
 	"goscape-client/pkg/jagex2/config/seqtype"
 	"goscape-client/pkg/jagex2/dash3d/entity"
+	"goscape-client/pkg/jagex2/dash3d/world3d"
 	"goscape-client/pkg/jagex2/datastruct"
 	"goscape-client/pkg/jagex2/graphics/pix2d"
 	"goscape-client/pkg/jagex2/graphics/pix32"
@@ -331,7 +332,7 @@ type Client struct {
 	LastWaveStartTime             int64
 	SocialName37                  int64
 	ServerSeed                    int64
-	Scene                         World3D
+	Scene                         *world3d.World3D
 	LocalPlayer                   *entity.PlayerEntity
 	GenderButtonImage0            pix32.Pix32
 	GenderButtonImage1            pix32.Pix32
@@ -994,7 +995,96 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 				var16 = 0
 				var17 := 0
 				if var10 == 0 {
-					var14 = c.SceneCycle
+					var14 = c.Scene.GetWallBitSet(c.CurrentLevel, var5, var6)
+				}
+				if var10 == 1 {
+					var14 = c.Scene.GetWallDecorationBitSet(c.CurrentLevel, var6, var5)
+				}
+				if var10 == 2 {
+					var14 = c.Scene.GetLocBitSet(c.CurrentLevel, var5, var6)
+				}
+				if var10 == 3 {
+					var14 = c.Scene.GetGroundDecorationBitSet(c.CurrentLevel, var5, var6)
+				}
+				if var14 != 0 {
+					var18 := c.Scene.GetInfo(c.CurrentLevel, var5, var6, var14)
+					var15 = var14 >> 14 & 0x7FFF
+					var16 = var18 & 0x1F
+					var17 = var18 >> 6
+				}
+				var12 = entity.NewLocAddEntity()
+				var12.Plane = c.CurrentLevel
+				var12.Layer = var10
+				var12.X = var5
+				var12.Z = var6
+				var12.LastLocIndex = var15
+				var12.LastShape = var16
+				var12.LastAngle = var17
+				c.SpawnedLocations.AddTail(var12)
+			}
+			var12.LocIndex = var11
+			var12.Shape = var8
+			var12.Angle = var9
+			c.AddLoc(var9, var5, var6, var10, var11, var8, c.CurrentLevel)
+		}
+	} else if arg2 == 42 {
+		var4 = arg1.G1()
+		var5 = c.BaseX + (var4 >> 4 & 0x7)
+		var6 = c.BaseZ + (var4 & 0x7)
+		var7 = arg1.G1()
+		var8 = var7 >> 2
+		var9 = c.LOC_SHAPE_TO_LAYER[var8]
+		var10 = arg1.G2()
+		if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
+			var11 = 0
+			if var9 == 0 {
+				var11 = c.Scene.GetWallBitSet(c.CurrentLevel, var5, var6)
+			}
+			if var9 == 1 {
+				var11 = c.Scene.GetWallDecorationBitSet(c.CurrentLevel, var6, var5)
+			}
+			if var9 == 2 {
+				var11 = c.Scene.GetLocBitSet(c.CurrentLevel, var5, var6)
+			}
+			if var9 == 3 {
+				var11 = c.Scene.GetGroundDecorationBitSet(c.CurrentLevel, var5, var6)
+			}
+			if var11 != 0 {
+				var38 := entity.NewLocEntity(false, var11>>14&0x7FFF, c.CurrentLevel, var9, seqtype.Instances[var10], var6, var5)
+				c.LocList.AddTail(var38)
+			}
+		}
+	} else {
+		var var32 *entity.ObjStackEntity
+		if arg2 == 223 {
+			var4 = arg1.G1()
+			var5 = c.BaseX + (var4 >> 4 & 0x7)
+			var6 = c.BaseZ + (var4 & 0x7)
+			var7 = arg1.G2()
+			var8 = arg1.G2()
+			if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
+				var32 = entity.NewObjStackEntity()
+				var32.Index = var7
+				var32.Count = var8
+				if c.LevelObjStacks[c.CurrentLevel][var5][var6] == nil {
+					c.LevelObjStacks[c.CurrentLevel][var5][var6] = datastruct.NewLinkList[*entity.ObjStackEntity]()
+				}
+				c.LevelObjStacks[c.CurrentLevel][var5][var6].AddTail(var32)
+				c.SortObjStacks(var5, var6)
+			}
+		} else if arg2 == 49 {
+			var4 = arg1.G1()
+			var5 = c.BaseX + (var4 >> 4 & 0x7)
+			var6 = c.BaseZ + (var4 & 0x7)
+			var7 = arg1.G2()
+			if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
+				var30 := c.LevelObjStacks[c.CurrentLevel][var5][var6]
+				if var30 != nil {
+					for var32 = var30.Head(); var32 != nil; var32 = var30.Next() {
+						if var32.Index == var7&0x7FFF {
+							//var32 // TODO: UNLINK!
+						}
+					}
 				}
 			}
 		}
