@@ -60,10 +60,8 @@ func FormatIPv4(arg1 int32) string {
 	return fmt.Sprintf("%d.%d.%d.%d", arg1>>24&0xFF, arg1>>16&0xFF, arg1>>8&0xFF, arg1&0xFF)
 }
 
-func FormatName(arg0 int32, arg1 string) string {
-	if arg0 != 0 {
-		panic("null pointer exception")
-	} else if len(arg1) > 0 {
+func FormatName(arg1 string) string {
+	if len(arg1) > 0 {
 		var2 := []rune(arg1)
 		for var3 := 0; var3 < len(var2); var3++ {
 			if var2[var3] == '_' {

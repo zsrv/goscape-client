@@ -154,3 +154,9 @@ func (e *PathingEntity) MoveAlongRoute(arg0 bool, arg1 int) {
 func (e *PathingEntity) IsVisible() bool {
 	return false
 }
+
+type PathableEntity interface {
+	Teleport(bool, int, int)
+	MoveAlongRoute(bool, int)
+	IsVisible() bool
+}

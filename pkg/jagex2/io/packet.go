@@ -136,7 +136,7 @@ func (p *Packet) IP4(arg0 bool, arg1 int) {
 	}
 }
 
-func (p *Packet) P8(arg0 bool, arg1 int64) {
+func (p *Packet) P8(arg1 int64) {
 	p.Data[p.Pos] = byte(arg1 >> 56)
 	p.Pos++
 	p.Data[p.Pos] = byte(arg1 >> 48)
@@ -151,10 +151,8 @@ func (p *Packet) P8(arg0 bool, arg1 int64) {
 	p.Pos++
 	p.Data[p.Pos] = byte(arg1 >> 8)
 	p.Pos++
-	if arg0 {
-		p.Data[p.Pos] = byte(arg1)
-		p.Pos++
-	}
+	p.Data[p.Pos] = byte(arg1)
+	p.Pos++
 }
 
 func (p *Packet) PJStr(arg0 string) {
