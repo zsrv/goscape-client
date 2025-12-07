@@ -12,12 +12,12 @@ type LocEntity struct {
 	X        int
 	Z        int
 	Index    int
-	Seq      seqtype.SeqType
+	Seq      *seqtype.SeqType
 	SeqFrame int
 	SeqCycle int
 }
 
-func NewLocEntity(arg0 bool, index int, level int, typ int, seq seqtype.SeqType, z int, x int) *LocEntity {
+func NewLocEntity(arg0 bool, index int, level int, typ int, seq *seqtype.SeqType, z int, x int) *LocEntity {
 	var e LocEntity
 	e.Level = level
 	e.Type = typ

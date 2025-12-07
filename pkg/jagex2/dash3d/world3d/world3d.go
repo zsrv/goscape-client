@@ -186,7 +186,7 @@ func (w *World3D) SetBridge(arg0, arg1 int) {
 	w.LevelTiles[3][arg1][arg0] = nil
 }
 
-func (w *World3D) AddOccluder(arg0, arg1, arg3, arg4, arg5, arg6, arg7, arg8 int) {
+func AddOccluder(arg0, arg1, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 	var9 := dash3d.NewOcclude()
 	var9.MinTileX = arg1 / 128
 	var9.MaxTileX = arg5 / 128
