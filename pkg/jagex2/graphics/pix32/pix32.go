@@ -32,7 +32,7 @@ func NewPix321(arg0 int, arg1 int) *Pix32 {
 
 //func NewPix322(arg0 []byte, arg1 Component) *Pix32 {} // TODO
 
-func NewPix323(arg0 io.Jagfile, arg1 string, arg2 int) *Pix32 {
+func NewPix323(arg0 *io.Jagfile, arg1 string, arg2 int) *Pix32 {
 	var p Pix32
 
 	var4 := io.NewPacket(arg0.Read(arg1+".dat", nil))
