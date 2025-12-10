@@ -1,6 +1,10 @@
 package entity
 
+import "goscape-client/pkg/jagex2/datastruct"
+
 type LocMergeEntity struct {
+	datastruct.Linkable[*LocMergeEntity]
+
 	Plane     int
 	Layer     int
 	X         int

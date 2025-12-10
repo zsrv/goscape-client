@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -135,3 +136,33 @@ func GetHash(arg0 string) int64 {
 	}
 	return var1
 }
+
+func CacheLoad(arg0 string) []byte {
+	// TODO: synchronized
+	if !Active {
+		return nil
+	}
+	LoadReq = strconv.FormatInt(GetHash(arg0), 10)
+	for LoadReq != "" {
+		time.Sleep(1 * time.Millisecond)
+	}
+	return LoadBuf
+}
+
+func CacheSave(arg0 string, arg1 []byte) {
+	// TODO: synchronized
+	if !Active || len(arg1) > 2000000 {
+		return
+	}
+	for SaveReq != "" {
+		time.Sleep(1 * time.Millisecond)
+	}
+	SaveLen = len(arg1)
+	SaveBuf = arg1
+	SaveReq = strconv.FormatInt(GetHash(arg0), 10)
+	for SaveReq != "" {
+		time.Sleep(1 * time.Millisecond)
+	}
+}
+
+// TODO

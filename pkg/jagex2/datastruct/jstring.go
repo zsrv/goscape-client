@@ -98,11 +98,8 @@ func ToSentenceCase(arg0 string) string {
 	return string(var2)
 }
 
-func ToAsterisks(arg0 int32, arg1 string) string {
+func ToAsterisks(arg1 string) string {
 	var var2 strings.Builder
-	if arg0 != 7 {
-		panic("null pointer exception")
-	}
 	for var3 := 0; var3 < len(arg1); var3++ {
 		var2.WriteString("*")
 	}

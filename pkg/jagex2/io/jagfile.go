@@ -16,10 +16,10 @@ type Jagfile struct {
 	Unpacked         bool
 }
 
-func NewJagfile(arg0 []byte) Jagfile {
+func NewJagfile(arg0 []byte) *Jagfile {
 	var j Jagfile
 	j.Load(true, arg0)
-	return j
+	return &j
 }
 
 func (jf *Jagfile) Load(arg0 bool, dataIn []byte) {

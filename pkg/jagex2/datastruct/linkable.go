@@ -1,7 +1,7 @@
 package datastruct
 
 type Linkable[T any] struct {
-	Value T
+	Value T // TODO: still used since we've been embedding Linkable, can we remove?
 	Next  *Linkable[T]
 	Prev  *Linkable[T]
 }

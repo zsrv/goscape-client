@@ -1,6 +1,8 @@
 package client
 
-import "goscape-client/pkg/jagex2/graphics/pixmap"
+import (
+	"goscape-client/pkg/jagex2/graphics/pixmap"
+)
 
 type GameShell struct {
 	State        int
@@ -11,8 +13,8 @@ type GameShell struct {
 	ScreenWidth  int
 	ScreenHeight int
 	//Graphics
-	DrawArea pixmap.PixMap
-	//Frame
+	DrawArea         *pixmap.PixMap
+	Frame            *ViewBox
 	Refresh          bool
 	IdleCycles       int
 	MouseButton      int
