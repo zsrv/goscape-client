@@ -5,6 +5,9 @@ import (
 
 	"goscape-client/pkg/jagex2/datastruct"
 	"goscape-client/pkg/jagex2/graphics/model"
+	"goscape-client/pkg/jagex2/graphics/pix2d"
+	"goscape-client/pkg/jagex2/graphics/pix32"
+	"goscape-client/pkg/jagex2/graphics/pix3d"
 	"goscape-client/pkg/jagex2/io"
 )
 
@@ -17,7 +20,7 @@ var (
 	MembersWorld bool = true
 
 	ModelCache = datastruct.NewLruCache[*model.Model](50)
-	IconCache  = datastruct.NewLruCache[*model.Model](200)
+	IconCache  = datastruct.NewLruCache[*pix32.Pix32](200)
 )
 
 type ObjType struct {
@@ -299,7 +302,97 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 	return var4
 }
 
-//func GetIcon(arg0 int, arg2 int) {} // TODO after Pix32 class
+func GetIcon(arg0, arg2 int) *pix32.Pix32 {
+	var3 := IconCache.Get(int64(arg0)).Value
+	if var3 != nil && var3.CropH != arg2 && var3.CropH != -1 {
+		var3.Unlink()
+		var3 = nil
+	}
+	if var3 != nil {
+		return var3
+	}
+	var4 := Get(arg0)
+	if var4.CountObj == nil {
+		arg2 = -1
+	}
+	var5 := 0
+	if arg2 > 1 {
+		var5 = -1
+		for i := range 10 {
+			if arg2 >= var4.CountCo[i] && var4.CountCo[i] != 0 {
+				var5 = var4.CountObj[i]
+			}
+		}
+		if var5 != -1 {
+			var4 = Get(var5)
+		}
+	}
+	var3 = pix32.NewPix321(32, 32)
+	var5 = pix3d.CenterW3D
+	var6 := pix3d.CenterH3D
+	var7 := pix3d.LineOffset
+	var8 := pix2d.Data
+	var9 := pix2d.Width2D
+	var10 := pix2d.Height2D
+	var11 := pix2d.BoundLeft
+	var12 := pix2d.BoundRight
+	var13 := pix2d.BoundTop
+	var14 := pix2d.BoundBottom
+	pix3d.Jagged = false
+	pix2d.Bind(32, var3.Pixels, 32)
+	pix2d.FillRect(0, 0, 0, 32, 32)
+	pix3d.Init2D()
+	var15 := var4.GetInterfaceModel(1)
+	var16 := pix3d.SinTable[var4.Xan2D] * var4.Zoom2D >> 16
+	var17 := pix3d.CosTable[var4.Xan2D] * var4.Zoom2D >> 16
+	var15.DrawSimple(0, var4.Yan2D, var4.Zan2D, var4.Xan2D, var4.Xof2D, var16+var15.MaxY/2+var4.Yof2D, var17+var4.Yof2D)
+	for i := 31; i >= 0; i-- {
+		for j := 31; j >= 0; j-- {
+			if var3.Pixels[i+j*32] == 0 {
+				if i > 0 && var3.Pixels[i-1+j*32] > 1 {
+					var3.Pixels[i+j*32] = 1
+				} else if j > 0 && var3.Pixels[i+(j-1)*32] > 1 {
+					var3.Pixels[i+j*32] = 1
+				} else if i < 31 && var3.Pixels[i+1+j*32] > 1 {
+					var3.Pixels[i+j*32] = 1
+				} else if j < 31 && var3.Pixels[i+(j+1)*32] > 1 {
+					var3.Pixels[i+j*32] = 1
+				}
+			}
+		}
+	}
+	for i := 31; i >= 0; i-- {
+		for j := 31; j >= 0; j-- {
+			if var3.Pixels[i+j*32] == 0 && i > 0 && j > 0 && var3.Pixels[i-1+(j-1)*32] > 0 {
+				var3.Pixels[i+j*32] = 3153952
+			}
+		}
+	}
+	if var4.CertTemplate != -1 {
+		var20 := GetIcon(var4.CertLink, 10)
+		var21 := var20.CropW
+		var22 := var20.CropH
+		var20.CropW = 32
+		var20.CropH = 32
+		var20.Crop(22, 5, 22, 5)
+		var20.CropW = var21
+		var20.CropH = var22
+	}
+	//IconCache.Put(arg0, var3) // TODO: iconcache
+	pix2d.Bind(var9, var8, var10)
+	pix2d.SetClipping(var14, var13, var12, var11)
+	pix3d.CenterW3D = var5
+	pix3d.CenterH3D = var6
+	pix3d.LineOffset = var7
+	pix3d.Jagged = true
+	if var4.Stackable {
+		var3.CropW = 33
+	} else {
+		var3.CropW = 32
+	}
+	var3.CropH = arg2
+	return var3
+}
 
 func (t *ObjType) GetWornModel(arg1 int) *model.Model {
 	var3 := t.ManWear
