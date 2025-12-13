@@ -899,7 +899,7 @@ func (w *World3D) DrawMinimapTile(arg0 []int, arg1, arg2, arg3, arg4, arg5 int) 
 	}
 }
 
-func (w *World3D) Init(arg0 []int, arg1, arg2, arg4, arg5 int) {
+func Init(arg0 []int, arg1, arg2, arg4, arg5 int) {
 	ViewportLeft = 0
 	ViewportTop = 0
 	ViewportRight = arg2

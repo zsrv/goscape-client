@@ -67,7 +67,7 @@ func NewObjType() *ObjType {
 	}
 }
 
-func Unpack(arg0 io.Jagfile) {
+func Unpack(arg0 *io.Jagfile) {
 	Dat = io.NewPacket(arg0.Read("obj.dat", nil))
 	var1 := io.NewPacket(arg0.Read("obj.idx", nil))
 	Count = var1.G2()

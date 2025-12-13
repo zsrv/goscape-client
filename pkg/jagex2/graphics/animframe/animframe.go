@@ -21,7 +21,7 @@ func NewAnimFrame() *AnimFrame {
 	return &AnimFrame{}
 }
 
-func Unpack(arg1 io.Jagfile) {
+func Unpack(arg1 *io.Jagfile) {
 	var2 := io.NewPacket(arg1.Read("frame_head.dat", nil))
 	var3 := io.NewPacket(arg1.Read("frame_tran1.dat", nil))
 	var4 := io.NewPacket(arg1.Read("frame_tran2.dat", nil))

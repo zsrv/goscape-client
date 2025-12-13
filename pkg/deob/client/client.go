@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"math"
 	"math/big"
 	"math/rand"
@@ -11,17 +10,21 @@ import (
 
 	"goscape-client/pkg/jagex2/client"
 	"goscape-client/pkg/jagex2/config/component"
+	"goscape-client/pkg/jagex2/config/flotype"
 	"goscape-client/pkg/jagex2/config/idktype"
 	"goscape-client/pkg/jagex2/config/loctype"
 	"goscape-client/pkg/jagex2/config/npctype"
 	"goscape-client/pkg/jagex2/config/objtype"
 	"goscape-client/pkg/jagex2/config/seqtype"
+	"goscape-client/pkg/jagex2/config/spotanimtype"
 	"goscape-client/pkg/jagex2/config/varptype"
 	"goscape-client/pkg/jagex2/dash3d"
 	"goscape-client/pkg/jagex2/dash3d/entity"
 	"goscape-client/pkg/jagex2/dash3d/world"
 	"goscape-client/pkg/jagex2/dash3d/world3d"
 	"goscape-client/pkg/jagex2/datastruct"
+	"goscape-client/pkg/jagex2/graphics/animbase"
+	"goscape-client/pkg/jagex2/graphics/animframe"
 	"goscape-client/pkg/jagex2/graphics/model"
 	"goscape-client/pkg/jagex2/graphics/pix2d"
 	"goscape-client/pkg/jagex2/graphics/pix32"
@@ -66,35 +69,35 @@ var (
 type Client struct {
 	client.GameShell
 
-	HintTileZ             int
-	HintHeight            int
-	HintOffsetX           int
-	HintOffsetZ           int
-	MinimapOffsetCycle    int
-	RedrawBackground      bool
-	LocList               *datastruct.LinkList[*entity.LocEntity]
-	RandomIn              *io.Isaac
-	CameraModifierEnabled []bool
-	PrivateChatSetting    int
-	SelectedTab           int
-	BFSCost               [][]int
-	SocialAction          int
-	SceneBaseTileX        int
-	SceneBaseTileZ        int
-	MapLastBaseX          int
-	MapLastBaseZ          int
-	SocialInput           string
-	MergedLocations       *datastruct.LinkList[*entity.LocMergeEntity]
-	IgnoreName37          []int64
-	WeightCarried         int
-	SceneMapLandData      [][]byte
-	Out                   *io.Packet
-	StartMidiThread       bool
-	ChatEffects           int
-	HintNPC               int
-	OverrideChat          int
-	SkillLevel            []int
-	//ChatInterface // TODO
+	HintTileZ                 int
+	HintHeight                int
+	HintOffsetX               int
+	HintOffsetZ               int
+	MinimapOffsetCycle        int
+	RedrawBackground          bool
+	LocList                   *datastruct.LinkList[*entity.LocEntity]
+	RandomIn                  *io.Isaac
+	CameraModifierEnabled     []bool
+	PrivateChatSetting        int
+	SelectedTab               int
+	BFSCost                   [][]int
+	SocialAction              int
+	SceneBaseTileX            int
+	SceneBaseTileZ            int
+	MapLastBaseX              int
+	MapLastBaseZ              int
+	SocialInput               string
+	MergedLocations           *datastruct.LinkList[*entity.LocMergeEntity]
+	IgnoreName37              []int64
+	WeightCarried             int
+	SceneMapLandData          [][]byte
+	Out                       *io.Packet
+	StartMidiThread           bool
+	ChatEffects               int
+	HintNPC                   int
+	OverrideChat              int
+	SkillLevel                []int
+	ChatInterface             *component.Component
 	WaveLoops                 []int
 	MouseButtonsOption        int
 	LocalPID                  int
@@ -102,7 +105,7 @@ type Client struct {
 	Login                     *io.Packet
 	FriendWorld               []int
 	MinimapLevel              int
-	SocialMessage             int
+	SocialMessage             string
 	ImageHitmarks             []*pix32.Pix32
 	ChatbackInput             string
 	LastWaveID                int
@@ -445,6 +448,7 @@ func NewClient() *Client {
 		IgnoreName37:              make([]int64, 100),
 		Out:                       io.Alloc(1),
 		SkillLevel:                make([]int, 50),
+		ChatInterface:             component.NewComponent(),
 		WaveLoops:                 make([]int, 50),
 		LocalPID:                  -1,
 		DesignColors:              make([]int, 5),
@@ -3480,7 +3484,7 @@ func (c *Client) UpdateNpcs() {
 	}
 }
 
-func (c *Client) UpdateEntity(arg0 *entity.PathingEntity) {
+func (c *Client) UpdatePlayerEntity(arg0 *entity.PlayerEntity) {
 	if arg0.X < 128 || arg0.Z < 128 || arg0.X >= 13184 || arg0.Z >= 13184 {
 		arg0.PrimarySeqID = -1
 		arg0.SpotanimID = -1
@@ -3490,7 +3494,7 @@ func (c *Client) UpdateEntity(arg0 *entity.PathingEntity) {
 		arg0.Z = arg0.PathTileZ[0]*128 + arg0.Size*64
 		arg0.PathLength = 0
 	}
-	if arg0 == &c.LocalPlayer && (arg0.X < 1536 || arg0.Z < 1536 || arg0.X >= 11776 || arg0.Z >= 11776) {
+	if arg0 == c.LocalPlayer && (arg0.X < 1536 || arg0.Z < 1536 || arg0.X >= 11776 || arg0.Z >= 11776) {
 		arg0.PrimarySeqID = -1
 		arg0.SpotanimID = -1
 		arg0.ForceMoveEndCycle = 0
@@ -3500,12 +3504,1910 @@ func (c *Client) UpdateEntity(arg0 *entity.PathingEntity) {
 		arg0.PathLength = 0
 	}
 	if arg0.ForceMoveEndCycle > LoopCycle {
-		c.UpdateForceMovement(arg0)
+		c.UpdateForceMovement(&arg0.PathingEntity)
 	} else if arg0.ForceMoveStartCycle >= LoopCycle {
-		c.StartForceMovement(arg0, 0)
+		c.StartForceMovement(&arg0.PathingEntity, 0)
 	} else {
-		c.UpdateMovement(arg0)
+		c.UpdateMovement(&arg0.PathingEntity)
 	}
-	c.UpdateFacingDirection(arg0)
-	c.UpdateSequences(arg0)
+	c.UpdateFacingDirection(&arg0.PathingEntity)
+	c.UpdateSequences(&arg0.PathingEntity)
+}
+
+func (c *Client) UpdateNpcEntity(arg0 *entity.NpcEntity) {
+	if arg0.X < 128 || arg0.Z < 128 || arg0.X >= 13184 || arg0.Z >= 13184 {
+		arg0.PrimarySeqID = -1
+		arg0.SpotanimID = -1
+		arg0.ForceMoveEndCycle = 0
+		arg0.ForceMoveStartCycle = 0
+		arg0.X = arg0.PathTileX[0]*128 + arg0.Size*64
+		arg0.Z = arg0.PathTileZ[0]*128 + arg0.Size*64
+		arg0.PathLength = 0
+	}
+	if arg0.ForceMoveEndCycle > LoopCycle {
+		c.UpdateForceMovement(&arg0.PathingEntity)
+	} else if arg0.ForceMoveStartCycle >= LoopCycle {
+		c.StartForceMovement(&arg0.PathingEntity, 0)
+	} else {
+		c.UpdateMovement(&arg0.PathingEntity)
+	}
+	c.UpdateFacingDirection(&arg0.PathingEntity)
+	c.UpdateSequences(&arg0.PathingEntity)
+}
+
+func (c *Client) UpdateForceMovement(arg0 *entity.PathingEntity) {
+	var3 := arg0.ForceMoveEndCycle - LoopCycle
+	var4 := arg0.ForceMoveStartSceneTileX*128 + arg0.Size*64
+	var5 := arg0.ForceMoveStartSceneTileZ*128 + arg0.Size*64
+	arg0.X += (var4 - arg0.X) / var3
+	arg0.Z += (var5 - arg0.Z) / var3
+	arg0.SeqTrigger = 0
+	switch arg0.ForceMoveFaceDirection {
+	case 0:
+		arg0.DstYaw = 1024
+	case 1:
+		arg0.DstYaw = 1536
+	case 2:
+		arg0.DstYaw = 0
+	case 3:
+		arg0.DstYaw = 512
+	}
+}
+
+func (c *Client) StartForceMovement(arg0 *entity.PathingEntity, arg1 int) {
+	c.PacketSize += arg1
+	if arg0.ForceMoveStartCycle == LoopCycle || arg0.PrimarySeqID == -1 || arg0.PrimarySeqDelay != 0 || arg0.PrimarySeqCycle+1 > seqtype.Instances[arg0.PrimarySeqID].Delay[arg0.PrimarySeqFrame] {
+		var3 := arg0.ForceMoveStartCycle - arg0.ForceMoveEndCycle
+		var4 := LoopCycle - arg0.ForceMoveEndCycle
+		var5 := arg0.ForceMoveStartSceneTileX*128 + arg0.Size*64
+		var6 := arg0.ForceMoveStartSceneTileZ*128 + arg0.Size*64
+		var7 := arg0.ForceMoveEndSceneTileX*128 + arg0.Size*64
+		var8 := arg0.ForceMoveEndSceneTileZ*128 + arg0.Size*64
+		arg0.X = (var5*(var3-var4) + var7*var4) / var3
+		arg0.Z = (var6*(var3-var4) + var8*var4) / var3
+	}
+	arg0.SeqTrigger = 0
+	switch arg0.ForceMoveFaceDirection {
+	case 0:
+		arg0.DstYaw = 1024
+	case 1:
+		arg0.DstYaw = 1536
+	case 2:
+		arg0.DstYaw = 0
+	case 3:
+		arg0.DstYaw = 512
+	}
+	arg0.Yaw = arg0.DstYaw
+}
+
+func (c *Client) UpdateMovement(arg1 *entity.PathingEntity) {
+	arg1.SecondarySeqID = arg1.SeqStandID
+	if arg1.PathLength == 0 {
+		arg1.SeqTrigger = 0
+		return
+	}
+	if arg1.PrimarySeqID != -1 && arg1.PrimarySeqDelay == 0 {
+		var3 := seqtype.Instances[arg1.PrimarySeqID]
+		if var3.WalkMerge == nil {
+			arg1.SeqTrigger++
+			return
+		}
+	}
+	var11 := arg1.X
+	var4 := arg1.Z
+	var5 := arg1.PathTileX[arg1.PathLength-1]*128 + arg1.Size*64
+	var6 := arg1.PathTileZ[arg1.PathLength-1]*128 + arg1.Size*64
+	if var5-var11 > 256 || var5-var11 < -256 || var6-var4 > 256 || var6-var4 < -256 {
+		arg1.X = var5
+		arg1.Z = var6
+		return
+	}
+	if var11 < var5 {
+		if var4 < var6 {
+			arg1.DstYaw = 1280
+		} else if var4 > var6 {
+			arg1.DstYaw = 1792
+		} else {
+			arg1.DstYaw = 1536
+		}
+	} else if var11 > var5 {
+		if var4 < var6 {
+			arg1.DstYaw = 768
+		} else if var4 > var6 {
+			arg1.DstYaw = 256
+		} else {
+			arg1.DstYaw = 512
+		}
+	} else if var4 < var6 {
+		arg1.DstYaw = 1024
+	} else {
+		arg1.DstYaw = 0
+	}
+	var7 := arg1.DstYaw - arg1.Yaw&0x7FF
+	if var7 > 1024 {
+		var7 -= 2048
+	}
+	var8 := arg1.SeqTurnAroundID
+	if var7 > +-256 && var7 <= 256 {
+		var8 = arg1.SeqWalkID
+	} else if var7 >= 256 && var7 < 768 {
+		var8 = arg1.SeqTurnRightId
+	} else if var7 >= -768 && var7 <= -256 {
+		var8 = arg1.SeqTurnLeftID
+	}
+	if var8 == -1 {
+		var8 = arg1.SeqWalkID
+	}
+	arg1.SecondarySeqID = var8
+	var9 := 4
+	if arg1.Yaw != arg1.DstYaw && arg1.TargetID == -1 {
+		var9 = 2
+	}
+	if arg1.PathLength > 2 {
+		var9 = 6
+	}
+	if arg1.PathLength > 3 {
+		var9 = 8
+	}
+	if arg1.SeqTrigger > 0 && arg1.PathLength > 1 {
+		var9 = 8
+		arg1.SeqTrigger--
+	}
+	if arg1.PathRunning[arg1.PathLength-1] {
+		var9 <<= 0x1
+	}
+	if var9 >= 8 && arg1.SecondarySeqID == arg1.SeqWalkID && arg1.SeqRunID != -1 {
+		arg1.SecondarySeqID = arg1.SeqRunID
+	}
+	if var11 < var5 {
+		arg1.X += var9
+		if arg1.X > var5 {
+			arg1.X = var5
+		}
+	} else if var11 > var5 {
+		arg1.X -= var9
+		if arg1.X < var5 {
+			arg1.X = var5
+		}
+	}
+	if var4 < var6 {
+		arg1.Z += var9
+		if arg1.Z > var6 {
+			arg1.Z = var6
+		}
+	} else if var4 > var6 {
+		arg1.Z -= var9
+		if arg1.Z < var6 {
+			arg1.Z = var6
+		}
+	}
+	if arg1.X == var5 && arg1.Z == var6 {
+		arg1.PathLength--
+	}
+}
+
+func (c *Client) UpdateFacingDirection(arg0 *entity.PathingEntity) {
+	var4 := 0
+	var5 := 0
+	if arg0.TargetID != -1 && arg0.TargetID < 32768 {
+		var3 := c.NPCs[arg0.TargetID]
+		if var3 != nil {
+			var4 = arg0.X - var3.X
+			var5 = arg0.Z - var3.Z
+			if var4 != 0 || var5 != 0 {
+				arg0.DstYaw = int(math.Atan2(float64(var4), float64(var5))*325.949) & 0x7FF
+			}
+		}
+	}
+	var7 := 0
+	if arg0.TargetID >= 32768 {
+		var7 = arg0.TargetID - 32768
+		if var7 == c.LocalPID {
+			var7 = c.LOCAL_PLAYER_INDEX
+		}
+		var8 := c.Players[var7]
+		if var8 != nil {
+			var5 = arg0.X - var8.X
+			var6 := arg0.Z - var8.Z
+			if var5 != 0 || var6 != 0 {
+				arg0.DstYaw = int(math.Atan2(float64(var5), float64(var6))*325.949) & 0x7FF
+			}
+		}
+	}
+	if (arg0.TargetTileX != 0 || arg0.TargetTileZ != 0) && (arg0.PathLength == 0 || arg0.SeqTrigger > 0) {
+		var7 = arg0.X - (arg0.TargetTileX-c.SceneBaseTileX-c.SceneBaseTileX)*64
+		var4 = arg0.Z - (arg0.TargetTileZ-c.SceneBaseTileZ-c.SceneBaseTileZ)*64
+		if var7 != 0 || var4 != 0 {
+			arg0.DstYaw = int(math.Atan2(float64(var7), float64(var4))*325.949) & 0x7FF
+		}
+		arg0.TargetTileX = 0
+		arg0.TargetTileZ = 0
+	}
+	var7 = arg0.DstYaw - arg0.Yaw&0x7FF
+	if var7 == 0 {
+		return
+	}
+	if var7 < 32 || var7 > 2016 {
+		arg0.Yaw = arg0.DstYaw
+	} else if var7 > 1024 {
+		arg0.Yaw -= 32
+	} else {
+		arg0.Yaw += 32
+	}
+	arg0.Yaw &= 0x7FF
+	if arg0.SecondarySeqID != arg0.SeqStandID || arg0.Yaw == arg0.DstYaw {
+		return
+	}
+	if arg0.SeqTurnID != -1 {
+		arg0.SecondarySeqID = arg0.SeqTurnID
+		return
+	}
+	arg0.SecondarySeqID = arg0.SeqWalkID
+}
+
+func (c *Client) UpdateSequences(arg1 *entity.PathingEntity) {
+	arg1.SeqStretches = false
+	var var3 *seqtype.SeqType
+	if arg1.SecondarySeqID != -1 {
+		var3 = seqtype.Instances[arg1.SecondarySeqID]
+		arg1.SecondarySeqCycle++
+		if arg1.SecondarySeqFrame < var3.FrameCount && arg1.SecondarySeqCycle > var3.Delay[arg1.SecondarySeqFrame] {
+			arg1.SecondarySeqCycle = 0
+			arg1.SecondarySeqFrame++
+		}
+		if arg1.SecondarySeqFrame >= var3.FrameCount {
+			arg1.SecondarySeqCycle = 0
+			arg1.SecondarySeqFrame = 0
+		}
+	}
+	if arg1.PrimarySeqID != -1 && arg1.PrimarySeqDelay == 0 {
+		var3 = seqtype.Instances[arg1.PrimarySeqID]
+		arg1.PrimarySeqCycle++
+		for arg1.PrimarySeqFrame < var3.FrameCount && arg1.PrimarySeqCycle > var3.Delay[arg1.PrimarySeqFrame] {
+			arg1.PrimarySeqCycle -= var3.Delay[arg1.PrimarySeqFrame]
+			arg1.PrimarySeqFrame++
+		}
+		if arg1.PrimarySeqFrame >= var3.FrameCount {
+			arg1.PrimarySeqFrame -= var3.ReplayOff
+			arg1.PrimarySeqLoop++
+			if arg1.PrimarySeqLoop >= var3.ReplayCount {
+				arg1.PrimarySeqID = -1
+			}
+			if arg1.PrimarySeqFrame < 0 || arg1.PrimarySeqFrame >= var3.FrameCount {
+				arg1.PrimarySeqID = -1
+			}
+		}
+		arg1.SeqStretches = var3.Stretches
+	}
+	if arg1.PrimarySeqDelay > 0 {
+		arg1.PrimarySeqDelay--
+	}
+	if arg1.SpotanimID == -1 || LoopCycle < arg1.SpotanimLastCycle {
+		return
+	}
+	if arg1.SpotanimFrame < 0 {
+		arg1.SpotanimFrame = 0
+	}
+	var3 = spotanimtype.Instances[arg1.SpotanimID].Seq
+	arg1.SpotanimCycle++
+	for arg1.SpotanimFrame < var3.FrameCount && arg1.SpotanimCycle > var3.Delay[arg1.SpotanimFrame] {
+		arg1.SpotanimCycle -= var3.Delay[arg1.SpotanimFrame]
+		arg1.SpotanimFrame++
+	}
+	if arg1.SpotanimFrame >= var3.FrameCount {
+		if arg1.SpotanimFrame < 0 || arg1.SpotanimFrame >= var3.FrameCount {
+			arg1.SpotanimID = -1
+		}
+	}
+}
+
+func (c *Client) DrawGame() {
+	if c.RedrawBackground {
+		c.RedrawBackground = false
+		// TODO: pixmap
+		c.RedrawSidebar = true
+		c.RedrawChatback = true
+		c.RedrawSideIcons = true
+		c.RedrawPrivacySettings = true
+		if c.SceneState != 2 {
+			// TODO: pixmap
+		}
+	}
+	if c.SceneState == 2 {
+		c.DrawScene(0)
+	}
+	if c.MenuVisible && c.MenuArea == 1 {
+		c.RedrawSidebar = true
+	}
+	var2 := false
+	if c.SidebarInterfaceID != -1 {
+		var2 = c.UpdateInterfaceAnimation(c.SidebarInterfaceID, c.SceneDelta)
+		if var2 {
+			c.RedrawSidebar = true
+		}
+	}
+	if c.SelectedArea == 2 {
+		c.RedrawSidebar = true
+	}
+	if c.ObjDragArea == 2 {
+		c.RedrawSidebar = true
+	}
+	if c.RedrawSidebar {
+		c.DrawSidebar()
+		c.RedrawSidebar = false
+	}
+	if c.ChatInterfaceID == -1 {
+		c.ChatInterface.ScrollPosition = c.ChatScrollHeight - c.ChatScrollOffset - 77
+		if c.MouseX > 453 && c.MouseX < 565 && c.MouseY > 350 {
+			c.HandleScrollInput(c.MouseX-22, 0, c.MouseY-375, c.ChatScrollHeight, 77, false, 463, 0, c.ChatInterface)
+		}
+		var3 := c.ChatScrollHeight - 77 - c.ChatInterface.ScrollPosition
+		if var3 < 0 {
+			var3 = 0
+		}
+		if var3 > c.ChatScrollHeight-77 {
+			var3 = c.ChatScrollHeight - 77
+		}
+		if c.ChatScrollOffset != var3 {
+			c.ChatScrollOffset = var3
+			c.RedrawChatback = true
+		}
+	}
+	if c.ChatInterfaceID != -1 {
+		var2 = c.UpdateInterfaceAnimation(c.ChatInterfaceID, c.SceneDelta)
+		if var2 {
+			c.RedrawChatback = true
+		}
+	}
+	if c.SelectedArea == 3 {
+		c.RedrawChatback = true
+	}
+	if c.ObjDragArea == 3 {
+		c.RedrawChatback = true
+	}
+	if c.ModalMessage != "" {
+		c.RedrawChatback = true
+	}
+	if c.MenuVisible && c.MenuArea == 2 {
+		c.RedrawChatback = true
+	}
+	if c.RedrawChatback {
+		c.DrawChatback()
+		c.RedrawChatback = false
+	}
+	if c.SceneState == 2 {
+		c.DrawMinimap()
+		//c.AreaMapback // TODO: pixmap
+	}
+	if c.FlashingTab != -1 {
+		c.RedrawSideIcons = true
+	}
+	if c.RedrawSideIcons {
+		if c.FlashingTab != -1 && c.FlashingTab == c.SelectedTab {
+			c.FlashingTab = -1
+			c.Out.P1Isaac(175)
+			c.Out.P1(c.SelectedTab)
+		}
+		c.RedrawSideIcons = false
+		c.AreaBackhmid1.Bind()
+		c.ImageBackhmid1.Draw(0, 0)
+		if c.SidebarInterfaceID == -1 {
+			if c.TabInterfaceID[c.SelectedTab] != -1 {
+				switch c.SelectedTab {
+				case 0:
+					c.ImageRedstone1.Draw(30, 29)
+				case 1:
+					c.ImageRedstone2.Draw(29, 59)
+				case 2:
+					c.ImageRedstone2.Draw(29, 87)
+				case 3:
+					c.ImageRedstone3.Draw(29, 115)
+				case 4:
+					c.ImageRedstone2h.Draw(29, 156)
+				case 5:
+					c.ImageRedstone2h.Draw(29, 184)
+				case 6:
+					c.ImageRedstone1h.Draw(30, 212)
+				}
+			}
+			if c.TabInterfaceID[0] != -1 && (c.FlashingTab != 0 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[0].Draw(34, 35)
+			}
+			if c.TabInterfaceID[1] != -1 && (c.FlashingTab != 1 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[1].Draw(32, 59)
+			}
+			if c.TabInterfaceID[2] != -1 && (c.FlashingTab != 2 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[2].Draw(32, 86)
+			}
+			if c.TabInterfaceID[3] != -1 && (c.FlashingTab != 3 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[3].Draw(33, 121)
+			}
+			if c.TabInterfaceID[4] != -1 && (c.FlashingTab != 4 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[4].Draw(34, 157)
+			}
+			if c.TabInterfaceID[5] != -1 && (c.FlashingTab != 5 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[5].Draw(32, 185)
+			}
+			if c.TabInterfaceID[6] != -1 && (c.FlashingTab != 6 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[6].Draw(34, 212)
+			}
+		}
+		c.AreaBackhmid1.Draw // TODO: pixmap
+		c.AreaBackbase2.Bind()
+		c.ImageBackbase2.Draw(0, 0)
+		if c.SidebarInterfaceID == -1 {
+			if c.TabInterfaceID[c.SelectedTab] != -1 {
+				switch c.SelectedTab {
+				case 7:
+					c.ImageRedstone1v.Draw(0, 49)
+				case 8:
+					c.ImageRedstone2v.Draw(0, 81)
+				case 9:
+					c.ImageRedstone2v.Draw(0, 108)
+				case 10:
+					c.ImageRedstone3v.Draw(1, 136)
+				case 11:
+					c.ImageRedstone2hv.Draw(0, 178)
+				case 12:
+					c.ImageRedstone2hv.Draw(0, 205)
+				case 13:
+					c.ImageRedstone1hv.Draw(0, 233)
+				}
+			}
+			if c.TabInterfaceID[8] != 1 && (c.FlashingTab != 8 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[7].Draw(2, 80)
+			}
+			if c.TabInterfaceID[9] != 1 && (c.FlashingTab != 9 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[8].Draw(3, 107)
+			}
+			if c.TabInterfaceID[10] != 1 && (c.FlashingTab != 10 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[9].Draw(4, 142)
+			}
+			if c.TabInterfaceID[11] != 1 && (c.FlashingTab != 11 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[10].Draw(2, 179)
+			}
+			if c.TabInterfaceID[12] != 1 && (c.FlashingTab != 12 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[11].Draw(2, 206)
+			}
+			if c.TabInterfaceID[13] != 1 && (c.FlashingTab != 13 || LoopCycle%20 < 10) {
+				c.ImageSideIcons[12].Draw(2, 230)
+			}
+		}
+		//c.AreaBackbase2.Draw // TODO: pixmap
+		c.AreaViewport.Bind()
+	}
+	if c.RedrawPrivacySettings {
+		c.RedrawPrivacySettings = false
+		c.AreaBackbase1.Bind()
+		c.ImageBackbase1.Draw(0, 0)
+		c.FontPlain12.DrawStringTaggableCenter(57, 16777215, true, 33, "Public chat")
+		switch c.PublicChatSetting {
+		case 0:
+			c.FontPlain12.DrawStringTaggableCenter(57, 65280, true, 46, "On")
+		case 1:
+			c.FontPlain12.DrawStringTaggableCenter(57, 16776960, true, 46, "Friends")
+		case 2:
+			c.FontPlain12.DrawStringTaggableCenter(57, 16711680, true, 46, "Off")
+		case 3:
+			c.FontPlain12.DrawStringTaggableCenter(57, 65535, true, 46, "Hide")
+		}
+		c.FontPlain12.DrawStringTaggableCenter(186, 16777215, true, 33, "Private chat")
+		switch c.PrivateChatSetting {
+		case 0:
+			c.FontPlain12.DrawStringTaggableCenter(186, 65280, true, 46, "On")
+		case 1:
+			c.FontPlain12.DrawStringTaggableCenter(186, 16776960, true, 46, "Friends")
+		case 2:
+			c.FontPlain12.DrawStringTaggableCenter(186, 16711680, true, 46, "Off")
+		}
+		c.FontPlain12.DrawStringTaggableCenter(326, 16777215, true, 33, "Trade/duel")
+		switch c.TradeChatSetting {
+		case 0:
+			c.FontPlain12.DrawStringTaggableCenter(326, 65280, true, 46, "On")
+		case 1:
+			c.FontPlain12.DrawStringTaggableCenter(326, 16776960, true, 46, "Friends")
+		case 2:
+			c.FontPlain12.DrawStringTaggableCenter(326, 16711680, true, 46, "Off")
+		}
+		c.FontPlain12.DrawStringTaggableCenter(462, 16777215, true, 38, "Report abuse")
+		//c.AreaBackbase1.Draw() // TODO: pixmap
+		c.AreaViewport.Bind()
+	}
+	c.SceneDelta = 0
+}
+
+func (c *Client) IsAddFriendOption(arg1 int) bool {
+	if arg1 < 0 {
+		return false
+	}
+	var3 := c.MenuAction[arg1]
+	if var3 >= 2000 {
+		var3 -= 2000
+	}
+	return var3 == 406
+}
+
+func (c *Client) UseMenuOption(arg1 int) {
+	if arg1 < 0 {
+		return
+	}
+	if c.ChatbackInputOpen {
+		c.ChatbackInputOpen = false
+		c.RedrawChatback = true
+	}
+	var3 := c.MenuParamB[arg1]
+	var4 := c.MenuParamC[arg1]
+	var5 := c.MenuAction[arg1]
+	var6 := c.MenuParamA[arg1]
+	if var5 >= 2000 {
+		var5 -= 2000
+	}
+	var7 := ""
+	var8 := 0
+	var9 := ""
+	var11 := 0
+	if var5 == 903 || var5 == 363 {
+		var7 = c.MenuOption[arg1]
+		var8 = strings.Index(var7, "@whi@")
+		if var8 != -1 {
+			var7 = strings.TrimSpace(var7[var8+5:])
+			var9 = datastruct.FormatName(datastruct.FromBase37(datastruct.ToBase37(var7)))
+			var10 := false
+			for i := range c.PlayerCount {
+				var12 := c.Players[c.PlayerIDs[i]]
+				if var12 != nil && var12.Name != "" && strings.EqualFold(var12.Name, var9) {
+					c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var12.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var12.PathTileZ[0], 0, 0, 0)
+					if var5 == 903 {
+						c.Out.P1Isaac(206)
+					}
+					if var5 == 363 {
+						c.Out.P1Isaac(164)
+					}
+					c.Out.P2(c.PlayerIDs[i])
+					var10 = true
+					break
+				}
+			}
+			if !var10 {
+				c.AddMessage(0, "Unable to find "+var9, "")
+			}
+		}
+	}
+	if var5 == 450 && c.InteractWithLoc(75, var3, var4, var6) {
+		c.Out.P2(c.ObjInterface)
+		c.Out.P2(c.ObjSelectedSlot)
+		c.Out.P2(c.ObjSelectedInterface)
+	}
+	if var5 == 405 || var5 == 38 || var5 == 422 || var5 == 478 || var5 == 347 {
+		if var5 == 478 {
+			if var3&0x3 == 0 {
+				OpLogic5++
+			}
+			if OpLogic5 >= 90 {
+				c.Out.P1Isaac(220)
+			}
+			c.Out.P1Isaac(157)
+		}
+		if var5 == 347 {
+			c.Out.P1Isaac(211)
+		}
+		if var5 == 422 {
+			c.Out.P1Isaac(133)
+		}
+		if var5 == 405 {
+			OpLogic3 += var6
+			if OpLogic3 >= 97 {
+				c.Out.P1Isaac(30)
+				c.Out.P3(14953816)
+			}
+			c.Out.P1Isaac(195)
+		}
+		if var5 == 38 {
+			c.Out.P1Isaac(71)
+		}
+		c.Out.P2(var6)
+		c.Out.P2(var3)
+		c.Out.P2(var4)
+		c.SelectedCycle = 0
+		c.SelectedInterface = var4
+		c.SelectedItem = var3
+		c.SelectedArea = 2
+		if component.Instances[var4].Layer == c.ViewportInterfaceID {
+			c.SelectedArea = 1
+		}
+		if component.Instances[var4].Layer == c.ChatInterfaceID {
+			c.SelectedArea = 3
+		}
+	}
+	var var13 *entity.NpcEntity
+	if var5 == 728 || var5 == 542 || var5 == 6 || var5 == 963 || var5 == 245 {
+		var13 = c.NPCs[var6]
+		if var13 != nil {
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var13.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var13.PathTileZ[0], 0, 0, 0)
+			c.CrossX = c.MouseClickX
+			c.CrossY = c.MouseClickY
+			c.CrossMode = 2
+			c.CrossCycle = 0
+			if var5 == 542 {
+				c.Out.P1Isaac(8)
+			}
+			if var5 == 6 {
+				if var6&0x3 == 0 {
+					OpLogic2++
+				}
+				if OpLogic2 >= 124 {
+					c.Out.P1Isaac(88)
+					c.Out.P4(0)
+				}
+				c.Out.P1Isaac(27)
+			}
+			if var5 == 963 {
+				c.Out.P1Isaac(113)
+			}
+			if var5 == 728 {
+				c.Out.P1Isaac(194)
+			}
+			if var5 == 245 {
+				if var6&0x3 == 0 {
+					OpLogic4++
+				}
+				if OpLogic4 >= 85 {
+					c.Out.P1Isaac(176)
+					c.Out.P2(39596)
+				}
+				c.Out.P1Isaac(100)
+			}
+			c.Out.P2(var6)
+		}
+	}
+	var14 := false
+	if var5 == 217 {
+		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 0, 2, 0, var4, 0, 0, 0)
+		if !var14 {
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var3, c.LocalPlayer.PathTileZ[0], 0, 2, 1, var4, 0, 0, 0)
+		}
+		c.CrossX = c.MouseClickX
+		c.CrossY = c.MouseClickY
+		c.CrossMode = 2
+		c.CrossCycle = 0
+		c.Out.P1Isaac(239)
+		c.Out.P2(var3 + c.SceneBaseTileX)
+		c.Out.P2(var4 + c.SceneBaseTileZ)
+		c.Out.P2(var6)
+		c.Out.P2(c.ObjInterface)
+		c.Out.P2(c.ObjSelectedSlot)
+		c.Out.P2(c.ObjSelectedInterface)
+	}
+	if var5 == 1175 {
+		var15 := var6 >> 14 & 0x7FFF
+		var16 := loctype.Get(var15)
+		if var16.Desc == nil {
+			var9 = "It's a " + var16.Name + "."
+		} else {
+			var9 = string(var16.Desc)
+		}
+		c.AddMessage(0, var9, "")
+	}
+	if var5 == 285 {
+		c.InteractWithLoc(245, var3, var4, var6)
+	}
+	if var5 == 881 {
+		c.Out.P1Isaac(130)
+		c.Out.P2(var6)
+		c.Out.P2(var3)
+		c.Out.P2(var4)
+		c.Out.P2(c.ObjInterface)
+		c.Out.P2(c.ObjSelectedSlot)
+		c.Out.P2(c.ObjSelectedInterface)
+		c.SelectedCycle = 0
+		c.SelectedInterface = var4
+		c.SelectedItem = var3
+		c.SelectedArea = 2
+		if component.Instances[var4].Layer == c.ViewportInterfaceID {
+			c.SelectedArea = 1
+		}
+		if component.Instances[var4].Layer == c.ChatInterfaceID {
+			c.SelectedArea = 3
+		}
+	}
+	if var5 == 391 {
+		c.Out.P1Isaac(48)
+		c.Out.P2(var6)
+		c.Out.P2(var3)
+		c.Out.P2(var4)
+		c.Out.P2(c.ActiveSpellID)
+		c.SelectedCycle = 0
+		c.SelectedInterface = var4
+		c.SelectedItem = var3
+		c.SelectedArea = 2
+		if component.Instances[var4].Layer == c.ViewportInterfaceID {
+			c.SelectedArea = 1
+		}
+		if component.Instances[var4].Layer == c.ChatInterfaceID {
+			c.SelectedArea = 3
+		}
+	}
+	if var5 == 660 {
+		if c.MenuVisible {
+			c.Scene.Click(var4-11, var3-8)
+		} else {
+			c.Scene.Click(c.MouseClickY-11, c.MouseClickX-8)
+		}
+	}
+	if var5 == 188 {
+		c.ObjSelected = 1
+		c.ObjSelectedSlot = var3
+		c.ObjSelectedInterface = var4
+		c.ObjInterface = var6
+		c.ObjSelectedName = objtype.Get(var6).Name
+		c.SpellSelected = 0
+		return
+	}
+	if var5 == 44 && !c.PressedContinueOption {
+		c.Out.P1Isaac(235)
+		c.Out.P2(var4)
+		c.PressedContinueOption = true
+	}
+	var var17 *objtype.ObjType
+	var18 := ""
+	if var5 == 1773 {
+		var17 = objtype.Get(var6)
+		if var4 >= 100000 {
+			var18 = strconv.Itoa(var4) + " x " + var17.Name
+		} else if var17.Desc == nil {
+			var18 = "It's a " + var17.Name + "."
+		} else {
+			var18 = string(var17.Desc)
+		}
+		c.AddMessage(0, var18, "")
+	}
+	if var5 == 900 {
+		var13 = c.NPCs[var6]
+		if var13 != nil {
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var13.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var13.PathTileZ[0], 0, 0, 0)
+			c.CrossX = c.MouseClickX
+			c.CrossY = c.MouseClickY
+			c.CrossMode = 2
+			c.CrossCycle = 0
+			c.Out.P1Isaac(202)
+			c.Out.P2(var6)
+			c.Out.P2(c.ObjInterface)
+			c.Out.P2(c.ObjSelectedSlot)
+			c.Out.P2(c.ObjSelectedInterface)
+		}
+	}
+	var var19 *entity.PlayerEntity
+	if var5 == 1373 || var5 == 1544 || var5 == 151 || var5 == 1101 {
+		var19 = c.Players[var6]
+		if var19 != nil {
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var19.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var19.PathTileZ[0], 0, 0, 0)
+			c.CrossX = c.MouseClickX
+			c.CrossY = c.MouseClickY
+			c.CrossMode = 2
+			c.CrossCycle = 0
+			if var5 == 1101 {
+				c.Out.P1Isaac(164)
+			}
+			if var5 == 151 {
+				OpLogic8++
+				if OpLogic8 >= 90 {
+					c.Out.P1Isaac(2)
+					c.Out.P2(31114)
+				}
+				c.Out.P1Isaac(53)
+			}
+			if var5 == 1373 {
+				c.Out.P1Isaac(206)
+			}
+			if var5 == 1544 {
+				c.Out.P1Isaac(185)
+			}
+			c.Out.P2(var6)
+		}
+	}
+	if var5 == 265 {
+		var13 = c.NPCs[var6]
+		if var13 != nil {
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var13.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var13.PathTileZ[0], 0, 0, 0)
+			c.CrossX = c.MouseClickX
+			c.CrossY = c.MouseClickY
+			c.CrossMode = 2
+			c.CrossCycle = 0
+			c.Out.P1Isaac(134)
+			c.Out.P2(var6)
+			c.Out.P2(c.ActiveSpellID)
+		}
+	}
+	var20 := int64(0)
+	if var5 == 679 {
+		var7 = c.MenuOption[arg1]
+		var8 = strings.Index(var7, "@whi@")
+		if var8 != -1 {
+			var20 = datastruct.ToBase37(strings.TrimSpace(var7[var8+5:]))
+			var11 = -1
+			for i := range c.FriendCount {
+				if c.FriendName37[i] == var20 {
+					var11 = i
+					break
+				}
+			}
+			if var11 != -1 && c.FriendWorld[var11] > 0 {
+				c.RedrawChatback = true
+				c.ChatbackInputOpen = false
+				c.ShowSocialInput = true
+				c.SocialInput = ""
+				c.SocialAction = 3
+				c.SocialName37 = c.FriendName37[var11]
+				c.SocialMessage = "Enter message to send to " + c.FriendName[var11]
+			}
+		}
+	}
+	if var5 == 55 && c.InteractWithLoc(9, var3, var4, var6) {
+		c.Out.P2(c.ActiveSpellID)
+	}
+	if var5 == 224 || var5 == 993 || var5 == 99 || var5 == 746 || var5 == 877 {
+		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 0, 2, 0, var4, 0, 0, 0)
+		if !var14 {
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var3, c.LocalPlayer.PathTileZ[0], 0, 2, 1, var4, 0, 0, 0)
+		}
+		c.CrossX = c.MouseClickX
+		c.CrossY = c.MouseClickY
+		c.CrossMode = 2
+		c.CrossCycle = 0
+		if var5 == 224 {
+			c.Out.P1Isaac(140)
+		}
+		if var5 == 746 {
+			c.Out.P1Isaac(178)
+		}
+		if var5 == 877 {
+			c.Out.P1Isaac(247)
+		}
+		if var5 == 99 {
+			c.Out.P1Isaac(200)
+		}
+		if var5 == 993 {
+			c.Out.P1Isaac(40)
+		}
+		c.Out.P2(var3 + c.SceneBaseTileX)
+		c.Out.P2(var4 + c.SceneBaseTileZ)
+		c.Out.P2(var6)
+	}
+	if var5 == 1607 {
+		var13 = c.NPCs[var6]
+		if var13 != nil {
+			if var13.Type.Desc == nil {
+				var18 = "It's a " + var13.Type.Name + "."
+			} else {
+				var18 = string(var13.Type.Desc)
+			}
+			c.AddMessage(0, var18, "")
+		}
+	}
+	if var5 == 504 {
+		c.InteractWithLoc(172, var3, var4, var6)
+	}
+	var var22 *component.Component
+	if var5 == 930 {
+		var22 = component.Instances[var4]
+		c.SpellSelected = 1
+		c.ActiveSpellID = var4
+		c.ActiveSpellFlags = var22.ActionTarget
+		c.ObjSelected = 0
+		var18 = var22.ActionVerb
+		if strings.Index(var18, " ") != -1 {
+			var18 = var18[0:strings.Index(var18, " ")]
+		}
+		var9 = var22.ActionVerb
+		if strings.Index(var9, " ") != -1 {
+			var9 = var9[strings.Index(var9, " ")+1:]
+		}
+		c.SpellCaption = var18 + " " + var22.Action + " " + var9
+		if c.ActiveSpellFlags == 16 {
+			c.RedrawSidebar = true
+			c.SelectedTab = 3
+			c.RedrawSideIcons = true
+		}
+		return
+	}
+	if var5 == 951 {
+		var22 = component.Instances[var4]
+		var23 := true
+		if var22.ClientCode > 0 {
+			var23 = c.HandleInterfaceAction(var22)
+		}
+		if var23 {
+			c.Out.P1Isaac(155)
+			c.Out.P2(var4)
+		}
+	}
+	if var5 == 602 || var5 == 596 || var5 == 22 || var5 == 892 || var5 == 415 {
+		if var5 == 22 {
+			c.Out.P1Isaac(212)
+		}
+		if var5 == 415 {
+			if var4&0x3 == 0 {
+				OpLogic7++
+			}
+			if OpLogic7 >= 55 {
+				c.Out.P1Isaac(17)
+				c.Out.P4(0)
+			}
+			c.Out.P1Isaac(6)
+		}
+		if var5 == 602 {
+			c.Out.P1Isaac(31)
+		}
+		if var5 == 892 {
+			if var3&0x3 == 0 {
+				OpLogic9++
+			}
+			if OpLogic9 >= 130 {
+				c.Out.P1Isaac(238)
+				c.Out.P1(177)
+			}
+			c.Out.P1Isaac(38)
+		}
+		if var5 == 596 {
+			c.Out.P1Isaac(59)
+		}
+		c.Out.P2(var6)
+		c.Out.P2(var3)
+		c.Out.P2(var4)
+		c.SelectedCycle = 0
+		c.SelectedInterface = var4
+		c.SelectedItem = var3
+		c.SelectedArea = 2
+		if component.Instances[var4].Layer == c.ViewportInterfaceID {
+			c.SelectedArea = 1
+		}
+		if component.Instances[var4].Layer == c.ChatInterfaceID {
+			c.SelectedArea = 3
+		}
+	}
+	if var5 == 581 {
+		if var6&0x3 == 0 {
+			OpLogic1++
+		}
+		if OpLogic1 >= 99 {
+			c.Out.P1Isaac(7)
+			c.Out.P4(0)
+		}
+		c.InteractWithLoc(97, var3, var4, var6)
+	}
+	if var5 == 965 {
+		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 0, 2, 0, var4, 0, 0, 0)
+		if !var14 {
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var3, c.LocalPlayer.PathTileZ[0], 0, 2, 1, var4, 0, 0, 0)
+		}
+		c.CrossX = c.MouseClickX
+		c.CrossY = c.MouseClickY
+		c.CrossMode = 2
+		c.CrossCycle = 0
+		c.Out.P1Isaac(138)
+		c.Out.P2(var3 + c.SceneBaseTileX)
+		c.Out.P2(var4 + c.SceneBaseTileZ)
+		c.Out.P2(var6)
+		c.Out.P2(c.ActiveSpellID)
+	}
+	if var5 == 1501 {
+		OpLogic6 += c.SceneBaseTileZ
+		if OpLogic6 >= 92 {
+			c.Out.P1Isaac(66)
+			c.Out.P4(0)
+		}
+		c.InteractWithLoc(116, var3, var4, var6)
+	}
+	if var5 == 364 {
+		c.InteractWithLoc(96, var3, var4, var6)
+	}
+	if var5 == 1102 {
+		var17 = objtype.Get(var6)
+		if var17.Desc == nil {
+			var18 = "It's a " + var17.Name + "."
+		} else {
+			var18 = string(var17.Desc)
+		}
+		c.AddMessage(0, var18, "")
+	}
+	if var5 == 960 {
+		c.Out.P1Isaac(155)
+		c.Out.P2(var4)
+		var22 = component.Instances[var4]
+		if var22.Scripts != nil && var22.Scripts[0][0] == 5 {
+			var8 = var22.Scripts[0][1]
+			if c.Varps[var8] != var22.ScriptOperand[0] {
+				c.Varps[var8] = var22.ScriptOperand[0]
+				c.UpdateVarp(var8)
+				c.RedrawSidebar = true
+			}
+		}
+	}
+	if var5 == 34 {
+		var7 = c.MenuOption[arg1]
+		var8 = strings.Index(var7, "@whi@")
+		if var8 != -1 {
+			c.CloseInterfaces()
+			c.ReportAbuseInput = strings.TrimSpace(var7[var8+5:])
+			c.ReportAbuseMuteOption = false
+			for i := range len(component.Instances) {
+				if component.Instances[i] != nil && component.Instances[i].ClientCode == 600 {
+					c.ViewportInterfaceID = component.Instances[i].Layer
+					c.ReportAbuseInterfaceID = c.ViewportInterfaceID
+					break
+				}
+			}
+		}
+	}
+	if var5 == 947 {
+		c.CloseInterfaces()
+	}
+	if var5 == 367 {
+		var19 = c.Players[var6]
+		if var19 != nil {
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var19.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var19.PathTileZ[0], 0, 0, 0)
+			c.CrossX = c.MouseClickX
+			c.CrossY = c.MouseClickY
+			c.CrossMode = 2
+			c.CrossCycle = 0
+			c.Out.P1Isaac(248)
+			c.Out.P2(var6)
+			c.Out.P2(c.ObjInterface)
+			c.Out.P2(c.ObjSelectedSlot)
+			c.Out.P2(c.ObjSelectedInterface)
+		}
+	}
+	if var5 == 465 {
+		c.Out.P1Isaac(155)
+		c.Out.P2(var4)
+		var22 = component.Instances[var4]
+		if var22.Scripts != nil && var22.Scripts[0][0] == 5 {
+			var8 = var22.Scripts[0][1]
+			c.Varps[var8] = 1 - c.Varps[var8]
+			c.UpdateVarp(var8)
+			c.RedrawSidebar = true
+		}
+	}
+	if var5 == 406 || var5 == 436 || var5 == 557 || var5 == 556 {
+		var7 = c.MenuOption[arg1]
+		var8 = strings.Index(var7, "@whi@")
+		if var8 != -1 {
+			var20 = datastruct.ToBase37(strings.TrimSpace(var7[var8+5:]))
+			if var5 == 406 {
+				c.AddFriend(var20)
+			}
+			if var5 == 436 {
+				c.AddIgnore(var20)
+			}
+			if var5 == 557 {
+				c.RemoveFriend(var20)
+			}
+			if var5 == 556 {
+				c.RemoveIgnore(var20)
+			}
+		}
+	}
+	if var5 == 651 {
+		var19 = c.Players[var6]
+		if var19 != nil {
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var19.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var19.PathTileZ[0], 0, 0, 0)
+			c.CrossX = c.MouseClickX
+			c.CrossY = c.MouseClickY
+			c.CrossMode = 2
+			c.CrossCycle = 0
+			c.Out.P1Isaac(177)
+			c.Out.P2(var6)
+			c.Out.P2(c.ActiveSpellID)
+		}
+	}
+	c.ObjSelected = 0
+	c.SpellSelected = 0
+}
+
+func GetCombatLevelColorTag(arg0 int, arg2 int) string {
+	var3 := arg0 - arg2
+	if var3 < -9 {
+		return "@red@"
+	}
+	if var3 < -6 {
+		return "@or3@"
+	}
+	if var3 < -3 {
+		return "@or2@"
+	}
+	if var3 < 0 {
+		return "@or1@"
+	}
+	if var3 > 9 {
+		return "@gre@"
+	}
+	if var3 > 6 {
+		return "@gr3@"
+	}
+	if var3 > 3 {
+		return "@gr2@"
+	}
+	if var3 > 0 {
+		return "@gr1@"
+	}
+	return "@yel@"
+}
+
+func (c *Client) GetHost() string {
+	// TODO
+}
+
+func (c *Client) DrawMenu() {
+	var2 := c.MenuX
+	var3 := c.MenuY
+	var4 := c.MenuWidth
+	var5 := c.MenuHeight
+	var6 := 6116423
+	pix2d.FillRect(var3, var2, var6, var4, var5)
+	pix2d.FillRect(var3+1, var2+1, 0, var4-2, 16)
+	pix2d.DrawRect(var2+1, 0, var5-19, var3+18, var4-2)
+	c.FontBold12.DrawString(var2+3, var3+14, var6, "Choose Option")
+	var7 := c.MouseX
+	var8 := c.MouseY
+	switch c.MenuArea {
+	case 0:
+		var7 -= 8
+		var8 -= 11
+	case 1:
+		var7 -= 562
+		var8 -= 231
+	case 2:
+		var7 -= 22
+		var8 -= 375
+	}
+	for i := range c.MenuSize {
+		var10 := var3 + 31 + (c.MenuSize-1-i)*15
+		var11 := 16777215
+		if var7 > var2 && var7 < var2+var4 && var8 > var10-13 && var8 < var10+3 {
+			var11 = 16776960
+		}
+		c.FontBold12.DrawStringTaggable(var2+3, var10, c.MenuOption[i], true, var11)
+	}
+}
+
+func (c *Client) HandlePrivateChatInput(arg2 int) {
+	if c.SplitPrivateChat == 0 {
+		return
+	}
+	var4 := 0
+	if c.SystemUpdateTimer != 0 {
+		var4 = 1
+	}
+	for i := range 100 {
+		if c.MessageText[i] != "" {
+			var6 := c.MessageType[i]
+			if (var6 == 3 || var6 == 7) && (var6 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+				var7 := 329 - var4*13
+				if c.MouseX > 8 && c.MouseX < 520 && arg2-11 > var7-10 && arg2-11 <= var7+3 {
+					if c.Rights {
+						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + c.MessageSender[i]
+						c.MenuAction[c.MenuSize] = 2034
+						c.MenuSize++
+					}
+					c.MenuOption[c.MenuSize] = "Add ignore @whi@" + c.MessageSender[i]
+					c.MenuAction[c.MenuSize] = 2436
+					c.MenuSize++
+					c.MenuOption[c.MenuSize] = "Add friend @whi@" + c.MessageSender[i]
+					c.MenuAction[c.MenuSize] = 2406
+					c.MenuSize++
+				}
+				var4++
+				if var4 >= 5 {
+					return
+				}
+			}
+			if (var6 == 5 || var6 == 6) && c.PrivateChatSetting < 2 {
+				var4++
+				if var4 >= 5 {
+					return
+				}
+			}
+		}
+	}
+}
+
+func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
+	var3 := arg1.ClientCode
+	if var3 >= 1 && var3 <= 100 {
+		var3--
+		if var3 >= c.FriendCount {
+			arg1.Text = ""
+			arg1.ButtonType = 0
+		} else {
+			arg1.Text = c.FriendName[var3]
+			arg1.ButtonType = 1
+		}
+	} else if var3 >= 101 && var3 <= 200 {
+		var3 -= 101
+		if var3 >= c.FriendCount {
+			arg1.Text = ""
+			arg1.ButtonType = 0
+		} else {
+			if c.FriendWorld[var3] == 0 {
+				arg1.Text = "@red@Offline"
+			} else if c.FriendWorld[var3] == NodeID {
+				arg1.Text = "@gre@World-" + strconv.Itoa(c.FriendWorld[var3]-9)
+			} else {
+				arg1.Text = "@yel@World-" + strconv.Itoa(c.FriendWorld[var3]-9)
+			}
+			arg1.ButtonType = 1
+		}
+	} else if var3 == 203 {
+		arg1.Scroll = c.FriendCount*15 + 20
+		if arg1.Scroll <= arg1.Height {
+			arg1.Scroll = arg1.Height + 1
+		}
+	} else if var3 >= 401 && var3 <= 500 {
+		var3 -= 401
+		if var3 >= c.IgnoreCount {
+			arg1.Text = ""
+			arg1.ButtonType = 0
+		} else {
+			arg1.Text = datastruct.FormatName(datastruct.FromBase37(c.IgnoreName37[var3]))
+			arg1.ButtonType = 1
+		}
+	} else if var3 == 503 {
+		arg1.Scroll = c.IgnoreCount*15 + 20
+		if arg1.Scroll <= arg1.Height {
+			arg1.Scroll = arg1.Height + 1
+		}
+	} else if var3 == 327 {
+		arg1.Xan = 150
+		arg1.Yan = int(math.Sin(float64(LoopCycle)/40.0)*256.0) & 0x7FF
+		if c.UpdateDesignModel {
+			c.UpdateDesignModel = false
+			var9 := make([]*model.Model, 7)
+			var5 := 0
+			for i := range 7 {
+				var7 := c.DesignIdentikits[i]
+				if var7 >= 0 {
+					var9[var5] = idktype.Instances[var7].GetModel()
+					var5++
+				}
+			}
+			var10 := model.NewModel2(var9, var5)
+			for i := range 5 {
+				if c.DesignColors[i] != 0 {
+					var10.Recolor(Field1307[i][0], Field1307[i][c.DesignColors[i]])
+					if i == 1 {
+						var10.Recolor(Field1438[0], Field1438[c.DesignColors[i]])
+					}
+				}
+			}
+			var10.CreateLabelReferences()
+			var10.ApplyTransform(seqtype.Instances[c.LocalPlayer.SeqStandID].Frames[0])
+			var10.CalculateNormals(64, 850, -30, -50, -30, true)
+			arg1.Model = var10
+		}
+	} else if var3 == 324 {
+		if c.GenderButtonImage0 == nil {
+			c.GenderButtonImage0 = arg1.Graphic
+			c.GenderButtonImage1 = arg1.ActiveGraphic
+		}
+		if c.DesignGenderMale {
+			arg1.Graphic = c.GenderButtonImage1
+		} else {
+			arg1.Graphic = c.GenderButtonImage0
+		}
+	} else if var3 == 325 {
+		if c.GenderButtonImage0 == nil {
+			c.GenderButtonImage0 = arg1.Graphic
+			c.GenderButtonImage1 = arg1.ActiveGraphic
+		}
+		if c.DesignGenderMale {
+			arg1.Graphic = c.GenderButtonImage0
+		} else {
+			arg1.Graphic = c.GenderButtonImage1
+		}
+	} else if var3 == 600 {
+		arg1.Text = c.ReportAbuseInput
+		if LoopCycle%20 < 10 {
+			arg1.Text = arg1.Text + "|"
+		} else {
+			arg1.Text = arg1.Text + " "
+		}
+	} else {
+		if var3 == 613 {
+			if !c.Rights {
+				arg1.Text = ""
+			} else if c.ReportAbuseMuteOption {
+				arg1.Colour = 16711680
+				arg1.Text = "Moderator option: Mute player for 48 hours: <ON>"
+			} else {
+				arg1.Colour = 16777215
+				arg1.Text = "Moderator option: Mute player for 48 hours: <OFF>"
+			}
+		}
+		var4 := ""
+		if var3 == 650 || var3 == 655 {
+			if c.LastAddress == 0 {
+				arg1.Text = ""
+			} else {
+				if c.DaysSinceLastLogin == 0 {
+					var4 = "earlier today"
+				} else if c.DaysSinceLastLogin == 1 {
+					var4 = "yesterday"
+				} else {
+					var4 = strconv.Itoa(c.DaysSinceLastLogin) + " days ago"
+				}
+				arg1.Text = "You last logged in " + var4 + " from: " + signlink.DNS
+			}
+		}
+		if var3 == 651 {
+			if c.UnreadMessages == 0 {
+				arg1.Text = "0 unread messages"
+				arg1.Colour = 16776960
+			}
+			if c.UnreadMessages == 1 {
+				arg1.Text = "1 unread message"
+				arg1.Colour = 65280
+			}
+			if c.UnreadMessages > 1 {
+				arg1.Text = strconv.Itoa(c.UnreadMessages) + " unread messages"
+				arg1.Colour = 65280
+			}
+		}
+		if var3 == 652 {
+			if c.DaysSinceRecoveriesChanged == 201 {
+				arg1.Text = ""
+			} else if c.DaysSinceRecoveriesChanged == 200 {
+				arg1.Text = "You have not yet set any password recovery questions."
+			} else {
+				if c.DaysSinceRecoveriesChanged == 0 {
+					var4 = "Earlier today"
+				} else if c.DaysSinceRecoveriesChanged == 1 {
+					var4 = "Yesterday"
+				} else {
+					var4 = strconv.Itoa(c.DaysSinceRecoveriesChanged) + " days ago"
+				}
+				arg1.Text = var4 + " you changed your recovery questions"
+			}
+		}
+		if var3 == 653 {
+			if c.DaysSinceRecoveriesChanged == 201 {
+				arg1.Text = ""
+			} else if c.DaysSinceRecoveriesChanged == 200 {
+				arg1.Text = "We strongly recommend you do so now to secure your account."
+			} else {
+				arg1.Text = "If you do not remember making this change then cancel it immediately"
+			}
+		}
+		if var3 == 654 {
+			if c.DaysSinceRecoveriesChanged == 201 {
+				arg1.Text = ""
+			} else if c.DaysSinceRecoveriesChanged == 200 {
+				arg1.Text = "Do this from the 'account management' area on our front webpage"
+			} else {
+				arg1.Text = "Do this from the 'account management' area on our front webpage"
+			}
+		}
+	}
+}
+
+func (c *Client) SaveWave(arg0 []byte, arg1 int) bool {
+	if arg0 == nil {
+		return true
+	}
+	// TODO: signlink.wavesave
+}
+
+func (c *Client) ReplayWave() bool {
+	// TODO: signlink.wavereplay
+}
+
+func (c *Client) SetWaveVolume(vol int) {
+	signlink.WaveVol = vol
+}
+
+func (c *Client) GetNpcPosNewVis(arg1 *io.Packet, arg2 int) {
+	for arg1.BitPos+21 < arg2*8 {
+		var4 := arg1.GBit(13)
+		if var4 == 8191 {
+			break
+		}
+		if c.NPCs[var4] == nil {
+			c.NPCs[var4] = entity.NewNpcEntity()
+		}
+		var5 := c.NPCs[var4]
+		c.NPCIDs[c.NPCCount] = var4
+		c.NPCCount++
+		var5.Cycle = LoopCycle
+		var5.Type = npctype.Get(arg1.GBit(11))
+		var5.Size = int(var5.Type.Size)
+		var5.SeqWalkID = var5.Type.WalkAnim
+		var5.SeqTurnAroundID = var5.Type.WalkAnimB
+		var5.SeqTurnLeftID = var5.Type.WalkAnimR
+		var5.SeqTurnRightId = var5.Type.WalkAnimL
+		var5.SeqStandID = var5.Type.ReadyAnim
+		var6 := arg1.GBit(5)
+		if var6 > 15 {
+			var6 -= 32
+		}
+		var7 := arg1.GBit(5)
+		if var7 > 15 {
+			var7 -= 32
+		}
+		var5.Teleport(false, c.LocalPlayer.PathTileX[0]+var6, c.LocalPlayer.PathTileZ[0]+var7)
+		var8 := arg1.GBit(1)
+		if var8 == 1 {
+			c.EntityUpdateIDs[c.EntityUpdateCount] = var4
+			c.EntityUpdateCount++
+		}
+	}
+	arg1.AccessBytes()
+}
+
+func (c *Client) HandleInterfaceAction(arg1 *component.Component) bool {
+	var3 := arg1.ClientCode
+	switch var3 {
+	case 201:
+		c.RedrawChatback = true
+		c.ChatbackInputOpen = false
+		c.ShowSocialInput = true
+		c.SocialInput = ""
+		c.SocialAction = 1
+		c.SocialMessage = "Enter name of friend to add to list"
+	case 202:
+		c.RedrawChatback = true
+		c.ChatbackInputOpen = false
+		c.ShowSocialInput = true
+		c.SocialInput = ""
+		c.SocialAction = 2
+		c.SocialMessage = "Enter name of friend to delete from list"
+	case 205:
+		c.IdleTimeout = 250
+		return true
+	case 501:
+		c.RedrawChatback = true
+		c.ChatbackInputOpen = false
+		c.ShowSocialInput = true
+		c.SocialInput = ""
+		c.SocialAction = 4
+		c.SocialMessage = "Enter name of player to add to list"
+	case 502:
+		c.RedrawChatback = true
+		c.ChatbackInputOpen = false
+		c.ShowSocialInput = true
+		c.SocialInput = ""
+		c.SocialAction = 5
+		c.SocialMessage = "Enter name of player to delete from list"
+	}
+	var4 := 0
+	var5 := 0
+	var6 := 0
+	if var3 >= 300 && var3 <= 313 {
+		var4 = (var3 - 300) / 2
+		var5 = var3 & 0x1
+		var6 = c.DesignIdentikits[var4]
+		if var6 != -1 {
+			for {
+				if var5 == 0 {
+					var6--
+					if var6 < 0 {
+						var6 = idktype.Count - 1
+					}
+				}
+				if var5 == 1 {
+					var6++
+					if var6 >= idktype.Count {
+						var6 = 0
+					}
+				}
+				tmp := 0
+				if !c.DesignGenderMale {
+					tmp = 7
+				}
+				if !idktype.Instances[var6].Disable && idktype.Instances[var6].Type == var4+tmp {
+					c.DesignIdentikits[var4] = var6
+					c.UpdateDesignModel = true
+					break
+				}
+			}
+		}
+	}
+	if var3 >= 314 && var3 <= 323 {
+		var4 = (var3 - 314) / 2
+		var5 = var3 & 0x1
+		var6 = c.DesignColors[var4]
+		if var5 == 0 {
+			var6--
+			if var6 < 0 {
+				var6 = len(Field1307[var4]) - 1
+			}
+		}
+		if var5 == 1 {
+			var6++
+			if var6 >= len(Field1307[var4]) {
+				var6 = 0
+			}
+		}
+		c.DesignColors[var4] = var6
+		c.UpdateDesignModel = true
+	}
+	if var3 == 324 && !c.DesignGenderMale {
+		c.DesignGenderMale = true
+		c.ValidateCharacterDesign()
+	}
+	if var3 == 325 && c.DesignGenderMale {
+		c.DesignGenderMale = false
+		c.ValidateCharacterDesign()
+	}
+	if var3 == 326 {
+		c.Out.P1Isaac(52)
+		if c.DesignGenderMale {
+			c.Out.P1(0)
+		} else {
+			c.Out.P1(1)
+		}
+		for i := range 7 {
+			c.Out.P1(c.DesignIdentikits[i])
+		}
+		for i := range 5 {
+			c.Out.P1(c.DesignColors[i])
+		}
+		return true
+	}
+	if var3 == 613 {
+		c.ReportAbuseMuteOption = !c.ReportAbuseMuteOption
+	}
+	if var3 >= 601 && var3 <= 612 {
+		c.CloseInterfaces()
+		if len(c.ReportAbuseInput) > 0 {
+			c.Out.P1Isaac(190)
+			c.Out.P8(datastruct.ToBase37(c.ReportAbuseInput))
+			c.Out.P1(var3 - 601)
+			if c.ReportAbuseMuteOption {
+				c.Out.P1(1)
+			} else {
+				c.Out.P1(0)
+			}
+		}
+	}
+	return false
+}
+
+func (c *Client) Load() {
+	if signlink.SunJava {
+		c.MinDel = 5
+	}
+	if !LowMemory {
+		c.StartMidiThread = true
+		c.MidiThreadActive = true
+		//c.startthread(this, 2) // TODO: this.startthread
+		c.SetMidi(12345678, "scape_main", 40000)
+	}
+	if Started {
+		c.ErrorStarted = true
+		return
+	}
+	Started = true
+	var1 := false
+	var2 := c.GetHost()
+	if strings.HasSuffix(var2, "jagex.com") {
+		var1 = true
+	}
+	if strings.HasSuffix(var2, "runescape.com") {
+		var1 = true
+	}
+	if strings.HasSuffix(var2, "192.168.1.2") {
+		var1 = true
+	}
+	if strings.HasSuffix(var2, "192.168.1.249") {
+		var1 = true
+	}
+	if strings.HasSuffix(var2, "192.168.1.252") {
+		var1 = true
+	}
+	if strings.HasSuffix(var2, "192.168.1.253") {
+		var1 = true
+	}
+	if strings.HasSuffix(var2, "192.168.1.254") {
+		var1 = true
+	}
+	if strings.HasSuffix(var2, "127.0.0.1") {
+		var1 = true
+	}
+	if !var1 {
+		c.ErrorHost = true
+		return
+	}
+	// TODO: try/except - recover panic?
+	var3 := 5
+	c.ArchiveChecksum[8] = 0
+	for c.ArchiveChecksum[8] == 0 {
+		c.DrawProgress("Connecting to fileserver", 10)
+		// TODO: try/except - error loading retry
+		var35 := c.OpenURL("crc" + strconv.Itoa(int(rand.Float64()*9.9999999e7)))
+		var5 := io.NewPacket(make([]byte, 36))
+		var35.ReadFully(var5.Data, 0, 36)
+		for i := range 9 {
+			c.ArchiveChecksum[i] = var5.G4()
+		}
+		var35.Close()
+	}
+	c.ArchiveTitle = c.LoadArchive("title screen", c.ArchiveChecksum[1], "title", 10)
+	c.FontPlain11 = pixfont.NewPixFont(c.ArchiveTitle, "p11")
+	c.FontPlain12 = pixfont.NewPixFont(c.ArchiveTitle, "p12")
+	c.FontBold12 = pixfont.NewPixFont(c.ArchiveTitle, "b12")
+	c.FontQuill8 = pixfont.NewPixFont(c.ArchiveTitle, "q8")
+	c.LoadTitleBackground()
+	c.LoadTitleImages()
+	var36 := c.LoadArchive("config", c.ArchiveChecksum[2], "config", 15)
+	var37 := c.LoadArchive("interface", c.ArchiveChecksum[3], "interface", 20)
+	var38 := c.LoadArchive("2d graphics", c.ArchiveChecksum[4], "media", 30)
+	var7 := c.LoadArchive("3d graphics", c.ArchiveChecksum[5], "models", 40)
+	var8 := c.LoadArchive("textures", c.ArchiveChecksum[6], "textures", 60)
+	var9 := c.LoadArchive("chat system", c.ArchiveChecksum[7], "wordenc", 65)
+	var10 := c.LoadArchive("sound effects", c.ArchiveChecksum[8], "sounds", 70)
+	c.LevelTileFlags = make([][][]byte, 4)
+	for i := range c.LevelTileFlags {
+		c.LevelTileFlags[i] = make([][]byte, 104)
+		for j := range c.LevelTileFlags[i] {
+			c.LevelTileFlags[i][j] = make([]byte, 104)
+		}
+	}
+	c.LevelHeightmap = make([][][]int, 4)
+	for i := range c.LevelHeightmap {
+		c.LevelHeightmap[i] = make([][]int, 105)
+		for j := range c.LevelHeightmap[i] {
+			c.LevelHeightmap[i][j] = make([]int, 105)
+		}
+	}
+	c.Scene = world3d.NewWorld3D(c.LevelHeightmap, 104, 4, 104)
+	for i := range 4 {
+		c.LevelCollisionMap[i] = dash3d.NewCollisionMap(104, 104)
+	}
+	c.ImageMinimap = pix32.NewPix321(512, 512)
+	c.DrawProgress("Unpacking media", 75)
+	c.ImageInvback = pix8.NewPix8(var38, "invback", 0)
+	c.ImageChatback = pix8.NewPix8(var38, "chatback", 0)
+	c.ImageMapback = pix8.NewPix8(var38, "mapback", 0)
+	c.ImageBackbase1 = pix8.NewPix8(var38, "backbase1", 0)
+	c.ImageBackbase2 = pix8.NewPix8(var38, "backbase2", 0)
+	c.ImageBackhmid1 = pix8.NewPix8(var38, "backhmid1", 0)
+	for i := range 13 {
+		c.ImageSideIcons[i] = pix8.NewPix8(var8, "sideicons", i)
+	}
+	c.ImageCompass = pix32.NewPix323(var38, "compass", 0)
+	for i := range 50 {
+		c.ImageMapscene[i] = pix8.NewPix8(var38, "mapscene", i)
+	}
+	for i := range 50 {
+		c.ImageMapFunction[i] = pix32.NewPix323(var8, "mapfunction", i)
+	}
+	for i := range 20 {
+		c.ImageHitmarks[i] = pix32.NewPix323(var38, "hitmarks", i)
+	}
+	for i := range 20 {
+		c.ImageHeadIcons[i] = pix32.NewPix323(var38, "headicons", i)
+	}
+	c.ImageMapflag = pix32.NewPix323(var38, "mapflag", 0)
+	for i := range 8 {
+		c.ImageCrosses[i] = pix32.NewPix323(var38, "cross", i)
+	}
+	c.ImageMapdot0 = pix32.NewPix323(var38, "mapdots", 0)
+	c.ImageMapdot1 = pix32.NewPix323(var38, "mapdots", 1)
+	c.ImageMapdot2 = pix32.NewPix323(var38, "mapdots", 2)
+	c.ImageMapdot3 = pix32.NewPix323(var38, "mapdots", 3)
+	c.ImageScrollbar0 = pix8.NewPix8(var38, "scrollbar", 0)
+	c.ImageScrollbar1 = pix8.NewPix8(var38, "scrollbar", 1)
+	c.ImageRedstone1 = pix8.NewPix8(var38, "redstone1", 0)
+	c.ImageRedstone2 = pix8.NewPix8(var38, "redstone2", 0)
+	c.ImageRedstone3 = pix8.NewPix8(var38, "redstone3", 0)
+	c.ImageRedstone1h = pix8.NewPix8(var38, "redstone1", 0)
+	c.ImageRedstone1h.FlipHorizontally()
+	c.ImageRedstone2h = pix8.NewPix8(var38, "redstone2", 0)
+	c.ImageRedstone2h.FlipHorizontally()
+	c.ImageRedstone1v = pix8.NewPix8(var38, "redstone1", 0)
+	c.ImageRedstone1v.FlipVertically()
+	c.ImageRedstone2v = pix8.NewPix8(var38, "redstone2", 0)
+	c.ImageRedstone2v.FlipVertically()
+	c.ImageRedstone3v = pix8.NewPix8(var38, "redstone3", 0)
+	c.ImageRedstone3v.FlipVertically()
+	c.ImageRedstone1hv = pix8.NewPix8(var38, "redstone1", 0)
+	c.ImageRedstone1hv.FlipHorizontally()
+	c.ImageRedstone1hv.FlipVertically()
+	c.ImageRedstone2hv = pix8.NewPix8(var38, "redstone2", 0)
+	c.ImageRedstone2hv.FlipHorizontally()
+	c.ImageRedstone2hv.FlipVertically()
+	var14 := pix32.NewPix323(var38, "backleft1", 0)
+	//c.AreaBackleft1 = // TODO: pixmap
+	var14.BlitOpaque(0, 0)
+	var39 := pix32.NewPix323(var38, "backleft2", 0)
+	// TODO: pixmap
+	var39.BlitOpaque(0, 0)
+	var40 := pix32.NewPix323(var38, "backright1", 0)
+	// TODO: pixmap
+	var40.BlitOpaque(0, 0)
+	var41 := pix32.NewPix323(var38, "backright2", 0)
+	// TODO: pixmap
+	var41.BlitOpaque(0, 0)
+	var42 := pix32.NewPix323(var38, "backtop1", 0)
+	// TODO: pixmap
+	var42.BlitOpaque(0, 0)
+	var43 := pix32.NewPix323(var38, "backtop2", 0)
+	// TODO: pixmap
+	var43.BlitOpaque(0, 0)
+	var44 := pix32.NewPix323(var38, "backvmid1", 0)
+	// TODO: pixmap
+	var44.BlitOpaque(0, 0)
+	var45 := pix32.NewPix323(var38, "backvmid2", 0)
+	// TODO: pixmap
+	var45.BlitOpaque(0, 0)
+	var46 := pix32.NewPix323(var38, "backvmid3", 0)
+	// TODO: pixmap
+	var46.BlitOpaque(0, 0)
+	var47 := pix32.NewPix323(var38, "backhmid2", 0)
+	// TODO: pixmap
+	var47.BlitOpaque(0, 0)
+	var15 := int(rand.Float64()*21.0) - 10
+	var16 := int(rand.Float64()*21.0) - 10
+	var17 := int(rand.Float64()*21.0) - 10
+	var18 := int(rand.Float64()*41.0) - 20
+	for i := range 50 {
+		if c.ImageMapFunction[i] != nil {
+			c.ImageMapFunction[i].Translate(var15+var18, var16+var18, var17+var18)
+		}
+		if c.ImageMapscene[i] != nil {
+			c.ImageMapscene[i].Translate(var15+var18, var16+var18, var17+var18)
+		}
+	}
+	c.DrawProgress("Unpacking textures", 80)
+	pix3d.UnpackTextures(var8)
+	pix3d.SetBrightness(0.8)
+	pix3d.InitPool(20)
+	c.DrawProgress("Unpacking models", 83)
+	model.Unpack(var7)
+	animbase.Unpack(var7)
+	animframe.Unpack(var7)
+	c.DrawProgress("Unpacking config", 86)
+	seqtype.Unpack(var36)
+	loctype.Unpack(var36)
+	flotype.Unpack(var36)
+	objtype.Unpack(var36)
+	npctype.Unpack(var36)
+	idktype.Unpack(var36)
+	spotanimtype.Unpack(var36)
+	varptype.Unpack(var36)
+	objtype.MembersWorld = Members
+	if !LowMemory {
+		c.DrawProgress("Unpacking sounds", 90)
+		var20 := var10.Read("sounds.dat", nil)
+		var21 := io.NewPacket(var20)
+		// TODO: wave.unpack
+	}
+	c.DrawProgress("Unpacking interfaces", 92)
+	var48 := []*pixfont.PixFont{c.FontPlain11, c.FontPlain12, c.FontBold12, c.FontQuill8}
+	component.Unpack(var38, var48, var37)
+	c.DrawProgress("Preparing game engine", 97)
+	for i := range 33 {
+		var22 := 999
+		var23 := 0
+		for j := range 35 {
+			if c.ImageMapback.Pixels[j+i*c.ImageMapback.Width] == 0 {
+				if var22 == 999 {
+					var22 = j
+				}
+			} else if var22 != 999 {
+				var23 = j
+				break
+			}
+		}
+		c.CompassMaskLineOffsets[i] = var22
+		c.CompassMaskLineLengths[i] = var23 - var22
+	}
+	for i := 9; i < 160; i++ {
+		var23 := 999
+		var24 := 0
+		for j := 10; j < 168; j++ {
+			if c.ImageMapback.Pixels[j+i*c.ImageMapback.Width] == 0 && (j > 34 || i > 34) {
+				if var23 == 999 {
+					var23 = j
+				}
+			} else if var23 != 999 {
+				var24 = j
+				break
+			}
+		}
+		c.MinimapMaskLineOffsets[i-9] = var23 - 21
+		c.MinimapMaskLineLengths[i-9] = var24 - var23
+	}
+	pix3d.Init3D(96, 479)
+	c.AreaChatbackOffsets = pix3d.LineOffset
+	pix3d.Init3D(261, 190)
+	c.AreaSidebarOffsets = pix3d.LineOffset
+	pix3d.Init3D(334, 512)
+	c.AreaViewportOffsets = pix3d.LineOffset
+	var50 := make([]int, 9)
+	for i := range 9 {
+		var25 := i*32 + 128 + 15
+		var26 := var25*3 + 600
+		var27 := pix3d.SinTable[var25]
+		var50[i] = var26 * var27 >> 16
+	}
+	world3d.Init(var50, 800, 512, 334, 500)
+	// TODO: wordfilter.unpack
+}
+
+func (c *Client) HandleInput() {
+	if c.ObjDragArea != 0 {
+		return
+	}
+	c.MenuOption[0] = "Cancel"
+	c.MenuAction[0] = 1252
+	c.MenuSize = 1
+	c.HandlePrivateChatInput(c.MouseY)
+	c.LastHoveredInterfaceID = 0
+	if c.MouseX > 8 && c.MouseY > 11 && c.MouseX < 520 && c.MouseY < 345 {
+		if c.ViewportInterfaceID == -1 {
+			c.HandleViewportOptions()
+		} else {
+			c.HandleInterfaceInput(c.MouseY, c.MouseX, 11, component.Instances[c.ViewportInterfaceID], 8, 0)
+		}
+	}
+	if c.LastHoveredInterfaceID != c.ViewportHoveredInterfaceIndex {
+		c.ViewportHoveredInterfaceIndex = c.LastHoveredInterfaceID
+	}
+	c.LastHoveredInterfaceID = 0
+	if c.MouseX > 562 && c.MouseY > 231 && c.MouseX < 752 && c.MouseY < 492 {
+		if c.SidebarInterfaceID != -1 {
+			c.HandleInterfaceInput(c.MouseY, c.MouseX, 231, component.Instances[c.SidebarInterfaceID], 562, 0)
+		} else if c.TabInterfaceID[c.SelectedTab] != -1 {
+			c.HandleInterfaceInput(c.MouseY, c.MouseX, 231, component.Instances[c.TabInterfaceID[c.SelectedTab]], 562, 0)
+		}
+	}
+	if c.LastHoveredInterfaceID != c.SidebarHoveredInterfaceIndex {
+		c.RedrawSidebar = true
+		c.SidebarHoveredInterfaceIndex = c.LastHoveredInterfaceID
+	}
+	c.LastHoveredInterfaceID = 0
+	if c.MouseX > 22 && c.MouseY > 375 && c.MouseX < 431 && c.MouseY < 471 {
+		if c.ChatInterfaceID == -1 {
+			c.HandleChatMouseInput(c.MouseY-375, 0)
+		} else {
+			c.HandleInterfaceInput(c.MouseY, c.MouseX, 375, component.Instances[c.ChatInterfaceID], 22, 0)
+		}
+	}
+	if c.ChatInterfaceID != -1 && c.LastHoveredInterfaceID != c.ChatHoveredInterfaceIndex {
+		c.RedrawChatback = true
+		c.ChatHoveredInterfaceIndex = c.LastHoveredInterfaceID
+	}
+	var2 := false
+	for !var2 {
+		var2 = true
+		for i := range c.MenuSize - 1 {
+			if c.MenuAction[i] < 1000 && c.MenuAction[i+1] > 1000 {
+				var4 := c.MenuOption[i]
+				c.MenuOption[i] = c.MenuOption[i+1]
+				c.MenuOption[i+1] = var4
+				var5 := c.MenuAction[i]
+				c.MenuAction[i] = c.MenuAction[i+1]
+				c.MenuAction[i+1] = var5
+				var7 := c.MenuParamB[i]
+				c.MenuParamB[i] = c.MenuParamB[i+1]
+				c.MenuParamB[i+1] = var7
+				var8 := c.MenuParamC[i]
+				c.MenuParamC[i] = c.MenuParamC[i+1]
+				c.MenuParamC[i+1] = var8
+				var9 := c.MenuParamA[i]
+				c.MenuParamA[i] = c.MenuParamA[i+1]
+				c.MenuParamA[i+1] = var9
+				var2 = false
+			}
+		}
+	}
+}
+
+func (c *Client) ClearCaches() {
+	loctype.ModelCacheStatic.Clear()
+	loctype.ModelCacheDynamic.Clear()
+	npctype.ModelCache.Clear()
+	objtype.ModelCache.Clear()
+	objtype.IconCache.Clear()
+	playerentity.model
 }

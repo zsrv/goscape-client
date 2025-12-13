@@ -147,7 +147,7 @@ func Unload() {
 	Reciprocal16 = nil
 }
 
-func Unpack(arg1 io.Jagfile) {
+func Unpack(arg1 *io.Jagfile) {
 	Head = io.NewPacket(arg1.Read("ob_head.dat", nil))
 	Face1 = io.NewPacket(arg1.Read("ob_face1.dat", nil))
 	Face2 = io.NewPacket(arg1.Read("ob_face2.dat", nil))

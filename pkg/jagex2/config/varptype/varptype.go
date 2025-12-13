@@ -34,7 +34,7 @@ func NewVarpType() *VarpType {
 	}
 }
 
-func Unpack(arg0 io.Jagfile) {
+func Unpack(arg0 *io.Jagfile) {
 	var2 := io.NewPacket(arg0.Read("varp.dat", nil))
 	Code3Count = 0
 	Count = var2.G2()

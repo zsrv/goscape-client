@@ -11,6 +11,14 @@ import (
 	"goscape-client/pkg/jagex2/io"
 )
 
+var (
+	ModelCache *datastruct.LruCache[*model.Model]
+)
+
+func init() {
+	ModelCache = datastruct.NewLruCache[*model.Model](200)
+}
+
 type PlayerEntity struct {
 	PathingEntity
 
@@ -33,7 +41,6 @@ type PlayerEntity struct {
 	MinTileZ           int
 	MaxTileX           int
 	LowMemory          bool
-	ModelCache         *datastruct.LruCache[*model.Model] // TODO
 	MaxTileZ           int
 }
 
@@ -41,7 +48,6 @@ func NewPlayerEntity() *PlayerEntity {
 	return &PlayerEntity{
 		Appearances: make([]int, 12),
 		Colors:      make([]int, 5),
-		ModelCache:  datastruct.NewLruCache[*model.Model](200),
 	}
 }
 
@@ -201,7 +207,7 @@ func (e *PlayerEntity) GetSequencedModel() *model.Model {
 	} else if e.SecondarySeqID >= 0 {
 		var4 = seqtype.Instances[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
 	}
-	var15 := e.ModelCache.Get(var2).Value
+	var15 := ModelCache.Get(var2).Value
 	if var15 == nil {
 		var9 := make([]*model.Model, 12)
 		var10 := 0

@@ -111,7 +111,7 @@ func InitPool(arg0 int) {
 	}
 }
 
-func UnpackTextures(arg1 io.Jagfile) {
+func UnpackTextures(arg1 *io.Jagfile) {
 	TextureCount = 0
 	for i := range 50 {
 		Textures[i] = pix8.NewPix8(arg1, strconv.Itoa(i), 0)

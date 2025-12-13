@@ -14,7 +14,7 @@ func NewAnimBase() *AnimBase {
 	return &AnimBase{}
 }
 
-func Unpack(arg1 io.Jagfile) {
+func Unpack(arg1 *io.Jagfile) {
 	var2 := io.NewPacket(arg1.Read("base_head.dat", nil))
 	var3 := io.NewPacket(arg1.Read("base_type.dat", nil))
 	var4 := io.NewPacket(arg1.Read("base_label.dat", nil))
