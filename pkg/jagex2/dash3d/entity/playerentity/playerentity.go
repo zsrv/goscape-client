@@ -1,4 +1,4 @@
-package entity
+package playerentity
 
 import (
 	"goscape-client/pkg/deob/client"
@@ -6,6 +6,7 @@ import (
 	"goscape-client/pkg/jagex2/config/objtype"
 	"goscape-client/pkg/jagex2/config/seqtype"
 	"goscape-client/pkg/jagex2/config/spotanimtype"
+	"goscape-client/pkg/jagex2/dash3d/entity"
 	"goscape-client/pkg/jagex2/datastruct"
 	"goscape-client/pkg/jagex2/graphics/model"
 	"goscape-client/pkg/jagex2/io"
@@ -20,7 +21,7 @@ func init() {
 }
 
 type PlayerEntity struct {
-	PathingEntity
+	entity.PathingEntity
 
 	Name               string
 	Visible            bool

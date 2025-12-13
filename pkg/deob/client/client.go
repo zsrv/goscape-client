@@ -20,6 +20,7 @@ import (
 	"goscape-client/pkg/jagex2/config/varptype"
 	"goscape-client/pkg/jagex2/dash3d"
 	"goscape-client/pkg/jagex2/dash3d/entity"
+	"goscape-client/pkg/jagex2/dash3d/entity/playerentity"
 	"goscape-client/pkg/jagex2/dash3d/world"
 	"goscape-client/pkg/jagex2/dash3d/world3d"
 	"goscape-client/pkg/jagex2/datastruct"
@@ -120,7 +121,7 @@ type Client struct {
 	OrbitCameraPitch          int
 	MAX_PLAYER_COUNT          int
 	LOCAL_PLAYER_INDEX        int
-	Players                   []*entity.PlayerEntity
+	Players                   []*playerentity.PlayerEntity
 	PlayerIDs                 []int
 	EntityUpdateIDs           []int
 	PlayerAppearanceBuffer    []*io.Packet
@@ -353,7 +354,7 @@ type Client struct {
 	SocialName37                  int64
 	ServerSeed                    int64
 	Scene                         *world3d.World3D
-	LocalPlayer                   *entity.PlayerEntity
+	LocalPlayer                   *playerentity.PlayerEntity
 	GenderButtonImage0            *pix32.Pix32
 	GenderButtonImage1            *pix32.Pix32
 	ImageFlamesLeft               *pix32.Pix32
@@ -541,7 +542,7 @@ func NewClient() *Client {
 	for i := range c.BFSCost {
 		c.BFSCost[i] = make([]int, 104)
 	}
-	c.Players = make([]*entity.PlayerEntity, c.MAX_PLAYER_COUNT)
+	c.Players = make([]*playerentity.PlayerEntity, c.MAX_PLAYER_COUNT)
 	c.PlayerIDs = make([]int, c.MAX_PLAYER_COUNT)
 	c.EntityUpdateIDs = make([]int, c.MAX_PLAYER_COUNT)
 	c.PlayerAppearanceBuffer = make([]*io.Packet, c.MAX_PLAYER_COUNT)
@@ -600,7 +601,7 @@ func (c *Client) Draw2DEntityElements() {
 			var3 = c.NPCs[c.NPCIDs[i-c.PlayerCount]]
 		}
 		if var3 != nil && var3.IsVisible() {
-			var5 := var3.(*entity.PlayerEntity) // mine - moved here from below
+			var5 := var3.(*playerentity.PlayerEntity) // mine - moved here from below
 			if i < c.PlayerCount {
 				var4 = 30
 				if var5.HeadIcons != 0 {
@@ -1186,7 +1187,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 					var40 := arg1.G1B()
 					var41 := arg1.G1B()
 					var42 := arg1.G1B()
-					var var19 *entity.PlayerEntity
+					var var19 *playerentity.PlayerEntity
 					if var14 == c.LocalPID {
 						var19 = c.LocalPlayer
 					} else {
@@ -1862,7 +1863,7 @@ func (c *Client) PushPlayers() {
 		c.FlagSceneTileX = 0
 	}
 	for i := -1; i < c.PlayerCount; i++ {
-		var var3 *entity.PlayerEntity
+		var var3 *playerentity.PlayerEntity
 		var4 := 0
 		if i == -1 {
 			var3 = c.LocalPlayer
@@ -3112,7 +3113,7 @@ func (c *Client) GetPlayerNewVis(arg1 int, arg2 *io.Packet) {
 			break
 		}
 		if c.Players[var4] == nil {
-			c.Players[var4] = entity.NewPlayerEntity()
+			c.Players[var4] = playerentity.NewPlayerEntity()
 			if c.PlayerAppearanceBuffer[var4] != nil {
 				c.Players[var4].Read(c.PlayerAppearanceBuffer[var4])
 			}
@@ -3484,7 +3485,7 @@ func (c *Client) UpdateNpcs() {
 	}
 }
 
-func (c *Client) UpdatePlayerEntity(arg0 *entity.PlayerEntity) {
+func (c *Client) UpdatePlayerEntity(arg0 *playerentity.PlayerEntity) {
 	if arg0.X < 128 || arg0.Z < 128 || arg0.X >= 13184 || arg0.Z >= 13184 {
 		arg0.PrimarySeqID = -1
 		arg0.SpotanimID = -1
@@ -4276,7 +4277,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.Out.P2(c.ObjSelectedInterface)
 		}
 	}
-	var var19 *entity.PlayerEntity
+	var var19 *playerentity.PlayerEntity
 	if var5 == 1373 || var5 == 1544 || var5 == 151 || var5 == 1101 {
 		var19 = c.Players[var6]
 		if var19 != nil {
@@ -5409,5 +5410,6 @@ func (c *Client) ClearCaches() {
 	npctype.ModelCache.Clear()
 	objtype.ModelCache.Clear()
 	objtype.IconCache.Clear()
-	playerentity.model
+	playerentity.ModelCache.Clear()
+	spotanimtype.ModelCache.Clear()
 }
