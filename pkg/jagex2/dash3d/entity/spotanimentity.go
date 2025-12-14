@@ -2,10 +2,13 @@ package entity
 
 import (
 	"goscape-client/pkg/jagex2/config/spotanimtype"
+	"goscape-client/pkg/jagex2/datastruct"
 	"goscape-client/pkg/jagex2/graphics/model"
 )
 
 type SpotAnimEntity struct {
+	datastruct.Linkable[*SpotAnimEntity]
+
 	Type        *spotanimtype.SpotAnimType
 	StartCycle  int
 	Level       int

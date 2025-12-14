@@ -191,7 +191,7 @@ func (w *World) LoadGround(arg0 []byte, arg1, arg3, arg4, arg5 int) {
 	}
 }
 
-func (w *World) LoadLocations(arg0 []byte, arg1 *world3d.World3D, arg2 []*dash3d.CollisionMap, arg3 datastruct.LinkList[*entity.LocEntity], arg5 int, arg6 int) {
+func (w *World) LoadLocations(arg0 []byte, arg1 *world3d.World3D, arg2 []*dash3d.CollisionMap, arg3 *datastruct.LinkList[*entity.LocEntity], arg5 int, arg6 int) {
 	var8 := io.NewPacket(arg0)
 	var9 := -1
 	for {

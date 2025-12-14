@@ -37,7 +37,7 @@ type Packet struct {
 	Data   []byte
 	Pos    int
 	BitPos int
-	Random Isaac
+	Random *Isaac
 }
 
 func NewPacket(arg1 []byte) *Packet {
@@ -72,7 +72,7 @@ func Alloc(typ int) *Packet {
 	return NewPacket(make([]byte, 0, typ))
 }
 
-func (p *Packet) Release(arg0 byte) {
+func (p *Packet) Release() {
 	p.Pos = 0
 	if pool := packetPool(len(p.Data)); pool != nil {
 		pool.Put(p)

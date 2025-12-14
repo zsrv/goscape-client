@@ -6,7 +6,7 @@ import (
 
 func TestNew(t *testing.T) {
 	type args struct {
-		seed [4]int32
+		seed [4]int
 	}
 	tests := []struct {
 		name string
@@ -17,7 +17,7 @@ func TestNew(t *testing.T) {
 			// checks that isaac is shuffling correctly
 			name: "seed(0, 0, 0, 0)",
 			args: args{
-				seed: [4]int32{0, 0, 0, 0},
+				seed: [4]int{0, 0, 0, 0},
 			},
 			want: 1536048213,
 		},
@@ -25,7 +25,7 @@ func TestNew(t *testing.T) {
 			// checks that rsl was populated and that isaac is shuffling correctly
 			name: "seed(1, 2, 3, 4)",
 			args: args{
-				seed: [4]int32{1, 2, 3, 4},
+				seed: [4]int{1, 2, 3, 4},
 			},
 			want: -107094133,
 		},

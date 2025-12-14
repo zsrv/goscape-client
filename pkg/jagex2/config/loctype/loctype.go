@@ -82,14 +82,12 @@ func Unpack(arg0 *io.Jagfile) {
 	}
 }
 
-func Unload(arg0 bool) {
+func Unload() {
 	ModelCacheStatic = nil
 	ModelCacheDynamic = nil
-	if arg0 {
-		Offsets = nil
-		Cache = nil
-		Dat = nil
-	}
+	Offsets = nil
+	Cache = nil
+	Dat = nil
 }
 
 func Get(arg0 int) *LocType {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"goscape-client/pkg/jagex2/client"
+	"goscape-client/pkg/jagex2/client/inputtracking"
 	"goscape-client/pkg/jagex2/config/component"
 	"goscape-client/pkg/jagex2/config/flotype"
 	"goscape-client/pkg/jagex2/config/idktype"
@@ -605,7 +606,7 @@ func (c *Client) Draw2DEntityElements() {
 			if i < c.PlayerCount {
 				var4 = 30
 				if var5.HeadIcons != 0 {
-					c.ProjectFromGround(var5.Height+15, var5)
+					c.ProjectFromGround1(var5.Height+15, var5)
 					if c.ProjectX > -1 {
 						for j := range 8 {
 							if var5.HeadIcons&0x1<<j != 0 {
@@ -616,19 +617,19 @@ func (c *Client) Draw2DEntityElements() {
 					}
 				}
 				if i >= 0 && c.HintType == 10 && c.HintPlayer == c.PlayerIDs[i] {
-					c.ProjectFromGround(var5.Height+15, var5)
+					c.ProjectFromGround1(var5.Height+15, var5)
 					if c.ProjectX > -1 {
 						c.ImageHeadIcons[7].Draw(c.ProjectY-var4, c.ProjectX-12)
 					}
 				}
 			} else if c.HintType == 1 && c.HintNPC == c.NPCIDs[i-c.PlayerCount] && LoopCycle%20 < 10 {
-				c.ProjectFromGround(var5.Height+15, var5)
+				c.ProjectFromGround1(var5.Height+15, var5)
 				if c.ProjectX > -1 {
 					c.ImageHeadIcons[2].Draw(c.ProjectY-28, c.ProjectX-12)
 				}
 			}
 			if var5.Chat != "" && (i >= c.PlayerCount || c.PublicChatSetting == 0 || c.PublicChatSetting == 3 || c.PublicChatSetting == 1 && c.IsFriend(var5.Name)) {
-				c.ProjectFromGround(var5.Height, var5)
+				c.ProjectFromGround1(var5.Height, var5)
 				if c.ProjectX > -1 && c.ChatCount < c.MAX_CHATS {
 					c.ChatWidth[c.ChatCount] = c.FontBold12.StringWidth(var5.Chat) / 2
 					c.ChatHeight[c.ChatCount] = c.FontBold12.Height
@@ -649,7 +650,7 @@ func (c *Client) Draw2DEntityElements() {
 				}
 			}
 			if var5.CombatCycle > LoopCycle+100 {
-				c.ProjectFromGround(var5.Height+15, var5)
+				c.ProjectFromGround1(var5.Height+15, var5)
 				if c.ProjectX > -1 {
 					var4 = var5.Health * 30 / var5.TotalHealth
 					if var4 > 30 {
@@ -660,7 +661,7 @@ func (c *Client) Draw2DEntityElements() {
 				}
 			}
 			if var5.CombatCycle > LoopCycle+330 {
-				c.ProjectFromGround(var5.Height/2, var5)
+				c.ProjectFromGround1(var5.Height/2, var5)
 				if c.ProjectX > -1 {
 					c.ImageHitmarks[var5.DamageType].Draw(c.ProjectY-12, c.ProjectX-12)
 					c.FontPlain11.DrawStringCenter(c.ProjectY+4, 0, strconv.Itoa(var5.Damage), c.ProjectX)
@@ -3147,7 +3148,7 @@ func (c *Client) Logout() {
 	c.TitleScreenState = 0
 	c.Username = ""
 	c.Password = ""
-	// TODO: InputTracking.SetDisabled()
+	inputtracking.SetDisabled()
 	c.ClearCaches()
 	c.Scene.Reset()
 	for i := range 4 {
@@ -4057,7 +4058,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			for i := range c.PlayerCount {
 				var12 := c.Players[c.PlayerIDs[i]]
 				if var12 != nil && var12.Name != "" && strings.EqualFold(var12.Name, var9) {
-					c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var12.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var12.PathTileZ[0], 0, 0, 0)
+					c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var12.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var12.PathTileZ[0], 0, 0, 0)
 					if var5 == 903 {
 						c.Out.P1Isaac(206)
 					}
@@ -4124,7 +4125,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 728 || var5 == 542 || var5 == 6 || var5 == 963 || var5 == 245 {
 		var13 = c.NPCs[var6]
 		if var13 != nil {
-			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var13.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var13.PathTileZ[0], 0, 0, 0)
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var13.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var13.PathTileZ[0], 0, 0, 0)
 			c.CrossX = c.MouseClickX
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
@@ -4163,9 +4164,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 	}
 	var14 := false
 	if var5 == 217 {
-		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 0, 2, 0, var4, 0, 0, 0)
+		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 2, 0, var4, 0, 0, 0)
 		if !var14 {
-			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var3, c.LocalPlayer.PathTileZ[0], 0, 2, 1, var4, 0, 0, 0)
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var3, c.LocalPlayer.PathTileZ[0], 2, 1, var4, 0, 0, 0)
 		}
 		c.CrossX = c.MouseClickX
 		c.CrossY = c.MouseClickY
@@ -4265,7 +4266,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 900 {
 		var13 = c.NPCs[var6]
 		if var13 != nil {
-			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var13.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var13.PathTileZ[0], 0, 0, 0)
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var13.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var13.PathTileZ[0], 0, 0, 0)
 			c.CrossX = c.MouseClickX
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
@@ -4281,7 +4282,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 1373 || var5 == 1544 || var5 == 151 || var5 == 1101 {
 		var19 = c.Players[var6]
 		if var19 != nil {
-			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var19.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var19.PathTileZ[0], 0, 0, 0)
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var19.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var19.PathTileZ[0], 0, 0, 0)
 			c.CrossX = c.MouseClickX
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
@@ -4309,7 +4310,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 265 {
 		var13 = c.NPCs[var6]
 		if var13 != nil {
-			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var13.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var13.PathTileZ[0], 0, 0, 0)
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var13.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var13.PathTileZ[0], 0, 0, 0)
 			c.CrossX = c.MouseClickX
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
@@ -4347,9 +4348,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.Out.P2(c.ActiveSpellID)
 	}
 	if var5 == 224 || var5 == 993 || var5 == 99 || var5 == 746 || var5 == 877 {
-		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 0, 2, 0, var4, 0, 0, 0)
+		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 2, 0, var4, 0, 0, 0)
 		if !var14 {
-			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var3, c.LocalPlayer.PathTileZ[0], 0, 2, 1, var4, 0, 0, 0)
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var3, c.LocalPlayer.PathTileZ[0], 2, 1, var4, 0, 0, 0)
 		}
 		c.CrossX = c.MouseClickX
 		c.CrossY = c.MouseClickY
@@ -4477,9 +4478,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.InteractWithLoc(97, var3, var4, var6)
 	}
 	if var5 == 965 {
-		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 0, 2, 0, var4, 0, 0, 0)
+		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 2, 0, var4, 0, 0, 0)
 		if !var14 {
-			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var3, c.LocalPlayer.PathTileZ[0], 0, 2, 1, var4, 0, 0, 0)
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var3, c.LocalPlayer.PathTileZ[0], 2, 1, var4, 0, 0, 0)
 		}
 		c.CrossX = c.MouseClickX
 		c.CrossY = c.MouseClickY
@@ -4546,7 +4547,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 367 {
 		var19 = c.Players[var6]
 		if var19 != nil {
-			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var19.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var19.PathTileZ[0], 0, 0, 0)
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var19.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var19.PathTileZ[0], 0, 0, 0)
 			c.CrossX = c.MouseClickX
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
@@ -4591,7 +4592,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 651 {
 		var19 = c.Players[var6]
 		if var19 != nil {
-			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var19.PathTileX[0], c.LocalPlayer.PathTileZ[0], 0, 2, 1, var19.PathTileZ[0], 0, 0, 0)
+			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var19.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var19.PathTileZ[0], 0, 0, 0)
 			c.CrossX = c.MouseClickX
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
@@ -5412,4 +5413,2627 @@ func (c *Client) ClearCaches() {
 	objtype.IconCache.Clear()
 	playerentity.ModelCache.Clear()
 	spotanimtype.ModelCache.Clear()
+}
+
+func (c *Client) Draw3DEntityElements() {
+	var2 := 0
+	c.DrawPrivateMessages()
+	if c.CrossMode == 1 {
+		c.ImageCrosses[c.CrossCycle/100].Draw(c.CrossY-8-11, c.CrossX-8-8)
+	}
+	if c.CrossMode == 2 {
+		c.ImageCrosses[c.CrossCycle/100+4].Draw(c.CrossY-8-11, c.CrossX-8-8)
+	}
+	if c.ViewportInterfaceID != -1 {
+		c.UpdateInterfaceAnimation(c.ViewportInterfaceID, c.SceneDelta)
+		c.DrawInterface(0, 0, component.Instances[c.ViewportInterfaceID], 0)
+	}
+	c.DrawWildyLevel()
+	if !c.MenuVisible {
+		c.HandleInput()
+		c.DrawTooltip()
+	} else if c.MenuArea == 0 {
+		c.DrawMenu()
+	}
+	if c.InMultizone == 1 {
+		if c.WildernessLevel > 0 || c.WorldLocationState == 1 {
+			c.ImageHeadIcons[1].Draw(258, 472)
+		} else {
+			c.ImageHeadIcons[1].Draw(296, 472)
+		}
+	}
+	if c.WildernessLevel > 0 {
+		c.ImageHeadIcons[0].Draw(296, 472)
+		c.FontPlain12.DrawStringCenter(329, 16776960, "Level: "+strconv.Itoa(c.WildernessLevel), 484)
+	}
+	if c.WorldLocationState == 1 {
+		c.ImageHeadIcons[6].Draw(296, 472)
+		c.FontPlain12.DrawStringCenter(329, 16776960, "Arena", 484)
+	}
+	if c.SystemUpdateTimer == 0 {
+		return
+	}
+	var2 = c.SystemUpdateTimer / 50
+	var3 := var2 / 60
+	var2 %= 60
+	if var2 < 10 {
+		c.FontPlain12.DrawString(4, 329, 16776960, "System update in: "+strconv.Itoa(var3)+":0"+strconv.Itoa(var2))
+	} else {
+		c.FontPlain12.DrawString(4, 329, 16776960, "System update in: "+strconv.Itoa(var3)+":"+strconv.Itoa(var2))
+	}
+}
+
+func (c *Client) UpdateOrbitCamera(arg0 int) {
+	var2 := c.LocalPlayer.X + c.CameraAnticheatOffsetX
+	var3 := c.LocalPlayer.Z + c.CameraAnticheatOffsetZ
+	if c.OrbitCameraX-var2 < -500 || c.OrbitCameraX-var2 > 500 || c.OrbitCameraZ-var3 < -500 || c.OrbitCameraZ-var3 > 500 {
+		c.OrbitCameraX = var2
+		c.OrbitCameraZ = var3
+	}
+	if c.OrbitCameraX != var2 {
+		c.OrbitCameraX += (var2 - c.OrbitCameraX) / 16
+	}
+	if c.OrbitCameraZ != var3 {
+		c.OrbitCameraZ += (var3 - c.OrbitCameraZ) / 16
+	}
+	if c.ActionKey[1] == 1 {
+		c.OrbitCameraYawVelocity += (-24 - c.OrbitCameraYawVelocity) / 2
+	} else if c.ActionKey[2] == 1 {
+		c.OrbitCameraYawVelocity += (24 - c.OrbitCameraYawVelocity) / 2
+	} else {
+		c.OrbitCameraYawVelocity /= 2
+	}
+	if c.ActionKey[3] == 1 {
+		c.OrbitCameraPitchVelocity += (12 - c.OrbitCameraPitchVelocity) / 2
+	} else if c.ActionKey[4] == 1 {
+		c.OrbitCameraPitchVelocity += (-12 - c.OrbitCameraPitchVelocity) / 2
+	} else {
+		c.OrbitCameraPitchVelocity /= 2
+	}
+	c.OrbitCameraYaw = c.OrbitCameraYaw + c.OrbitCameraYawVelocity/2&0x7FF
+	c.PacketSize += arg0
+	c.OrbitCameraPitch += c.OrbitCameraPitchVelocity / 2
+	if c.OrbitCameraPitch < 128 {
+		c.OrbitCameraPitch = 128
+	}
+	if c.OrbitCameraPitch > 383 {
+		c.OrbitCameraPitch = 383
+	}
+	var4 := c.OrbitCameraX >> 7
+	var5 := c.OrbitCameraZ >> 7
+	var6 := c.GetHeightMapY(c.CurrentLevel, c.OrbitCameraX, c.OrbitCameraZ)
+	var7 := 0
+	if var4 > 3 && var5 > 3 && var4 < 100 && var5 < 100 {
+		for i := var4 - 4; i <= var4+4; i++ {
+			for j := var5 - 4; j <= var5+4; j++ {
+				var10 := c.CurrentLevel
+				if var10 < 3 && c.LevelTileFlags[1][i][j]&0x2 == 2 {
+					var10++
+				}
+				var11 := var6 - c.LevelHeightmap[var10][i][j]
+				if var11 > var7 {
+					var7 = var11
+				}
+			}
+		}
+	}
+	var8 := var7 * 192
+	if var8 > 98048 {
+		var8 = 98048
+	}
+	if var8 < 32768 {
+		var8 = 32768
+	}
+	if var8 > c.CameraPitchClamp {
+		c.CameraPitchClamp += (var8 - c.CameraPitchClamp) / 24
+	} else if var8 < c.CameraPitchClamp {
+		c.CameraPitchClamp += (var8 - c.CameraPitchClamp) / 80
+	}
+}
+
+func (c *Client) PushProjectiles() {
+	for var2 := c.Projectiles.Head(); var2 != nil; var2 = c.Projectiles.Next() {
+		if var2.Level != c.CurrentLevel || LoopCycle > var2.LastCycle {
+			var2.Unlink()
+		} else if LoopCycle >= var2.StartCycle {
+			if var2.Target > 0 {
+				var3 := c.NPCs[var2.Target-1]
+				if var3 != nil {
+					var2.UpdateVelocity(c.GetHeightMapY(var2.Level, var3.X, var3.Z)-var2.OffsetY, var3.Z, var3.X, LoopCycle)
+				}
+			}
+			if var2.Target < 0 {
+				var4 := -var2.Target - 1
+				var var5 *playerentity.PlayerEntity
+				if var4 == c.LocalPID {
+					var5 = c.LocalPlayer
+				} else {
+					var5 = c.Players[var4]
+				}
+				if var5 != nil {
+					var2.UpdateVelocity(c.GetHeightMapY(var2.Level, var5.X, var5.Z)-var2.OffsetY, var5.Z, var5.X, LoopCycle)
+				}
+			}
+			var2.Update(c.SceneDelta)
+			c.Scene.AddTemporary1(int(var2.Z), 60, var2.Yaw, int(var2.X), -1, false, nil, var2, int(var2.Y), c.CurrentLevel)
+		}
+	}
+}
+
+func (c *Client) Refresh() {
+	c.RedrawBackground = true
+}
+
+func (c *Client) DrawOnMinimap(arg0 int, arg2 *pix32.Pix32, arg3 int) {
+	var5 := c.OrbitCameraYaw + c.MinimapAnticheatAngle&0x7FF
+	var6 := arg3*arg3 + arg0*arg0
+	if var6 > 6400 {
+		return
+	}
+	var7 := model.Sin[var5]
+	var8 := model.Cos[var5]
+	var11 := var7 * 256 / (c.MinimapZoom + 256)
+	var12 := var8 * 256 / (c.MinimapZoom + 256)
+	var9 := arg0*var11 + arg3*var12>>16
+	var10 := arg0*var12 - arg3*var11>>16
+	if var6 > 2500 {
+		arg2.DrawMasked(c.ImageMapback, 83-var10-arg2.CropH/2, var9+94-arg2.CropW/2)
+	} else {
+		arg2.Draw(83-var10-arg2.CropH/2, var9+94-arg2.CropW/2)
+	}
+}
+
+func (c *Client) Mix(arg0, arg1, arg2 int) int {
+	var5 := 256 - arg1
+	return ((arg0&0xFF00FF)*var5 + (arg2&0xFF00FF)*arg1&0xFF00FF00) + ((arg0&0xFF00)*var5+(arg2&0xFF00)*arg1&0xFF0000)>>8
+}
+
+func (c *Client) GetIntString(arg0 int) string {
+	if arg0 < 999999999 {
+		return strconv.Itoa(arg0)
+	}
+	return "*"
+}
+
+func (c *Client) ProjectFromGround1(arg0 int, arg2 *entity.PathingEntity) {
+	c.ProjectFromGround2(arg2.Z, arg2.X, arg0)
+}
+
+func (c *Client) ProjectFromGround2(arg0, arg1, arg3 int) {
+	if arg1 < 128 || arg0 < 128 || arg1 > 13056 || arg0 > 13056 {
+		c.ProjectX = -1
+		c.ProjectY = -1
+		return
+	}
+	var5 := c.GetHeightMapY(c.CurrentLevel, arg1, arg0) - arg3
+	var13 := arg1 - c.CameraX
+	var14 := var5 - c.CameraY
+	var11 := arg0 - c.CameraZ
+	var6 := model.Sin[c.CameraPitch]
+	var7 := model.Cos[c.CameraPitch]
+	var8 := model.Sin[c.CameraYaw]
+	var9 := model.Cos[c.CameraYaw]
+	var10 := var11*var8 + var13*var9>>16
+	var12 := var11*var9 - var13*var8>>16
+	var13 = var10
+	var10 = var14*var7 - var12*var6>>16
+	var11 = var14*var6 + var12*var7>>16
+	if var11 >= 50 {
+		c.ProjectX = pix3d.CenterW3D + (var13<<9)/var11
+		c.ProjectY = pix3d.CenterH3D + (var10<<9)/var11
+	} else {
+		c.ProjectX = -1
+		c.ProjectY = -1
+	}
+}
+
+func (c *Client) InteractWithLoc(arg0, arg1, arg2, arg3 int) bool {
+	var6 := arg3 >> 14 & 0x7FFF
+	var7 := c.Scene.GetInfo(c.CurrentLevel, arg1, arg2, arg3)
+	if var7 == -1 {
+		return false
+	}
+	var8 := var7 & 0x1F
+	var9 := var7 >> 6 & 0x3
+	if var8 == 10 || var8 == 11 || var8 == 22 {
+		var10 := loctype.Get(var6)
+		var11 := 0
+		var12 := 0
+		if var9 == 0 || var9 == 2 {
+			var11 = var10.Width
+			var12 = var10.Length
+		} else {
+			var11 = var10.Length
+			var12 = var10.Width
+		}
+		var13 := var10.ForceApproach
+		if var9 != 0 {
+			var13 = (var13 << var9 & 0xF) + (var13>>4 - var9)
+		}
+		c.TryMove(c.LocalPlayer.PathTileX[0], var11, false, arg1, c.LocalPlayer.PathTileZ[0], 2, var12, arg2, 0, 0, var13)
+	} else {
+		c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, arg1, c.LocalPlayer.PathTileZ[0], 2, 0, arg2, var9, var8+1, 0)
+	}
+	c.CrossX = c.MouseClickX
+	c.CrossY = c.MouseClickY
+	c.CrossMode = 2
+	c.CrossCycle = 0
+	c.Out.P1Isaac(arg0)
+	c.Out.P2(arg1 + c.SceneBaseTileX)
+	c.Out.P2(arg1 + c.SceneBaseTileZ)
+	c.Out.P2(var6)
+	return true
+}
+
+func (c *Client) ShowContextMenu() {
+	var2 := c.FontBold12.StringWidth("Choose Option")
+	for i := range c.MenuSize {
+		var4 := c.FontBold12.StringWidth(c.MenuOption[i])
+		if var4 > var2 {
+			var2 = var4
+		}
+	}
+	var2 += 8
+	var4 := c.MenuSize*15 + 21
+	var5 := 0
+	var6 := 0
+	if c.MouseClickX > 8 && c.MouseClickY > 11 && c.MouseClickX < 520 && c.MouseClickY < 345 {
+		var5 = c.MouseClickX - 8 - var2/2
+		if var5+var2 > 512 {
+			var5 = 512 - var2
+		}
+		if var5 < 0 {
+			var5 = 0
+		}
+		var6 = c.MouseClickY - 11
+		if var6+var4 > 334 {
+			var6 = 334 - var4
+		}
+		if var6 < 0 {
+			var6 = 0
+		}
+		c.MenuVisible = true
+		c.MenuArea = 0
+		c.MenuX = var5
+		c.MenuY = var6
+		c.MenuWidth = var2
+		c.MenuHeight = c.MenuSize*15 + 22
+	}
+	if c.MouseClickX > 562 && c.MouseClickY > 231 && c.MouseClickX < 752 && c.MouseClickY < 492 {
+		var5 = c.MouseClickX - 562 - var2/2
+		if var5 < 0 {
+			var5 = 0
+		} else if var5+var2 > 190 {
+			var5 = 190 - var2
+		}
+		var6 = c.MouseClickY - 231
+		if var6 < 0 {
+			var6 = 0
+		} else if var6+var4 > 261 {
+			var6 = 261 - var4
+		}
+		c.MenuVisible = true
+		c.MenuArea = 1
+		c.MenuX = var5
+		c.MenuY = var6
+		c.MenuWidth = var2
+		c.MenuHeight = c.MenuSize*15 + 22
+	}
+	if c.MouseClickX <= 22 || c.MouseClickY <= 375 || c.MouseClickX >= 501 || c.MouseClickY >= 471 {
+		return
+	}
+	var5 = c.MouseClickX - 22 - var2/2
+	if var5 < 0 {
+		var5 = 0
+	} else if var5+var2 > 479 {
+		var5 = 479 - var2
+	}
+	var6 = c.MouseClickY - 375
+	if var6 < 0 {
+		var6 = 0
+	} else if var6+var4 > 96 {
+		var6 = 96 - var4
+	}
+	c.MenuVisible = true
+	c.MenuArea = 2
+	c.MenuX = var5
+	c.MenuY = var6
+	c.MenuWidth = var2
+	c.MenuHeight = c.MenuSize*15 + 22
+}
+
+//func (c *Client) OpenURL(arg0 string) {} // TODO: OpenURL
+
+func (c *Client) LoadTitle() {
+	if c.ImageTitle2 != nil {
+		return
+	}
+	c.DrawArea = nil
+	c.AreaChatback = nil
+	c.AreaMapback = nil
+	c.AreaSidebar = nil
+	c.AreaViewport = nil
+	c.AreaBackbase1 = nil
+	c.AreaBackbase2 = nil
+	c.AreaBackhmid1 = nil
+	// TODO: pixmap
+	if c.ArchiveTitle != nil {
+		c.LoadTitleBackground()
+		c.LoadTitleImages()
+	}
+	c.RedrawBackground = true
+}
+
+func (c *Client) RunFlames() {
+	c.FlameThread = true
+	// TODO: try/catch
+	var2 := time.Now().UnixMilli()
+	var4 := 0
+	var5 := 20
+	for c.FlameActive {
+		c.UpdateFlames()
+		c.UpdateFlames()
+		c.DrawFlames()
+		var4++
+		if var4 > 10 {
+			var6 := time.Now().UnixMilli()
+			var8 := int(var6-var2)/10 - var5
+			var5 = 40 - var8
+			if var5 < 5 {
+				var5 = 5
+			}
+			var4 = 0
+			var2 = var6
+		}
+		time.Sleep(time.Duration(var5) * time.Millisecond)
+	}
+	c.FlameThread = false
+}
+
+func (c *Client) Run() {
+	if c.FlamesThread {
+		c.RunFlames()
+	} else if c.StartMidiThread {
+		c.RunMidi()
+	} else {
+		c.GameShell.Run()
+	}
+}
+
+func (c *Client) HandleScrollInput(arg0, arg1, arg2, arg3, arg4 int, arg5 bool, arg6 int, arg7 int, arg8 *component.Component) {
+	if c.ScrollGrabbed {
+		c.ScrollInputPadding = 32
+	} else {
+		c.ScrollInputPadding = 0
+	}
+	c.ScrollGrabbed = false
+	c.PacketSize += arg1
+	if arg0 >= arg6 && arg0 < arg6+16 && arg2 >= arg7 && arg2 < arg7+16 {
+		arg8.ScrollPosition -= c.DragCycles * 4
+		if arg5 {
+			c.RedrawSidebar = true
+			return
+		}
+	} else if arg0 >= arg6 && arg0 < arg6+16 && arg2 >= arg7+arg4-16 && arg2 < arg7+arg4 {
+		arg8.ScrollPosition += c.DragCycles * 4
+		if arg5 {
+			c.RedrawSidebar = true
+			return
+		}
+	} else if arg0 >= arg6-c.ScrollInputPadding && arg0 < arg6+16+c.ScrollInputPadding && arg2 >= arg7+16 && arg2 < arg7+arg4-16 && c.DragCycles > 0 {
+		var10 := (arg4 - 32) * arg4 / arg3
+		if var10 < 8 {
+			var10 = 8
+		}
+		var11 := arg2 - arg7 - 16 - var10/2
+		var12 := arg4 - 32 - var10
+		arg8.ScrollPosition = (arg3 - arg4) * var11 / var12
+		if arg5 {
+			c.RedrawSidebar = true
+		}
+		c.ScrollGrabbed = true
+	}
+}
+
+func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
+	signlink.ErrorName = arg0
+	// TODO: try/catch
+	if !arg2 {
+		c.LoginMessage0 = ""
+		c.LoginMessage1 = "Connecting to server..."
+		c.DrawTitleScreen()
+	}
+	// TODO: clientstream
+	c.In.Pos = 0
+	c.ServerSeed = c.In.G8()
+	var4 := [4]int{int(rand.Float64() * 9.9999999e7), int(rand.Float64() * 9.9999999e7), int(c.ServerSeed >> 32), int(c.ServerSeed)}
+	c.Out.Pos = 0
+	c.Out.P1(10)
+	c.Out.P4(var4[0])
+	c.Out.P4(var4[1])
+	c.Out.P4(var4[2])
+	c.Out.P4(var4[3])
+	c.Out.P4(signlink.UID)
+	c.Out.PJStr(arg0)
+	c.Out.PJStr(arg1)
+	c.Out.RSAEnc(RSA_MODULUS, RSA_EXPONENT)
+	c.Login.Pos = 0
+	if arg2 {
+		c.Login.P1(18)
+	} else {
+		c.Login.P1(16)
+	}
+	c.Login.P1(c.Out.Pos + 36 + 1 + 1)
+	c.Login.P1(225)
+	if LowMemory {
+		c.Login.P1(1)
+	} else {
+		c.Login.P1(0)
+	}
+	for i := range 9 {
+		c.Login.P4(c.ArchiveChecksum[i])
+	}
+	c.Login.PData(c.Out.Data, c.Out.Pos, 0)
+	c.Out.Random = io.NewIsaac(var4)
+	for i := range 4 {
+		var4[i] += 50
+	}
+	c.RandomIn = io.NewIsaac(var4)
+	// TODO: stream.write
+	var7 := 0 // TODO: placeholder - var7 stream.read
+	if var7 == 1 {
+		time.Sleep(2000 * time.Millisecond)
+		c.LoginFunc(arg0, arg1, arg2)
+		return
+	}
+	if var7 == 2 || var7 == 18 {
+		if var7 == 18 {
+			c.Rights = true
+		} else {
+			c.Rights = false
+		}
+		inputtracking.SetDisabled()
+		c.InGame = true
+		c.Out.Pos = 0
+		c.In.Pos = 0
+		c.PacketType = -1
+		c.LastPacketType0 = -1
+		c.LastPacketType1 = -1
+		c.LastPacketType2 = -1
+		c.PacketSize = 0
+		c.IdleNetCycles = 0
+		c.SystemUpdateTimer = 0
+		c.IdleTimeout = 0
+		c.HintType = 0
+		c.MenuSize = 0
+		c.MenuVisible = false
+		c.IdleCycles = 0
+		for i := range 100 {
+			c.MessageText[i] = ""
+		}
+		c.ObjSelected = 0
+		c.SpellSelected = 0
+		c.SceneState = 0
+		c.WaveCount = 0
+		c.CameraAnticheatOffsetX = int(rand.Float64()*100.0) - 50
+		c.CameraAnticheatOffsetZ = int(rand.Float64()*110.0) - 55
+		c.CameraAnticheatAngle = int(rand.Float64()*80.0) - 40
+		c.MinimapAnticheatAngle = int(rand.Float64()*120.0) - 60
+		c.MinimapZoom = int(rand.Float64()*30.0) - 20
+		c.OrbitCameraYaw = int(rand.Float64()*20.0) - 10&0x7FF
+		c.MinimapLevel = -1
+		c.FlagSceneTileX = 0
+		c.FlagSceneTileZ = 0
+		c.PlayerCount = 0
+		c.NPCCount = 0
+		for i := range c.MAX_PLAYER_COUNT {
+			c.Players[i] = nil
+			c.PlayerAppearanceBuffer[i] = nil
+		}
+		for i := range 8192 {
+			c.NPCs[i] = nil
+		}
+		c.Players[c.LOCAL_PLAYER_INDEX] = playerentity.NewPlayerEntity()
+		c.LocalPlayer = c.Players[c.LOCAL_PLAYER_INDEX]
+		c.Projectiles.Clear()
+		c.Spotanims.Clear()
+		c.MergedLocations.Clear()
+		for i := range 4 {
+			for j := range 104 {
+				for k := range 104 {
+					c.LevelObjStacks[i][j][k] = nil
+				}
+			}
+		}
+		c.SpawnedLocations = datastruct.NewLinkList[*entity.LocAddEntity]()
+		c.FriendCount = 0
+		c.StickyChatInterfaceID = -1
+		c.ChatInterfaceID = -1
+		c.ViewportInterfaceID = -1
+		c.SidebarInterfaceID = -1
+		c.PressedContinueOption = false
+		c.SelectedTab = 3
+		c.ChatbackInputOpen = false
+		c.MenuVisible = false
+		c.ShowSocialInput = false
+		c.ModalMessage = ""
+		c.InMultizone = 0
+		c.FlashingTab = -1
+		c.DesignGenderMale = true
+		c.ValidateCharacterDesign()
+		for i := range 5 {
+			c.DesignColors[i] = 0
+		}
+		OpLogic1 = 0
+		OpLogic2 = 0
+		OpLogic3 = 0
+		OpLogic4 = 0
+		OpLogic5 = 0
+		OpLogic6 = 0
+		OpLogic7 = 0
+		OpLogic8 = 0
+		OpLogic9 = 0
+		c.PrepareGameScreen()
+		return
+	}
+	if var7 == 3 {
+		c.LoginMessage0 = ""
+		c.LoginMessage1 = "Invalid username or password."
+		return
+	}
+	if var7 == 4 {
+		c.LoginMessage0 = "Your account has been disabled."
+		c.LoginMessage1 = "Please check your message-centre for details."
+		return
+	}
+	if var7 == 5 {
+		c.LoginMessage0 = "Your account is already logged in."
+		c.LoginMessage1 = "Try again in 60 secs..."
+		return
+	}
+	if var7 == 6 {
+		c.LoginMessage0 = "RuneScape has been updated!"
+		c.LoginMessage1 = "Please reload this page."
+		return
+	}
+	if var7 == 7 {
+		c.LoginMessage0 = "This world is full."
+		c.LoginMessage1 = "Please use a different world."
+		return
+	}
+	if var7 == 8 {
+		c.LoginMessage0 = "Unable to connect."
+		c.LoginMessage1 = "Login server offline."
+		return
+	}
+	if var7 == 9 {
+		c.LoginMessage0 = "Login limit exceeded."
+		c.LoginMessage1 = "Too many connections from your address."
+		return
+	}
+	if var7 == 10 {
+		c.LoginMessage0 = "Unable to connect."
+		c.LoginMessage1 = "Bad session id."
+		return
+	}
+	if var7 == 11 {
+		c.LoginMessage1 = "Login server rejected session."
+		c.LoginMessage1 = "Please try again."
+		return
+	}
+	if var7 == 12 {
+		c.LoginMessage0 = "You need a members account to login to this world."
+		c.LoginMessage1 = "Please subscribe, or use a different world."
+		return
+	}
+	if var7 == 13 {
+		c.LoginMessage0 = "Could not complete login."
+		c.LoginMessage1 = "Please try using a different world."
+		return
+	}
+	if var7 == 14 {
+		c.LoginMessage0 = "The server is being updated."
+		c.LoginMessage1 = "Please wait 1 minute and try again."
+		return
+	}
+	if var7 == 15 {
+		c.InGame = true
+		c.Out.Pos = 0
+		c.In.Pos = 0
+		c.PacketType = -1
+		c.LastPacketType0 = -1
+		c.LastPacketType1 = -1
+		c.LastPacketType2 = -1
+		c.PacketSize = 0
+		c.IdleNetCycles = 0
+		c.SystemUpdateTimer = 0
+		c.MenuSize = 0
+		c.MenuVisible = false
+		return
+	}
+	if var7 == 16 {
+		c.LoginMessage0 = "Login attempts exceeded."
+		c.LoginMessage1 = "Please wait 1 minute and try again."
+		return
+	}
+	if var7 == 17 {
+		c.LoginMessage0 = "You are standing in a members-only area."
+		c.LoginMessage1 = "To play on this world move to a free area first"
+		return
+	}
+}
+
+func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
+	if arg1 < 1 || arg2 < 1 || arg1 > 102 || arg2 > 102 {
+		return
+	}
+	if LowMemory && arg7 != c.CurrentLevel {
+		return
+	}
+	var9 := 0
+	if arg3 == 0 {
+		var9 = c.Scene.GetWallBitSet(arg7, arg1, arg2)
+	}
+	if arg3 == 1 {
+		var9 = c.Scene.GetWallDecorationBitSet(arg7, arg2, arg1)
+	}
+	if arg3 == 2 {
+		var9 = c.Scene.GetLocBitSet(arg7, arg1, arg2)
+	}
+	if arg3 == 3 {
+		var9 = c.Scene.GetGroundDecorationBitSet(arg7, arg1, arg2)
+	}
+	if var9 != 0 {
+		var13 := c.Scene.GetInfo(arg7, arg1, arg2, var9)
+		var15 := var9 >> 14 & 0x7FFF
+		var16 := var13 & 0x1F
+		var17 := var13 >> 6
+		var var14 *loctype.LocType
+		if arg3 == 0 {
+			c.Scene.RemoveWall(arg1, arg7, arg2)
+			var14 = loctype.Get(var15)
+			if var14.BlockWalk {
+				c.LevelCollisionMap[arg7].DelWall(var14.BlockRange, var17, arg1, arg2, var16)
+			}
+		}
+		if arg3 == 1 {
+			c.Scene.RemoveWallDecoration(arg7, arg2, arg1)
+		}
+		if arg3 == 2 {
+			c.Scene.RemoveLoc2(arg1, arg2, arg7)
+			var14 = loctype.Get(var15)
+			if arg1+var14.Width > 103 || arg2+var14.Width > 103 || arg1+var14.Length > 103 || arg2+var14.Length > 103 {
+				return
+			}
+			if var14.BlockWalk {
+				c.LevelCollisionMap[arg7].DelLoc(arg2, arg1, var17, var14.Width, var14.BlockRange, var14.Length)
+			}
+		}
+		if arg3 == 3 {
+			c.Scene.RemoveGroundDecoration(arg7, arg1, arg2)
+			var14 = loctype.Get(var15)
+			if var14.BlockWalk && var14.Active {
+				c.LevelCollisionMap[arg7].RemoveBlocked(arg2, arg1)
+			}
+		}
+	}
+	if arg4 < 0 {
+		return
+	}
+	var13 := arg7
+	if arg7 < 3 && c.LevelTileFlags[1][arg1][arg2]&0x2 == 2 {
+		var13 = arg7 + 1
+	}
+	world.AddLoc(arg1, c.LocList, c.LevelCollisionMap[arg7], arg2, arg0, c.LevelHeightmap, arg7, arg4, arg5, c.Scene, var13)
+}
+
+func (c *Client) AddFriend(arg0 int64) {
+	if arg0 == 0 {
+		return
+	}
+	if c.FriendCount >= 100 {
+		c.AddMessage(0, "Your friends list is full. Max of 100 hit", "")
+		return
+	}
+	var4 := datastruct.FormatName(datastruct.FromBase37(arg0))
+	for i := range c.FriendCount {
+		if c.FriendName37[i] == arg0 {
+			c.AddMessage(0, var4+" is already on your friend list", "")
+			return
+		}
+	}
+	for i := range c.IgnoreCount {
+		if c.IgnoreName37[i] == arg0 {
+			c.AddMessage(0, "Please remove "+var4+" from your ignore list first", "")
+			return
+		}
+	}
+	if var4 == c.LocalPlayer.Name {
+		return
+	}
+	c.FriendName[c.FriendCount] = var4
+	c.FriendName37[c.FriendCount] = arg0
+	c.FriendWorld[c.FriendCount] = 0
+	c.FriendCount++
+	c.RedrawSidebar = true
+	c.Out.P1Isaac(118)
+	c.Out.P8(arg0)
+}
+
+func (c *Client) Unload() {
+	signlink.ReportError = false
+	//TODO: stream.close
+	c.StopMidi()
+	c.MidiThreadActive = false
+	c.Out = nil
+	c.Login = nil
+	c.In = nil
+	c.SceneMapIndex = nil
+	c.SceneMapLandData = nil
+	c.SceneMapLocData = nil
+	c.LevelHeightmap = nil
+	c.LevelTileFlags = nil
+	c.Scene = nil
+	c.LevelCollisionMap = nil
+	c.BFSDirection = nil
+	c.BFSCost = nil
+	c.BFSStepX = nil
+	c.BFSStepZ = nil
+	c.TextureBuffer = nil
+	c.AreaSidebar = nil
+	c.AreaMapback = nil
+	c.AreaViewport = nil
+	c.AreaChatback = nil
+	c.AreaBackbase1 = nil
+	c.AreaBackbase2 = nil
+	c.AreaBackhmid1 = nil
+	c.AreaBackleft1 = nil
+	c.AreaBackleft2 = nil
+	c.AreaBackright1 = nil
+	c.AreaBackright2 = nil
+	c.AreaBacktop1 = nil
+	c.AreaBacktop2 = nil
+	c.AreaBackvmid1 = nil
+	c.AreaBackvmid2 = nil
+	c.AreaBackvmid3 = nil
+	c.AreaBackhmid2 = nil
+	c.ImageInvback = nil
+	c.ImageMapback = nil
+	c.ImageChatback = nil
+	c.ImageBackbase1 = nil
+	c.ImageBackbase2 = nil
+	c.ImageBackhmid1 = nil
+	c.ImageSideIcons = nil
+	c.ImageRedstone1 = nil
+	c.ImageRedstone2 = nil
+	c.ImageRedstone3 = nil
+	c.ImageRedstone1h = nil
+	c.ImageRedstone2h = nil
+	c.ImageRedstone1v = nil
+	c.ImageRedstone2v = nil
+	c.ImageRedstone3v = nil
+	c.ImageRedstone1hv = nil
+	c.ImageRedstone2hv = nil
+	c.ImageCompass = nil
+	c.ImageHitmarks = nil
+	c.ImageHeadIcons = nil
+	c.ImageCrosses = nil
+	c.ImageMapdot0 = nil
+	c.ImageMapdot1 = nil
+	c.ImageMapdot2 = nil
+	c.ImageMapdot3 = nil
+	c.ImageMapscene = nil
+	c.ImageMapFunction = nil
+	c.TileLastOccupiedCycle = nil
+	c.Players = nil
+	c.PlayerIDs = nil
+	c.EntityUpdateIDs = nil
+	c.PlayerAppearanceBuffer = nil
+	c.EntityRemovalIDs = nil
+	c.NPCs = nil
+	c.NPCIDs = nil
+	c.LevelObjStacks = nil
+	c.SpawnedLocations = nil
+	c.MergedLocations = nil
+	c.Projectiles = nil
+	c.Spotanims = nil
+	c.LocList = nil
+	c.MenuParamB = nil
+	c.MenuParamC = nil
+	c.MenuAction = nil
+	c.MenuParamA = nil
+	c.MenuOption = nil
+	c.Varps = nil
+	c.ActiveMapFunctionX = nil
+	c.ActiveMapFunctionZ = nil
+	c.ActiveMapFunctions = nil
+	c.ImageMinimap = nil
+	c.FriendName = nil
+	c.FriendName37 = nil
+	c.FriendWorld = nil
+	c.ImageTitle0 = nil
+	c.ImageTitle1 = nil
+	c.ImageTitle2 = nil
+	c.ImageTitle3 = nil
+	c.ImageTitle4 = nil
+	c.ImageTitle5 = nil
+	c.ImageTitle6 = nil
+	c.ImageTitle7 = nil
+	c.ImageTitle8 = nil
+	c.UnloadTitle()
+	loctype.Unload()
+	npctype.Unload()
+	objtype.Unload()
+	flotype.Instances = nil
+	idktype.Instances = nil
+	component.Instances = nil
+	seqtype.Instances = nil
+	spotanimtype.Instances = nil
+	spotanimtype.ModelCache = nil
+	varptype.Instances = nil
+	c.DrawArea = nil
+	playerentity.ModelCache = nil
+	pix3d.Unload()
+	world3d.Unload()
+	model.Unload()
+	animbase.Instances = nil
+	animframe.Instances = nil
+}
+
+//func (c *Client) OpenSocket(arg0 int) {
+//	// TODO
+//}
+
+func (c *Client) AddPlayerOptions(arg1 int, arg2 int, arg3 *playerentity.PlayerEntity, arg4 int) {
+	if arg3 == c.LocalPlayer || c.MenuSize >= 400 {
+		return
+	}
+	var6 := arg3.Name + GetCombatLevelColorTag(c.LocalPlayer.CombatLevel, arg3.CombatLevel) + " (level-" + strconv.Itoa(arg3.CombatCycle) + ")"
+	if c.ObjSelected == 1 {
+		c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @whi@" + var6
+		c.MenuAction[c.MenuSize] = 367
+		c.MenuParamA[c.MenuSize] = arg2
+		c.MenuParamB[c.MenuSize] = arg4
+		c.MenuParamC[c.MenuSize] = arg1
+		c.MenuSize++
+	} else if c.SpellSelected != 1 {
+		c.MenuOption[c.MenuSize] = "Follow @whi@" + var6
+		c.MenuAction[c.MenuSize] = 1544
+		c.MenuParamA[c.MenuSize] = arg2
+		c.MenuParamB[c.MenuSize] = arg4
+		c.MenuParamC[c.MenuSize] = arg1
+		c.MenuSize++
+		if c.OverrideChat == 0 {
+			c.MenuOption[c.MenuSize] = "Trade with @whi@" + var6
+			c.MenuAction[c.MenuSize] = 1373
+			c.MenuParamA[c.MenuSize] = arg2
+			c.MenuParamB[c.MenuSize] = arg4
+			c.MenuParamC[c.MenuSize] = arg1
+			c.MenuSize++
+		}
+		if c.WildernessLevel > 0 {
+			c.MenuOption[c.MenuSize] = "Attack @whi@" + var6
+			if c.LocalPlayer.CombatLevel >= arg3.CombatLevel {
+				c.MenuAction[c.MenuSize] = 151
+			} else {
+				c.MenuAction[c.MenuSize] = 2151
+			}
+			c.MenuParamA[c.MenuSize] = arg2
+			c.MenuParamB[c.MenuSize] = arg4
+			c.MenuParamC[c.MenuSize] = arg1
+			c.MenuSize++
+		}
+		if c.WorldLocationState == 1 {
+			c.MenuOption[c.MenuSize] = "Fight @whi@" + var6
+			c.MenuAction[c.MenuSize] = 151
+			c.MenuParamA[c.MenuSize] = arg2
+			c.MenuParamB[c.MenuSize] = arg4
+			c.MenuParamC[c.MenuSize] = arg1
+			c.MenuSize++
+		}
+		if c.WorldLocationState == 2 {
+			c.MenuOption[c.MenuSize] = "Duel-with @whi@" + var6
+			c.MenuAction[c.MenuSize] = 1101
+			c.MenuParamA[c.MenuSize] = arg2
+			c.MenuParamB[c.MenuSize] = arg4
+			c.MenuParamC[c.MenuSize] = arg1
+			c.MenuSize++
+		}
+	} else if c.ActiveSpellFlags&0x8 == 8 {
+		c.MenuOption[c.MenuSize] = c.SpellCaption + " @whi@" + var6
+		c.MenuAction[c.MenuSize] = 651
+		c.MenuParamA[c.MenuSize] = arg2
+		c.MenuParamB[c.MenuSize] = arg4
+		c.MenuParamC[c.MenuSize] = arg1
+		c.MenuSize++
+	}
+	for i := range c.MenuSize {
+		if c.MenuAction[i] == 660 {
+			c.MenuOption[i] = "Walk here @whi@" + var6
+			return
+		}
+	}
+}
+
+func (c *Client) UpdateGame() {
+	if c.SystemUpdateTimer > 1 {
+		c.SystemUpdateTimer--
+	}
+	if c.IdleTimeout > 0 {
+		c.IdleTimeout--
+	}
+	for i := 0; i < 5 && c.Read(); i++ {
+	}
+	if !c.InGame {
+		return
+	}
+	for i := range c.WaveCount {
+		if c.WaveDelay[i] <= 0 {
+			var4 := false
+			if c.WaveIDs[i] != c.LastWaveID || c.WaveLoops[i] != c.LastWaveLoops {
+				var5 := io.NewPacket(nil) // TODO: wave.generate
+				if time.Now().UnixMilli()+int64(var5.Pos/22) > c.LastWaveStartTime+int64(c.LastWaveLength/22) {
+					c.LastWaveLength = var5.Pos
+					c.LastWaveStartTime = time.Now().UnixMilli()
+					if c.SaveWave(var5.Data, var5.Pos) {
+						c.LastWaveID = c.WaveIDs[i]
+						c.LastWaveLoops = c.WaveLoops[i]
+					} else {
+						var4 = true
+					}
+				}
+			} else if !c.ReplayWave() {
+				var4 = true
+			}
+			if var4 && c.WaveDelay[i] != -5 {
+				c.WaveDelay[i] = -5
+			} else {
+				c.WaveCount--
+				for j := i; j < c.WaveCount; j++ {
+					c.WaveIDs[j] = c.WaveIDs[j+1]
+					c.WaveLoops[j] = c.WaveLoops[j+1]
+					c.WaveDelay[j] = c.WaveDelay[j+1]
+				}
+				i--
+			}
+		} else {
+			c.WaveDelay[i]--
+		}
+	}
+	if c.NextMusicDelay > 0 {
+		c.NextMusicDelay -= 20
+		if c.NextMusicDelay < 0 {
+			c.NextMusicDelay = 0
+		}
+		if c.NextMusicDelay == 0 && c.MidiActive && !LowMemory {
+			c.SetMidi(c.MidiCRC, c.CurrentMidi, c.MidiSize)
+		}
+	}
+	var11 := inputtracking.Flush()
+	if var11 != nil {
+		c.Out.P1Isaac(81)
+		c.Out.P2(var11.Pos)
+		c.Out.PData(var11.Data, var11.Pos, 0)
+		var11.Release()
+	}
+	c.IdleNetCycles++
+	if c.IdleNetCycles > 750 {
+		c.TryReconnect()
+	}
+	c.UpdatePlayers()
+	c.UpdateNpcs()
+	c.UpdateEntityChats()
+	c.UpdateMergeLocs()
+	c.CameraMovedWrite++
+	if (c.ActionKey[1] == 1 || c.ActionKey[2] == 1 || c.ActionKey[3] == 1 || c.ActionKey[4] == 1) && c.CameraMovedWrite-1 > 5 {
+		c.CameraMovedWrite = 0
+		c.Out.P1Isaac(189)
+		c.Out.P2(c.OrbitCameraPitch)
+		c.Out.P2(c.OrbitCameraYaw)
+		c.Out.P1(c.MinimapAnticheatAngle)
+		c.Out.P1(c.MinimapZoom)
+	}
+	c.SceneDelta++
+	if c.CrossMode != 0 {
+		c.CrossCycle += 20
+		if c.CrossCycle >= 400 {
+			c.CrossMode = 0
+		}
+	}
+	if c.SelectedArea != 0 {
+		c.SelectedCycle++
+		if c.SelectedCycle >= 15 {
+			if c.SelectedArea == 2 {
+				c.RedrawSidebar = true
+			}
+			if c.SelectedArea == 3 {
+				c.RedrawChatback = true
+			}
+			c.SelectedArea = 0
+		}
+	}
+	var6 := 0
+	if c.ObjDragArea != 0 {
+		c.ObjDragCycles++
+		if c.MouseX > c.ObjGrabX+5 || c.MouseX < c.ObjGrabX-5 || c.MouseY > c.ObjGrabY+5 || c.MouseY < c.ObjGrabY-5 {
+			c.ObjGrabThreshold = true
+		}
+		if c.MouseButton == 0 {
+			if c.ObjDragArea == 2 {
+				c.RedrawSidebar = true
+			}
+			if c.ObjDragArea == 3 {
+				c.RedrawChatback = true
+			}
+			c.ObjDragArea = 0
+			if c.ObjGrabThreshold && c.ObjDragCycles >= 5 {
+				c.HoveredSlotParentID = -1
+				c.HandleInput()
+				if c.HoveredSlotParentID == c.ObjDragInterfaceID && c.HoveredSlot != c.ObjDragSlot {
+					var13 := component.Instances[c.ObjDragInterfaceID]
+					var6 = var13.InvSlotObjId[c.HoveredSlot]
+					var13.InvSlotObjId[c.HoveredSlot] = var13.InvSlotObjId[c.ObjDragSlot]
+					var13.InvSlotObjId[c.ObjDragSlot] = var6
+					var14 := var13.InvSlotObjCount[c.HoveredSlot]
+					var13.InvSlotObjCount[c.HoveredSlot] = var13.InvSlotObjCount[c.ObjDragSlot]
+					var13.InvSlotObjCount[c.ObjDragSlot] = var14
+					c.Out.P1Isaac(159)
+					c.Out.P2(c.ObjDragInterfaceID)
+					c.Out.P2(c.ObjDragSlot)
+					c.Out.P2(c.HoveredSlot)
+				}
+			} else if (c.MouseButtonsOption == 1 || c.IsAddFriendOption(c.MenuSize-1)) && c.MenuSize > 2 {
+				c.ShowContextMenu()
+			} else if c.MenuSize > 0 {
+				c.UseMenuOption(c.MenuSize - 1)
+			}
+			c.SelectedCycle = 10
+			c.MouseClickButton = 0
+		}
+	}
+	CycleLogic3++
+	if CycleLogic3 > 127 {
+		CycleLogic3 = 0
+		c.Out.P1Isaac(215)
+		c.Out.P3(4991788)
+	}
+	if world3d.ClickTileX != -1 {
+		var12 := world3d.ClickTileX
+		var6 = world3d.ClickTileZ
+		var7 := c.TryMove(c.LocalPlayer.PathTileX[0], 0, true, var12, c.LocalPlayer.PathTileZ[0], 0, 0, var6, 0, 0, 0)
+		world3d.ClickTileX = -1
+		if var7 {
+			c.CrossX = c.MouseClickX
+			c.CrossY = c.MouseClickY
+			c.CrossMode = 1
+			c.CrossCycle = 0
+		}
+	}
+	if c.MouseClickButton == 1 && c.ModalMessage != "" {
+		c.ModalMessage = ""
+		c.RedrawChatback = true
+		c.MouseClickButton = 0
+	}
+	c.HandleMouseInput()
+	c.HandleMinimapInput()
+	c.HandleTabInput()
+	c.HandleChatSettingsInput(0)
+	if c.MouseButton == 1 || c.MouseClickButton == 1 {
+		c.DragCycles++
+	}
+	if c.SceneState == 2 {
+		c.UpdateOrbitCamera(0)
+	}
+	if c.SceneState == 2 && c.Cutscene {
+		c.ApplyCutscene()
+	}
+	for i := range 5 {
+		c.CameraModifierCycle[i]++
+	}
+	c.HandleInputKey()
+	c.IdleCycles++
+	if c.IdleCycles > 4500 {
+		c.IdleTimeout = 250
+		c.IdleCycles -= 500
+		c.Out.P1Isaac(70)
+	}
+	c.CameraOffsetCycle++
+	if c.CameraOffsetCycle > 500 {
+		c.CameraOffsetCycle = 0
+		var6 = int(rand.Float64() * 8.0)
+		if var6&0x1 == 1 {
+			c.CameraAnticheatOffsetX += c.CameraOffsetXModifier
+		}
+		if var6&0x2 == 2 {
+			c.CameraAnticheatOffsetZ += c.CameraOffsetZModifier
+		}
+		if var6&0x4 == 4 {
+			c.CameraAnticheatAngle += c.CameraOffsetYawModifier
+		}
+	}
+	if c.CameraAnticheatOffsetX < -50 {
+		c.CameraOffsetXModifier = 2
+	}
+	if c.CameraAnticheatOffsetX > 50 {
+		c.CameraOffsetXModifier = -2
+	}
+	if c.CameraAnticheatOffsetZ < -55 {
+		c.CameraOffsetZModifier = 2
+	}
+	if c.CameraAnticheatOffsetZ > 55 {
+		c.CameraOffsetZModifier = -2
+	}
+	if c.CameraAnticheatAngle < -40 {
+		c.CameraOffsetYawModifier = 1
+	}
+	if c.CameraAnticheatAngle > 50 {
+		c.CameraOffsetYawModifier = -1
+	}
+	c.MinimapOffsetCycle++
+	if c.MinimapOffsetCycle > 500 {
+		c.MinimapOffsetCycle = 0
+		var6 = int(rand.Float64() * 8.0)
+		if var6&0x1 == 1 {
+			c.MinimapAnticheatAngle += c.MinimapAngleModifier
+		}
+		if var6&0x2 == 2 {
+			c.MinimapZoom += c.MinimapZoomModifier
+		}
+	}
+	if c.MinimapAnticheatAngle < -60 {
+		c.MinimapAngleModifier = 2
+	}
+	if c.MinimapAnticheatAngle > 60 {
+		c.MinimapAngleModifier = -2
+	}
+	if c.MinimapZoom < -20 {
+		c.MinimapZoomModifier = 1
+	}
+	if c.MinimapZoom > 10 {
+		c.MinimapZoomModifier = -1
+	}
+	CycleLogic4++
+	if CycleLogic4 > 110 {
+		CycleLogic4 = 0
+		c.Out.P1Isaac(236)
+		c.Out.P4(0)
+	}
+	c.HeartbeatTimer++
+	if c.HeartbeatTimer > 50 {
+		c.Out.P1Isaac(108)
+	}
+	// TODO: try/catch reconnect logout
+	// TODO: stream write
+}
+
+func (c *Client) DrawTooltip() {
+	if c.MenuSize < 2 && c.ObjSelected == 0 && c.SpellSelected == 0 {
+		return
+	}
+	var2 := ""
+	if c.ObjSelected == 1 && c.MenuSize < 2 {
+		var2 = "Use " + c.ObjSelectedName + " with..."
+	} else if c.SpellSelected == 1 && c.MenuSize < 2 {
+		var2 = c.SpellCaption + "..."
+	} else {
+		var2 = c.MenuOption[c.MenuSize-1]
+	}
+	if c.MenuSize > 2 {
+		var2 = var2 + "@whi@ / " + strconv.Itoa(c.MenuSize-2) + " more options"
+	}
+	c.FontBold12.DrawStringTooltip(LoopCycle/1000, true, 15, 16777215, var2, 4)
+}
+
+func (c *Client) PushSpotanims() {
+	for var2 := c.Spotanims.Head(); var2 != nil; var2 = c.Spotanims.Next() {
+		if var2.Level != c.CurrentLevel || var2.SeqComplete {
+			var2.Unlink()
+		} else if LoopCycle >= var2.StartCycle {
+			var2.Update(c.SceneDelta)
+			if var2.SeqComplete {
+				var2.Unlink()
+			} else {
+				c.Scene.AddTemporary1(var2.Z, 60, 0, var2.X, -1, false, nil, var2, var2.Y, var2.Level)
+			}
+		}
+	}
+}
+
+func (c *Client) GetCodeBase() {} // TODO: getcodebase signlink
+
+func SetHighMemory() {
+	world3d.LowMemory = false
+	pix3d.LowDetail = false
+	LowMemory = false
+	world.LowMemory = false
+}
+
+func (c *Client) TryMove(arg0, arg1 int, arg2 bool, arg3, arg4, arg6, arg7, arg8, arg9, arg10, arg11 int) bool {
+	var13 := 104
+	var14 := 104
+	for i := range var13 {
+		for j := range var14 {
+			c.BFSDirection[i][j] = 0
+			c.BFSCost[i][j] = 99999999
+		}
+	}
+	var16 := arg0
+	var17 := arg4
+	c.BFSDirection[arg][arg4] = 99
+	c.BFSCost[arg0][arg4] = 0
+	var18 := 0
+	var19 := 0
+	c.BFSStepX[var18] = arg0
+	var28 := var18 + 1
+	c.BFSStepZ[var18] = arg4
+	var20 := false
+	var21 := len(c.BFSStepX)
+	var22 := c.LevelCollisionMap[c.CurrentLevel].Flags
+	var23 := 0
+	for var19 != var28 {
+		var16 = c.BFSStepX[var19]
+		var17 = c.BFSStepZ[var19]
+		var19 = (var19 + 1) % var21
+		if var16 == arg3 && var17 == arg8 {
+			var20 = true
+			break
+		}
+		if arg10 != 0 {
+			if (arg10 < 5 || arg10 == 10) && c.LevelCollisionMap[c.CurrentLevel].TestWall(arg9, arg8, arg10-1, var17, arg3, var16) {
+				var20 = true
+				break
+			}
+			if arg10 < 10 && c.LevelCollisionMap[c.CurrentLevel].TestWDecor(arg9, arg10-1, var16, arg3, var17, arg8) {
+				var20 = true
+				break
+			}
+		}
+		if arg1 != 0 && arg7 != 0 && c.LevelCollisionMap[c.CurrentLevel].TestLoc(var17, arg7, var16, arg3, arg11, arg8, arg1) {
+			var20 = true
+			break
+		}
+		var23 = c.BFSCost[var16][var17] + 1
+		if var16 > 0 && c.BFSDirection[var16-1][var17] == 0 && var22[var16-1][var17]&0x280108 == 0 {
+			c.BFSStepX[var28] = var16 - 1
+			c.BFSStepZ[var28] = var17
+			var28 = (var28 + 1) % var21
+			c.BFSDirection[var16-1][var17] = 2
+			c.BFSCost[var16-1][var17] = var23
+		}
+		if var16 < var13-1 && c.BFSDirection[var16+1][var17] == 0 && var22[var16+1][var17]&0x280180 == 0 {
+			c.BFSStepX[var28] = var16 + 1
+			c.BFSStepZ[var28] = var17
+			var28 = (var28 + 1) % var21
+			c.BFSDirection[var16+1][var17] = 8
+			c.BFSCost[var16+1][var17] = var23
+		}
+		if var17 > 0 && c.BFSDirection[var16][var17-1] == 0 && var22[var16][var17-1]&0x280102 == 0 {
+			c.BFSStepX[var28] = var16
+			c.BFSStepZ[var28] = var17 - 1
+			var28 = (var28 + 1) % var21
+			c.BFSDirection[var16][var17-1] = 1
+			c.BFSCost[var16][var17-1] = var23
+		}
+		if var17 < var14-1 && c.BFSDirection[var16][var17+1] == 0 && var22[var16][var17+1]&0x280120 == 0 {
+			c.BFSStepX[var28] = var16
+			c.BFSStepZ[var28] = var17 + 1
+			var28 = (var28 + 1) % var21
+			c.BFSDirection[var16][var17+1] = 4
+			c.BFSCost[var16][var17+1] = var23
+		}
+		if var16 > 0 && var17 > 0 && c.BFSDirection[var16-1][var17-1] == 0 && var22[var16-1][var17-1]&0x28010E == 0 && var22[var16-1][var17]&0x280108 == 0 && var22[var16][var17-1]&0x280102 == 0 {
+			c.BFSStepX[var28] = var16 - 1
+			c.BFSStepZ[var28] = var17 - 1
+			var28 = (var28 + 1) % var21
+			c.BFSDirection[var16-1][var17-1] = 3
+			c.BFSCost[var16-1][var17-1] = var23
+		}
+		if var16 < var13-1 && var17 > 0 && c.BFSDirection[var16+1][var17-1] == 0 && var22[var16+1][var17-1]&0x280183 == 0 && var22[var16+1][var17]&0x280180 == 0 && var22[var16][var17-1]&0x280102 == 0 {
+			c.BFSStepX[var28] = var16 + 1
+			c.BFSStepZ[var28] = var17 - 1
+			var28 = (var28 + 1) % var21
+			c.BFSDirection[var16+1][var17-1] = 9
+			c.BFSCost[var16+1][var17-1] = var23
+		}
+		if var16 > 0 && var17 < var14-1 && c.BFSDirection[var16-1][var17+1] == 0 && var22[var16-1][var17+1]&0x280138 == 0 && var22[var16-1][var17]&0x280108 == 0 && var22[var16][var17+1]&0x280120 == 0 {
+			c.BFSStepX[var28] = var16 - 1
+			c.BFSStepZ[var28] = var17 + 1
+			var28 = (var28 + 1) % var21
+			c.BFSDirection[var16-1][var17+1] = 6
+			c.BFSCost[var16-1][var17+1] = var23
+		}
+		if var16 < var13-1 && var17 < var14-1 && c.BFSDirection[var16+1][var17+1] == 0 && var22[var16+1][var17+1]&0x2801E0 == 0 && var22[var16+1][var17]&0x280180 == 0 && var22[var16][var17+1]&0x280120 == 0 {
+			c.BFSStepX[var28] = var16 + 1
+			c.BFSStepZ[var28] = var17 + 1
+			var28 = (var28 + 1) % var21
+			c.BFSDirection[var16+1][var17+1] = 12
+			c.BFSCost[var16+1][var17+1] = var23
+		}
+	}
+	c.TryMoveNearest = 0
+	if !var20 {
+		if arg2 {
+			var23 = 100
+			for i := 1; i < 2; i++ {
+				for j := arg3 - i; j <= arg3+i; j++ {
+					for k := arg8 - i; k <= arg8+i; k++ {
+						if j >= 0 && k >= 0 && j < 104 && k < 104 && c.BFSCost[j][k] < var23 {
+							var23 = c.BFSCost[j][k]
+							var16 = j
+							var17 = k
+							c.TryMoveNearest = 1
+							var20 = true
+						}
+					}
+				}
+				if var20 {
+					break
+				}
+			}
+		}
+		if !var20 {
+			return false
+		}
+	}
+	var29 := 0
+	c.BFSStepX[var29] = var16
+	var19 = var29 + 1
+	c.BFSStepZ[var29] = var17
+	var24 := c.BFSDirection[var16][var17]
+	var23 = var24
+	for var16 != arg0 || var17 != arg4 {
+		if var23 != var24 {
+			var24 = var23
+			c.BFSStepX[var19] = var16
+			c.BFSStepZ[var19] = var17
+			var19++
+		}
+		if var23&0x2 != 0 {
+			var16++
+		} else if var23&0x8 != 0 {
+			var16--
+		}
+		if var23&0x1 != 0 {
+			var17++
+		} else if var23&0x4 != 0 {
+			var17--
+		}
+		var23 = c.BFSDirection[var16][var17]
+	}
+	if var19 > 0 {
+		var21 = var19
+		if var19 > 25 {
+			var21 = 25
+		}
+		var19--
+		var25 := c.BFSStepX[var19]
+		var26 := c.BFSStepZ[var19]
+		if arg6 == 0 {
+			c.Out.P1Isaac(181)
+			c.Out.P1(var21 + var21 + 3)
+		}
+		if arg6 == 1 {
+			c.Out.P1Isaac(165)
+			c.Out.P1(var21 + var21 + 3 + 14)
+		}
+		if arg6 == 2 {
+			c.Out.P1Isaac(93)
+			c.Out.P1(var21 + var21 + 3)
+		}
+		if c.ActionKey[5] == 1 {
+			c.Out.P1(1)
+		} else {
+			c.Out.P1(0)
+		}
+		c.Out.P2(var25 + c.SceneBaseTileX)
+		c.Out.P2(var26 + c.SceneBaseTileZ)
+		c.FlagSceneTileX = c.BFSStepX[0]
+		c.FlagSceneTileZ = c.BFSStepZ[0]
+		for i := 1; i < var21; i++ {
+			var19--
+			c.Out.P1(c.BFSStepX[var19] - var25)
+			c.Out.P1(c.BFSStepZ[var19] - var26)
+		}
+		return true
+	} else if arg6 == 1 {
+		return false
+	} else {
+		return true
+	}
+}
+
+func FormatObjCount(arg1 int) string {
+	if arg1 < 100_000 {
+		return strconv.Itoa(arg1)
+	}
+	if arg1 < 10_000_000 {
+		return strconv.Itoa(arg1/1_000) + "K"
+	}
+	return strconv.Itoa(arg1/1_000_000) + "M"
+}
+
+func (c *Client) GetPlayer(arg0 *io.Packet, arg1 int) {
+	c.EntityRemovalCount = 0
+	c.EntityUpdateCount = 0
+	c.GetPlayerLocal(arg0)
+	c.GetPlayerOldVis(arg0)
+	c.GetPlayerNewVis(arg1, arg0)
+	c.GetPlayerExtended1(arg0)
+	for i := range c.EntityRemovalCount {
+		var5 := c.EntityRemovalIDs[i]
+		if c.Players[var5].Cycle != LoopCycle {
+			c.Players[var5] = nil
+		}
+	}
+	if arg0.Pos != arg1 {
+		// TODO: signlink report error
+		panic("Error packet size mismatch in getplayer pos:" + strconv.Itoa(arg0.Pos) + " psize:" + strconv.Itoa(arg1))
+	}
+	for i := range c.PlayerCount {
+		if c.Players[c.PlayerIDs[i]] == nil {
+			// TODO signlink report error
+			panic(c.Username + " null entry in pl list - pos:" + strconv.Itoa(i) + " size:" + strconv.Itoa(c.PlayerCount))
+		}
+	}
+}
+
+func (c *Client) UpdateInterfaceAnimation(arg0, arg1 int) bool {
+	var4 := false
+	var5 := component.Instances[arg0]
+	for i := 0; i < len(var5.ChildID) && var5.ChildID[i] != -1; i++ {
+		var7 := component.Instances[var5.ChildID[i]]
+		if var7.Type == 1 {
+			var4 = var4 || c.UpdateInterfaceAnimation(var7.Id, arg1) // TODO: verify or
+		}
+		if var7.Type == 6 && var7.Anim != -1 || var7.ActiveAnim != -1 {
+			var8 := c.ExecuteInterfaceScript(var7)
+			var9 := 0
+			if var8 {
+				var9 = var7.ActiveAnim
+			} else {
+				var9 = var7.Anim
+			}
+			if var9 != -1 {
+				var10 := seqtype.Instances[var9]
+				var7.SeqCycle += arg1
+				for var7.SeqCycle > var10.Delay[var7.SeqFrame] {
+					var7.SeqCycle -= var10.Delay[var7.SeqFrame] + 1
+					var7.SeqFrame++
+					if var7.SeqFrame >= var10.FrameCount {
+						var7.SeqFrame -= var10.ReplayOff
+						if var7.SeqFrame < 0 || var7.SeqFrame >= var10.FrameCount {
+							var7.SeqFrame = 0
+						}
+					}
+					var4 = true
+				}
+			}
+		}
+	}
+	return var4
+}
+
+func (c *Client) AddMessage(arg0 int, arg1 string, arg3 string) {
+	if arg0 == 0 && c.StickyChatInterfaceID != -1 {
+		c.ModalMessage = arg1
+		c.MouseClickButton = 0
+	}
+	if c.ChatInterfaceID == -1 {
+		c.RedrawChatback = true
+	}
+	for i := 99; i > 0; i-- {
+		c.MessageType[i] = c.MessageType[i-1]
+		c.MessageSender[i] = c.MessageSender[i-1]
+		c.MessageText[i] = c.MessageText[i-1]
+	}
+	c.MessageType[0] = arg0
+	c.MessageSender[0] = arg3
+	c.MessageText[0] = arg1
+}
+
+func (c *Client) ResetInterfaceAnimation(arg1 int) {
+	var3 := component.Instances[arg1]
+	for i := 0; i < len(var3.ChildID) && var3.ChildID[i] != -1; i++ {
+		var5 := component.Instances[var3.ChildID[i]]
+		if var5.Type == 1 {
+			c.ResetInterfaceAnimation(var5.Id)
+		}
+		var5.SeqFrame = 0
+		var5.SeqCycle = 0
+	}
+}
+
+func (c *Client) RemoveFriend(arg1 int64) {
+	if arg1 == 0 {
+		return
+	}
+	for i := range c.FriendCount {
+		if c.FriendName37[i] == arg1 {
+			c.FriendCount--
+			c.RedrawSidebar = true
+			for j := i; j < c.FriendCount; j++ {
+				c.FriendName[j] = c.FriendName[j+1]
+				c.FriendWorld[j] = c.FriendWorld[j+1]
+				c.FriendName37[j] = c.FriendName37[j+1]
+			}
+			c.Out.P1Isaac(11)
+			c.Out.P8(arg1)
+			return
+		}
+	}
+}
+
+func (c *Client) ExecuteInterfaceScript(arg0 *component.Component) bool {
+	if arg0.ScriptComparator == nil {
+		return false
+	}
+	for i := range len(arg0.ScriptComparator) {
+		var4 := c.ExecuteClientScript1(arg0, i)
+		var5 := arg0.ScriptOperand[i]
+		if arg0.ScriptComparator[i] == 2 {
+			if var4 >= var5 {
+				return false
+			}
+		} else if arg0.ScriptComparator[i] == 3 {
+			if var4 <= var5 {
+				return false
+			}
+		} else if arg0.ScriptComparator[i] == 4 {
+			if var4 == var5 {
+				return false
+			}
+		} else if var4 != var5 {
+			return false
+		}
+	}
+	return true
+}
+
+func (c *Client) HandleMinimapInput() {
+	if c.MouseClickButton != 1 {
+		return
+	}
+	var2 := c.MouseClickX - 21 - 561
+	var3 := c.MouseClickY - 9 - 5
+	if var2 < 0 || var3 < 0 || var2 >= 146 || var3 >= 151 {
+		return
+	}
+	var2 -= 73
+	var3 -= 75
+	var4 := c.OrbitCameraYaw + c.MinimapAnticheatAngle&0x7FF
+	var5 := pix3d.SinTable[var4]
+	var6 := pix3d.CosTable[var4]
+	var12 := var5 * (c.MinimapZoom + 256) >> 8
+	var13 := var6 * (c.MinimapZoom + 256) >> 8
+	var7 := var3*var12 + var2*var13>>11
+	var8 := var3*var13 - var2*var12>>11
+	var9 := c.LocalPlayer.X + var7>>7
+	var10 := c.LocalPlayer.Z - var8>>7
+	var11 := c.TryMove(c.LocalPlayer.PathTileX[0], 0, true, var9, c.LocalPlayer.PathTileZ[0], 1, 0, var10, 0, 0, 0)
+	if !var11 {
+		return
+	}
+	c.Out.P1(var2)
+	c.Out.P1(var3)
+	c.Out.P2(c.OrbitCameraYaw)
+	c.Out.P1(57)
+	c.Out.P1(c.MinimapAnticheatAngle)
+	c.Out.P1(c.MinimapZoom)
+	c.Out.P1(89)
+	c.Out.P2(c.LocalPlayer.X)
+	c.Out.P2(c.LocalPlayer.Z)
+	c.Out.P1(c.TryMoveNearest)
+	c.Out.P1(63)
+}
+
+func (c *Client) HandleMouseInput() {
+	if c.ObjDragArea != 0 {
+		return
+	}
+	var2 := c.MouseClickButton
+	if c.SpellSelected == 1 && c.MouseClickX >= 520 && c.MouseClickY >= 165 && c.MouseClickX <= 788 && c.MouseClickY <= 230 {
+		var2 = 0
+	}
+	var3 := 0
+	var4 := 0
+	var5 := 0
+	if !c.MenuVisible {
+		if var2 == 1 && c.MenuSize > 0 {
+			var3 = c.MenuAction[c.MenuSize-1]
+			if var3 == 602 || var3 == 596 || var3 == 22 || var3 == 892 || var3 == 415 || var3 == 405 || var3 == 38 || var3 == 422 || var3 == 478 || var3 == 347 || var3 == 188 {
+				var4 = c.MenuParamB[c.MenuSize-1]
+				var5 = c.MenuParamC[c.MenuSize-1]
+				var6 := component.Instances[var5]
+				if var6.Draggable {
+					c.ObjGrabThreshold = false
+					c.ObjDragCycles = 0
+					c.ObjDragInterfaceID = var5
+					c.ObjDragSlot = var4
+					c.ObjDragArea = 2
+					c.ObjGrabX = c.MouseClickX
+					c.ObjGrabY = c.MouseClickY
+					if component.Instances[var5].Layer == c.ViewportInterfaceID {
+						c.ObjDragArea = 1
+					}
+					if component.Instances[var5].Layer == c.ChatInterfaceID {
+						c.ObjDragArea = 3
+					}
+					return
+				}
+			}
+		}
+		if var2 == 1 && (c.MouseButtonsOption == 1 || c.IsAddFriendOption(c.MenuSize-1)) && c.MenuSize > 2 {
+			var2 = 2
+		}
+		if var2 == 1 && c.MenuSize > 0 {
+			c.UseMenuOption(c.MenuSize - 1)
+		}
+		if var2 != 2 || c.MenuSize <= 0 {
+			return
+		}
+		c.ShowContextMenu()
+		return
+	}
+	if var2 != 1 {
+		var3 = c.MouseX
+		var4 = c.MouseY
+		if c.MenuArea == 0 {
+			var3 -= 8
+			var4 -= 11
+		}
+		if c.MenuArea == 1 {
+			var3 -= 562
+			var4 -= 231
+		}
+		if c.MenuArea == 2 {
+			var3 -= 22
+			var4 -= 375
+		}
+		if var3 < c.MenuX-10 || var3 > c.MenuX+c.MenuWidth+10 || var4 < c.MenuY-10 || var4 > c.MenuY+c.MenuHeight+10 {
+			c.MenuVisible = false
+			if c.MenuArea == 1 {
+				c.RedrawSidebar = true
+			}
+			if c.MenuArea == 2 {
+				c.RedrawChatback = true
+			}
+		}
+	}
+	if var2 != 1 {
+		return
+	}
+	var3 = c.MenuX
+	var4 = c.MenuY
+	var5 = c.MenuWidth
+	var11 := c.MouseClickX
+	var7 := c.MouseClickY
+	if c.MenuArea == 0 {
+		var11 -= 8
+		var7 -= 11
+	}
+	if c.MenuArea == 1 {
+		var11 -= 562
+		var7 -= 231
+	}
+	if c.MenuArea == 2 {
+		var11 -= 22
+		var7 -= 375
+	}
+	var8 := -1
+	for i := range c.MenuSize {
+		var10 := var4 + 31 + (c.MenuSize-1-i)*15
+		if var11 > var3 && var11 < var3+var5 && var7 > var10-13 && var7 < var10+3 {
+			var8 = i
+		}
+	}
+	if var8 != -1 {
+		c.UseMenuOption(var8)
+	}
+	c.MenuVisible = false
+	if c.MenuArea == 1 {
+		c.RedrawSidebar = true
+	}
+	if c.MenuArea == 2 {
+		c.RedrawChatback = true
+	}
+}
+
+func (c *Client) ApplyCutscene() {
+	var2 := c.CutsceneSrcLocalTileX*128 + 64
+	var3 := c.CutsceneSrcLocalTileX*128 + 64
+	var4 := c.GetHeightMapY(c.CurrentLevel, c.CutsceneSrcLocalTileX, c.CutsceneSrcLocalTileZ) - c.CutsceneSrcHeight
+	if c.CameraX < var2 {
+		c.CameraX += c.CutsceneMoveSpeed + (var2-c.CameraX)*c.CutsceneMoveAcceleration/1000
+		if c.CameraX > var2 {
+			c.CameraX = var2
+		}
+	}
+	if c.CameraX > var2 {
+		c.CameraX -= c.CutsceneMoveSpeed + (c.CameraX-var2)*c.CutsceneMoveAcceleration/1000
+		if c.CameraX < var2 {
+			c.CameraX = var2
+		}
+	}
+	if c.CameraY < var4 {
+		c.CameraY += c.CutsceneMoveSpeed + (var4-c.CameraY)*c.CutsceneMoveAcceleration/1000
+		if c.CameraY > var4 {
+			c.CameraY = var4
+		}
+	}
+	if c.CameraY > var4 {
+		c.CameraY -= c.CutsceneMoveSpeed + (c.CameraY-var4)*c.CutsceneMoveAcceleration/1000
+		if c.CameraY < var4 {
+			c.CameraY = var4
+		}
+	}
+	if c.CameraZ < var3 {
+		c.CameraZ += c.CutsceneMoveSpeed + (var3-c.CameraZ)*c.CutsceneMoveAcceleration/1000
+		if c.CameraZ > var3 {
+			c.CameraZ = var3
+		}
+	}
+	if c.CameraZ > var3 {
+		c.CameraZ -= c.CutsceneMoveSpeed + (c.CameraZ-var3)*c.CutsceneMoveAcceleration/1000
+		if c.CameraZ < var3 {
+			c.CameraZ = var3
+		}
+	}
+	var2 = c.CutsceneDstLocalTileX*128 + 64
+	var3 = c.CutsceneDstLocalTileZ*128 + 64
+	var4 = c.GetHeightMapY(c.CurrentLevel, c.CutsceneDstLocalTileX, c.CutsceneDstLocalTileZ) - c.CutsceneDstHeight
+	var5 := var2 - c.CameraX
+	var6 := var4 - c.CameraY
+	var7 := var3 - c.CameraZ
+	var8 := int(math.Sqrt(float64(var5*var5 + var7*var7)))
+	var9 := int(math.Atan2(float64(var6), float64(var8)*325.949)) & 0x7FF
+	var10 := int(math.Atan2(float64(var5), float64(var7)*-325.949)) & 0x7FF
+	if var9 < 128 {
+		var9 = 128
+	}
+	if var9 > 383 {
+		var9 = 383
+	}
+	if c.CameraPitch < var9 {
+		c.CameraPitch += c.CutsceneRotateSpeed + (var9-c.CameraPitch)*c.CutsceneRotateAcceleration/1000
+		if c.CameraPitch > var9 {
+			c.CameraPitch = var9
+		}
+	}
+	if c.CameraPitch > var9 {
+		c.CameraPitch -= c.CutsceneRotateSpeed + (c.CameraPitch-var9)*c.CutsceneRotateAcceleration/1000
+		if c.CameraPitch < var9 {
+			c.CameraPitch = var9
+		}
+	}
+	var11 := var10 - c.CameraYaw
+	if var11 > 1024 {
+		var11 -= 2048
+	}
+	if var11 < -1024 {
+		var11 += 2048
+	}
+	if var11 > 0 {
+		c.CameraYaw += c.CutsceneRotateSpeed + var11*c.CutsceneRotateAcceleration/1000
+		c.CameraYaw &= 0x7FF
+	}
+	if var11 < 0 {
+		c.CameraYaw -= c.CutsceneRotateSpeed + -var11*c.CutsceneRotateAcceleration/1000
+		c.CameraYaw &= 0x7FF
+	}
+	var12 := var10 - c.CameraYaw
+	if var12 > 1024 {
+		var12 -= 2048
+	}
+	if var12 < -1024 {
+		var12 += 2048
+	}
+	if var12 < 0 && var11 > 0 || var12 > 0 && var11 < 0 {
+		c.CameraYaw = var10
+	}
+}
+
+func (c *Client) HandleTabInput() {
+	if c.MouseClickButton != 1 {
+		return
+	}
+	if c.MouseClickX >= 549 && c.MouseClickX <= 583 && c.MouseClickY >= 195 && c.MouseClickY < 231 && c.TabInterfaceID[0] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 0
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 579 && c.MouseClickX <= 609 && c.MouseClickY >= 194 && c.MouseClickY < 231 && c.TabInterfaceID[1] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 1
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 607 && c.MouseClickX <= 637 && c.MouseClickY >= 194 && c.MouseClickY < 231 && c.TabInterfaceID[2] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 2
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 635 && c.MouseClickX <= 679 && c.MouseClickY >= 194 && c.MouseClickY < 229 && c.TabInterfaceID[3] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 3
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 676 && c.MouseClickX <= 706 && c.MouseClickY >= 194 && c.MouseClickY < 231 && c.TabInterfaceID[4] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 4
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 704 && c.MouseClickX <= 734 && c.MouseClickY >= 194 && c.MouseClickY < 231 && c.TabInterfaceID[5] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 5
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 732 && c.MouseClickX <= 766 && c.MouseClickY >= 195 && c.MouseClickY < 231 && c.TabInterfaceID[6] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 6
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 550 && c.MouseClickX <= 584 && c.MouseClickY >= 492 && c.MouseClickY < 528 && c.TabInterfaceID[7] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 7
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 582 && c.MouseClickX <= 612 && c.MouseClickY >= 492 && c.MouseClickY < 529 && c.TabInterfaceID[8] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 8
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 609 && c.MouseClickX <= 639 && c.MouseClickY >= 492 && c.MouseClickY < 529 && c.TabInterfaceID[9] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 9
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 637 && c.MouseClickX <= 681 && c.MouseClickY >= 493 && c.MouseClickY < 528 && c.TabInterfaceID[10] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 10
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 679 && c.MouseClickX <= 709 && c.MouseClickY >= 492 && c.MouseClickY < 529 && c.TabInterfaceID[11] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 11
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 706 && c.MouseClickX <= 736 && c.MouseClickY >= 492 && c.MouseClickY < 529 && c.TabInterfaceID[12] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 12
+		c.RedrawSideIcons = true
+	}
+	if c.MouseClickX >= 734 && c.MouseClickX <= 768 && c.MouseClickY >= 492 && c.MouseClickY < 528 && c.TabInterfaceID[13] != -1 {
+		c.RedrawSidebar = true
+		c.SelectedTab = 13
+		c.RedrawSideIcons = true
+	}
+	CycleLogic1++
+	if CycleLogic1 > 150 {
+		CycleLogic1 = 0
+		c.Out.P1Isaac(233)
+		c.Out.P1(43)
+	}
+}
+
+func (c *Client) HandleSocialMenuOption(arg0 *component.Component) bool {
+	var3 := arg0.ClientCode
+	if var3 >= 1 && var3 <= 200 {
+		if var3 >= 101 {
+			var3 -= 101
+		} else {
+			var3--
+		}
+		c.MenuOption[c.MenuSize] = "Remove @whi@" + c.FriendName[var3]
+		c.MenuAction[c.MenuSize] = 557
+		c.MenuSize++
+		c.MenuOption[c.MenuSize] = "Message @whi@" + c.FriendName[var3]
+		c.MenuAction[c.MenuSize] = 679
+		c.MenuSize++
+		return true
+	} else if var3 >= 401 && var3 <= 500 {
+		c.MenuOption[c.MenuSize] = "Remove @whi@" + arg0.Text
+		c.MenuAction[c.MenuSize] = 556
+		c.MenuSize++
+		return true
+	} else {
+		return false
+	}
+}
+
+func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
+	arg1.AccessBits()
+	var4 := arg1.GBit(8)
+	if var4 < c.NPCCount {
+		for i := var4; i < c.NPCCount; i++ {
+			c.EntityRemovalIDs[c.EntityRemovalCount] = c.NPCIDs[i]
+			c.EntityRemovalCount++
+		}
+	}
+	if var4 > c.NPCCount {
+		// TODO: signlink.reporterror
+		panic(c.Username + " Too many npcs")
+	}
+	c.NPCCount = 0
+	for i := range var4 {
+		var6 := c.NPCIDs[i]
+		var7 := c.NPCs[var6]
+		var8 := arg1.GBit(1)
+		if var8 == 0 {
+			c.NPCIDs[c.NPCCount] = var6
+			c.NPCCount++
+			var7.Cycle = LoopCycle
+		} else {
+			var9 := arg1.GBit(2)
+			if var9 == 0 {
+				c.NPCIDs[c.NPCCount] = var6
+				c.NPCCount++
+				var7.Cycle = LoopCycle
+				c.EntityUpdateIDs[c.EntityUpdateCount] = var6
+				c.EntityUpdateCount++
+			} else {
+				var10 := 0
+				var11 := 0
+				if var9 == 1 {
+					c.NPCIDs[c.NPCCount] = var6
+					c.NPCCount++
+					var7.Cycle = LoopCycle
+					var10 = arg1.GBit(3)
+					var7.MoveAlongRoute(false, var10)
+					var11 = arg1.GBit(1)
+					if var11 == 1 {
+						c.EntityUpdateIDs[c.EntityUpdateCount] = var6
+						c.EntityUpdateCount++
+					}
+				} else if var9 == 2 {
+					c.NPCIDs[c.NPCCount] = var6
+					c.NPCCount++
+					var7.Cycle = LoopCycle
+					var10 = arg1.GBit(3)
+					var7.MoveAlongRoute(true, var10)
+					var11 = arg1.GBit(3)
+					var7.MoveAlongRoute(true, var11)
+					var12 := arg1.GBit(1)
+					if var12 == 1 {
+						c.EntityUpdateIDs[c.EntityUpdateCount] = var6
+						c.EntityUpdateCount++
+					}
+				} else if var9 == 3 {
+					c.EntityRemovalIDs[c.EntityRemovalCount] = var6
+					c.EntityRemovalCount++
+				}
+			}
+		}
+	}
+}
+
+//func (c *Client) GetParameter(arg0 string) string {} // TODO: signlink.mainapp
+
+func (c *Client) TryReconnect() {
+	if c.IdleTimeout > 0 {
+		c.Logout()
+		return
+	}
+	c.AreaViewport.Bind()
+	c.FontPlain12.DrawStringCenter(144, 0, "Connection lost", 257)
+	c.FontPlain12.DrawStringCenter(143, 16777215, "Connection lost", 256)
+	c.FontPlain12.DrawStringCenter(159, 0, "Please wait - attempting to reestablish", 257)
+	c.FontPlain12.DrawStringCenter(158, 16777215, "Please wait - attempting to reestablish", 256)
+	//c.AreaViewport.Draw(11, ) // TODO: pixmap
+	c.FlagSceneTileX = 0
+	// TODO: c.stream
+	c.InGame = false
+	c.LoginFunc(c.Username, c.Password, true)
+	if !c.InGame {
+		c.Logout()
+	}
+	// TODO: c.stream.close()
+}
+
+func (c *Client) UpdateFlameBuffer(arg1 *pix8.Pix8) {
+	var3 := 256
+	for i := range len(c.FlameBuffer0) {
+		c.FlameBuffer0[i] = 0
+	}
+	for range 5000 {
+		var6 := int(rand.Float64() * 128.0 * float64(var3))
+		c.FlameBuffer0[var6] = int(rand.Float64() * 256.0)
+	}
+	for i := range 20 {
+		for j := 1; j < var3-1; j++ {
+			for k := 1; k < 127; k++ {
+				var9 := k + (j << 7)
+				c.FlameBuffer1[var9] = (c.FlameBuffer0[var9-1] + c.FlameBuffer0[var9+1] + c.FlameBuffer0[var9-128] + c.FlameBuffer0[var9+128]) / 4
+			}
+		}
+		var13 := c.FlameBuffer0
+		c.FlameBuffer0 = c.FlameBuffer1
+		c.FlameBuffer1 = var13
+	}
+	if arg1 == nil {
+		return
+	}
+	var7 := 0
+	for i := range arg1.Height {
+		for j := range arg1.Width {
+			var7++
+			if arg1.Pixels[var7-1] != 0 {
+				var10 := j + 16 + arg1.CropX
+				var11 := i + 16 + arg1.CropY
+				var12 := var10 + (var11 << 7)
+				c.FlameBuffer0[var12] = 0
+			}
+		}
+	}
+}
+
+func (c *Client) SortObjStacks(arg0, arg1 int) {
+	var3 := c.LevelObjStacks[c.CurrentLevel][arg0][arg1]
+	if var3 == nil {
+		c.Scene.RemoveObjStack(c.CurrentLevel, arg0, arg1)
+		return
+	}
+	var4 := -99999999
+	var var5 *entity.ObjStackEntity
+	for var6 := var3.Head(); var6 != nil; var6 = var3.Next() {
+		var7 := objtype.Get(var6.Index)
+		var8 := var7.Cost
+		if var7.Stackable {
+			var8 *= var6.Count + 1
+		}
+		if var8 > var4 {
+			var4 = var8
+			var5 = var6
+		}
+	}
+	var3.AddHead(var5)
+	var15 := -1
+	var8 := -1
+	var9 := 0
+	var10 := 0
+	for var6 := var3.Head(); var6 != nil; var6 = var3.Next() {
+		if var6.Index != var5.Index && var15 == -1 {
+			var15 = var6.Index
+			var9 = var6.Count
+		}
+		if var6.Index != var5.Index && var6.Index != var15 && var8 == -1 {
+			var8 = var6.Index
+			var10 = var6.Count
+		}
+	}
+	var var11 *model.Model
+	if var15 != -1 {
+		var11 = objtype.Get(var15).GetInterfaceModel(var9)
+	}
+	var var12 *model.Model
+	if var8 != -1 {
+		var12 = objtype.Get(var8).GetInterfaceModel(var10)
+	}
+	var13 := arg0 + (arg1 << 7) + 1610612736
+	var14 := objtype.Get(var5.Index)
+	c.Scene.AddObjStack(var14.GetInterfaceModel(var5.Count), var11, c.GetHeightMapY(c.CurrentLevel, arg0*128+64, arg1*128+64), c.CurrentLevel, var13, arg1, arg0, var12)
+}
+
+func (c *Client) BuildScene() {
+	// TODO: try/catch
+	c.MinimapLevel = -1
+	c.MergedLocations.Clear()
+	c.LocList.Clear()
+	c.Spotanims.Clear()
+	c.Projectiles.Clear()
+	pix3d.ClearTexels()
+	c.ClearCaches()
+	c.Scene.Reset()
+	for i := range 4 {
+		c.LevelCollisionMap[i].Reset()
+	}
+	var3 := world.NewWorld(104, c.LevelTileFlags, 104, c.LevelHeightmap)
+	var4 := make([]byte, 100_000)
+	var5 := len(c.SceneMapLandData)
+	world.LowMemory = world3d.LowMemory
+	for i := range var5 {
+		var7 := c.SceneMapIndex[i] >> 8
+		var8 := c.SceneMapIndex[i] & 0xFF
+		if var7 == 33 && var8 >= 71 && var8 <= 73 {
+			world.LowMemory = false
+		}
+	}
+	if world.LowMemory {
+		c.Scene.SetMinLevel(c.CurrentLevel)
+	} else {
+		c.Scene.SetMinLevel(0)
+	}
+	c.Out.P1Isaac(108)
+	for i := range var5 {
+		var8 := (c.SceneMapIndex[i]>>8)*64 - c.SceneBaseTileX
+		var9 := (c.SceneMapIndex[i]&0xFF)*64 - c.SceneBaseTileZ
+		var10 := c.SceneMapLandData[i]
+		if var10 != nil {
+			var11 := io.NewPacket(var10).G4()
+			// TODO: bzip2.read
+			var3.LoadGround(var4, (c.SceneCenterZoneX-6)*8, var9, var8, (c.SceneCenterZoneZ-6)*8)
+		} else if c.SceneCenterZoneZ < 800 {
+			var3.ClearLandscape(var8, var9, 64, 64)
+		}
+	}
+	c.Out.P1Isaac(108)
+	var16 := 0
+	for i := range var5 {
+		var14 := c.SceneMapLocData[i]
+		if var14 != nil {
+			var16 = io.NewPacket(var14).G4()
+			// TODO: bzip2.read
+			var11 := (c.SceneMapIndex[i]>>8)*64 - c.SceneBaseTileX
+			var12 := (c.SceneMapIndex[i]&0xFF)*64 - c.SceneBaseTileZ
+			var3.LoadLocations(var4, c.Scene, c.LevelCollisionMap, c.LocList, var12, var11)
+		}
+	}
+	c.Out.P1Isaac(108)
+	var3.Build(c.Scene, c.LevelCollisionMap)
+	c.AreaViewport.Bind()
+	c.Out.P1Isaac(108)
+	for var15 := c.LocList.Head(); var15 != nil; var15 = c.LocList.Next() {
+		if c.LevelTileFlags[1][var15.X][var15.Z]&0x2 == 2 {
+			var15.Level--
+			if var15.Level < 0 {
+				var15.Unlink()
+			}
+		}
+	}
+	for i := range 104 {
+		for j := range 104 {
+			c.SortObjStacks(i, j)
+		}
+	}
+	for var17 := c.SpawnedLocations.Head(); var17 != nil; var17 = c.SpawnedLocations.Next() {
+		c.AddLoc(var17.Angle, var17.X, var17.Z, var17.Layer, var17.LocIndex, var17.Shape, var17.Plane)
+	}
+	loctype.ModelCacheStatic.Clear()
+	pix3d.InitPool(20)
+}
+
+func (c *Client) Update() {
+	if c.ErrorStarted || c.ErrorLoading || c.ErrorHost {
+		return
+	}
+	LoopCycle++
+	if c.InGame {
+		c.UpdateGame()
+	} else {
+		c.UpdateTitle()
+	}
+}
+
+func (c *Client) UpdateEntityChats() {
+	var3 := 0
+	for i := -1; i < c.PlayerCount; i++ {
+		if i == -1 {
+			var3 = c.LOCAL_PLAYER_INDEX
+		} else {
+			var3 = c.PlayerIDs[i]
+		}
+		var4 := c.Players[var3]
+		if var4 != nil && var4.ChatTimer > 0 {
+			var4.ChatTimer--
+			if var4.ChatTimer == 0 {
+				var4.Chat = ""
+			}
+		}
+	}
+	for i := range c.NPCCount {
+		var6 := c.NPCIDs[i]
+		var5 := c.NPCs[var6]
+		if var5 != nil && var5.ChatTimer > 0 {
+			var5.ChatTimer--
+			if var5.ChatTimer == 0 {
+				var5.Chat = ""
+			}
+		}
+	}
+}
+
+func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) int {
+	if arg0.Scripts == nil || arg2 >= len(arg0.Scripts) {
+		return -2
+	}
+	// TODO: try/catch
+	var4 := arg0.Scripts[arg2]
+	var5 := 0
+	var6 := 0
+	for {
+		var7 := var4[var6]
+		var6++
+		if var7 == 0 {
+			return var5
+		}
+		if var7 == 1 {
+			var5 += c.SkillLevel[var4[var6]]
+			var6++
+		}
+		if var7 == 2 {
+			var5 += c.SkillBaseLevel[var4[var6]]
+			var6++
+		}
+		if var7 == 3 {
+			var5 += c.SkillExperience[var4[var6]]
+			var6++
+		}
+		var var8 *component.Component
+		var9 := 0
+		var10 := 0
+		if var7 == 4 {
+			var8 = component.Instances[var4[var6]]
+			var6++
+			var9 = var4[var6] + 1
+			var6++
+			for i := range len(var8.InvSlotObjId) {
+				if var8.InvSlotObjId[i] == var9 {
+					var5 += var8.InvSlotObjCount[i]
+				}
+			}
+		}
+		if var7 == 5 {
+			var5 += c.Varps[var4[var6]]
+			var6++
+		}
+		if var7 == 6 {
+			var5 += LevelExperience[c.SkillBaseLevel[var4[var6]]-1]
+			var6++
+		}
+		if var7 == 7 {
+			var5 += c.Varps[var4[var6]] * 100 / 46875
+			var6++
+		}
+		if var7 == 8 {
+			var5 += c.LocalPlayer.CombatLevel
+		}
+		var12 := 0
+		if var7 == 9 {
+			for i := range 19 {
+				if i == 18 {
+					i = 20
+				}
+				var5 += c.SkillBaseLevel[i]
+			}
+		}
+		if var7 == 10 {
+			var8 = component.Instances[var4[var6]]
+			var6++
+			var9 = var4[var6] + 1
+			var6++
+			for i := range len(var8.InvSlotObjId) {
+				if var8.InvSlotObjId[i] == var9 {
+					var5 += 999999999
+					break
+				}
+			}
+		}
+		if var7 == 11 {
+			var5 += c.Energy
+		}
+		if var7 == 12 {
+			var5 += c.WeightCarried
+		}
+		if var7 == 13 {
+			var12 = c.Varps[var4[var6]]
+			var6++
+			var9 = var4[var6]
+			var6++
+			if var12&0x1<<var9 == 0 {
+				var5 += 0
+			} else {
+				var5 += 1
+			}
+		}
+	}
+}
+
+//func (c *Client) DrawError() {} // TODO: graphics
+
+//func (c *Client) LoadTitleBackground() {} // TODO: graphics - pix322
+
+func (c *Client) PushLocs() {
+	for var2 := c.LocList.Head(); var2 != nil; var2 = c.LocList.Next() {
+		var3 := false
+		var2.SeqCycle += c.SceneDelta
+		if var2.SeqFrame == -1 {
+			var2.SeqFrame = 0
+			var3 = true
+		}
+		for ok := true; ok; ok = var2.SeqFrame >= 0 && var2.SeqFrame < var2.Seq.FrameCount {
+			for ok2 := true; ok2; ok2 = var2.SeqFrame < var2.Seq.FrameCount {
+				if var2.SeqCycle <= var2.Seq.Delay[var2.SeqFrame] {
+					goto afterLabel67 // TODO: verify
+				}
+				var2.SeqCycle -= var2.Seq.Delay[var2.SeqFrame] + 1
+				var2.SeqFrame++
+				var3 = true
+			}
+			var2.SeqFrame -= var2.Seq.ReplayOff
+		}
+		var2.Unlink()
+		var3 = false
+	afterLabel67:
+		if var3 {
+			var4 := var2.Level
+			var5 := var2.X
+			var6 := var2.Z
+			var7 := 0
+			if var2.Type == 0 {
+				var7 = c.Scene.GetWallBitSet(var4, var5, var6)
+			}
+			if var2.Type == 1 {
+				var7 = c.Scene.GetWallDecorationBitSet(var4, var6, var5)
+			}
+			if var2.Type == 2 {
+				var7 = c.Scene.GetLocBitSet(var4, var5, var6)
+			}
+			if var2.Type == 3 {
+				var7 = c.Scene.GetGroundDecorationBitSet(var4, var5, var6)
+			}
+			if var7 != 0 && (var7>>14&0x7FFF) == var2.Index {
+				var8 := c.LevelHeightmap[var4][var5][var6]
+				var9 := c.LevelHeightmap[var4][var5+1][var6]
+				var10 := c.LevelHeightmap[var4][var5+1][var6+1]
+				var11 := c.LevelHeightmap[var4][var5][var6+1]
+				var12 := loctype.Get(var2.Index)
+				var13 := -1
+				if var2.SeqFrame != -1 {
+					var13 = var2.Seq.Frames[var2.SeqFrame]
+				}
+				var14 := 0
+				var15 := 0
+				var16 := 0
+				var var17 *model.Model
+				if var2.Type == 2 {
+					var14 = c.Scene.GetInfo(var4, var5, var6, var7)
+					var15 = var14 & 0x1F
+					var16 = var14 >> 6
+					if var15 == 11 {
+						var15 = 10
+					}
+					var17 = var12.GetModel(var15, var16, var8, var9, var10, var11, var13)
+					c.Scene.SetLocModel(var5, var17, var4, var6)
+				} else if var2.Type == 1 {
+					var21 := var12.GetModel(4, 0, var8, var9, var10, var11, var13)
+					c.Scene.SetWallDecorationModel(var6, var5, var21, var4)
+				} else if var2.Type == 0 {
+					var14 = c.Scene.GetInfo(var4, var5, var6, var7)
+					var15 = var14 & 0x1F
+					var16 = var14 >> 6
+					if var15 == 2 {
+						var23 := var16 + 1&0x3
+						var18 := var12.GetModel(2, var16+4, var8, var9, var10, var11, var13)
+						var19 := var12.GetModel(2, var23, var8, var9, var10, var11, var13)
+						c.Scene.SetWallModels(var18, var19, var6, var5, var4)
+					} else {
+						var17 = var12.GetModel(var15, var16, var8, var9, var10, var11, var13)
+						c.Scene.SetWallModel(var17, var6, var5, var4)
+					}
+				} else if var2.Type == 3 {
+					var14 = c.Scene.GetInfo(var4, var5, var6, var7)
+					var15 = var14 >> 6
+					var22 := var12.GetModel(22, var15, var8, var9, var10, var11, var13)
+					c.Scene.SetGroundDecorationModel(var22, var6, var5, var4)
+				}
+			} else {
+				var2.Unlink()
+			}
+		}
+	}
+}
+
+func (c *Client) RemoveIgnore(arg1 int64) {
+	if arg1 == 0 {
+		return
+	}
+	for i := range c.IgnoreCount {
+		if c.IgnoreName37[i] == arg1 {
+			c.IgnoreCount--
+			c.RedrawSidebar = true
+			for j := i; j < c.IgnoreCount; j++ {
+				c.IgnoreName37[j] = c.IgnoreName37[j+1]
+			}
+			c.Out.P1Isaac(171)
+			c.Out.P8(arg1)
+			return
+		}
+	}
+}
+
+func (c *Client) HandleViewportOptions() {
+	if c.ObjSelected == 0 && c.SpellSelected == 0 {
+		c.MenuOption[c.MenuSize] = "Walk here"
+		c.MenuAction[c.MenuSize] = 660
+		c.MenuParamB[c.MenuSize] = c.MouseX
+		c.MenuParamC[c.MenuSize] = c.MouseY
+		c.MenuSize++
+	}
+	var2 := -1
+	for i := range model.PickedCount {
+		var4 := model.PickedBitsets[i]
+		var5 := var4 & 0x7F
+		var6 := var4 >> 7 & 0x7F
+		var7 := var4 >> 29 & 0x3
+		var8 := var4 >> 14 & 0x7FFF
+		if var4 != var2 {
+			var2 = var4
+			var10 := 0
+			if var7 == 2 && c.Scene.GetInfo(c.CurrentLevel, var5, var6, var4) >= 0 {
+				var9 := loctype.Get(var8)
+				if c.ObjSelected == 1 {
+					c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @cya@" + var9.Name
+					c.MenuAction[c.MenuSize] = 450
+					c.MenuParamA[c.MenuSize] = var4
+					c.MenuParamB[c.MenuSize] = var5
+					c.MenuParamC[c.MenuSize] = var6
+					c.MenuSize++
+				} else if c.SpellSelected != -1 {
+					if var9.Op != nil {
+						for j := 4; j >= 0; j-- {
+							if var9.Op[j] != nil {
+								c.MenuOption[c.MenuSize] = var9.Op[j] + " @cya@" + var9.Name
+								switch j {
+								case 0:
+									c.MenuAction[c.MenuSize] = 285
+								case 1:
+									c.MenuAction[c.MenuSize] = 504
+								case 2:
+									c.MenuAction[c.MenuSize] = 364
+								case 3:
+									c.MenuAction[c.MenuSize] = 581
+								case 4:
+									c.MenuAction[c.MenuSize] = 1501
+								}
+								c.MenuParamA[c.MenuSize] = var4
+								c.MenuParamB[c.MenuSize] = var5
+								c.MenuParamC[c.MenuSize] = var6
+								c.MenuSize++
+							}
+						}
+					}
+					c.MenuOption[c.MenuSize] = "Examine @cya@" + var9.Name
+					c.MenuAction[c.MenuSize] = 1175
+					c.MenuParamA[c.MenuSize] = var4
+					c.MenuParamB[c.MenuSize] = var5
+					c.MenuParamC[c.MenuSize] = var6
+					c.MenuSize++
+				} else if c.ActiveSpellFlags&0x4 == 4 {
+					c.MenuOption[c.MenuSize] = c.SpellCaption + " @cya@" + var9.Name
+					c.MenuAction[c.MenuSize] = 55
+					c.MenuParamA[c.MenuSize] = var4
+					c.MenuParamB[c.MenuSize] = var5
+					c.MenuParamC[c.MenuSize] = var6
+					c.MenuSize++
+				}
+			}
+			var var11 *entity.NpcEntity
+			if var7 == 1 {
+				var13 := c.NPCs[var8]
+				if var13.Type.Size == 1 && var13.X&0x7F == 64 && var13.Z&0x7F == 64 {
+					for j := range c.NPCCount {
+						var11 = c.NPCs[c.NPCIDs[j]]
+						if var11 != nil && var11 != var13 && var11.Type.Size == 1 && var11.X == var13.X && var11.Z == var13.Z {
+							c.AddNPCOptions(var11.Type, var6, var5, c.NPCIDs[j])
+						}
+					}
+				}
+				c.AddNPCOptions(var13.Type, var6, var5, var8)
+			}
+			if var7 == 0 {
+				var14 := c.Players[var8]
+				if var14.X&0x7F == 64 && var14.Z&0x7F == 64 {
+					for j := range c.NPCCount {
+						var11 = c.NPCs[c.NPCIDs[j]]
+						if var11 != nil && var11.Type.Size == 1 && var11.X == var14.X && var11.Z == var14.Z {
+							c.AddNPCOptions(var11.Type, var6, var5, c.NPCIDs[j])
+						}
+					}
+					for j := range c.PlayerCount {
+						var12 := c.Players[c.PlayerIDs[j]]
+						if var12 != nil && var12 != var14 && var12.X == var14.X && var12.Z == var14.Z {
+							c.AddPlayerOptions(var6, c.PlayerIDs[j], var12, var5)
+						}
+					}
+				}
+				c.AddPlayerOptions(var6, var8, var14, var5)
+			}
+			if var7 == 3 {
+				var15 := c.LevelObjStacks[c.CurrentLevel][var5][var6]
+				if var15 != nil {
+					for var17 := var15.Tail(); var17 != nil; var17 = var15.Prev() {
+						var18 := objtype.Get(var17.Index)
+						if c.ObjSelected == 1 {
+							c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @lre@" + var18.Name
+							c.MenuAction[c.MenuSize] = 217
+							c.MenuParamA[c.MenuSize] = var17.Index
+							c.MenuParamB[c.MenuSize] = var5
+							c.MenuParamC[c.MenuSize] = var6
+							c.MenuSize++
+						} else if c.SpellSelected != 1 {
+							for j := 4; j >= 0; j-- {
+								if var18.Op != nil && var18.Op[j] != nil {
+									c.MenuOption[c.MenuSize] = var18.Op[j] + " @lre@" + var18.Name
+									switch j {
+									case 0:
+										c.MenuAction[c.MenuSize] = 224
+									case 1:
+										c.MenuAction[c.MenuSize] = 993
+									case 2:
+										c.MenuAction[c.MenuSize] = 99
+									case 3:
+										c.MenuAction[c.MenuSize] = 746
+									case 4:
+										c.MenuAction[c.MenuSize] = 877
+									}
+									c.MenuParamA[c.MenuSize] = var17.Index
+									c.MenuParamB[c.MenuSize] = var5
+									c.MenuParamC[c.MenuSize] = var6
+									c.MenuSize++
+								} else if j == 2 {
+									c.MenuOption[c.MenuSize] = "Take @lre@" + var18.Name
+									c.MenuAction[c.MenuSize] = 99
+									c.MenuParamA[c.MenuSize] = var17.Index
+									c.MenuParamB[c.MenuSize] = var5
+									c.MenuParamC[c.MenuSize] = var6
+									c.MenuSize++
+								}
+							}
+							c.MenuOption[c.MenuSize] = "Examine @lre@" + var18.Name
+							c.MenuAction[c.MenuSize] = 1102
+							c.MenuParamA[c.MenuSize] = var17.Index
+							c.MenuParamB[c.MenuSize] = var5
+							c.MenuParamC[c.MenuSize] = var6
+							c.MenuSize++
+						} else if c.ActiveSpellFlags&0x1 == 1 {
+							c.MenuOption[c.MenuSize] = c.SpellCaption + " @lre@" + var18.Name
+							c.MenuAction[c.MenuSize] = 965
+							c.MenuParamA[c.MenuSize] = var17.Index
+							c.MenuParamB[c.MenuSize] = var5
+							c.MenuParamC[c.MenuSize] = var6
+							c.MenuSize++
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func (c *Client) UpdatePlayers() {
+	var3 := 0
+	for i := -1; i < c.PlayerCount; i++ {
+		if i == -1 {
+			var3 = c.LOCAL_PLAYER_INDEX
+		} else {
+			var3 = c.PlayerIDs[i]
+		}
+		var4 := c.Players[var3]
+		if var4 != nil {
+			c.UpdatePlayerEntity(var4)
+		}
+	}
+	CycleLogic6++
+	if CycleLogic6 <= 1406 {
+		return
+	}
+	CycleLogic6 = 0
+	c.Out.P1Isaac(219)
+	c.Out.P1(0)
+	var3 = c.Out.Pos
+	c.Out.P1(162)
+	c.Out.P1(22)
+	if int(rand.Float64()*2.0) == 0 {
+		c.Out.P1(84)
+	}
+	c.Out.P2(31824)
+	c.Out.P2(13490)
+	if int(rand.Float64()*2.0) == 0 {
+		c.Out.P1(123)
+	}
+	if int(rand.Float64()*2.0) == 0 {
+		c.Out.P1(134)
+	}
+	c.Out.P1(100)
+	c.Out.P1(94)
+	c.Out.P2(35521)
+	c.Out.PSize1(c.Out.Pos - var3)
 }

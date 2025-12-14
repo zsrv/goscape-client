@@ -12,7 +12,7 @@ type Isaac struct {
 	c     uint32
 }
 
-func NewIsaac(seed [4]int32) *Isaac {
+func NewIsaac(seed [4]int) *Isaac { // changed uint32 to int for easier func usage
 	isaac := new(Isaac)
 
 	for i := range seed {

@@ -425,7 +425,7 @@ func (p *Pix32) DrawRotatedMasked(arg0 int, arg1 int, arg2 []int, arg3 int, arg4
 	}
 }
 
-func (p *Pix32) DrawMasked(arg0 pix8.Pix8, arg1 int, arg2 int) {
+func (p *Pix32) DrawMasked(arg0 *pix8.Pix8, arg1 int, arg2 int) {
 	arg2 += p.CropX
 	arg1 += p.CropY
 	var5 := arg2 + arg1*pix2d.Width2D

@@ -4,10 +4,13 @@ import (
 	"math"
 
 	"goscape-client/pkg/jagex2/config/spotanimtype"
+	"goscape-client/pkg/jagex2/datastruct"
 	"goscape-client/pkg/jagex2/graphics/model"
 )
 
 type ProjectileEntity struct {
+	datastruct.Linkable[*ProjectileEntity]
+
 	SpotAnim      *spotanimtype.SpotAnimType
 	Level         int
 	SrcX          int

@@ -4,9 +4,12 @@ import (
 	"math/rand"
 
 	"goscape-client/pkg/jagex2/config/seqtype"
+	"goscape-client/pkg/jagex2/datastruct"
 )
 
 type LocEntity struct {
+	datastruct.Linkable[*LocEntity]
+
 	Level    int
 	Type     int
 	X        int
