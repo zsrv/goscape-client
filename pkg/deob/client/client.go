@@ -35,6 +35,7 @@ import (
 	"goscape-client/pkg/jagex2/graphics/pixfont"
 	"goscape-client/pkg/jagex2/graphics/pixmap"
 	"goscape-client/pkg/jagex2/io"
+	"goscape-client/pkg/jagex2/wordenc/wordpack"
 	"goscape-client/pkg/sign/signlink"
 )
 
@@ -43,12 +44,12 @@ var (
 	OpLogic3        int
 	CHARSET         string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"£$%^&*()-_=+[{]};:'@#~,<.>/?\\| "
 	LevelExperience []int  = make([]int, 99)
-	NodeID          int
-	Members         bool
+	NodeID          int    = 10
+	Members         bool   = true
 	RSA_EXPONENT    *big.Int
-	Field1307       [][]int
+	Field1307       [][]int = [][]int{{6798, 107, 10283, 16, 4797, 7744, 5799, 4634, 33697, 22433, 2983, 54193}, {8741, 12, 64030, 43162, 7735, 8404, 1701, 38430, 24094, 10153, 56621, 4783, 1341, 16578, 35003, 25239}, {25238, 8742, 12, 64030, 43162, 7735, 8404, 1701, 38430, 24094, 10153, 56621, 4783, 1341, 16578, 35003}, {4626, 11146, 6439, 12, 4758, 10270}, {4550, 4537, 5681, 5673, 5790, 6806, 8076, 4574}}
 	RSA_MODULUS     *big.Int
-	Field1438       []int
+	Field1438       []int = []int{9104, 10275, 7595, 3610, 7975, 8526, 918, 38802, 24466, 10145, 58654, 5027, 1457, 16565, 34991, 25486}
 	OpLogic5        int
 	OpLogic1        int
 	OpLogic4        int
@@ -67,6 +68,28 @@ var (
 	LowMemory       bool
 	Started         bool
 )
+
+func init() {
+	modulus, ok := new(big.Int).SetString("7162900525229798032761816791230527296329313291232324290237849263501208207972894053929065636522363163621000728841182238772712427862772219676577293600221789", 10)
+	if !ok {
+		panic("bad rsa modulus")
+	}
+	RSA_MODULUS = modulus
+
+	exponent, ok := new(big.Int).SetString("58778699976184461502525193738213253649000149147835990136706041084440742975821", 10)
+	if !ok {
+		panic("bad rsa exponent")
+	}
+	RSA_EXPONENT = exponent
+
+	var0 := 0
+	for i := range 99 {
+		var2 := i + 1
+		var3 := int(float64(var2) + math.Pow(2.0, float64(var2)/7.0)*300.0)
+		var0 += var3
+		LevelExperience[i] = var0 / 4
+	}
+}
 
 type Client struct {
 	client.GameShell
@@ -606,7 +629,7 @@ func (c *Client) Draw2DEntityElements() {
 			if i < c.PlayerCount {
 				var4 = 30
 				if var5.HeadIcons != 0 {
-					c.ProjectFromGround1(var5.Height+15, var5)
+					c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
 					if c.ProjectX > -1 {
 						for j := range 8 {
 							if var5.HeadIcons&0x1<<j != 0 {
@@ -617,19 +640,19 @@ func (c *Client) Draw2DEntityElements() {
 					}
 				}
 				if i >= 0 && c.HintType == 10 && c.HintPlayer == c.PlayerIDs[i] {
-					c.ProjectFromGround1(var5.Height+15, var5)
+					c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
 					if c.ProjectX > -1 {
 						c.ImageHeadIcons[7].Draw(c.ProjectY-var4, c.ProjectX-12)
 					}
 				}
 			} else if c.HintType == 1 && c.HintNPC == c.NPCIDs[i-c.PlayerCount] && LoopCycle%20 < 10 {
-				c.ProjectFromGround1(var5.Height+15, var5)
+				c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
 				if c.ProjectX > -1 {
 					c.ImageHeadIcons[2].Draw(c.ProjectY-28, c.ProjectX-12)
 				}
 			}
 			if var5.Chat != "" && (i >= c.PlayerCount || c.PublicChatSetting == 0 || c.PublicChatSetting == 3 || c.PublicChatSetting == 1 && c.IsFriend(var5.Name)) {
-				c.ProjectFromGround1(var5.Height, var5)
+				c.ProjectFromGround1(var5.Height, &var5.PathingEntity)
 				if c.ProjectX > -1 && c.ChatCount < c.MAX_CHATS {
 					c.ChatWidth[c.ChatCount] = c.FontBold12.StringWidth(var5.Chat) / 2
 					c.ChatHeight[c.ChatCount] = c.FontBold12.Height
@@ -650,7 +673,7 @@ func (c *Client) Draw2DEntityElements() {
 				}
 			}
 			if var5.CombatCycle > LoopCycle+100 {
-				c.ProjectFromGround1(var5.Height+15, var5)
+				c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
 				if c.ProjectX > -1 {
 					var4 = var5.Health * 30 / var5.TotalHealth
 					if var4 > 30 {
@@ -661,7 +684,7 @@ func (c *Client) Draw2DEntityElements() {
 				}
 			}
 			if var5.CombatCycle > LoopCycle+330 {
-				c.ProjectFromGround1(var5.Height/2, var5)
+				c.ProjectFromGround1(var5.Height/2, &var5.PathingEntity)
 				if c.ProjectX > -1 {
 					c.ImageHitmarks[var5.DamageType].Draw(c.ProjectY-12, c.ProjectX-12)
 					c.FontPlain11.DrawStringCenter(c.ProjectY+4, 0, strconv.Itoa(var5.Damage), c.ProjectX)
@@ -1006,7 +1029,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 		}
 		if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
 			var var12 *entity.LocAddEntity
-			for var13 := c.SpawnedLocations.Head().Value; var13 != nil; var13 = c.SpawnedLocations.Next().Value {
+			for var13 := c.SpawnedLocations.Head(); var13 != nil; var13 = c.SpawnedLocations.Next() {
 				if var13.Plane == c.CurrentLevel && var13.X == var5 && var13.Z == var6 && var13.Layer == var10 {
 					var12 = var13
 					break
@@ -1645,7 +1668,7 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *component.Comp
 								} else if c.SpellSelected != 1 && !var12.Interactable {
 									if var12.Interactable {
 										for l := 4; l >= 3; l-- {
-											if var18.IOp != nil && var18.IOp[l] != nil {
+											if var18.IOp != nil && var18.IOp[l] != "" {
 												c.MenuOption[c.MenuSize] = var18.IOp[l] + " @lre@" + var18.Name
 												if l == 3 {
 													c.MenuAction[c.MenuSize] = 478
@@ -1677,7 +1700,7 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *component.Comp
 									}
 									if var12.Interactable && var18.IOp != nil {
 										for l := 2; l >= 0; l-- {
-											if var18.IOp[l] != nil {
+											if var18.IOp[l] != "" {
 												c.MenuOption[c.MenuSize] = var18.IOp[l] + " @lre@" + var18.Name
 												if l == 0 {
 													c.MenuAction[c.MenuSize] = 405
@@ -1920,7 +1943,7 @@ func (c *Client) AddNPCOptions(arg0 *npctype.NpcType, arg2, arg3, arg4 int) {
 	}
 	var6 := arg0.Name
 	if arg0.VisLevel != 0 {
-		var6 = var6 + GetCombatLevelColorTag(c.LocalPlayer.CombatLevel, arg0.VisLevel) + " (level-" + arg0.VisLevel + ")"
+		var6 = var6 + GetCombatLevelColorTag(c.LocalPlayer.CombatLevel, arg0.VisLevel) + " (level-" + strconv.Itoa(arg0.VisLevel) + ")"
 	}
 	if c.ObjSelected == 1 {
 		c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @yel@" + var6
@@ -2044,7 +2067,7 @@ func (c *Client) HandleInputKey() {
 							c.Out.P1(0)
 							var7 = c.Out.Pos
 							c.Out.P8(c.SocialName37)
-							// TODO: WordPack.pack
+							wordpack.Pack(c.Out, true, c.SocialInput)
 							c.Out.PSize1(c.Out.Pos - var7)
 							c.SocialInput = datastruct.ToSentenceCase(c.SocialInput)
 							//c.SocialInput = // TODO: WordFilter.filter
@@ -2165,7 +2188,7 @@ func (c *Client) HandleInputKey() {
 							var5 := c.Out.Pos
 							c.Out.P1(var3)
 							c.Out.P1(var4)
-							// TODO: WordPack.pack
+							wordpack.Pack(c.Out, true, c.ChatTyped)
 							c.Out.PSize1(c.Out.Pos - var5)
 							c.ChatTyped = datastruct.ToSentenceCase(c.ChatTyped)
 							//c.ChatTyped = WordFilter.Filter // TODO: wordfilter
@@ -2311,7 +2334,7 @@ func (c *Client) LoadArchive(arg0 string, arg1 int, arg2 string, arg3 int) *io.J
 		return io.NewJagfile(var6)
 	}
 	for var6 == nil {
-		c.DrawProgress(true, "Requesting "+arg0, arg3)
+		c.DrawProgress("Requesting "+arg0, arg3)
 		// TODO: try/except
 		var8 = 0
 		//var9 := c.OpenURL
@@ -2432,7 +2455,7 @@ func (c *Client) UpdateFlames() {
 	var5 := 0
 	var6 := 0
 	var7 := 0
-	for i := range 100 {
+	for range 100 {
 		var5 = int(rand.Float64()*124.0) + 2
 		var6 = int(rand.Float64()*128.0) + 128
 		var7 = var5 + (var6 << 7)
@@ -2607,7 +2630,7 @@ func (c *Client) CreateMinimap(arg0 int) {
 						var16 := 104
 						var17 := 104
 						var18 := c.LevelCollisionMap[c.CurrentLevel].Flags
-						for k := range 10 {
+						for range 10 {
 							var20 := int(rand.Float64() * 4.0)
 							if var20 == 0 && var14 > 0 && var14 > i-3 && var18[var14-1][var15]&0x280108 == 0 {
 								var14--
@@ -2860,7 +2883,7 @@ func (c *Client) LoadTitleImages() {
 	c.UpdateFlameBuffer(nil)
 	c.FlameBuffer3 = make([]int, 32768)
 	c.FlameBuffer2 = make([]int, 32768)
-	c.DrawProgress(true, "Connecting to fileserver", 10)
+	c.DrawProgress("Connecting to fileserver", 10)
 	if !c.FlameActive {
 		c.FlamesThread = true
 		c.FlameActive = true
@@ -3481,7 +3504,7 @@ func (c *Client) UpdateNpcs() {
 		var3 := c.NPCIDs[i]
 		var4 := c.NPCs[var3]
 		if var4 != nil {
-			c.UpdateEntity(&var4.PathingEntity)
+			c.UpdateNpcEntity(var4)
 		}
 	}
 }
@@ -6659,7 +6682,7 @@ func (c *Client) TryMove(arg0, arg1 int, arg2 bool, arg3, arg4, arg6, arg7, arg8
 	}
 	var16 := arg0
 	var17 := arg4
-	c.BFSDirection[arg][arg4] = 99
+	c.BFSDirection[arg0][arg4] = 99
 	c.BFSCost[arg0][arg4] = 0
 	var18 := 0
 	var19 := 0
@@ -6968,7 +6991,7 @@ func (c *Client) ExecuteInterfaceScript(arg0 *component.Component) bool {
 		return false
 	}
 	for i := range len(arg0.ScriptComparator) {
-		var4 := c.ExecuteClientScript1(arg0, i)
+		var4 := c.ExecuteClientscript1(arg0, i)
 		var5 := arg0.ScriptOperand[i]
 		if arg0.ScriptComparator[i] == 2 {
 			if var4 >= var5 {
@@ -7437,7 +7460,7 @@ func (c *Client) UpdateFlameBuffer(arg1 *pix8.Pix8) {
 		var6 := int(rand.Float64() * 128.0 * float64(var3))
 		c.FlameBuffer0[var6] = int(rand.Float64() * 256.0)
 	}
-	for i := range 20 {
+	for range 20 {
 		for j := 1; j < var3-1; j++ {
 			for k := 1; k < 127; k++ {
 				var9 := k + (j << 7)
@@ -7869,7 +7892,7 @@ func (c *Client) HandleViewportOptions() {
 				} else if c.SpellSelected != -1 {
 					if var9.Op != nil {
 						for j := 4; j >= 0; j-- {
-							if var9.Op[j] != nil {
+							if var9.Op[j] != "" {
 								c.MenuOption[c.MenuSize] = var9.Op[j] + " @cya@" + var9.Name
 								switch j {
 								case 0:
@@ -7950,7 +7973,7 @@ func (c *Client) HandleViewportOptions() {
 							c.MenuSize++
 						} else if c.SpellSelected != 1 {
 							for j := 4; j >= 0; j-- {
-								if var18.Op != nil && var18.Op[j] != nil {
+								if var18.Op != nil && var18.Op[j] != "" {
 									c.MenuOption[c.MenuSize] = var18.Op[j] + " @lre@" + var18.Name
 									switch j {
 									case 0:
@@ -8036,4 +8059,338 @@ func (c *Client) UpdatePlayers() {
 	c.Out.P1(94)
 	c.Out.P2(35521)
 	c.Out.PSize1(c.Out.Pos - var3)
+}
+
+func (c *Client) DrawTileHint() {
+	if c.HintType != 2 {
+		return
+	}
+	c.ProjectFromGround2((c.HintTileZ-c.SceneBaseTileZ<<7)+c.HintOffsetZ, (c.HintTileX-c.SceneBaseTileX<<7)+c.HintOffsetX, c.HintHeight*2)
+	if c.ProjectX > -1 && LoopCycle%20 < 10 {
+		c.ImageHeadIcons[2].Draw(c.ProjectY-28, c.ProjectX-12)
+	}
+}
+
+func (c *Client) GetPlayerLocal(arg2 *io.Packet) {
+	arg2.AccessBits()
+	var4 := arg2.GBit(1)
+	if var4 == 0 {
+		return
+	}
+	var5 := arg2.GBit(2)
+	if var5 == 0 {
+		c.EntityUpdateIDs[c.EntityUpdateCount] = c.LOCAL_PLAYER_INDEX
+		c.EntityUpdateCount++
+		return
+	}
+	var6 := 0
+	var7 := 0
+	if var5 == 1 {
+		var6 = arg2.GBit(3)
+		c.LocalPlayer.MoveAlongRoute(false, var6)
+		var7 = arg2.GBit(1)
+		if var7 == 1 {
+			c.EntityUpdateIDs[c.EntityUpdateCount] = c.LOCAL_PLAYER_INDEX
+			c.EntityUpdateCount++
+		}
+		return
+	}
+	var8 := 0
+	if var5 == 2 {
+		var6 = arg2.GBit(3)
+		c.LocalPlayer.MoveAlongRoute(true, var6)
+		var7 = arg2.GBit(3)
+		c.LocalPlayer.MoveAlongRoute(true, var7)
+		var8 = arg2.GBit(1)
+		if var8 == 1 {
+			c.EntityUpdateIDs[c.EntityUpdateCount] = c.LOCAL_PLAYER_INDEX
+			c.EntityUpdateCount++
+		}
+	} else if var5 == 3 {
+		c.CurrentLevel = arg2.GBit(2)
+		var6 = arg2.GBit(7)
+		var7 = arg2.GBit(7)
+		var8 = arg2.GBit(1)
+		c.LocalPlayer.Teleport(var8 == 1, var6, var7)
+		var9 := arg2.GBit(1)
+		if var9 == 1 {
+			c.EntityUpdateIDs[c.EntityUpdateCount] = c.LOCAL_PLAYER_INDEX
+			c.EntityUpdateCount++
+		}
+	}
+}
+
+func (c *Client) DrawChatback() {
+	c.AreaChatback.Bind()
+	pix3d.LineOffset = c.AreaChatbackOffsets
+	c.ImageChatback.Draw(0, 0)
+	if c.ShowSocialInput {
+		c.FontBold12.DrawStringCenter(40, 0, c.SocialMessage, 239)
+		c.FontBold12.DrawStringCenter(60, 128, c.SocialInput+"*", 239)
+	} else if c.ChatbackInputOpen {
+		c.FontBold12.DrawStringCenter(40, 0, "Enter amount:", 239)
+		c.FontBold12.DrawStringCenter(60, 128, c.ChatbackInput+"*", 239)
+	} else if c.ModalMessage != "" {
+		c.FontBold12.DrawStringCenter(40, 0, c.ModalMessage, 239)
+		c.FontBold12.DrawStringCenter(60, 128, "Click to continue", 239)
+	} else if c.ChatInterfaceID != -1 {
+		c.DrawInterface(0, 0, component.Instances[c.ChatInterfaceID], 0)
+	} else if c.StickyChatInterfaceID == -1 {
+		var2 := c.FontPlain12
+		var3 := 0
+		pix2d.SetClipping(77, 0, 463, 0)
+		for i := range 100 {
+			if c.MessageText[i] != "" {
+				var5 := c.MessageType[i]
+				var6 := 70 - var3*14 + c.ChatScrollOffset
+				if var5 == 0 {
+					if var6 > 0 && var6 < 110 {
+						var2.DrawString(4, var6, 0, c.MessageText[i])
+					}
+					var3++
+				}
+				if var5 == 1 {
+					if var6 > 0 && var6 < 110 {
+						var2.DrawString(4, var6, 16777215, c.MessageSender[i]+":")
+						var2.DrawString(var2.StringWidth(c.MessageSender[i])+12, var6, 255, c.MessageText[i])
+					}
+					var3++
+				}
+				if var5 == 2 && (c.PublicChatSetting == 0 || c.PublicChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+					if var6 > 0 && var6 < 110 {
+						var2.DrawString(4, var6, 0, c.MessageSender[i]+":")
+						var2.DrawString(var2.StringWidth(c.MessageSender[i])+12, var6, 255, c.MessageText[i])
+					}
+					var3++
+				}
+				if (var5 == 3 || var5 == 7) && c.SplitPrivateChat == 0 && (var5 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+					if var6 > 0 && var6 < 110 {
+						var2.DrawString(4, var6, 0, "From "+c.MessageSender[i]+":")
+						var2.DrawString(var2.StringWidth("From "+c.MessageSender[i])+12, var6, 8388608, c.MessageText[i])
+					}
+					var3++
+				}
+				if var5 == 4 && (c.TradeChatSetting == 0 || c.TradeChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+					if var6 > 0 && var6 < 110 {
+						var2.DrawString(4, var6, 8388736, c.MessageSender[i]+" "+c.MessageText[i])
+					}
+					var3++
+				}
+				if var5 == 5 && c.SplitPrivateChat == 0 && c.PrivateChatSetting < 2 {
+					if var6 > 0 && var6 < 110 {
+						var2.DrawString(4, var6, 8388608, c.MessageText[i])
+					}
+					var3++
+				}
+				if var5 == 6 && c.SplitPrivateChat == 0 && c.PrivateChatSetting < 2 {
+					if var6 > 0 && var6 < 110 {
+						var2.DrawString(4, var6, 0, "To "+c.MessageSender[i]+":")
+						var2.DrawString(var2.StringWidth("To "+c.MessageSender[i])+12, var6, 8388608, c.MessageText[i])
+					}
+					var3++
+				}
+				if var5 == 8 && (c.TradeChatSetting == 0 || c.TradeChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+					if var6 > 0 && var6 < 110 {
+						var2.DrawString(4, var6, 13350793, c.MessageSender[i]+" "+c.MessageText[i])
+					}
+					var3++
+				}
+			}
+		}
+		pix2d.ResetClipping()
+		c.ChatScrollHeight = var3*14 + 7
+		if c.ChatScrollHeight < 78 {
+			c.ChatScrollHeight = 78
+		}
+		c.DrawScrollbar(463, 0, c.ChatScrollHeight-c.ChatScrollOffset-77, c.ChatScrollHeight, 77)
+		var2.DrawString(4, 90, 0, datastruct.FormatName(c.Username)+":")
+		var2.DrawString(var2.StringWidth(c.Username+": ")+6, 90, 255, c.ChatTyped+"*")
+		pix2d.HLine(0, 77, 479, 0)
+	} else {
+		c.DrawInterface(0, 0, component.Instances[c.StickyChatInterfaceID], 0)
+	}
+	if c.MenuVisible && c.MenuArea == 2 {
+		c.DrawMenu()
+	}
+	//c.AreaChatback.Draw(375) // TODO: pixmap
+	c.AreaViewport.Bind()
+	pix3d.LineOffset = c.AreaViewportOffsets
+}
+
+//func (c *Client) Read() bool {} // TODO: c.stream
+
+func (c *Client) DrawSidebar() {
+	c.AreaSidebar.Bind()
+	pix3d.LineOffset = c.AreaSidebarOffsets
+	c.ImageInvback.Draw(0, 0)
+	if c.SidebarInterfaceID != -1 {
+		c.DrawInterface(0, 0, component.Instances[c.SidebarInterfaceID], 0)
+	} else if c.TabInterfaceID[c.SelectedTab] != -1 {
+		c.DrawInterface(0, 0, component.Instances[c.TabInterfaceID[c.SelectedTab]], 0)
+	}
+	if c.MenuVisible && c.MenuArea == 1 {
+		c.DrawMenu()
+	}
+	//c.AreaSidebar.Draw() // TODO pixmap
+	c.AreaViewport.Bind()
+	pix3d.LineOffset = c.AreaViewportOffsets
+}
+
+func (c *Client) IsFriend(arg1 string) bool {
+	if arg1 == "" {
+		return false
+	}
+	for i := range c.FriendCount {
+		if strings.EqualFold(arg1, c.FriendName[i]) {
+			return true
+		}
+	}
+	if strings.EqualFold(arg1, c.LocalPlayer.Name) {
+		return true
+	}
+	return false
+}
+
+// MISSING: init() only used by java applets
+
+func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *playerentity.PlayerEntity) {
+	var6 := 0
+	if arg2&0x1 == 1 {
+		var6 = arg3.G1()
+		var7 := make([]byte, var6)
+		var8 := io.NewPacket(var7)
+		arg3.GData(var6, 0, var7)
+		c.PlayerAppearanceBuffer[arg1] = var8
+		arg4.Read(var8)
+	}
+	var15 := 0
+	if arg2&0x2 == 2 {
+		var6 = arg3.G2()
+		if var6 == 65535 {
+			var6 = -1
+		}
+		if var6 == arg4.PrimarySeqID {
+			arg4.PrimarySeqLoop = 0
+		}
+		var15 = arg3.G1()
+		if var6 == -1 || arg4.PrimarySeqID == -1 || seqtype.Instances[var6].Priority > seqtype.Instances[arg4.PrimarySeqID].Priority || seqtype.Instances[arg4.PrimarySeqID].Priority == 0 {
+			arg4.PrimarySeqID = var6
+			arg4.PrimarySeqFrame = 0
+			arg4.PrimarySeqCycle = 0
+			arg4.PrimarySeqDelay = var15
+			arg4.PrimarySeqLoop = 0
+		}
+	}
+	if arg2&0x4 == 4 {
+		arg4.TargetID = arg3.G2()
+		if arg4.TargetID == 65535 {
+			arg4.TargetID = -1
+		}
+	}
+	if arg2&0x8 == 8 {
+		arg4.Chat = arg3.GJStr()
+		arg4.ChatColor = 0
+		arg4.ChatStyle = 0
+		arg4.ChatTimer = 150
+		c.AddMessage(2, arg4.Chat, arg4.Name)
+	}
+	if arg2&0x10 == 16 {
+		arg4.Damage = arg3.G1()
+		arg4.DamageType = arg3.G1()
+		arg4.CombatCycle = LoopCycle + 400
+		arg4.Health = arg3.G1()
+		arg4.TotalHealth = arg3.G1()
+	}
+	if arg2&0x20 == 32 {
+		arg4.TargetTileX = arg3.G2()
+		arg4.TargetTileZ = arg3.G2()
+	}
+	if arg2&0x40 == 64 {
+		var6 = arg3.G2()
+		var15 = arg3.G1()
+		var16 := arg3.G1()
+		var9 := arg3.Pos
+		if arg4.Name != "" {
+			var10 := datastruct.ToBase37(arg4.Name)
+			var12 := false
+			if var15 <= 1 {
+				for i := range c.IgnoreCount {
+					if c.IgnoreName37[i] == var10 {
+						var12 = true
+						break
+					}
+				}
+			}
+			if !var12 && c.OverrideChat == 0 {
+				// TODO: try/catch
+				var17 := wordpack.Unpack(arg3, var16)
+				var18 := "" // TODO: wordfilter
+				arg4.Chat = var18
+				arg4.ChatColor = var6 >> 8
+				arg4.ChatStyle = var6 & 0xFF
+				arg4.ChatTimer = 150
+				if var15 > 1 {
+					c.AddMessage(1, var18, arg4.Name)
+				} else {
+					c.AddMessage(2, var18, arg4.Name)
+				}
+			}
+		}
+		arg3.Pos = var9 + var16
+	}
+	if arg2&0x100 == 256 {
+		arg4.SpotanimID = arg3.G2()
+		var6 = arg3.G4()
+		arg4.SpotanimOffset = var6 >> 16
+		arg4.SpotanimLastCycle = LoopCycle + (var6 & 0xFFFF)
+		arg4.SpotanimFrame = 0
+		arg4.SpotanimCycle = 0
+		if arg4.SpotanimLastCycle > LoopCycle {
+			arg4.SpotanimFrame = -1
+		}
+		if arg4.SpotanimID == 65535 {
+			arg4.SpotanimID = -1
+		}
+	}
+	if arg2&0x200 != 512 {
+		return
+	}
+	arg4.ForceMoveStartSceneTileX = arg3.G1()
+	arg4.ForceMoveStartSceneTileZ = arg3.G1()
+	arg4.ForceMoveEndSceneTileX = arg3.G1()
+	arg4.ForceMoveEndSceneTileZ = arg3.G1()
+	arg4.ForceMoveEndCycle = arg3.G2() + LoopCycle
+	arg4.ForceMoveStartCycle = arg3.G2() + LoopCycle
+	arg4.ForceMoveFaceDirection = arg3.G1()
+	arg4.PathLength = 0
+	arg4.PathTileX[0] = arg4.ForceMoveEndSceneTileX
+	arg4.PathTileZ[0] = arg4.ForceMoveEndSceneTileZ
+}
+
+func (c *Client) DrawProgress(arg1 string, arg2 int) {
+	c.LoadTitle()
+	if c.ArchiveTitle == nil {
+		c.GameShell.DrawProgress(arg1, arg2)
+		return
+	}
+	c.ImageTitle4.Bind()
+	var4 := 360
+	var5 := 200
+	var6 := 20
+	c.FontBold12.DrawStringCenter(var5/2-26-var6, 16777215, "RuneScape is loading - please wait...", var4/2)
+	var7 := var5/2 - 18 - var6
+	pix2d.DrawRect(var4/2-152, 9179409, 34, var7, 304)
+	pix2d.DrawRect(var4/2-151, 0, 32, var7+1, 302)
+	pix2d.FillRect(var7+2, var4/2-150, 9179409, arg2*3, 30)
+	pix2d.FillRect(var7+2, var4/2-150+arg2*3, 0, 300-arg2*3, 30)
+	c.FontBold12.DrawStringCenter(var5/2+5-var6, 16777215, arg1, var4/2)
+	//c.ImageTitle4.Draw(186) // TODO pixmap
+	if !c.RedrawBackground {
+		return
+	}
+	c.RedrawBackground = false
+	if !c.FlameActive {
+		// TODO: pixmap
+	}
+	// TODO: pixmap
 }

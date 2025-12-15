@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	fmt.Println("RS2 user client - release #", 225)
+	fmt.Println("RS2 user client - release #" + strconv.Itoa(225))
 	if len(os.Args) != 4 {
 		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members]")
 		os.Exit(1)
@@ -27,9 +27,9 @@ func main() {
 	}
 	switch os.Args[2] {
 	case "lowmem":
-	// TODO
+		client.SetLowMemory()
 	case "highmem":
-	// TODO
+		client.SetHighMemory()
 	default:
 		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members]")
 		os.Exit(1)
@@ -44,5 +44,6 @@ func main() {
 		os.Exit(1)
 	}
 	// TODO: signlink.startpriv
-	// TODO: new client(), initApplication
+	var1 := client.NewClient()
+	var1.InitApplication(532, 789)
 }
