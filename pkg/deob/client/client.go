@@ -35,6 +35,7 @@ import (
 	"goscape-client/pkg/jagex2/graphics/pixfont"
 	"goscape-client/pkg/jagex2/graphics/pixmap"
 	"goscape-client/pkg/jagex2/io"
+	"goscape-client/pkg/jagex2/sound/wave"
 	"goscape-client/pkg/jagex2/wordenc/wordfilter"
 	"goscape-client/pkg/jagex2/wordenc/wordpack"
 	"goscape-client/pkg/sign/signlink"
@@ -5305,7 +5306,7 @@ func (c *Client) Load() {
 		c.DrawProgress("Unpacking sounds", 90)
 		var20 := var10.Read("sounds.dat", nil)
 		var21 := io.NewPacket(var20)
-		// TODO: wave.unpack
+		wave.Unpack(var21)
 	}
 	c.DrawProgress("Unpacking interfaces", 92)
 	var48 := []*pixfont.PixFont{c.FontPlain11, c.FontPlain12, c.FontBold12, c.FontQuill8}
@@ -6395,7 +6396,7 @@ func (c *Client) UpdateGame() {
 		if c.WaveDelay[i] <= 0 {
 			var4 := false
 			if c.WaveIDs[i] != c.LastWaveID || c.WaveLoops[i] != c.LastWaveLoops {
-				var5 := io.NewPacket(nil) // TODO: wave.generate
+				var5 := wave.Generate(c.WaveLoops[i], c.WaveIDs[i])
 				if time.Now().UnixMilli()+int64(var5.Pos/22) > c.LastWaveStartTime+int64(c.LastWaveLength/22) {
 					c.LastWaveLength = var5.Pos
 					c.LastWaveStartTime = time.Now().UnixMilli()

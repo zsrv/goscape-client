@@ -123,17 +123,15 @@ func (p *Packet) P4(arg0 int) {
 	p.Pos++
 }
 
-func (p *Packet) IP4(arg0 bool, arg1 int) {
+func (p *Packet) IP4(arg1 int) {
 	p.Data[p.Pos] = byte(arg1)
 	p.Pos++
 	p.Data[p.Pos] = byte(arg1 >> 8)
 	p.Pos++
 	p.Data[p.Pos] = byte(arg1 >> 16)
 	p.Pos++
-	if !arg0 {
-		p.Data[p.Pos] = byte(arg1 >> 24)
-		p.Pos++
-	}
+	p.Data[p.Pos] = byte(arg1 >> 24)
+	p.Pos++
 }
 
 func (p *Packet) P8(arg1 int64) {
