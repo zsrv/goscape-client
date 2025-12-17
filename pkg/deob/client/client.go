@@ -35,6 +35,7 @@ import (
 	"goscape-client/pkg/jagex2/graphics/pixfont"
 	"goscape-client/pkg/jagex2/graphics/pixmap"
 	"goscape-client/pkg/jagex2/io"
+	"goscape-client/pkg/jagex2/wordenc/wordfilter"
 	"goscape-client/pkg/jagex2/wordenc/wordpack"
 	"goscape-client/pkg/sign/signlink"
 )
@@ -2070,7 +2071,7 @@ func (c *Client) HandleInputKey() {
 							wordpack.Pack(c.Out, true, c.SocialInput)
 							c.Out.PSize1(c.Out.Pos - var7)
 							c.SocialInput = datastruct.ToSentenceCase(c.SocialInput)
-							//c.SocialInput = // TODO: WordFilter.filter
+							c.SocialInput = wordfilter.Filter(c.SocialInput)
 							c.AddMessage(6, c.SocialInput, datastruct.FormatName(datastruct.FromBase37(c.SocialName37)))
 							if c.PrivateChatSetting == 2 {
 								c.PrivateChatSetting = 1
@@ -2191,7 +2192,7 @@ func (c *Client) HandleInputKey() {
 							wordpack.Pack(c.Out, true, c.ChatTyped)
 							c.Out.PSize1(c.Out.Pos - var5)
 							c.ChatTyped = datastruct.ToSentenceCase(c.ChatTyped)
-							//c.ChatTyped = WordFilter.Filter // TODO: wordfilter
+							c.ChatTyped = wordfilter.Filter(c.ChatTyped)
 							c.LocalPlayer.Chat = c.ChatTyped
 							c.LocalPlayer.ChatColor = var3
 							c.LocalPlayer.ChatStyle = var4
@@ -5356,7 +5357,7 @@ func (c *Client) Load() {
 		var50[i] = var26 * var27 >> 16
 	}
 	world3d.Init(var50, 800, 512, 334, 500)
-	// TODO: wordfilter.unpack
+	wordfilter.Unpack(var9)
 }
 
 func (c *Client) HandleInput() {
@@ -8324,7 +8325,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 			if !var12 && c.OverrideChat == 0 {
 				// TODO: try/catch
 				var17 := wordpack.Unpack(arg3, var16)
-				var18 := "" // TODO: wordfilter
+				var18 := wordfilter.Filter(var17)
 				arg4.Chat = var18
 				arg4.ChatColor = var6 >> 8
 				arg4.ChatStyle = var6 & 0xFF

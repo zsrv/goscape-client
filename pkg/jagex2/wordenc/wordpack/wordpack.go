@@ -14,7 +14,7 @@ var (
 func Unpack(arg0 *io.Packet, arg2 int) string {
 	var3 := 0
 	var4 := -1
-	for i := range arg2 {
+	for range arg2 {
 		var6 := arg0.G1()
 		var7 := var6 >> 4 & 0xF
 		if var4 != -1 {
