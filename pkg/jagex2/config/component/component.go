@@ -330,7 +330,7 @@ func GetImage(arg0 *io.Jagfile, arg1 int, arg2 string) *pix32.Pix32 {
 		return var6
 	}
 	var6 = pix32.NewPix323(arg0, arg2, arg1)
-	//ImageCache.Put(var4, var6) // TODO
+	//ImageCache.Put(var4, var6) // TODO: LruCache
 	return var6
 }
 
@@ -340,6 +340,6 @@ func GetModel(arg1 int) *model.Model {
 		return var2
 	}
 	var2 = model.NewModel1(arg1)
-	//ModelCache.Put(int64(arg1), var2) // TODO
+	//ModelCache.Put(int64(arg1), var2) // TODO: LruCache
 	return var2
 }

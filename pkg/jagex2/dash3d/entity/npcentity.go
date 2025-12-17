@@ -14,7 +14,7 @@ type NpcEntity struct {
 }
 
 func NewNpcEntity() *NpcEntity {
-	return &NpcEntity{}
+	return new(NpcEntity)
 }
 
 func (e *NpcEntity) Draw() *model.Model {

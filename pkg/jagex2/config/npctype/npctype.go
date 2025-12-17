@@ -188,7 +188,7 @@ func (t *NpcType) GetSequencedModel(arg0 int, arg1 int, arg2 []int) *model.Model
 		}
 		var5.CreateLabelReferences()
 		var5.CalculateNormals(64, 850, -30, -50, -30, true)
-		//ModelCache.Put(t.Index, var5) // TODO
+		//ModelCache.Put(t.Index, var5) // TODO: LruCache
 	}
 	var4 := model.NewModel6(var5, !t.AnimHasAlpha)
 	if arg0 != -1 && arg1 != -1 {

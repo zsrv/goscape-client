@@ -298,7 +298,7 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 	}
 	var4.CalculateNormals(64, 768, -50, -10, -50, true)
 	var4.Pickable = true
-	//ModelCache.Put(int64(t.Index), var4) // TODO
+	//ModelCache.Put(int64(t.Index), var4) // TODO: LruCache
 	return var4
 }
 
@@ -378,7 +378,7 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 		var20.CropW = var21
 		var20.CropH = var22
 	}
-	//IconCache.Put(arg0, var3) // TODO: iconcache
+	//IconCache.Put(arg0, var3) // TODO: LruCache
 	pix2d.Bind(var9, var8, var10)
 	pix2d.SetClipping(var14, var13, var12, var11)
 	pix3d.CenterW3D = var5

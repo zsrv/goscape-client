@@ -10,5 +10,5 @@ type ObjStackEntity struct {
 }
 
 func NewObjStackEntity() *ObjStackEntity {
-	return &ObjStackEntity{}
+	return new(ObjStackEntity)
 }

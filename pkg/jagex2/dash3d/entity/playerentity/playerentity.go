@@ -245,7 +245,7 @@ func (e *PlayerEntity) GetSequencedModel() *model.Model {
 		}
 		var15.CreateLabelReferences()
 		var15.CalculateNormals(64, 850, -30, -50, -30, true)
-		//e.ModelCache.Put(var2, var15) // TODO
+		//ModelCache.Put(var2, var15) // TODO: LruCache
 	}
 	if e.LowMemory {
 		return var15

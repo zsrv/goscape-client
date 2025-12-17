@@ -230,7 +230,7 @@ func (w *World) LoadLocations(arg0 []byte, arg1 *world3d.World3D, arg2 []*dash3d
 	}
 }
 
-func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, arg6 *world3d.World3D, arg7 datastruct.LinkList[*entity.LocEntity], arg8, arg9 int) {
+func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, arg6 *world3d.World3D, arg7 *datastruct.LinkList[*entity.LocEntity], arg8, arg9 int) {
 	if LowMemory {
 		if w.LevelTileFlags[arg2][arg9][arg3]&0x10 != 0 {
 			return

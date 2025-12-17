@@ -14,5 +14,5 @@ type LocAddEntity struct {
 }
 
 func NewLocAddEntity() *LocAddEntity {
-	return &LocAddEntity{}
+	return new(LocAddEntity)
 }

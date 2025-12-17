@@ -102,6 +102,6 @@ func (t *SpotAnimType) GetModel() *model.Model {
 			var1.Recolor(t.RecolS[i], t.RecolD[i])
 		}
 	}
-	//ModelCache.Put(int64(t.Index), var1) // TODO
+	//ModelCache.Put(int64(t.Index), var1) // TODO: LruCache
 	return var1
 }
