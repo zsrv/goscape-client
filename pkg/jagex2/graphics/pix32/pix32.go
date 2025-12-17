@@ -33,7 +33,7 @@ func NewPix321(arg0 int, arg1 int) *Pix32 {
 	return &p
 }
 
-//func NewPix322(arg0 []byte, arg1 Component) *Pix32 {} // TODO
+//func NewPix322(arg0 []byte, arg1 Component) *Pix32 {} // TODO: java.awt.Component
 
 func NewPix323(arg0 *io.Jagfile, arg1 string, arg2 int) *Pix32 {
 	var p Pix32

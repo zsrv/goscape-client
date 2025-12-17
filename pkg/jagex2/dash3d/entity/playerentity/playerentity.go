@@ -8,6 +8,7 @@ import (
 	"goscape-client/pkg/jagex2/config/spotanimtype"
 	"goscape-client/pkg/jagex2/dash3d/entity"
 	"goscape-client/pkg/jagex2/datastruct"
+	"goscape-client/pkg/jagex2/datastruct/jstring"
 	"goscape-client/pkg/jagex2/graphics/model"
 	"goscape-client/pkg/jagex2/io"
 )
@@ -100,7 +101,7 @@ func (e *PlayerEntity) Read(arg1 *io.Packet) {
 	if e.SeqRunID == 65535 {
 		e.SeqRunID = -1
 	}
-	e.Name = datastruct.FormatName(datastruct.FromBase37(arg1.G8()))
+	e.Name = jstring.FormatName(jstring.FromBase37(arg1.G8()))
 	e.CombatLevel = arg1.G1()
 	e.Visible = true
 	e.AppearanceHashCode = 0

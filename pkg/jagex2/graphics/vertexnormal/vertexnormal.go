@@ -8,5 +8,5 @@ type VertexNormal struct {
 }
 
 func NewVertexNormal() *VertexNormal {
-	return &VertexNormal{}
+	return new(VertexNormal)
 }

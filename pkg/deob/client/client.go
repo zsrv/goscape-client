@@ -25,6 +25,7 @@ import (
 	"goscape-client/pkg/jagex2/dash3d/world"
 	"goscape-client/pkg/jagex2/dash3d/world3d"
 	"goscape-client/pkg/jagex2/datastruct"
+	"goscape-client/pkg/jagex2/datastruct/jstring"
 	"goscape-client/pkg/jagex2/graphics/animbase"
 	"goscape-client/pkg/jagex2/graphics/animframe"
 	"goscape-client/pkg/jagex2/graphics/model"
@@ -984,7 +985,7 @@ func (c *Client) AddIgnore(arg0 int64) {
 		c.AddMessage(0, "Your ignore list is full. Max of 100 hit", "")
 		return
 	}
-	var4 := datastruct.FormatName(datastruct.FromBase37(arg0))
+	var4 := jstring.FormatName(jstring.FromBase37(arg0))
 	for i := range c.IgnoreCount {
 		if c.IgnoreName37[i] == arg0 {
 			c.AddMessage(0, var4+" is already on your ignore list", "")
@@ -2057,11 +2058,11 @@ func (c *Client) HandleInputKey() {
 						c.RedrawChatback = true
 						var8 := int64(0)
 						if c.SocialAction == 1 {
-							var8 = datastruct.ToBase37(c.SocialInput)
+							var8 = jstring.ToBase37(c.SocialInput)
 							c.AddFriend(var8)
 						}
 						if c.SocialAction == 2 && c.FriendCount > 0 {
-							var8 = datastruct.ToBase37(c.SocialInput)
+							var8 = jstring.ToBase37(c.SocialInput)
 							c.RemoveFriend(var8)
 						}
 						if c.SocialAction == 3 && len(c.SocialInput) > 0 {
@@ -2071,9 +2072,9 @@ func (c *Client) HandleInputKey() {
 							c.Out.P8(c.SocialName37)
 							wordpack.Pack(c.Out, true, c.SocialInput)
 							c.Out.PSize1(c.Out.Pos - var7)
-							c.SocialInput = datastruct.ToSentenceCase(c.SocialInput)
+							c.SocialInput = jstring.ToSentenceCase(c.SocialInput)
 							c.SocialInput = wordfilter.Filter(c.SocialInput)
-							c.AddMessage(6, c.SocialInput, datastruct.FormatName(datastruct.FromBase37(c.SocialName37)))
+							c.AddMessage(6, c.SocialInput, jstring.FormatName(jstring.FromBase37(c.SocialName37)))
 							if c.PrivateChatSetting == 2 {
 								c.PrivateChatSetting = 1
 								c.RedrawPrivacySettings = true
@@ -2084,11 +2085,11 @@ func (c *Client) HandleInputKey() {
 							}
 						}
 						if c.SocialAction == 4 && c.IgnoreCount < 100 {
-							var8 = datastruct.ToBase37(c.SocialInput)
+							var8 = jstring.ToBase37(c.SocialInput)
 							c.AddIgnore(var8)
 						}
 						if c.SocialAction == 5 && c.IgnoreCount > 0 {
-							var8 = datastruct.ToBase37(c.SocialInput)
+							var8 = jstring.ToBase37(c.SocialInput)
 							c.RemoveIgnore(var8)
 						}
 					}
@@ -2192,7 +2193,7 @@ func (c *Client) HandleInputKey() {
 							c.Out.P1(var4)
 							wordpack.Pack(c.Out, true, c.ChatTyped)
 							c.Out.PSize1(c.Out.Pos - var5)
-							c.ChatTyped = datastruct.ToSentenceCase(c.ChatTyped)
+							c.ChatTyped = jstring.ToSentenceCase(c.ChatTyped)
 							c.ChatTyped = wordfilter.Filter(c.ChatTyped)
 							c.LocalPlayer.Chat = c.ChatTyped
 							c.LocalPlayer.ChatColor = var3
@@ -2544,7 +2545,7 @@ func (c *Client) DrawMinimap() {
 			var3 = var9.X/32 - c.LocalPlayer.X/32
 			var4 = var9.Z/32 - c.LocalPlayer.Z/32
 			var10 := false
-			var11 := datastruct.ToBase37(var9.Name)
+			var11 := jstring.ToBase37(var9.Name)
 			for j := range c.FriendCount {
 				if var11 == c.FriendName37[j] && c.FriendWorld[j] != 0 {
 					var10 = true
@@ -3073,7 +3074,7 @@ func (c *Client) DrawTitleScreen() {
 		if c.TitleLoginField == 1 && LoopCycle%40 < 20 {
 			tmp2 = "@yel@|"
 		}
-		c.FontBold12.DrawStringTaggable(var2/2-88, var4, "Password: "+datastruct.ToAsterisks(c.Password)+tmp2, true, 16777215)
+		c.FontBold12.DrawStringTaggable(var2/2-88, var4, "Password: "+jstring.ToAsterisks(c.Password)+tmp2, true, 16777215)
 		var4 += 15
 		var5 = var2/2 - 80
 		var6 = var3/2 + 50
@@ -4078,7 +4079,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		var8 = strings.Index(var7, "@whi@")
 		if var8 != -1 {
 			var7 = strings.TrimSpace(var7[var8+5:])
-			var9 = datastruct.FormatName(datastruct.FromBase37(datastruct.ToBase37(var7)))
+			var9 = jstring.FormatName(jstring.FromBase37(jstring.ToBase37(var7)))
 			var10 := false
 			for i := range c.PlayerCount {
 				var12 := c.Players[c.PlayerIDs[i]]
@@ -4350,7 +4351,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		var7 = c.MenuOption[arg1]
 		var8 = strings.Index(var7, "@whi@")
 		if var8 != -1 {
-			var20 = datastruct.ToBase37(strings.TrimSpace(var7[var8+5:]))
+			var20 = jstring.ToBase37(strings.TrimSpace(var7[var8+5:]))
 			var11 = -1
 			for i := range c.FriendCount {
 				if c.FriendName37[i] == var20 {
@@ -4599,7 +4600,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		var7 = c.MenuOption[arg1]
 		var8 = strings.Index(var7, "@whi@")
 		if var8 != -1 {
-			var20 = datastruct.ToBase37(strings.TrimSpace(var7[var8+5:]))
+			var20 = jstring.ToBase37(strings.TrimSpace(var7[var8+5:]))
 			if var5 == 406 {
 				c.AddFriend(var20)
 			}
@@ -4775,7 +4776,7 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 			arg1.Text = ""
 			arg1.ButtonType = 0
 		} else {
-			arg1.Text = datastruct.FormatName(datastruct.FromBase37(c.IgnoreName37[var3]))
+			arg1.Text = jstring.FormatName(jstring.FromBase37(c.IgnoreName37[var3]))
 			arg1.ButtonType = 1
 		}
 	} else if var3 == 503 {
@@ -5086,7 +5087,7 @@ func (c *Client) HandleInterfaceAction(arg1 *component.Component) bool {
 		c.CloseInterfaces()
 		if len(c.ReportAbuseInput) > 0 {
 			c.Out.P1Isaac(190)
-			c.Out.P8(datastruct.ToBase37(c.ReportAbuseInput))
+			c.Out.P8(jstring.ToBase37(c.ReportAbuseInput))
 			c.Out.P1(var3 - 601)
 			if c.ReportAbuseMuteOption {
 				c.Out.P1(1)
@@ -6160,7 +6161,7 @@ func (c *Client) AddFriend(arg0 int64) {
 		c.AddMessage(0, "Your friends list is full. Max of 100 hit", "")
 		return
 	}
-	var4 := datastruct.FormatName(datastruct.FromBase37(arg0))
+	var4 := jstring.FormatName(jstring.FromBase37(arg0))
 	for i := range c.FriendCount {
 		if c.FriendName37[i] == arg0 {
 			c.AddMessage(0, var4+" is already on your friend list", "")
@@ -8205,7 +8206,7 @@ func (c *Client) DrawChatback() {
 			c.ChatScrollHeight = 78
 		}
 		c.DrawScrollbar(463, 0, c.ChatScrollHeight-c.ChatScrollOffset-77, c.ChatScrollHeight, 77)
-		var2.DrawString(4, 90, 0, datastruct.FormatName(c.Username)+":")
+		var2.DrawString(4, 90, 0, jstring.FormatName(c.Username)+":")
 		var2.DrawString(var2.StringWidth(c.Username+": ")+6, 90, 255, c.ChatTyped+"*")
 		pix2d.HLine(0, 77, 479, 0)
 	} else {
@@ -8313,7 +8314,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		var16 := arg3.G1()
 		var9 := arg3.Pos
 		if arg4.Name != "" {
-			var10 := datastruct.ToBase37(arg4.Name)
+			var10 := jstring.ToBase37(arg4.Name)
 			var12 := false
 			if var15 <= 1 {
 				for i := range c.IgnoreCount {

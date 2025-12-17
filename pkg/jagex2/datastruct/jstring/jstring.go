@@ -1,4 +1,4 @@
-package datastruct
+package jstring
 
 import (
 	"fmt"

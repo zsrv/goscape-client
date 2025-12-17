@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"goscape-client/pkg/jagex2/datastruct"
+	"goscape-client/pkg/jagex2/datastruct/jstring"
 	"goscape-client/pkg/jagex2/graphics/model"
 	"goscape-client/pkg/jagex2/graphics/pix32"
 	"goscape-client/pkg/jagex2/graphics/pixfont"
@@ -323,7 +324,7 @@ func (c *Component) GetModel(arg0 int, arg1 int, arg2 bool) *model.Model {
 }
 
 func GetImage(arg0 *io.Jagfile, arg1 int, arg2 string) *pix32.Pix32 {
-	var4 := (datastruct.HashCode(arg2) << 8) + int64(arg1)
+	var4 := (jstring.HashCode(arg2) << 8) + int64(arg1)
 	var6 := ImageCache.Get(var4).Value
 	if var6 != nil {
 		return var6
