@@ -180,7 +180,7 @@ func Unpack(arg1 *io.Jagfile) {
 	var9 := 0
 	for range var2 {
 		var11 := Head.G2()
-		Metadata[var11] = new(metadata.Metadata)
+		Metadata[var11] = metadata.NewMetadata()
 		var12 := Metadata[var11]
 		var12.VertexCount = Head.G2()
 		var12.FaceCount = Head.G2()

@@ -18,3 +18,7 @@ type Metadata struct {
 	FaceLabelsOffset       int
 	FaceTextureAxisOffset  int
 }
+
+func NewMetadata() *Metadata {
+	return new(Metadata)
+}
