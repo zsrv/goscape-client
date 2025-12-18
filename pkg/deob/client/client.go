@@ -36,6 +36,7 @@ import (
 	"goscape-client/pkg/jagex2/graphics/pixfont"
 	"goscape-client/pkg/jagex2/graphics/pixmap"
 	"goscape-client/pkg/jagex2/io"
+	"goscape-client/pkg/jagex2/io/bzip2"
 	"goscape-client/pkg/jagex2/sound/wave"
 	"goscape-client/pkg/jagex2/wordenc/wordfilter"
 	"goscape-client/pkg/jagex2/wordenc/wordpack"
@@ -7574,7 +7575,7 @@ func (c *Client) BuildScene() {
 		var10 := c.SceneMapLandData[i]
 		if var10 != nil {
 			var11 := io.NewPacket(var10).G4()
-			// TODO: bzip2.read
+			bzip2.Read(var4, var11, var10, len(var10)-4, 4)
 			var3.LoadGround(var4, (c.SceneCenterZoneX-6)*8, var9, var8, (c.SceneCenterZoneZ-6)*8)
 		} else if c.SceneCenterZoneZ < 800 {
 			var3.ClearLandscape(var8, var9, 64, 64)
@@ -7586,7 +7587,7 @@ func (c *Client) BuildScene() {
 		var14 := c.SceneMapLocData[i]
 		if var14 != nil {
 			var16 = io.NewPacket(var14).G4()
-			// TODO: bzip2.read
+			bzip2.Read(var4, var16, var14, len(var14)-4, 4)
 			var11 := (c.SceneMapIndex[i]>>8)*64 - c.SceneBaseTileX
 			var12 := (c.SceneMapIndex[i]&0xFF)*64 - c.SceneBaseTileZ
 			var3.LoadLocations(var4, c.Scene, c.LevelCollisionMap, c.LocList, var12, var11)
