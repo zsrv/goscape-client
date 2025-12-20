@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"goscape-client/pkg/deob/clientextras"
 	"goscape-client/pkg/jagex2/client"
 	"goscape-client/pkg/jagex2/client/inputtracking"
 	"goscape-client/pkg/jagex2/config/component"
@@ -51,9 +52,7 @@ var (
 	NodeID          int    = 10
 	Members         bool   = true
 	RSA_EXPONENT    *big.Int
-	Field1307       [][]int = [][]int{{6798, 107, 10283, 16, 4797, 7744, 5799, 4634, 33697, 22433, 2983, 54193}, {8741, 12, 64030, 43162, 7735, 8404, 1701, 38430, 24094, 10153, 56621, 4783, 1341, 16578, 35003, 25239}, {25238, 8742, 12, 64030, 43162, 7735, 8404, 1701, 38430, 24094, 10153, 56621, 4783, 1341, 16578, 35003}, {4626, 11146, 6439, 12, 4758, 10270}, {4550, 4537, 5681, 5673, 5790, 6806, 8076, 4574}}
 	RSA_MODULUS     *big.Int
-	Field1438       []int = []int{9104, 10275, 7595, 3610, 7975, 8526, 918, 38802, 24466, 10145, 58654, 5027, 1457, 16565, 34991, 25486}
 	OpLogic5        int
 	OpLogic1        int
 	OpLogic4        int
@@ -61,11 +60,9 @@ var (
 	OpLogic2        int
 	OpLogic9        int
 	CycleLogic1     int
-	PortOffset      int
 	OpLogic8        int
 	CycleLogic6     int
 	OpLogic7        int
-	LoopCycle       int
 	CycleLogic3     int
 	CycleLogic4     int
 	CycleLogic5     int
@@ -649,7 +646,7 @@ func (c *Client) Draw2DEntityElements() {
 						c.ImageHeadIcons[7].Draw(c.ProjectY-var4, c.ProjectX-12)
 					}
 				}
-			} else if c.HintType == 1 && c.HintNPC == c.NPCIDs[i-c.PlayerCount] && LoopCycle%20 < 10 {
+			} else if c.HintType == 1 && c.HintNPC == c.NPCIDs[i-c.PlayerCount] && clientextras.LoopCycle%20 < 10 {
 				c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
 				if c.ProjectX > -1 {
 					c.ImageHeadIcons[2].Draw(c.ProjectY-28, c.ProjectX-12)
@@ -676,7 +673,7 @@ func (c *Client) Draw2DEntityElements() {
 					}
 				}
 			}
-			if var5.CombatCycle > LoopCycle+100 {
+			if var5.CombatCycle > clientextras.LoopCycle+100 {
 				c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
 				if c.ProjectX > -1 {
 					var4 = var5.Health * 30 / var5.TotalHealth
@@ -687,7 +684,7 @@ func (c *Client) Draw2DEntityElements() {
 					pix2d.FillRect(c.ProjectY-3, c.ProjectX-15+var4, 16711680, 30-var4, 5)
 				}
 			}
-			if var5.CombatCycle > LoopCycle+330 {
+			if var5.CombatCycle > clientextras.LoopCycle+330 {
 				c.ProjectFromGround1(var5.Height/2, &var5.PathingEntity)
 				if c.ProjectX > -1 {
 					c.ImageHitmarks[var5.DamageType].Draw(c.ProjectY-12, c.ProjectX-12)
@@ -945,7 +942,7 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 		if var7&0x10 == 16 {
 			var6.Damage = arg0.G1()
 			var6.DamageType = arg0.G1()
-			var6.CombatCycle = LoopCycle + 400
+			var6.CombatCycle = clientextras.LoopCycle + 400
 			var6.Health = arg0.G1()
 			var6.TotalHealth = arg0.G1()
 		}
@@ -961,10 +958,10 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 			var6.SpotanimID = arg0.G2()
 			var8 = arg0.G4()
 			var6.SpotanimOffset = var8 >> 16
-			var6.SpotanimLastCycle = LoopCycle + (var8 & 0xFFFF)
+			var6.SpotanimLastCycle = clientextras.LoopCycle + (var8 & 0xFFFF)
 			var6.SpotanimFrame = 0
 			var6.SpotanimCycle = 0
-			if var6.SpotanimLastCycle > LoopCycle {
+			if var6.SpotanimLastCycle > clientextras.LoopCycle {
 				var6.SpotanimFrame = -1
 			}
 			if var6.SpotanimID == 65535 {
@@ -1164,8 +1161,8 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 					var6 = var6*128 + 64
 					var7 = var7*128 + 64
 					var8 = var8*128 + 64
-					var43 := entity.NewProjectileEntity(var36, var15, var6, var14+LoopCycle, c.CurrentLevel, var9, var37+LoopCycle, var16, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var11, var10, var5)
-					var43.UpdateVelocity(c.GetHeightMapY(c.CurrentLevel, var7, var8)-var36, var8, var7, var37+LoopCycle)
+					var43 := entity.NewProjectileEntity(var36, var15, var6, var14+clientextras.LoopCycle, c.CurrentLevel, var9, var37+clientextras.LoopCycle, var16, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var11, var10, var5)
+					var43.UpdateVelocity(c.GetHeightMapY(c.CurrentLevel, var7, var8)-var36, var8, var7, var37+clientextras.LoopCycle)
 					c.Projectiles.AddTail(var43)
 				}
 			} else if arg2 == 191 {
@@ -1178,7 +1175,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 				if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
 					var5 = var5*128 + 64
 					var6 = var6*128 + 64
-					var34 := entity.NewSpotAnimEntity(var5, var7, var6, var9, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var8, c.CurrentLevel, LoopCycle)
+					var34 := entity.NewSpotAnimEntity(var5, var7, var6, var9, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var8, c.CurrentLevel, clientextras.LoopCycle)
 					c.Spotanims.AddTail(var34)
 				}
 			} else if arg2 == 50 {
@@ -1222,17 +1219,17 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 						var19 = c.Players[var14]
 					}
 					if var19 != nil {
-						var20 := entity.NewLocMergeEntity(c.CurrentLevel, var9, var6, var36+LoopCycle, var8, -1, var5, var10)
+						var20 := entity.NewLocMergeEntity(c.CurrentLevel, var9, var6, var36+clientextras.LoopCycle, var8, -1, var5, var10)
 						c.MergedLocations.AddTail(var20)
-						var21 := entity.NewLocMergeEntity(c.CurrentLevel, var9, var6, var37+LoopCycle, var8, var11, var5, var10)
+						var21 := entity.NewLocMergeEntity(c.CurrentLevel, var9, var6, var37+clientextras.LoopCycle, var8, var11, var5, var10)
 						c.MergedLocations.AddTail(var21)
 						var22 := c.LevelHeightmap[c.CurrentLevel][var5][var6]
 						var23 := c.LevelHeightmap[c.CurrentLevel][var5+1][var6]
 						var24 := c.LevelHeightmap[c.CurrentLevel][var5+1][var6+1]
 						var25 := c.LevelHeightmap[c.CurrentLevel][var5][var6+1]
 						var26 := loctype.Get(var11)
-						var19.LocStartCycle = var36 + LoopCycle
-						var19.LocStopCycle = var37 + LoopCycle
+						var19.LocStartCycle = var36 + clientextras.LoopCycle
+						var19.LocStopCycle = var37 + clientextras.LoopCycle
 						var19.LocModel = var26.GetModel(var8, var9, var22, var23, var24, var25, -1)
 						var27 := var26.Width
 						var28 := var26.Length
@@ -1908,7 +1905,7 @@ func (c *Client) PushPlayers() {
 			var5 := var3.X >> 7
 			var6 := var3.Z >> 7
 			if var5 >= 0 && var5 < 104 && var6 >= 0 && var6 < 104 {
-				if var3.LocModel == nil || LoopCycle < var3.LocStartCycle || LoopCycle >= var3.LocStopCycle {
+				if var3.LocModel == nil || clientextras.LoopCycle < var3.LocStartCycle || clientextras.LoopCycle >= var3.LocStopCycle {
 					if (var3.X&0x7F) == 64 && (var3.Z&0x7F) == 64 {
 						if c.TileLastOccupiedCycle[var5][var6] == c.SceneCycle {
 							continue
@@ -2491,7 +2488,7 @@ func (c *Client) UpdateFlames() {
 	for i := range var2 - 1 {
 		c.FlameLineOffset[i] = c.FlameLineOffset[i+1]
 	}
-	c.FlameLineOffset[var2-1] = int(math.Sin(float64(LoopCycle/14.0))*16.0 + math.Sin(float64(LoopCycle/15.0))*14.0 + math.Sin(float64(LoopCycle/16.0))*12.0)
+	c.FlameLineOffset[var2-1] = int(math.Sin(float64(clientextras.LoopCycle/14.0))*16.0 + math.Sin(float64(clientextras.LoopCycle/15.0))*14.0 + math.Sin(float64(clientextras.LoopCycle/16.0))*12.0)
 	if c.FlameGradientCycle0 > 0 {
 		c.FlameGradientCycle0 -= 4
 	}
@@ -2576,7 +2573,7 @@ func (c *Client) UpdateMergeLocs() {
 		return
 	}
 	for var2 := c.MergedLocations.Head(); var2 != nil; var2 = c.MergedLocations.Next() {
-		if LoopCycle >= var2.LastCycle {
+		if clientextras.LoopCycle >= var2.LastCycle {
 			c.AddLoc(var2.Angle, var2.X, var2.Z, var2.Layer, var2.LocIndex, var2.Shape, var2.Plane)
 			var2.Unlink()
 		}
@@ -2808,7 +2805,7 @@ func (c *Client) GetNpcPos(arg0 *io.Packet, psize int) {
 	c.GetNpcPosExtended(arg0)
 	for i := range c.EntityRemovalCount {
 		var5 := c.EntityRemovalIDs[i]
-		if c.NPCs[var5].Cycle != LoopCycle {
+		if c.NPCs[var5].Cycle != clientextras.LoopCycle {
 			c.NPCs[var5].Type = nil
 			c.NPCs[var5] = nil
 		}
@@ -2915,13 +2912,13 @@ func (c *Client) GetPlayerOldVis(arg1 *io.Packet) {
 		if var8 == 0 {
 			c.PlayerIDs[c.PlayerCount] = var6
 			c.PlayerCount++
-			var7.Cycle = LoopCycle
+			var7.Cycle = clientextras.LoopCycle
 		} else {
 			var9 := arg1.GBit(2)
 			if var9 == 0 {
 				c.PlayerIDs[c.PlayerCount] = var6
 				c.PlayerCount++
-				var7.Cycle = LoopCycle
+				var7.Cycle = clientextras.LoopCycle
 				c.EntityUpdateIDs[c.EntityUpdateCount] = var6
 				c.EntityUpdateCount++
 			} else {
@@ -2930,7 +2927,7 @@ func (c *Client) GetPlayerOldVis(arg1 *io.Packet) {
 				if var9 == 1 {
 					c.PlayerIDs[c.PlayerCount] = var6
 					c.PlayerCount++
-					var7.Cycle = LoopCycle
+					var7.Cycle = clientextras.LoopCycle
 					var10 = arg1.GBit(3)
 					var7.MoveAlongRoute(false, var10)
 					var11 = arg1.GBit(1)
@@ -2941,7 +2938,7 @@ func (c *Client) GetPlayerOldVis(arg1 *io.Packet) {
 				} else if var9 == 2 {
 					c.PlayerIDs[c.PlayerCount] = var6
 					c.PlayerCount++
-					var7.Cycle = LoopCycle
+					var7.Cycle = clientextras.LoopCycle
 					var10 = arg1.GBit(3)
 					var7.MoveAlongRoute(true, var10)
 					var11 = arg1.GBit(3)
@@ -3066,13 +3063,13 @@ func (c *Client) DrawTitleScreen() {
 			var4 += 30
 		}
 		tmp := ""
-		if c.TitleLoginField == 0 && LoopCycle%40 < 20 {
+		if c.TitleLoginField == 0 && clientextras.LoopCycle%40 < 20 {
 			tmp = "@yel@|"
 		}
 		c.FontBold12.DrawStringTaggable(var2/2-90, var4, "Username: "+c.Username+tmp, true, 16777215)
 		var4 += 15
 		tmp2 := ""
-		if c.TitleLoginField == 1 && LoopCycle%40 < 20 {
+		if c.TitleLoginField == 1 && clientextras.LoopCycle%40 < 20 {
 			tmp2 = "@yel@|"
 		}
 		c.FontBold12.DrawStringTaggable(var2/2-88, var4, "Password: "+jstring.ToAsterisks(c.Password)+tmp2, true, 16777215)
@@ -3149,7 +3146,7 @@ func (c *Client) GetPlayerNewVis(arg1 int, arg2 *io.Packet) {
 		c.PlayerIDs[c.PlayerCount] = var4
 		c.PlayerCount++
 		var5 := c.Players[var4]
-		var5.Cycle = LoopCycle
+		var5.Cycle = clientextras.LoopCycle
 		var6 := arg2.GBit(5)
 		if var6 > 15 {
 			var6 -= 32
@@ -3532,9 +3529,9 @@ func (c *Client) UpdatePlayerEntity(arg0 *playerentity.PlayerEntity) {
 		arg0.Z = arg0.PathTileZ[0]*128 + arg0.Size*64
 		arg0.PathLength = 0
 	}
-	if arg0.ForceMoveEndCycle > LoopCycle {
+	if arg0.ForceMoveEndCycle > clientextras.LoopCycle {
 		c.UpdateForceMovement(&arg0.PathingEntity)
-	} else if arg0.ForceMoveStartCycle >= LoopCycle {
+	} else if arg0.ForceMoveStartCycle >= clientextras.LoopCycle {
 		c.StartForceMovement(&arg0.PathingEntity, 0)
 	} else {
 		c.UpdateMovement(&arg0.PathingEntity)
@@ -3553,9 +3550,9 @@ func (c *Client) UpdateNpcEntity(arg0 *entity.NpcEntity) {
 		arg0.Z = arg0.PathTileZ[0]*128 + arg0.Size*64
 		arg0.PathLength = 0
 	}
-	if arg0.ForceMoveEndCycle > LoopCycle {
+	if arg0.ForceMoveEndCycle > clientextras.LoopCycle {
 		c.UpdateForceMovement(&arg0.PathingEntity)
-	} else if arg0.ForceMoveStartCycle >= LoopCycle {
+	} else if arg0.ForceMoveStartCycle >= clientextras.LoopCycle {
 		c.StartForceMovement(&arg0.PathingEntity, 0)
 	} else {
 		c.UpdateMovement(&arg0.PathingEntity)
@@ -3565,7 +3562,7 @@ func (c *Client) UpdateNpcEntity(arg0 *entity.NpcEntity) {
 }
 
 func (c *Client) UpdateForceMovement(arg0 *entity.PathingEntity) {
-	var3 := arg0.ForceMoveEndCycle - LoopCycle
+	var3 := arg0.ForceMoveEndCycle - clientextras.LoopCycle
 	var4 := arg0.ForceMoveStartSceneTileX*128 + arg0.Size*64
 	var5 := arg0.ForceMoveStartSceneTileZ*128 + arg0.Size*64
 	arg0.X += (var4 - arg0.X) / var3
@@ -3585,9 +3582,9 @@ func (c *Client) UpdateForceMovement(arg0 *entity.PathingEntity) {
 
 func (c *Client) StartForceMovement(arg0 *entity.PathingEntity, arg1 int) {
 	c.PacketSize += arg1
-	if arg0.ForceMoveStartCycle == LoopCycle || arg0.PrimarySeqID == -1 || arg0.PrimarySeqDelay != 0 || arg0.PrimarySeqCycle+1 > seqtype.Instances[arg0.PrimarySeqID].Delay[arg0.PrimarySeqFrame] {
+	if arg0.ForceMoveStartCycle == clientextras.LoopCycle || arg0.PrimarySeqID == -1 || arg0.PrimarySeqDelay != 0 || arg0.PrimarySeqCycle+1 > seqtype.Instances[arg0.PrimarySeqID].Delay[arg0.PrimarySeqFrame] {
 		var3 := arg0.ForceMoveStartCycle - arg0.ForceMoveEndCycle
-		var4 := LoopCycle - arg0.ForceMoveEndCycle
+		var4 := clientextras.LoopCycle - arg0.ForceMoveEndCycle
 		var5 := arg0.ForceMoveStartSceneTileX*128 + arg0.Size*64
 		var6 := arg0.ForceMoveStartSceneTileZ*128 + arg0.Size*64
 		var7 := arg0.ForceMoveEndSceneTileX*128 + arg0.Size*64
@@ -3811,7 +3808,7 @@ func (c *Client) UpdateSequences(arg1 *entity.PathingEntity) {
 	if arg1.PrimarySeqDelay > 0 {
 		arg1.PrimarySeqDelay--
 	}
-	if arg1.SpotanimID == -1 || LoopCycle < arg1.SpotanimLastCycle {
+	if arg1.SpotanimID == -1 || clientextras.LoopCycle < arg1.SpotanimLastCycle {
 		return
 	}
 	if arg1.SpotanimFrame < 0 {
@@ -3939,25 +3936,25 @@ func (c *Client) DrawGame() {
 					c.ImageRedstone1h.Draw(30, 212)
 				}
 			}
-			if c.TabInterfaceID[0] != -1 && (c.FlashingTab != 0 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[0] != -1 && (c.FlashingTab != 0 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[0].Draw(34, 35)
 			}
-			if c.TabInterfaceID[1] != -1 && (c.FlashingTab != 1 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[1] != -1 && (c.FlashingTab != 1 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[1].Draw(32, 59)
 			}
-			if c.TabInterfaceID[2] != -1 && (c.FlashingTab != 2 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[2] != -1 && (c.FlashingTab != 2 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[2].Draw(32, 86)
 			}
-			if c.TabInterfaceID[3] != -1 && (c.FlashingTab != 3 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[3] != -1 && (c.FlashingTab != 3 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[3].Draw(33, 121)
 			}
-			if c.TabInterfaceID[4] != -1 && (c.FlashingTab != 4 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[4] != -1 && (c.FlashingTab != 4 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[4].Draw(34, 157)
 			}
-			if c.TabInterfaceID[5] != -1 && (c.FlashingTab != 5 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[5] != -1 && (c.FlashingTab != 5 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[5].Draw(32, 185)
 			}
-			if c.TabInterfaceID[6] != -1 && (c.FlashingTab != 6 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[6] != -1 && (c.FlashingTab != 6 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[6].Draw(34, 212)
 			}
 		}
@@ -3983,22 +3980,22 @@ func (c *Client) DrawGame() {
 					c.ImageRedstone1hv.Draw(0, 233)
 				}
 			}
-			if c.TabInterfaceID[8] != 1 && (c.FlashingTab != 8 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[8] != 1 && (c.FlashingTab != 8 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[7].Draw(2, 80)
 			}
-			if c.TabInterfaceID[9] != 1 && (c.FlashingTab != 9 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[9] != 1 && (c.FlashingTab != 9 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[8].Draw(3, 107)
 			}
-			if c.TabInterfaceID[10] != 1 && (c.FlashingTab != 10 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[10] != 1 && (c.FlashingTab != 10 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[9].Draw(4, 142)
 			}
-			if c.TabInterfaceID[11] != 1 && (c.FlashingTab != 11 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[11] != 1 && (c.FlashingTab != 11 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[10].Draw(2, 179)
 			}
-			if c.TabInterfaceID[12] != 1 && (c.FlashingTab != 12 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[12] != 1 && (c.FlashingTab != 12 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[11].Draw(2, 206)
 			}
-			if c.TabInterfaceID[13] != 1 && (c.FlashingTab != 13 || LoopCycle%20 < 10) {
+			if c.TabInterfaceID[13] != 1 && (c.FlashingTab != 13 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[12].Draw(2, 230)
 			}
 		}
@@ -4787,7 +4784,7 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 		}
 	} else if var3 == 327 {
 		arg1.Xan = 150
-		arg1.Yan = int(math.Sin(float64(LoopCycle)/40.0)*256.0) & 0x7FF
+		arg1.Yan = int(math.Sin(float64(clientextras.LoopCycle)/40.0)*256.0) & 0x7FF
 		if c.UpdateDesignModel {
 			c.UpdateDesignModel = false
 			var9 := make([]*model.Model, 7)
@@ -4802,9 +4799,9 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 			var10 := model.NewModel2(var9, var5)
 			for i := range 5 {
 				if c.DesignColors[i] != 0 {
-					var10.Recolor(Field1307[i][0], Field1307[i][c.DesignColors[i]])
+					var10.Recolor(clientextras.Field1307[i][0], clientextras.Field1307[i][c.DesignColors[i]])
 					if i == 1 {
-						var10.Recolor(Field1438[0], Field1438[c.DesignColors[i]])
+						var10.Recolor(clientextras.Field1438[0], clientextras.Field1438[c.DesignColors[i]])
 					}
 				}
 			}
@@ -4835,7 +4832,7 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 		}
 	} else if var3 == 600 {
 		arg1.Text = c.ReportAbuseInput
-		if LoopCycle%20 < 10 {
+		if clientextras.LoopCycle%20 < 10 {
 			arg1.Text = arg1.Text + "|"
 		} else {
 			arg1.Text = arg1.Text + " "
@@ -4945,7 +4942,7 @@ func (c *Client) GetNpcPosNewVis(arg1 *io.Packet, arg2 int) {
 		var5 := c.NPCs[var4]
 		c.NPCIDs[c.NPCCount] = var4
 		c.NPCCount++
-		var5.Cycle = LoopCycle
+		var5.Cycle = clientextras.LoopCycle
 		var5.Type = npctype.Get(arg1.GBit(11))
 		var5.Size = int(var5.Type.Size)
 		var5.SeqWalkID = var5.Type.WalkAnim
@@ -5046,12 +5043,12 @@ func (c *Client) HandleInterfaceAction(arg1 *component.Component) bool {
 		if var5 == 0 {
 			var6--
 			if var6 < 0 {
-				var6 = len(Field1307[var4]) - 1
+				var6 = len(clientextras.Field1307[var4]) - 1
 			}
 		}
 		if var5 == 1 {
 			var6++
-			if var6 >= len(Field1307[var4]) {
+			if var6 >= len(clientextras.Field1307[var4]) {
 				var6 = 0
 			}
 		}
@@ -5560,13 +5557,13 @@ func (c *Client) UpdateOrbitCamera(arg0 int) {
 
 func (c *Client) PushProjectiles() {
 	for var2 := c.Projectiles.Head(); var2 != nil; var2 = c.Projectiles.Next() {
-		if var2.Level != c.CurrentLevel || LoopCycle > var2.LastCycle {
+		if var2.Level != c.CurrentLevel || clientextras.LoopCycle > var2.LastCycle {
 			var2.Unlink()
-		} else if LoopCycle >= var2.StartCycle {
+		} else if clientextras.LoopCycle >= var2.StartCycle {
 			if var2.Target > 0 {
 				var3 := c.NPCs[var2.Target-1]
 				if var3 != nil {
-					var2.UpdateVelocity(c.GetHeightMapY(var2.Level, var3.X, var3.Z)-var2.OffsetY, var3.Z, var3.X, LoopCycle)
+					var2.UpdateVelocity(c.GetHeightMapY(var2.Level, var3.X, var3.Z)-var2.OffsetY, var3.Z, var3.X, clientextras.LoopCycle)
 				}
 			}
 			if var2.Target < 0 {
@@ -5578,7 +5575,7 @@ func (c *Client) PushProjectiles() {
 					var5 = c.Players[var4]
 				}
 				if var5 != nil {
-					var2.UpdateVelocity(c.GetHeightMapY(var2.Level, var5.X, var5.Z)-var2.OffsetY, var5.Z, var5.X, LoopCycle)
+					var2.UpdateVelocity(c.GetHeightMapY(var2.Level, var5.X, var5.Z)-var2.OffsetY, var5.Z, var5.X, clientextras.LoopCycle)
 				}
 			}
 			var2.Update(c.SceneDelta)
@@ -6648,14 +6645,14 @@ func (c *Client) DrawTooltip() {
 	if c.MenuSize > 2 {
 		var2 = var2 + "@whi@ / " + strconv.Itoa(c.MenuSize-2) + " more options"
 	}
-	c.FontBold12.DrawStringTooltip(LoopCycle/1000, true, 15, 16777215, var2, 4)
+	c.FontBold12.DrawStringTooltip(clientextras.LoopCycle/1000, true, 15, 16777215, var2, 4)
 }
 
 func (c *Client) PushSpotanims() {
 	for var2 := c.Spotanims.Head(); var2 != nil; var2 = c.Spotanims.Next() {
 		if var2.Level != c.CurrentLevel || var2.SeqComplete {
 			var2.Unlink()
-		} else if LoopCycle >= var2.StartCycle {
+		} else if clientextras.LoopCycle >= var2.StartCycle {
 			var2.Update(c.SceneDelta)
 			if var2.SeqComplete {
 				var2.Unlink()
@@ -6888,7 +6885,7 @@ func (c *Client) GetPlayer(arg0 *io.Packet, arg1 int) {
 	c.GetPlayerExtended1(arg0)
 	for i := range c.EntityRemovalCount {
 		var5 := c.EntityRemovalIDs[i]
-		if c.Players[var5].Cycle != LoopCycle {
+		if c.Players[var5].Cycle != clientextras.LoopCycle {
 			c.Players[var5] = nil
 		}
 	}
@@ -7387,13 +7384,13 @@ func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
 		if var8 == 0 {
 			c.NPCIDs[c.NPCCount] = var6
 			c.NPCCount++
-			var7.Cycle = LoopCycle
+			var7.Cycle = clientextras.LoopCycle
 		} else {
 			var9 := arg1.GBit(2)
 			if var9 == 0 {
 				c.NPCIDs[c.NPCCount] = var6
 				c.NPCCount++
-				var7.Cycle = LoopCycle
+				var7.Cycle = clientextras.LoopCycle
 				c.EntityUpdateIDs[c.EntityUpdateCount] = var6
 				c.EntityUpdateCount++
 			} else {
@@ -7402,7 +7399,7 @@ func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
 				if var9 == 1 {
 					c.NPCIDs[c.NPCCount] = var6
 					c.NPCCount++
-					var7.Cycle = LoopCycle
+					var7.Cycle = clientextras.LoopCycle
 					var10 = arg1.GBit(3)
 					var7.MoveAlongRoute(false, var10)
 					var11 = arg1.GBit(1)
@@ -7413,7 +7410,7 @@ func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
 				} else if var9 == 2 {
 					c.NPCIDs[c.NPCCount] = var6
 					c.NPCCount++
-					var7.Cycle = LoopCycle
+					var7.Cycle = clientextras.LoopCycle
 					var10 = arg1.GBit(3)
 					var7.MoveAlongRoute(true, var10)
 					var11 = arg1.GBit(3)
@@ -7621,7 +7618,7 @@ func (c *Client) Update() {
 	if c.ErrorStarted || c.ErrorLoading || c.ErrorHost {
 		return
 	}
-	LoopCycle++
+	clientextras.LoopCycle++
 	if c.InGame {
 		c.UpdateGame()
 	} else {
@@ -8070,7 +8067,7 @@ func (c *Client) DrawTileHint() {
 		return
 	}
 	c.ProjectFromGround2((c.HintTileZ-c.SceneBaseTileZ<<7)+c.HintOffsetZ, (c.HintTileX-c.SceneBaseTileX<<7)+c.HintOffsetX, c.HintHeight*2)
-	if c.ProjectX > -1 && LoopCycle%20 < 10 {
+	if c.ProjectX > -1 && clientextras.LoopCycle%20 < 10 {
 		c.ImageHeadIcons[2].Draw(c.ProjectY-28, c.ProjectX-12)
 	}
 }
@@ -8301,7 +8298,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 	if arg2&0x10 == 16 {
 		arg4.Damage = arg3.G1()
 		arg4.DamageType = arg3.G1()
-		arg4.CombatCycle = LoopCycle + 400
+		arg4.CombatCycle = clientextras.LoopCycle + 400
 		arg4.Health = arg3.G1()
 		arg4.TotalHealth = arg3.G1()
 	}
@@ -8346,10 +8343,10 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		arg4.SpotanimID = arg3.G2()
 		var6 = arg3.G4()
 		arg4.SpotanimOffset = var6 >> 16
-		arg4.SpotanimLastCycle = LoopCycle + (var6 & 0xFFFF)
+		arg4.SpotanimLastCycle = clientextras.LoopCycle + (var6 & 0xFFFF)
 		arg4.SpotanimFrame = 0
 		arg4.SpotanimCycle = 0
-		if arg4.SpotanimLastCycle > LoopCycle {
+		if arg4.SpotanimLastCycle > clientextras.LoopCycle {
 			arg4.SpotanimFrame = -1
 		}
 		if arg4.SpotanimID == 65535 {
@@ -8363,8 +8360,8 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 	arg4.ForceMoveStartSceneTileZ = arg3.G1()
 	arg4.ForceMoveEndSceneTileX = arg3.G1()
 	arg4.ForceMoveEndSceneTileZ = arg3.G1()
-	arg4.ForceMoveEndCycle = arg3.G2() + LoopCycle
-	arg4.ForceMoveStartCycle = arg3.G2() + LoopCycle
+	arg4.ForceMoveEndCycle = arg3.G2() + clientextras.LoopCycle
+	arg4.ForceMoveStartCycle = arg3.G2() + clientextras.LoopCycle
 	arg4.ForceMoveFaceDirection = arg3.G1()
 	arg4.PathLength = 0
 	arg4.PathTileX[0] = arg4.ForceMoveEndSceneTileX

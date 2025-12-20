@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"goscape-client/pkg/deob/client"
+	"goscape-client/pkg/deob/clientextras"
 	"goscape-client/pkg/sign/signlink"
 )
 
@@ -22,7 +23,7 @@ func main() {
 		fmt.Printf("invalid node-id: %v\n", err)
 		os.Exit(1)
 	}
-	client.PortOffset, err = strconv.Atoi(os.Args[1])
+	clientextras.PortOffset, err = strconv.Atoi(os.Args[1])
 	if err != nil {
 		fmt.Printf("invalid port-offset: %v\n", err)
 		os.Exit(1)

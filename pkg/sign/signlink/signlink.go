@@ -8,14 +8,13 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"strconv"
 	"strings"
 	"time"
 
-	"goscape-client/pkg/deob/client"
+	"goscape-client/pkg/deob/clientextras"
 )
 
 var (
@@ -105,7 +104,7 @@ func Run() {
 			SaveReq = ""
 		} else if URLReq != "" {
 			// TODO: extracted from client.getCodeBase() - no applet here
-			resp, err := http.Get("http://127.0.0.1:" + strconv.Itoa(client.PortOffset+8888) + "/" + URLReq)
+			resp, err := http.Get("http://127.0.0.1:" + strconv.Itoa(clientextras.PortOffset+8888) + "/" + URLReq)
 			if err != nil {
 				URLStream = nil
 				goto End

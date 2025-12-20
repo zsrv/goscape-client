@@ -1,7 +1,7 @@
 package playerentity
 
 import (
-	"goscape-client/pkg/deob/client"
+	"goscape-client/pkg/deob/clientextras"
 	"goscape-client/pkg/jagex2/config/idktype"
 	"goscape-client/pkg/jagex2/config/objtype"
 	"goscape-client/pkg/jagex2/config/seqtype"
@@ -68,7 +68,7 @@ func (e *PlayerEntity) Read(arg1 *io.Packet) {
 	}
 	for i := range 5 {
 		var5 := arg1.G1()
-		if var5 < 0 || var5 >= len(client.Field1307[i]) {
+		if var5 < 0 || var5 >= len(clientextras.Field1307[i]) {
 			var5 = 0
 		}
 		e.Colors[i] = var5
@@ -151,10 +151,10 @@ func (e *PlayerEntity) Draw() *model.Model {
 		var2 = model.NewModel3(var5, 2, true)
 	}
 	if e.LocModel != nil {
-		if client.LoopCycle >= e.LocStopCycle {
+		if clientextras.LoopCycle >= e.LocStopCycle {
 			e.LocModel = nil
 		}
-		if client.LoopCycle >= e.LocStartCycle && client.LoopCycle < e.LocStopCycle {
+		if clientextras.LoopCycle >= e.LocStartCycle && clientextras.LoopCycle < e.LocStopCycle {
 			var6 := e.LocModel
 			var6.Translate(e.LocOffsetY-e.Y, e.LocOffsetX-e.X, e.LocOffsetZ-e.Z)
 			if e.DstYaw == 512 {
@@ -237,9 +237,9 @@ func (e *PlayerEntity) GetSequencedModel() *model.Model {
 		var15 = model.NewModel2(var9, var10)
 		for i := range 5 {
 			if e.Colors[i] != 0 {
-				var15.Recolor(client.Field1307[i][0], client.Field1307[i][e.Colors[i]])
+				var15.Recolor(clientextras.Field1307[i][0], clientextras.Field1307[i][e.Colors[i]])
 				if i == 1 {
-					var15.Recolor(client.Field1438[0], client.Field1438[e.Colors[i]])
+					var15.Recolor(clientextras.Field1438[0], clientextras.Field1438[e.Colors[i]])
 				}
 			}
 		}
@@ -285,9 +285,9 @@ func (e *PlayerEntity) GetHeadModel() *model.Model {
 	var7 := model.NewModel2(var2, var3)
 	for i := range 5 {
 		if e.Colors[i] != 0 {
-			var7.Recolor(client.Field1307[i][0], client.Field1307[i][e.Colors[i]])
+			var7.Recolor(clientextras.Field1307[i][0], clientextras.Field1307[i][e.Colors[i]])
 			if i == 1 {
-				var7.Recolor(client.Field1438[0], client.Field1438[e.Colors[i]])
+				var7.Recolor(clientextras.Field1438[0], clientextras.Field1438[e.Colors[i]])
 			}
 		}
 	}
