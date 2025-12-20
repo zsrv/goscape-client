@@ -4,26 +4,31 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strconv"
 	"strings"
 	"time"
+
+	"goscape-client/pkg/deob/client"
 )
 
 var (
 	//Socket // TODO
-	DNSReq  string
-	DNS     string
-	LoadReq string
-	LoadBuf []byte
-	SaveReq string
-	SaveBuf []byte
-	URLReq  string
-	//URLStream // TODO: byte buffer etc?
-	LoopRate      int = 50
+	DNSReq        string
+	DNS           string
+	LoadReq       string
+	LoadBuf       []byte
+	SaveReq       string
+	SaveBuf       []byte
+	URLReq        string
+	URLStream     []byte // this was DataInputStream in java
+	LoopRate      int    = 50
 	Midi          string
 	Save          string
 	Wave          string
@@ -35,13 +40,12 @@ var (
 	MidiVol       int
 	SaveLen       int
 	SocketReq     int
-	ThreadLiveID  int
-	UID           int
-	WavePos       int
-	WaveVol       int
+	//ThreadLiveID  int // not needed in go
+	UID     int
+	WavePos int
+	WaveVol int
 	//MainApp Applet
-	SocketIP net.IPAddr // TODO: string?
-	Active   bool
+	//SocketIP net.IPAddr // not needed in go
 	MidiPlay bool
 	SunJava  bool
 	WavePlay bool
@@ -50,28 +54,73 @@ var (
 type SignLink struct {
 }
 
-func StartPriv(arg0 string) {
-	if Active {
-		time.Sleep(500 * time.Millisecond)
-		Active = false
-	}
+func StartPriv() {
 	SocketReq = 0
-	// ThreadReq = nil
 	DNSReq = ""
 	LoadReq = ""
 	SaveReq = ""
 	URLReq = ""
-	//SocketIP = nil
-	// TODO: go signlink.run()
-	for !Active {
-		time.Sleep(50 * time.Millisecond)
-	}
+	Run()
 }
 
 func Run() {
-	Active = true
-	//var1 := FindCacheDir()
-
+	var1 := FindCacheDir()
+	UID = GetUID(var1)
+	for {
+		if SocketReq != 0 {
+			// TODO: try/catch
+			// TODO: make a net.conn or something here and set it to Socket?
+			SocketReq = 0
+		} else if DNSReq != "" {
+			names, err := net.LookupAddr(DNSReq)
+			if err != nil || len(names) == 0 {
+				DNS = "unknown"
+			} else {
+				DNS = names[0]
+			}
+			DNSReq = ""
+		} else if LoadReq != "" {
+			LoadBuf = nil
+			if _, err := os.Stat(var1 + LoadReq); err == nil {
+				LoadBuf, err = os.ReadFile(var1 + LoadReq)
+				if err != nil {
+					fmt.Printf("failed to read file %s: %v\n", var1+LoadReq, err)
+				}
+			}
+			LoadReq = ""
+		} else if SaveReq != "" {
+			if SaveBuf != nil {
+				if err := os.WriteFile(var1+SaveReq, SaveBuf[0:SaveLen], 0644); err != nil {
+					fmt.Printf("failed to write file %s: %v\n", var1+SaveReq, err)
+				}
+			}
+			if WavePlay {
+				Wave = var1 + SaveReq
+				WavePlay = false
+			}
+			if MidiPlay {
+				Midi = var1 + SaveReq
+				MidiPlay = false
+			}
+			SaveReq = ""
+		} else if URLReq != "" {
+			// TODO: extracted from client.getCodeBase() - no applet here
+			resp, err := http.Get("http://127.0.0.1:" + strconv.Itoa(client.PortOffset+8888) + "/" + URLReq)
+			if err != nil {
+				URLStream = nil
+				goto End
+			}
+			defer resp.Body.Close()
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Printf("failed to read response body: %v\n", err)
+				goto End
+			}
+			URLStream = b
+		}
+	End:
+		time.Sleep(time.Duration(LoopRate) * time.Millisecond)
+	}
 }
 
 func FindCacheDir() string {
@@ -81,7 +130,7 @@ func FindCacheDir() string {
 		var3 := var0[i]
 		if len(var3) > 0 {
 			if _, err := os.Stat(var3); err != nil {
-				fmt.Printf("couldn't find cache at %s\n: %v", var3, err)
+				fmt.Printf("couldn't find cache at %s: %v\n", var3, err)
 				continue
 			}
 		}
@@ -91,7 +140,7 @@ func FindCacheDir() string {
 			if errors.Is(err, os.ErrNotExist) {
 				err2 := os.Mkdir(var4, 0755)
 				if err2 != nil {
-					fmt.Printf("couldn't create cache at %s\n: %v", var4, err2)
+					fmt.Printf("couldn't create cache at %s: %v\n", var4, err2)
 					continue
 				}
 				return path.Join(var3, var1, "/")
@@ -139,9 +188,6 @@ func GetHash(arg0 string) int64 {
 
 func CacheLoad(arg0 string) []byte {
 	// TODO: synchronized
-	if !Active {
-		return nil
-	}
 	LoadReq = strconv.FormatInt(GetHash(arg0), 10)
 	for LoadReq != "" {
 		time.Sleep(1 * time.Millisecond)
@@ -151,7 +197,7 @@ func CacheLoad(arg0 string) []byte {
 
 func CacheSave(arg0 string, arg1 []byte) {
 	// TODO: synchronized
-	if !Active || len(arg1) > 2000000 {
+	if len(arg1) > 2000000 {
 		return
 	}
 	for SaveReq != "" {
@@ -165,4 +211,71 @@ func CacheSave(arg0 string, arg1 []byte) {
 	}
 }
 
-// TODO
+// TODO: OpenSocket
+
+func OpenURL(arg0 string) ([]byte, error) {
+	URLReq = arg0
+	for URLReq != "" {
+		time.Sleep(50 * time.Millisecond)
+	}
+	if URLStream == nil {
+		return nil, errors.New("could not open: " + arg0)
+	}
+	return URLStream, nil
+}
+
+func DNSLookup(arg0 string) {
+	DNS = arg0
+	DNSReq = arg0
+}
+
+func WaveSave(arg0 []byte, arg1 int) bool {
+	if arg1 > 2_000_000 {
+		return false
+	}
+	if SaveReq == "" {
+		WavePos = (WavePos + 1) % 5
+		SaveLen = arg1
+		SaveBuf = arg0
+		WavePlay = true
+		SaveReq = "sound" + strconv.Itoa(WavePos) + ".wav"
+		return true
+	}
+	return false
+}
+
+func WaveReplay() bool {
+	if SaveReq == "" {
+		SaveBuf = nil
+		WavePlay = true
+		SaveReq = "sound" + strconv.Itoa(WavePos) + ".wav"
+		return true
+	}
+	return false
+}
+
+func MidiSave(saveBuf []byte, saveLen int) {
+	if saveLen > 2_000_000 || SaveReq != "" {
+		return
+	}
+	MidiPos = (MidiPos + 1) % 5
+	SaveLen = saveLen
+	SaveBuf = saveBuf
+	MidiPlay = true
+	SaveReq = "jingle" + strconv.Itoa(MidiPos) + ".mid"
+}
+
+func ReportErrorFunc(e string) {
+	if !ReportError {
+		return
+	}
+	fmt.Println("error: " + e)
+	var3 := strings.ReplaceAll(e, "@", "_")
+	var4 := strings.ReplaceAll(var3, "&", "_")
+	var5 := strings.ReplaceAll(var4, "#", "_")
+	_, err := OpenURL("reporterror" + strconv.Itoa(225) + ".cgi?error=" + ErrorName + " " + var5)
+	if err != nil {
+		fmt.Printf("failed to open url: %v\n", err)
+		return
+	}
+}

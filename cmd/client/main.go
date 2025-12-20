@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 
 	"goscape-client/pkg/deob/client"
+	"goscape-client/pkg/sign/signlink"
 )
 
 func main() {
@@ -43,7 +45,19 @@ func main() {
 		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members]")
 		os.Exit(1)
 	}
-	// TODO: signlink.startpriv
-	var1 := client.NewClient()
-	var1.InitApplication(532, 789)
+
+	// TODO: if initApplication shuts down, shut the network thread down and exit?
+	//  use select{}?
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		signlink.StartPriv()
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		client.NewClient().InitApplication(532, 789)
+	}()
+	wg.Wait()
 }
