@@ -223,10 +223,10 @@ func SetBrightness(arg1 float64) {
 	var28 := arg1 + (rand.Float64()*0.03 - 0.015)
 	var3 := 0
 	for i := range 512 {
-		var5 := (i/8)/64.0 + 0.0078125
-		var7 := (i&0x7)/8.0 + 0.0625
+		var5 := float64(i/8)/64.0 + 0.0078125
+		var7 := float64(i&0x7)/8.0 + 0.0625
 		for j := range 128 {
-			var10 := j / 128.0
+			var10 := float64(j) / 128.0
 			var12 := var10
 			var14 := var10
 			var16 := var10

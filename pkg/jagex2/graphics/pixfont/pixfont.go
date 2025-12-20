@@ -26,7 +26,7 @@ type PixFont struct {
 func init() {
 	var0 := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"£$%^&*()-_=+[{]};:'@#~,<.>/?\\| "
 	for i := range 256 {
-		var2 := strings.IndexByte(var0, i)
+		var2 := strings.IndexByte(var0, byte(i))
 		if var2 == -1 {
 			var2 = 74
 		}
