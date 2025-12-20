@@ -606,7 +606,7 @@ func (c *Client) SetMidi(crc int, name string, length int) {
 	if name == "" {
 		return
 	}
-	// TODO: synchronized midiSync
+	// TODO: synchronized
 	c.MidiSyncName = name
 	c.MidiSyncCRC = crc
 	c.MidiSyncLen = length
@@ -1475,7 +1475,33 @@ func (c *Client) DrawScene(arg0 int) {
 }
 
 func (c *Client) RunMidi() {
-	// TODO
+	c.StartMidiThread = false
+	for c.MidiThreadActive {
+		time.Sleep(50 * time.Millisecond)
+		var2 := ""
+		var3 := 0
+		var4 := 0
+		// TODO: synchronized
+		var2 = c.MidiSyncName
+		var3 = c.MidiSyncCRC
+		var4 = c.MidiSyncLen
+		c.MidiSyncName = ""
+		c.MidiSyncCRC = 0
+		c.MidiSyncLen = 0
+		if var2 != "" {
+			var14 := signlink.CacheLoad(var2 + ".mid")
+			var6 := 0
+			if var14 != nil && var3 != 12345678 {
+				// TODO crc32
+				if var6 != var3 {
+					var14 = nil
+				}
+			}
+			if var14 == nil {
+				// TODO: client.OpenURL
+			}
+		}
+	}
 }
 
 func SetLowMemory() {
@@ -2338,7 +2364,7 @@ func (c *Client) LoadArchive(arg0 string, arg1 int, arg2 string, arg3 int) *io.J
 		c.DrawProgress("Requesting "+arg0, arg3)
 		// TODO: try/except
 		var8 = 0
-		//var9 := c.OpenURL
+		//var9 := c.OpenURL // TODO: client.OpenURL
 	}
 	// TODO
 }
@@ -2811,13 +2837,15 @@ func (c *Client) GetNpcPos(arg0 *io.Packet, psize int) {
 		}
 	}
 	if arg0.Pos != psize {
-		//signlink.reporterror // TODO: signlink.reporterror
-		panic(c.Username + " size mismatch in getnpcpos - pos:" + strconv.Itoa(arg0.Pos) + " psize:" + strconv.Itoa(psize))
+		msg := c.Username + " size mismatch in getnpcpos - pos:" + strconv.Itoa(arg0.Pos) + " psize:" + strconv.Itoa(psize)
+		signlink.ReportErrorFunc(msg)
+		panic(msg)
 	}
 	for i := range c.NPCCount {
 		if c.NPCs[c.NPCIDs[i]] == nil {
-			// TODO: signlink.reporterror
-			panic(c.Username + " null entry in npc list - pos:" + strconv.Itoa(i) + " size:" + strconv.Itoa(c.NPCCount))
+			msg := c.Username + " null entry in npc list - pos:" + strconv.Itoa(i) + " size:" + strconv.Itoa(c.NPCCount)
+			signlink.ReportErrorFunc(msg)
+			panic(msg)
 		}
 	}
 }
@@ -2901,8 +2929,9 @@ func (c *Client) GetPlayerOldVis(arg1 *io.Packet) {
 		}
 	}
 	if var4 > c.PlayerCount {
-		// TODO: signlink.reporterror
-		panic(c.Username + " Too many players")
+		msg := c.Username + " Too many players"
+		signlink.ReportErrorFunc(msg)
+		panic(msg)
 	}
 	c.PlayerCount = 0
 	for i := range var4 {
@@ -3000,7 +3029,7 @@ func (c *Client) SaveMidi(arg0 []byte, arg2 int, arg3 bool) {
 	} else {
 		signlink.MidiFade = 0
 	}
-	//signlink.midisave // TODO: signlink.midisave
+	signlink.MidiSave(arg0, arg2)
 }
 
 func (c *Client) PushNPCs() {
@@ -4919,11 +4948,11 @@ func (c *Client) SaveWave(arg0 []byte, arg1 int) bool {
 	if arg0 == nil {
 		return true
 	}
-	// TODO: signlink.wavesave
+	return signlink.WaveSave(arg0, arg1)
 }
 
 func (c *Client) ReplayWave() bool {
-	// TODO: signlink.wavereplay
+	return signlink.WaveReplay()
 }
 
 func (c *Client) SetWaveVolume(vol int) {
@@ -6663,7 +6692,7 @@ func (c *Client) PushSpotanims() {
 	}
 }
 
-func (c *Client) GetCodeBase() {} // TODO: getcodebase signlink
+func (c *Client) GetCodeBase() {} // TODO: getcodebase signlink - signlink.mainapp
 
 func SetHighMemory() {
 	world3d.LowMemory = false
@@ -6890,13 +6919,15 @@ func (c *Client) GetPlayer(arg0 *io.Packet, arg1 int) {
 		}
 	}
 	if arg0.Pos != arg1 {
-		// TODO: signlink report error
-		panic("Error packet size mismatch in getplayer pos:" + strconv.Itoa(arg0.Pos) + " psize:" + strconv.Itoa(arg1))
+		msg := "Error packet size mismatch in getplayer pos:" + strconv.Itoa(arg0.Pos) + " psize:" + strconv.Itoa(arg1)
+		signlink.ReportErrorFunc(msg)
+		panic(msg)
 	}
 	for i := range c.PlayerCount {
 		if c.Players[c.PlayerIDs[i]] == nil {
-			// TODO signlink report error
-			panic(c.Username + " null entry in pl list - pos:" + strconv.Itoa(i) + " size:" + strconv.Itoa(c.PlayerCount))
+			msg := c.Username + " null entry in pl list - pos:" + strconv.Itoa(i) + " size:" + strconv.Itoa(c.PlayerCount)
+			signlink.ReportErrorFunc(msg)
+			panic(msg)
 		}
 	}
 }
@@ -7373,8 +7404,9 @@ func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
 		}
 	}
 	if var4 > c.NPCCount {
-		// TODO: signlink.reporterror
-		panic(c.Username + " Too many npcs")
+		msg := c.Username + " Too many npcs"
+		signlink.ReportErrorFunc(msg)
+		panic(msg)
 	}
 	c.NPCCount = 0
 	for i := range var4 {
