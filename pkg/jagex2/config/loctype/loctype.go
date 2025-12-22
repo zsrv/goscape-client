@@ -263,7 +263,7 @@ func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *mode
 	if Reset {
 		var10 = 0
 	}
-	var12 := ModelCacheDynamic.Get(var10).Value
+	var12 := ModelCacheDynamic.Get(var10)
 	if var12 == nil {
 		if var8 >= len(loc.Models) {
 			return nil
@@ -280,13 +280,13 @@ func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *mode
 		if var14 {
 			var13 += 65536
 		}
-		var15 := ModelCacheStatic.Get(int64(var13)).Value
+		var15 := ModelCacheStatic.Get(int64(var13))
 		if var15 == nil {
 			var15 = model.NewModel1(var13 & 0xFFFF)
 			if var14 {
 				var15.RotateY180()
 			}
-			//ModelCacheStatic.Put() // TODO: LruCache
+			ModelCacheStatic.Put(int64(var13), var15)
 		}
 		var var16 bool
 		if loc.ResizeX == 128 && loc.ResizeY == 128 && loc.ResizeZ == 128 {
@@ -325,7 +325,7 @@ func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *mode
 		if loc.BlockWalk {
 			var18.ObjRaise = var18.MaxY
 		}
-		//ModelCacheDynamic.Put(var10, var18) // TODO: LruCache
+		ModelCacheDynamic.Put(var10, var18)
 		if loc.HillSkew || loc.ShareLight {
 			var18 = model.NewModel5(var18, loc.HillSkew, loc.ShareLight)
 		}

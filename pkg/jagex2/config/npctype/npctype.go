@@ -170,7 +170,7 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 }
 
 func (t *NpcType) GetSequencedModel(arg0 int, arg1 int, arg2 []int) *model.Model {
-	var5 := ModelCache.Get(t.Index).Value
+	var5 := ModelCache.Get(t.Index)
 	if var5 == nil {
 		var6 := make([]*model.Model, len(t.Models))
 		for i := range len(t.Models) {
@@ -188,7 +188,7 @@ func (t *NpcType) GetSequencedModel(arg0 int, arg1 int, arg2 []int) *model.Model
 		}
 		var5.CreateLabelReferences()
 		var5.CalculateNormals(64, 850, -30, -50, -30, true)
-		//ModelCache.Put(t.Index, var5) // TODO: LruCache
+		ModelCache.Put(t.Index, var5)
 	}
 	var4 := model.NewModel6(var5, !t.AnimHasAlpha)
 	if arg0 != -1 && arg1 != -1 {

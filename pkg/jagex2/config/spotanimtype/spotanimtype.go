@@ -92,7 +92,7 @@ func (t *SpotAnimType) Decode(arg1 *io.Packet) {
 }
 
 func (t *SpotAnimType) GetModel() *model.Model {
-	var1 := ModelCache.Get(int64(t.Index)).Value // TODO: .Value would cause panic
+	var1 := ModelCache.Get(int64(t.Index))
 	if var1 != nil {
 		return var1
 	}
@@ -102,6 +102,6 @@ func (t *SpotAnimType) GetModel() *model.Model {
 			var1.Recolor(t.RecolS[i], t.RecolD[i])
 		}
 	}
-	//ModelCache.Put(int64(t.Index), var1) // TODO: LruCache
+	ModelCache.Put(int64(t.Index), var1)
 	return var1
 }

@@ -286,7 +286,7 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 			return Get(var2).GetInterfaceModel(1)
 		}
 	}
-	var4 := ModelCache.Get(int64(t.Index)).Value
+	var4 := ModelCache.Get(int64(t.Index))
 	if var4 != nil {
 		return var4
 	}
@@ -298,14 +298,14 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 	}
 	var4.CalculateNormals(64, 768, -50, -10, -50, true)
 	var4.Pickable = true
-	//ModelCache.Put(int64(t.Index), var4) // TODO: LruCache
+	ModelCache.Put(int64(t.Index), var4)
 	return var4
 }
 
 func GetIcon(arg0, arg2 int) *pix32.Pix32 {
-	var3 := IconCache.Get(int64(arg0)).Value
+	var3 := IconCache.Get(int64(arg0))
 	if var3 != nil && var3.CropH != arg2 && var3.CropH != -1 {
-		var3.Unlink()
+		//var3.Unlink() // TODO: Linkable.Unlink - add func to remove an id directly from LruCache?
 		var3 = nil
 	}
 	if var3 != nil {
@@ -378,7 +378,7 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 		var20.CropW = var21
 		var20.CropH = var22
 	}
-	//IconCache.Put(arg0, var3) // TODO: LruCache
+	IconCache.Put(int64(arg0), var3)
 	pix2d.Bind(var9, var8, var10)
 	pix2d.SetClipping(var14, var13, var12, var11)
 	pix3d.CenterW3D = var5

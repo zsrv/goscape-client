@@ -209,7 +209,7 @@ func (e *PlayerEntity) GetSequencedModel() *model.Model {
 	} else if e.SecondarySeqID >= 0 {
 		var4 = seqtype.Instances[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
 	}
-	var15 := ModelCache.Get(var2).Value
+	var15 := ModelCache.Get(var2)
 	if var15 == nil {
 		var9 := make([]*model.Model, 12)
 		var10 := 0
@@ -245,7 +245,7 @@ func (e *PlayerEntity) GetSequencedModel() *model.Model {
 		}
 		var15.CreateLabelReferences()
 		var15.CalculateNormals(64, 850, -30, -50, -30, true)
-		//ModelCache.Put(var2, var15) // TODO: LruCache
+		ModelCache.Put(var2, var15)
 	}
 	if e.LowMemory {
 		return var15

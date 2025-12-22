@@ -325,21 +325,21 @@ func (c *Component) GetModel(arg0 int, arg1 int, arg2 bool) *model.Model {
 
 func GetImage(arg0 *io.Jagfile, arg1 int, arg2 string) *pix32.Pix32 {
 	var4 := (jstring.HashCode(arg2) << 8) + int64(arg1)
-	var6 := ImageCache.Get(var4).Value
+	var6 := ImageCache.Get(var4)
 	if var6 != nil {
 		return var6
 	}
 	var6 = pix32.NewPix323(arg0, arg2, arg1)
-	//ImageCache.Put(var4, var6) // TODO: LruCache
+	ImageCache.Put(var4, var6)
 	return var6
 }
 
 func GetModel(arg1 int) *model.Model {
-	var2 := ModelCache.Get(int64(arg1)).Value
+	var2 := ModelCache.Get(int64(arg1))
 	if var2 != nil {
 		return var2
 	}
 	var2 = model.NewModel1(arg1)
-	//ModelCache.Put(int64(arg1), var2) // TODO: LruCache
+	ModelCache.Put(int64(arg1), var2)
 	return var2
 }
