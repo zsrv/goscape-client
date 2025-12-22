@@ -1,105 +1,94 @@
 package datastruct
 
-// TODO: LinkList was changed to receive and return values instead of
-//  Linkable! AddTail and AddHead no longer unlink the input from existing lists!
-//  Not sure if this will break anything
-
 type LinkList[T any] struct {
-	Sentinel *Linkable[T]
-	Cursor   *Linkable[T]
+	sentinel *Linkable[T]
+	cursor   *Linkable[T]
 }
 
 func NewLinkList[T any]() *LinkList[T] {
-	l := &LinkList[T]{
-		Sentinel: new(Linkable[T]),
+	s := new(Linkable[T])
+	s.next = s
+	s.prev = s
+	return &LinkList[T]{
+		sentinel: s,
 	}
-	l.Sentinel.Next = l.Sentinel
-	l.Sentinel.Prev = l.Sentinel
-	return l
 }
 
-func (l *LinkList[T]) AddTail(v T) {
-	node := &Linkable[T]{
-		Value: v,
+func (l *LinkList[T]) AddTail(v *Linkable[T]) {
+	if v.prev != nil {
+		v.Unlink()
 	}
-	node.Prev = l.Sentinel.Prev
-	node.Next = l.Sentinel
-	node.Prev.Next = node
-	node.Next.Prev = node
+	v.prev = l.sentinel.prev
+	v.next = l.sentinel
+	v.prev.next = v
+	v.next.prev = v
 }
 
-func (l *LinkList[T]) AddHead(v T) {
-	node := &Linkable[T]{
-		Value: v,
+func (l *LinkList[T]) AddHead(v *Linkable[T]) {
+	if v.prev != nil {
+		v.Unlink()
 	}
-	node.Prev = l.Sentinel
-	node.Next = l.Sentinel.Next
-	node.Prev.Next = node
-	node.Next.Prev = node
+	v.prev = l.sentinel
+	v.next = l.sentinel.next
+	v.prev.next = v
+	v.next.prev = v
 }
 
-func (l *LinkList[T]) RemoveHead() T {
-	node := l.Sentinel.Next
-	if node == l.Sentinel {
-		// Returns the zero value for the type argument used for T
-		// https://stackoverflow.com/a/70586169
-		var zero T
-		return zero
+func (l *LinkList[T]) RemoveHead() *Linkable[T] {
+	n := l.sentinel.next
+	if n == l.sentinel {
+		return nil
 	}
-	node.Unlink()
-	return node.Value
+	n.Unlink()
+	return n
 }
 
-func (l *LinkList[T]) Head() T {
-	node := l.Sentinel.Next
-	if node == l.Sentinel {
-		l.Cursor = nil
-		var zero T
-		return zero
+func (l *LinkList[T]) Head() *Linkable[T] {
+	n := l.sentinel.next
+	if n == l.sentinel {
+		l.cursor = nil
+		return nil
 	}
-	l.Cursor = node.Next
-	return node.Value
+	l.cursor = n.next
+	return n
 }
 
-func (l *LinkList[T]) Tail() T {
-	node := l.Sentinel.Prev
-	if node == l.Sentinel {
-		l.Cursor = nil
-		var zero T
-		return zero
+func (l *LinkList[T]) Tail() *Linkable[T] {
+	p := l.sentinel.prev
+	if p == l.sentinel {
+		l.cursor = nil
+		return nil
 	}
-	l.Cursor = node.Prev
-	return node.Value
+	l.cursor = p.prev
+	return p
 }
 
-func (l *LinkList[T]) Next() T {
-	node := l.Cursor
-	if node == l.Sentinel {
-		l.Cursor = nil
-		var zero T
-		return zero
+func (l *LinkList[T]) Next() *Linkable[T] {
+	c := l.cursor
+	if c == l.sentinel {
+		l.cursor = nil
+		return nil
 	}
-	l.Cursor = node.Next
-	return node.Value
+	l.cursor = c.next
+	return c
 }
 
-func (l *LinkList[T]) Prev() T {
-	node := l.Cursor
-	if node == l.Sentinel {
-		l.Cursor = nil
-		var zero T
-		return zero
+func (l *LinkList[T]) Prev() *Linkable[T] {
+	c := l.cursor
+	if c == l.sentinel {
+		l.cursor = nil
+		return nil
 	}
-	l.Cursor = node.Prev
-	return node.Value
+	l.cursor = c.prev
+	return c
 }
 
 func (l *LinkList[T]) Clear() {
 	for {
-		node := l.Sentinel.Next
-		if node == l.Sentinel {
+		n := l.sentinel.next
+		if n == l.sentinel {
 			return
 		}
-		node.Unlink()
+		n.Unlink()
 	}
 }

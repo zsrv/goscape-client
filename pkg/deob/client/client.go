@@ -1031,8 +1031,9 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 		if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
 			var var12 *entity.LocAddEntity
 			for var13 := c.SpawnedLocations.Head(); var13 != nil; var13 = c.SpawnedLocations.Next() {
-				if var13.Plane == c.CurrentLevel && var13.X == var5 && var13.Z == var6 && var13.Layer == var10 {
-					var12 = var13
+				v := var13.Value
+				if v.Plane == c.CurrentLevel && v.X == var5 && v.Z == var6 && v.Layer == var10 {
+					var12 = v
 					break
 				}
 			}
@@ -1067,7 +1068,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 				var12.LastLocIndex = var15
 				var12.LastShape = var16
 				var12.LastAngle = var17
-				c.SpawnedLocations.AddTail(var12)
+				c.SpawnedLocations.AddTail(datastruct.NewLinkable(var12))
 			}
 			var12.LocIndex = var11
 			var12.Shape = var8
@@ -1098,11 +1099,10 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 			}
 			if var11 != 0 {
 				var38 := entity.NewLocEntity(false, var11>>14&0x7FFF, c.CurrentLevel, var9, seqtype.Instances[var10], var6, var5)
-				c.LocList.AddTail(var38)
+				c.LocList.AddTail(datastruct.NewLinkable(var38))
 			}
 		}
 	} else {
-		var var32 *entity.ObjStackEntity
 		if arg2 == 223 {
 			var4 = arg1.G1()
 			var5 = c.BaseX + (var4 >> 4 & 0x7)
@@ -1110,13 +1110,13 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 			var7 = arg1.G2()
 			var8 = arg1.G2()
 			if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
-				var32 = entity.NewObjStackEntity()
+				var32 := entity.NewObjStackEntity()
 				var32.Index = var7
 				var32.Count = var8
 				if c.LevelObjStacks[c.CurrentLevel][var5][var6] == nil {
 					c.LevelObjStacks[c.CurrentLevel][var5][var6] = datastruct.NewLinkList[*entity.ObjStackEntity]()
 				}
-				c.LevelObjStacks[c.CurrentLevel][var5][var6].AddTail(var32)
+				c.LevelObjStacks[c.CurrentLevel][var5][var6].AddTail(datastruct.NewLinkable(var32))
 				c.SortObjStacks(var5, var6)
 			}
 		} else if arg2 == 49 {
@@ -1127,8 +1127,9 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 			if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
 				var30 := c.LevelObjStacks[c.CurrentLevel][var5][var6]
 				if var30 != nil {
-					for var32 = var30.Head(); var32 != nil; var32 = var30.Next() {
-						if var32.Index == var7&0x7FFF {
+					for var32 := var30.Head(); var32 != nil; var32 = var30.Next() {
+						v := var32.Value
+						if v.Index == var7&0x7FFF {
 							var32.Unlink()
 							break
 						}
@@ -1163,7 +1164,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 					var8 = var8*128 + 64
 					var43 := entity.NewProjectileEntity(var36, var15, var6, var14+clientextras.LoopCycle, c.CurrentLevel, var9, var37+clientextras.LoopCycle, var16, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var11, var10, var5)
 					var43.UpdateVelocity(c.GetHeightMapY(c.CurrentLevel, var7, var8)-var36, var8, var7, var37+clientextras.LoopCycle)
-					c.Projectiles.AddTail(var43)
+					c.Projectiles.AddTail(datastruct.NewLinkable(var43))
 				}
 			} else if arg2 == 191 {
 				var4 = arg1.G1()
@@ -1176,7 +1177,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 					var5 = var5*128 + 64
 					var6 = var6*128 + 64
 					var34 := entity.NewSpotAnimEntity(var5, var7, var6, var9, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var8, c.CurrentLevel, clientextras.LoopCycle)
-					c.Spotanims.AddTail(var34)
+					c.Spotanims.AddTail(datastruct.NewLinkable(var34))
 				}
 			} else if arg2 == 50 {
 				var4 = arg1.G1()
@@ -1192,7 +1193,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 					if c.LevelObjStacks[c.CurrentLevel][var5][var6] == nil {
 						c.LevelObjStacks[c.CurrentLevel][var5][var6] = datastruct.NewLinkList[*entity.ObjStackEntity]()
 					}
-					c.LevelObjStacks[c.CurrentLevel][var5][var6].AddTail(var33)
+					c.LevelObjStacks[c.CurrentLevel][var5][var6].AddTail(datastruct.NewLinkable(var33))
 					c.SortObjStacks(var5, var6)
 				}
 			} else {
@@ -1220,9 +1221,9 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 					}
 					if var19 != nil {
 						var20 := entity.NewLocMergeEntity(c.CurrentLevel, var9, var6, var36+clientextras.LoopCycle, var8, -1, var5, var10)
-						c.MergedLocations.AddTail(var20)
+						c.MergedLocations.AddTail(datastruct.NewLinkable(var20))
 						var21 := entity.NewLocMergeEntity(c.CurrentLevel, var9, var6, var37+clientextras.LoopCycle, var8, var11, var5, var10)
-						c.MergedLocations.AddTail(var21)
+						c.MergedLocations.AddTail(datastruct.NewLinkable(var21))
 						var22 := c.LevelHeightmap[c.CurrentLevel][var5][var6]
 						var23 := c.LevelHeightmap[c.CurrentLevel][var5+1][var6]
 						var24 := c.LevelHeightmap[c.CurrentLevel][var5+1][var6+1]
@@ -1268,8 +1269,9 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 						var31 := c.LevelObjStacks[c.CurrentLevel][var5][var6]
 						if var31 != nil {
 							for var35 := var31.Head(); var35 != nil; var35 = var31.Next() {
-								if var35.Index == var7&0x7FFF && var35.Count == var8 {
-									var35.Count = var9
+								v := var35.Value
+								if v.Index == var7&0x7FFF && v.Count == var8 {
+									v.Count = var9
 									break
 								}
 							}
@@ -2599,8 +2601,9 @@ func (c *Client) UpdateMergeLocs() {
 		return
 	}
 	for var2 := c.MergedLocations.Head(); var2 != nil; var2 = c.MergedLocations.Next() {
-		if clientextras.LoopCycle >= var2.LastCycle {
-			c.AddLoc(var2.Angle, var2.X, var2.Z, var2.Layer, var2.LocIndex, var2.Shape, var2.Plane)
+		v := var2.Value
+		if clientextras.LoopCycle >= v.LastCycle {
+			c.AddLoc(v.Angle, v.X, v.Z, v.Layer, v.LocIndex, v.Shape, v.Plane)
 			var2.Unlink()
 		}
 	}
@@ -5586,17 +5589,18 @@ func (c *Client) UpdateOrbitCamera(arg0 int) {
 
 func (c *Client) PushProjectiles() {
 	for var2 := c.Projectiles.Head(); var2 != nil; var2 = c.Projectiles.Next() {
-		if var2.Level != c.CurrentLevel || clientextras.LoopCycle > var2.LastCycle {
+		v := var2.Value
+		if v.Level != c.CurrentLevel || clientextras.LoopCycle > v.LastCycle {
 			var2.Unlink()
-		} else if clientextras.LoopCycle >= var2.StartCycle {
-			if var2.Target > 0 {
-				var3 := c.NPCs[var2.Target-1]
+		} else if clientextras.LoopCycle >= v.StartCycle {
+			if v.Target > 0 {
+				var3 := c.NPCs[v.Target-1]
 				if var3 != nil {
-					var2.UpdateVelocity(c.GetHeightMapY(var2.Level, var3.X, var3.Z)-var2.OffsetY, var3.Z, var3.X, clientextras.LoopCycle)
+					v.UpdateVelocity(c.GetHeightMapY(v.Level, var3.X, var3.Z)-v.OffsetY, var3.Z, var3.X, clientextras.LoopCycle)
 				}
 			}
-			if var2.Target < 0 {
-				var4 := -var2.Target - 1
+			if v.Target < 0 {
+				var4 := -v.Target - 1
 				var var5 *playerentity.PlayerEntity
 				if var4 == c.LocalPID {
 					var5 = c.LocalPlayer
@@ -5604,11 +5608,11 @@ func (c *Client) PushProjectiles() {
 					var5 = c.Players[var4]
 				}
 				if var5 != nil {
-					var2.UpdateVelocity(c.GetHeightMapY(var2.Level, var5.X, var5.Z)-var2.OffsetY, var5.Z, var5.X, clientextras.LoopCycle)
+					v.UpdateVelocity(c.GetHeightMapY(v.Level, var5.X, var5.Z)-v.OffsetY, var5.Z, var5.X, clientextras.LoopCycle)
 				}
 			}
-			var2.Update(c.SceneDelta)
-			c.Scene.AddTemporary1(int(var2.Z), 60, var2.Yaw, int(var2.X), -1, false, nil, var2, int(var2.Y), c.CurrentLevel)
+			v.Update(c.SceneDelta)
+			c.Scene.AddTemporary1(int(v.Z), 60, v.Yaw, int(v.X), -1, false, nil, v, int(v.Y), c.CurrentLevel)
 		}
 	}
 }
@@ -6679,14 +6683,15 @@ func (c *Client) DrawTooltip() {
 
 func (c *Client) PushSpotanims() {
 	for var2 := c.Spotanims.Head(); var2 != nil; var2 = c.Spotanims.Next() {
-		if var2.Level != c.CurrentLevel || var2.SeqComplete {
+		v := var2.Value
+		if v.Level != c.CurrentLevel || v.SeqComplete {
 			var2.Unlink()
-		} else if clientextras.LoopCycle >= var2.StartCycle {
-			var2.Update(c.SceneDelta)
-			if var2.SeqComplete {
+		} else if clientextras.LoopCycle >= v.StartCycle {
+			v.Update(c.SceneDelta)
+			if v.SeqComplete {
 				var2.Unlink()
 			} else {
-				c.Scene.AddTemporary1(var2.Z, 60, 0, var2.X, -1, false, nil, var2, var2.Y, var2.Level)
+				c.Scene.AddTemporary1(v.Z, 60, 0, v.X, -1, false, nil, v, v.Y, v.Level)
 			}
 		}
 	}
@@ -7530,29 +7535,31 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 	var4 := -99999999
 	var var5 *entity.ObjStackEntity
 	for var6 := var3.Head(); var6 != nil; var6 = var3.Next() {
-		var7 := objtype.Get(var6.Index)
+		v := var6.Value
+		var7 := objtype.Get(v.Index)
 		var8 := var7.Cost
 		if var7.Stackable {
-			var8 *= var6.Count + 1
+			var8 *= v.Count + 1
 		}
 		if var8 > var4 {
 			var4 = var8
-			var5 = var6
+			var5 = v
 		}
 	}
-	var3.AddHead(var5)
+	var3.AddHead(datastruct.NewLinkable(var5))
 	var15 := -1
 	var8 := -1
 	var9 := 0
 	var10 := 0
 	for var6 := var3.Head(); var6 != nil; var6 = var3.Next() {
-		if var6.Index != var5.Index && var15 == -1 {
-			var15 = var6.Index
-			var9 = var6.Count
+		v := var6.Value
+		if v.Index != var5.Index && var15 == -1 {
+			var15 = v.Index
+			var9 = v.Count
 		}
-		if var6.Index != var5.Index && var6.Index != var15 && var8 == -1 {
-			var8 = var6.Index
-			var10 = var6.Count
+		if v.Index != var5.Index && v.Index != var15 && var8 == -1 {
+			var8 = v.Index
+			var10 = v.Count
 		}
 	}
 	var var11 *model.Model
@@ -7627,9 +7634,10 @@ func (c *Client) BuildScene() {
 	c.AreaViewport.Bind()
 	c.Out.P1Isaac(108)
 	for var15 := c.LocList.Head(); var15 != nil; var15 = c.LocList.Next() {
-		if c.LevelTileFlags[1][var15.X][var15.Z]&0x2 == 2 {
-			var15.Level--
-			if var15.Level < 0 {
+		v := var15.Value
+		if c.LevelTileFlags[1][v.X][v.Z]&0x2 == 2 {
+			v.Level--
+			if v.Level < 0 {
 				var15.Unlink()
 			}
 		}
@@ -7640,7 +7648,8 @@ func (c *Client) BuildScene() {
 		}
 	}
 	for var17 := c.SpawnedLocations.Head(); var17 != nil; var17 = c.SpawnedLocations.Next() {
-		c.AddLoc(var17.Angle, var17.X, var17.Z, var17.Layer, var17.LocIndex, var17.Shape, var17.Plane)
+		v := var17.Value
+		c.AddLoc(v.Angle, v.X, v.Z, v.Layer, v.LocIndex, v.Shape, v.Plane)
 	}
 	loctype.ModelCacheStatic.Clear()
 	pix3d.InitPool(20)
@@ -7788,58 +7797,59 @@ func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) int {
 
 func (c *Client) PushLocs() {
 	for var2 := c.LocList.Head(); var2 != nil; var2 = c.LocList.Next() {
+		v := var2.Value
 		var3 := false
-		var2.SeqCycle += c.SceneDelta
-		if var2.SeqFrame == -1 {
-			var2.SeqFrame = 0
+		v.SeqCycle += c.SceneDelta
+		if v.SeqFrame == -1 {
+			v.SeqFrame = 0
 			var3 = true
 		}
-		for ok := true; ok; ok = var2.SeqFrame >= 0 && var2.SeqFrame < var2.Seq.FrameCount {
-			for ok2 := true; ok2; ok2 = var2.SeqFrame < var2.Seq.FrameCount {
-				if var2.SeqCycle <= var2.Seq.Delay[var2.SeqFrame] {
+		for ok := true; ok; ok = v.SeqFrame >= 0 && v.SeqFrame < var2.Seq.FrameCount {
+			for ok2 := true; ok2; ok2 = v.SeqFrame < v.Seq.FrameCount {
+				if v.SeqCycle <= v.Seq.Delay[v.SeqFrame] {
 					goto afterLabel67 // TODO: verify
 				}
-				var2.SeqCycle -= var2.Seq.Delay[var2.SeqFrame] + 1
-				var2.SeqFrame++
+				v.SeqCycle -= v.Seq.Delay[v.SeqFrame] + 1
+				v.SeqFrame++
 				var3 = true
 			}
-			var2.SeqFrame -= var2.Seq.ReplayOff
+			v.SeqFrame -= v.Seq.ReplayOff
 		}
 		var2.Unlink()
 		var3 = false
 	afterLabel67:
 		if var3 {
-			var4 := var2.Level
-			var5 := var2.X
-			var6 := var2.Z
+			var4 := v.Level
+			var5 := v.X
+			var6 := v.Z
 			var7 := 0
-			if var2.Type == 0 {
+			if v.Type == 0 {
 				var7 = c.Scene.GetWallBitSet(var4, var5, var6)
 			}
-			if var2.Type == 1 {
+			if v.Type == 1 {
 				var7 = c.Scene.GetWallDecorationBitSet(var4, var6, var5)
 			}
-			if var2.Type == 2 {
+			if v.Type == 2 {
 				var7 = c.Scene.GetLocBitSet(var4, var5, var6)
 			}
-			if var2.Type == 3 {
+			if v.Type == 3 {
 				var7 = c.Scene.GetGroundDecorationBitSet(var4, var5, var6)
 			}
-			if var7 != 0 && (var7>>14&0x7FFF) == var2.Index {
+			if var7 != 0 && (var7>>14&0x7FFF) == v.Index {
 				var8 := c.LevelHeightmap[var4][var5][var6]
 				var9 := c.LevelHeightmap[var4][var5+1][var6]
 				var10 := c.LevelHeightmap[var4][var5+1][var6+1]
 				var11 := c.LevelHeightmap[var4][var5][var6+1]
-				var12 := loctype.Get(var2.Index)
+				var12 := loctype.Get(v.Index)
 				var13 := -1
-				if var2.SeqFrame != -1 {
-					var13 = var2.Seq.Frames[var2.SeqFrame]
+				if v.SeqFrame != -1 {
+					var13 = v.Seq.Frames[v.SeqFrame]
 				}
 				var14 := 0
 				var15 := 0
 				var16 := 0
 				var var17 *model.Model
-				if var2.Type == 2 {
+				if v.Type == 2 {
 					var14 = c.Scene.GetInfo(var4, var5, var6, var7)
 					var15 = var14 & 0x1F
 					var16 = var14 >> 6
@@ -7848,10 +7858,10 @@ func (c *Client) PushLocs() {
 					}
 					var17 = var12.GetModel(var15, var16, var8, var9, var10, var11, var13)
 					c.Scene.SetLocModel(var5, var17, var4, var6)
-				} else if var2.Type == 1 {
+				} else if v.Type == 1 {
 					var21 := var12.GetModel(4, 0, var8, var9, var10, var11, var13)
 					c.Scene.SetWallDecorationModel(var6, var5, var21, var4)
-				} else if var2.Type == 0 {
+				} else if v.Type == 0 {
 					var14 = c.Scene.GetInfo(var4, var5, var6, var7)
 					var15 = var14 & 0x1F
 					var16 = var14 >> 6
@@ -7864,7 +7874,7 @@ func (c *Client) PushLocs() {
 						var17 = var12.GetModel(var15, var16, var8, var9, var10, var11, var13)
 						c.Scene.SetWallModel(var17, var6, var5, var4)
 					}
-				} else if var2.Type == 3 {
+				} else if v.Type == 3 {
 					var14 = c.Scene.GetInfo(var4, var5, var6, var7)
 					var15 = var14 >> 6
 					var22 := var12.GetModel(22, var15, var8, var9, var10, var11, var13)
@@ -7996,11 +8006,12 @@ func (c *Client) HandleViewportOptions() {
 				var15 := c.LevelObjStacks[c.CurrentLevel][var5][var6]
 				if var15 != nil {
 					for var17 := var15.Tail(); var17 != nil; var17 = var15.Prev() {
-						var18 := objtype.Get(var17.Index)
+						v := var17.Value
+						var18 := objtype.Get(v.Index)
 						if c.ObjSelected == 1 {
 							c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @lre@" + var18.Name
 							c.MenuAction[c.MenuSize] = 217
-							c.MenuParamA[c.MenuSize] = var17.Index
+							c.MenuParamA[c.MenuSize] = v.Index
 							c.MenuParamB[c.MenuSize] = var5
 							c.MenuParamC[c.MenuSize] = var6
 							c.MenuSize++
@@ -8020,14 +8031,14 @@ func (c *Client) HandleViewportOptions() {
 									case 4:
 										c.MenuAction[c.MenuSize] = 877
 									}
-									c.MenuParamA[c.MenuSize] = var17.Index
+									c.MenuParamA[c.MenuSize] = v.Index
 									c.MenuParamB[c.MenuSize] = var5
 									c.MenuParamC[c.MenuSize] = var6
 									c.MenuSize++
 								} else if j == 2 {
 									c.MenuOption[c.MenuSize] = "Take @lre@" + var18.Name
 									c.MenuAction[c.MenuSize] = 99
-									c.MenuParamA[c.MenuSize] = var17.Index
+									c.MenuParamA[c.MenuSize] = v.Index
 									c.MenuParamB[c.MenuSize] = var5
 									c.MenuParamC[c.MenuSize] = var6
 									c.MenuSize++
@@ -8035,14 +8046,14 @@ func (c *Client) HandleViewportOptions() {
 							}
 							c.MenuOption[c.MenuSize] = "Examine @lre@" + var18.Name
 							c.MenuAction[c.MenuSize] = 1102
-							c.MenuParamA[c.MenuSize] = var17.Index
+							c.MenuParamA[c.MenuSize] = v.Index
 							c.MenuParamB[c.MenuSize] = var5
 							c.MenuParamC[c.MenuSize] = var6
 							c.MenuSize++
 						} else if c.ActiveSpellFlags&0x1 == 1 {
 							c.MenuOption[c.MenuSize] = c.SpellCaption + " @lre@" + var18.Name
 							c.MenuAction[c.MenuSize] = 965
-							c.MenuParamA[c.MenuSize] = var17.Index
+							c.MenuParamA[c.MenuSize] = v.Index
 							c.MenuParamB[c.MenuSize] = var5
 							c.MenuParamC[c.MenuSize] = var6
 							c.MenuSize++

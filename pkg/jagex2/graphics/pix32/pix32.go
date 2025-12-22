@@ -3,15 +3,12 @@ package pix32
 import (
 	"math"
 
-	"goscape-client/pkg/jagex2/datastruct"
 	"goscape-client/pkg/jagex2/graphics/pix2d"
 	"goscape-client/pkg/jagex2/graphics/pix8"
 	"goscape-client/pkg/jagex2/io"
 )
 
 type Pix32 struct {
-	datastruct.Linkable[*Pix32]
-
 	Pixels []int
 	CropW  int
 	Width  int

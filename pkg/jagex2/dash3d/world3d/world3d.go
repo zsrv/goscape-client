@@ -1158,7 +1158,7 @@ func (w *World3D) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 }
 
 func (w *World3D) DrawTile(arg0 *typ.Ground, arg1 bool) {
-	DrawTileQueue.AddTail(arg0)
+	DrawTileQueue.AddTail(datastruct.NewLinkable(arg0))
 	for {
 		var var3 *typ.Ground
 		var4 := 0
@@ -1189,7 +1189,7 @@ func (w *World3D) DrawTile(arg0 *typ.Ground, arg1 bool) {
 									var var35 *typ.Ground
 									for {
 										for ok7 := true; ok7; ok7 = !var3.Update {
-											var3 = DrawTileQueue.RemoveHead()
+											var3 = DrawTileQueue.RemoveHead().Value
 											if var3 == nil {
 												return
 											}
@@ -1372,25 +1372,25 @@ func (w *World3D) DrawTile(arg0 *typ.Ground, arg1 bool) {
 											if var4 < EyeTileX && var14&0x4 != 0 {
 												var35 = var8[var4+1][var5]
 												if var35 != nil && var35.Update {
-													DrawTileQueue.AddTail(var35)
+													DrawTileQueue.AddTail(datastruct.NewLinkable(var35))
 												}
 											}
 											if var5 < EyeTileZ && var14&0x2 != 0 {
 												var35 = var8[var4][var5+1]
 												if var35 != nil && var35.Update {
-													DrawTileQueue.AddTail(var35)
+													DrawTileQueue.AddTail(datastruct.NewLinkable(var35))
 												}
 											}
 											if var4 > EyeTileX && var14&0x1 != 0 {
 												var35 = var8[var4-1][var5]
 												if var35 != nil && var35.Update {
-													DrawTileQueue.AddTail(var35)
+													DrawTileQueue.AddTail(datastruct.NewLinkable(var35))
 												}
 											}
 											if var5 > EyeTileZ && var14&0x8 != 0 {
 												var35 = var8[var4][var5-1]
 												if var35 != nil && var35.Update {
-													DrawTileQueue.AddTail(var35)
+													DrawTileQueue.AddTail(datastruct.NewLinkable(var35))
 												}
 											}
 										}
@@ -1493,9 +1493,9 @@ func (w *World3D) DrawTile(arg0 *typ.Ground, arg1 bool) {
 											for var18 = var36.MinSceneTileZ; var18 <= var36.MaxSceneTileZ; var18++ {
 												var38 := var8[var17][var18]
 												if var38.CheckLocSpans != 0 {
-													DrawTileQueue.AddTail(var38)
+													DrawTileQueue.AddTail(datastruct.NewLinkable(var38))
 												} else if (var17 != var4 || var18 != var5) && var38.Update {
-													DrawTileQueue.AddTail(var38)
+													DrawTileQueue.AddTail(datastruct.NewLinkable(var38))
 												}
 											}
 										}
@@ -1586,31 +1586,31 @@ func (w *World3D) DrawTile(arg0 *typ.Ground, arg1 bool) {
 		if var6 < w.MaxLevel-1 {
 			var33 = w.LevelTiles[var6+1][var4][var5]
 			if var33 != nil && var33.Update {
-				DrawTileQueue.AddTail(var33)
+				DrawTileQueue.AddTail(datastruct.NewLinkable(var33))
 			}
 		}
 		if var4 < EyeTileX {
 			var33 = var8[var4+1][var5]
 			if var33 != nil && var33.Update {
-				DrawTileQueue.AddTail(var33)
+				DrawTileQueue.AddTail(datastruct.NewLinkable(var33))
 			}
 		}
 		if var5 < EyeTileZ {
 			var33 = var8[var4][var5+1]
 			if var33 != nil && var33.Update {
-				DrawTileQueue.AddTail(var33)
+				DrawTileQueue.AddTail(datastruct.NewLinkable(var33))
 			}
 		}
 		if var4 > EyeTileX {
 			var33 = var8[var4-1][var5]
 			if var33 != nil && var33.Update {
-				DrawTileQueue.AddTail(var33)
+				DrawTileQueue.AddTail(datastruct.NewLinkable(var33))
 			}
 		}
 		if var5 > EyeTileZ {
 			var33 = var8[var4][var5-1]
 			if var33 != nil && var33.Update {
-				DrawTileQueue.AddTail(var33)
+				DrawTileQueue.AddTail(datastruct.NewLinkable(var33))
 			}
 		}
 	}

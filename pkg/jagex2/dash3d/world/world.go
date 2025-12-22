@@ -286,7 +286,7 @@ func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, ar
 				arg0.AddLoc(arg4, var16.Length, var16.Width, arg9, arg3, var16.BlockRange)
 			}
 			if var16.Anim != -1 {
-				arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 2, seqtype.Instances[var16.Anim], arg3, arg9))
+				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 2, seqtype.Instances[var16.Anim], arg3, arg9)))
 			}
 		} else if arg5 >= 12 {
 			var19 = var16.GetModel(arg5, arg4, var11, var12, var13, var14, -1)
@@ -298,7 +298,7 @@ func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, ar
 				arg0.AddLoc(arg4, var16.Length, var16.Width, arg9, arg3, var16.BlockRange)
 			}
 			if var16.Anim != -1 {
-				arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 2, seqtype.Instances[var16.Anim], arg3, arg9))
+				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 2, seqtype.Instances[var16.Anim], arg3, arg9)))
 			}
 		} else if arg5 == 0 {
 			var19 = var16.GetModel(0, arg4, var11, var12, var13, var14, -1)
@@ -341,7 +341,7 @@ func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, ar
 				arg0.AddWall(arg4, arg3, arg9, var16.BlockRange, arg5)
 			}
 			if var16.Anim != -1 {
-				arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 0, seqtype.Instances[var16.Anim], arg3, arg9))
+				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 0, seqtype.Instances[var16.Anim], arg3, arg9)))
 			}
 			if var16.WallWidth != 16 {
 				arg6.SetWallDecorationOffset(arg2, arg3, arg9, var16.WallWidth)
@@ -365,7 +365,7 @@ func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, ar
 				arg0.AddWall(arg4, arg3, arg9, var16.BlockRange, arg5)
 			}
 			if var16.Anim != -1 {
-				arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 0, seqtype.Instances[var16.Anim], arg3, arg9))
+				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 0, seqtype.Instances[var16.Anim], arg3, arg9)))
 			}
 		} else {
 			var26 := 0
@@ -395,7 +395,7 @@ func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, ar
 					arg0.AddWall(arg4, arg3, arg9, var16.BlockRange, arg5)
 				}
 				if var16.Anim != -1 {
-					arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 0, seqtype.Instances[var16.Anim], arg3, arg9))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 0, seqtype.Instances[var16.Anim], arg3, arg9)))
 				}
 				if var16.WallWidth != 16 {
 					arg6.SetWallDecorationOffset(arg2, arg3, arg9, var16.WallWidth)
@@ -419,7 +419,7 @@ func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, ar
 					arg0.AddWall(arg4, arg3, arg9, var16.BlockRange, arg5)
 				}
 				if var16.Anim != -1 {
-					arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 0, seqtype.Instances[var16.Anim], arg3, arg9))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 0, seqtype.Instances[var16.Anim], arg3, arg9)))
 				}
 			} else if arg5 == 9 {
 				var19 = var16.GetModel(arg5, arg4, var11, var12, var13, var14, -1)
@@ -428,13 +428,13 @@ func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, ar
 					arg0.AddLoc(arg4, var16.Length, var16.Width, arg9, arg3, var16.BlockRange)
 				}
 				if var16.Anim != -1 {
-					arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 2, seqtype.Instances[var16.Anim], arg3, arg9))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 2, seqtype.Instances[var16.Anim], arg3, arg9)))
 				}
 			} else if arg5 == 4 {
 				var19 = var16.GetModel(4, 0, var11, var12, var13, var14, -1)
 				arg6.SetWallDecoration(var15, arg3, 0, var17, arg4*512, ROTATION_WALL_TYPE[arg4], 0, arg9, var19, var18, arg2)
 				if var16.Anim != -1 {
-					arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9)))
 				}
 			} else if arg5 == 5 {
 				var26 = 16
@@ -445,25 +445,25 @@ func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, ar
 				var28 = var16.GetModel(4, 0, var11, var12, var13, var14, -1)
 				arg6.SetWallDecoration(var15, arg3, WALL_DECORATION_ROTATION_FORWARD_Z[arg4]*var26, var17, arg4*512, ROTATION_WALL_TYPE[arg4], WALL_DECORATION_ROTATION_FORWARD_X[arg4]*var26, arg9, var28, var18, arg2)
 				if var16.Anim != -1 {
-					arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9)))
 				}
 			} else if arg5 == 6 {
 				var19 = var16.GetModel(4, 0, var11, var12, var13, var14, -1)
 				arg6.SetWallDecoration(var15, arg3, 0, var17, arg4, 256, 0, arg9, var19, var18, arg2)
 				if var16.Anim != -1 {
-					arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9)))
 				}
 			} else if arg5 == 7 {
 				var19 = var16.GetModel(4, 0, var11, var12, var13, var14, -1)
 				arg6.SetWallDecoration(var15, arg3, 0, var17, arg4, 512, 0, arg9, var19, var18, arg2)
 				if var16.Anim != -1 {
-					arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9)))
 				}
 			} else if arg5 == 8 {
 				var19 = var16.GetModel(4, 0, var11, var12, var13, var14, -1)
 				arg6.SetWallDecoration(var15, arg3, 0, var17, arg4, 768, 0, arg9, var19, var18, arg2)
 				if var16.Anim != -1 {
-					arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9)))
 				}
 			}
 		}
@@ -474,7 +474,7 @@ func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, ar
 			arg0.SetBlocked(arg3, arg9)
 		}
 		if var16.Anim != -1 {
-			arg7.AddTail(entity.NewLocEntity(true, arg8, arg2, 3, seqtype.Instances[var16.Anim], arg3, arg9))
+			arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 3, seqtype.Instances[var16.Anim], arg3, arg9)))
 		}
 	}
 }
@@ -959,7 +959,7 @@ func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d
 			arg2.SetBlocked(arg3, arg0)
 		}
 		if var17.Anim != -1 {
-			arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 3, seqtype.Instances[var17.Anim], arg3, arg0))
+			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 3, seqtype.Instances[var17.Anim], arg3, arg0)))
 		}
 		return
 	}
@@ -985,7 +985,7 @@ func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d
 			arg2.AddLoc(arg4, var17.Length, var17.Width, arg0, arg3, var17.BlockRange)
 		}
 		if var17.Anim != -1 {
-			arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[var17.Anim], arg3, arg0))
+			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[var17.Anim], arg3, arg0)))
 		}
 	} else if arg9 >= 12 {
 		var20 = var17.GetModel(arg9, arg4, var12, var13, var14, var15, -1)
@@ -994,7 +994,7 @@ func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d
 			arg2.AddLoc(arg4, var17.Length, var17.Width, arg0, arg3, var17.BlockRange)
 		}
 		if var17.Anim != -1 {
-			arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[var17.Anim], arg3, arg0))
+			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[var17.Anim], arg3, arg0)))
 		}
 	} else if arg9 == 0 {
 		var20 = var17.GetModel(0, arg4, var12, var13, var14, var15, -1)
@@ -1003,7 +1003,7 @@ func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d
 			arg2.AddWall(arg4, arg3, arg0, var17.BlockRange, arg9)
 		}
 		if var17.Anim != -1 {
-			arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[var17.Anim], arg3, arg0))
+			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[var17.Anim], arg3, arg0)))
 		}
 	} else if arg9 == 1 {
 		var20 = var17.GetModel(1, arg4, var12, var13, var14, var15, -1)
@@ -1012,7 +1012,7 @@ func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d
 			arg2.AddWall(arg4, arg3, arg0, var17.BlockRange, arg9)
 		}
 		if var17.Anim != -1 {
-			arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[var17.Anim], arg3, arg0))
+			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[var17.Anim], arg3, arg0)))
 		}
 	} else {
 		var24 := 0
@@ -1026,7 +1026,7 @@ func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d
 				arg2.AddWall(arg4, arg3, arg0, var17.BlockRange, arg9)
 			}
 			if var17.Anim != -1 {
-				arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[var17.Anim], arg3, arg0))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[var17.Anim], arg3, arg0)))
 			}
 		} else if arg9 == 3 {
 			var20 = var17.GetModel(3, arg4, var12, var13, var14, var15, -1)
@@ -1035,7 +1035,7 @@ func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d
 				arg2.AddWall(arg4, arg3, arg0, var17.BlockRange, arg9)
 			}
 			if var17.Anim != -1 {
-				arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[var17.Anim], arg3, arg0))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[var17.Anim], arg3, arg0)))
 			}
 		} else if arg9 == 9 {
 			var20 = var17.GetModel(arg9, arg4, var12, var13, var14, var15, -1)
@@ -1044,13 +1044,13 @@ func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d
 				arg2.AddLoc(arg4, var17.Length, var17.Width, arg0, arg3, var17.BlockRange)
 			}
 			if var17.Anim != -1 {
-				arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[var17.Anim], arg3, arg0))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[var17.Anim], arg3, arg0)))
 			}
 		} else if arg9 == 4 {
 			var20 = var17.GetModel(4, 0, var12, var13, var14, var15, -1)
 			arg10.SetWallDecoration(var16, arg3, 0, var18, arg4*512, ROTATION_WALL_TYPE[arg4], 0, arg0, var20, var19, arg7)
 			if var17.Anim != -1 {
-				arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0)))
 			}
 		} else if arg9 == 5 {
 			var24 = 16
@@ -1061,25 +1061,25 @@ func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d
 			var26 = var17.GetModel(4, 0, var12, var13, var14, var15, -1)
 			arg10.SetWallDecoration(var16, arg3, WALL_DECORATION_ROTATION_FORWARD_Z[arg4]*var24, var18, arg4*512, ROTATION_WALL_TYPE[arg4], WALL_DECORATION_ROTATION_FORWARD_X[arg4]*var24, arg0, var26, var19, arg7)
 			if var17.Anim != -1 {
-				arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0)))
 			}
 		} else if arg9 == 6 {
 			var20 = var17.GetModel(4, 0, var12, var13, var14, var15, -1)
 			arg10.SetWallDecoration(var16, arg3, 0, var18, arg4, 256, 0, arg0, var20, var19, arg7)
 			if var17.Anim != -1 {
-				arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0)))
 			}
 		} else if arg9 == 7 {
 			var20 = var17.GetModel(4, 0, var12, var13, var14, var15, -1)
 			arg10.SetWallDecoration(var16, arg3, 0, var18, arg4, 512, 0, arg0, var20, var19, arg7)
 			if var17.Anim != -1 {
-				arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0)))
 			}
 		} else if arg9 == 8 {
 			var20 = var17.GetModel(4, 0, var12, var13, var14, var15, -1)
 			arg10.SetWallDecoration(var16, arg3, 0, var18, arg4, 768, 0, arg0, var20, var19, arg7)
 			if var17.Anim != -1 {
-				arg1.AddTail(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0)))
 			}
 		}
 	}

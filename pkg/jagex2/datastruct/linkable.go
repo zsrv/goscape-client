@@ -1,16 +1,20 @@
 package datastruct
 
 type Linkable[T any] struct {
-	Value T // TODO: still used since we've been embedding Linkable, can we remove?
-	Next  *Linkable[T]
-	Prev  *Linkable[T]
+	Value T
+	next  *Linkable[T]
+	prev  *Linkable[T]
+}
+
+func NewLinkable[T any](value T) *Linkable[T] {
+	return &Linkable[T]{Value: value}
 }
 
 func (l *Linkable[T]) Unlink() {
-	if l.Prev != nil {
-		l.Prev.Next = l.Next
-		l.Next.Prev = l.Prev
-		l.Next = nil
-		l.Prev = nil
+	if l.prev != nil {
+		l.prev.next = l.next
+		l.next.prev = l.prev
+		l.next = nil
+		l.prev = nil
 	}
 }
