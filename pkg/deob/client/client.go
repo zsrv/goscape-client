@@ -1,6 +1,7 @@
 package client
 
 import (
+	"hash/crc32"
 	"math"
 	"math/big"
 	"math/rand"
@@ -95,111 +96,110 @@ func init() {
 type Client struct {
 	client.GameShell
 
-	HintTileZ                 int
-	HintHeight                int
-	HintOffsetX               int
-	HintOffsetZ               int
-	MinimapOffsetCycle        int
-	RedrawBackground          bool
-	LocList                   *datastruct.LinkList[*entity.LocEntity]
-	RandomIn                  *io.Isaac
-	CameraModifierEnabled     []bool
-	PrivateChatSetting        int
-	SelectedTab               int
-	BFSCost                   [][]int
-	SocialAction              int
-	SceneBaseTileX            int
-	SceneBaseTileZ            int
-	MapLastBaseX              int
-	MapLastBaseZ              int
-	SocialInput               string
-	MergedLocations           *datastruct.LinkList[*entity.LocMergeEntity]
-	IgnoreName37              []int64
-	WeightCarried             int
-	SceneMapLandData          [][]byte
-	Out                       *io.Packet
-	StartMidiThread           bool
-	ChatEffects               int
-	HintNPC                   int
-	OverrideChat              int
-	SkillLevel                []int
-	ChatInterface             *component.Component
-	WaveLoops                 []int
-	MouseButtonsOption        int
-	LocalPID                  int
-	DesignColors              []int
-	Login                     *io.Packet
-	FriendWorld               []int
-	MinimapLevel              int
-	SocialMessage             string
-	ImageHitmarks             []*pix32.Pix32
-	ChatbackInput             string
-	LastWaveID                int
-	UpdateDesignModel         bool
-	DesignIdentikits          []int
-	ActiveMapFunctions        []*pix32.Pix32
-	ChatScrollHeight          int
-	In                        *io.Packet
-	ArchiveChecksum           []int
-	MidiThreadActive          bool
-	ImageSideIcons            []*pix8.Pix8
-	OrbitCameraPitch          int
-	MAX_PLAYER_COUNT          int
-	LOCAL_PLAYER_INDEX        int
-	Players                   []*playerentity.PlayerEntity
-	PlayerIDs                 []int
-	EntityUpdateIDs           []int
-	PlayerAppearanceBuffer    []*io.Packet
-	Projectiles               *datastruct.LinkList[*entity.ProjectileEntity]
-	MenuOption                []string
-	MidiActive                bool
-	DesignGenderMale          bool
-	FlameLineOffset           []int
-	CompassMaskLineOffsets    []int
-	WaveDelay                 []int
-	TabInterfaceID            []int
-	ErrorLoading              bool
-	ShowSocialInput           bool
-	PressedContinueOption     bool
-	MessageIDs                []int
-	MenuVisible               bool
-	ReportAbuseMuteOption     bool
-	SpawnedLocations          *datastruct.LinkList[*entity.LocAddEntity]
-	MessageType               []int
-	MessageSender             []string
-	MessageText               []string
-	FlameActive               bool
-	ReportAbuseInterfaceID    int
-	ActiveMapFunctionX        []int
-	ActiveMapFunctionZ        []int
-	TileLastOccupiedCycle     [][]int
-	RedrawPrivacySettings     bool
-	ErrorHost                 bool
-	SkillBaseLevel            []int
-	NPCs                      []*entity.NpcEntity
-	NPCIDs                    []int
-	MinimapZoomModifier       int
-	Varps                     []int
-	EntityRemovalIDs          []int
-	FriendName37              []int64
-	MinimapMaskLineLengths    []int
-	LevelCollisionMap         []*dash3d.CollisionMap
-	ImageHeadIcons            []*pix32.Pix32
-	CameraModifierJitter      []int
-	ObjGrabThreshold          bool
-	RedrawSidebar             bool
-	RedrawChatback            bool
-	CameraModifierWobbleScale []int
-	Cutscene                  bool
-	ReportAbuseInput          string
-	ViewportInterfaceID       int
-	InGame                    bool
-	FlamesThread              bool
-	SCROLLBAR_GRIP_LOWLIGHT   int
-	SCROLLBAR_GRIP_HIGHLIGHT  int
-	BFSStepX                  []int
-	BFSStepZ                  []int
-	//CRC32 CRC32 // TODO
+	HintTileZ                     int
+	HintHeight                    int
+	HintOffsetX                   int
+	HintOffsetZ                   int
+	MinimapOffsetCycle            int
+	RedrawBackground              bool
+	LocList                       *datastruct.LinkList[*entity.LocEntity]
+	RandomIn                      *io.Isaac
+	CameraModifierEnabled         []bool
+	PrivateChatSetting            int
+	SelectedTab                   int
+	BFSCost                       [][]int
+	SocialAction                  int
+	SceneBaseTileX                int
+	SceneBaseTileZ                int
+	MapLastBaseX                  int
+	MapLastBaseZ                  int
+	SocialInput                   string
+	MergedLocations               *datastruct.LinkList[*entity.LocMergeEntity]
+	IgnoreName37                  []int64
+	WeightCarried                 int
+	SceneMapLandData              [][]byte
+	Out                           *io.Packet
+	StartMidiThread               bool
+	ChatEffects                   int
+	HintNPC                       int
+	OverrideChat                  int
+	SkillLevel                    []int
+	ChatInterface                 *component.Component
+	WaveLoops                     []int
+	MouseButtonsOption            int
+	LocalPID                      int
+	DesignColors                  []int
+	Login                         *io.Packet
+	FriendWorld                   []int
+	MinimapLevel                  int
+	SocialMessage                 string
+	ImageHitmarks                 []*pix32.Pix32
+	ChatbackInput                 string
+	LastWaveID                    int
+	UpdateDesignModel             bool
+	DesignIdentikits              []int
+	ActiveMapFunctions            []*pix32.Pix32
+	ChatScrollHeight              int
+	In                            *io.Packet
+	ArchiveChecksum               []int
+	MidiThreadActive              bool
+	ImageSideIcons                []*pix8.Pix8
+	OrbitCameraPitch              int
+	MAX_PLAYER_COUNT              int
+	LOCAL_PLAYER_INDEX            int
+	Players                       []*playerentity.PlayerEntity
+	PlayerIDs                     []int
+	EntityUpdateIDs               []int
+	PlayerAppearanceBuffer        []*io.Packet
+	Projectiles                   *datastruct.LinkList[*entity.ProjectileEntity]
+	MenuOption                    []string
+	MidiActive                    bool
+	DesignGenderMale              bool
+	FlameLineOffset               []int
+	CompassMaskLineOffsets        []int
+	WaveDelay                     []int
+	TabInterfaceID                []int
+	ErrorLoading                  bool
+	ShowSocialInput               bool
+	PressedContinueOption         bool
+	MessageIDs                    []int
+	MenuVisible                   bool
+	ReportAbuseMuteOption         bool
+	SpawnedLocations              *datastruct.LinkList[*entity.LocAddEntity]
+	MessageType                   []int
+	MessageSender                 []string
+	MessageText                   []string
+	FlameActive                   bool
+	ReportAbuseInterfaceID        int
+	ActiveMapFunctionX            []int
+	ActiveMapFunctionZ            []int
+	TileLastOccupiedCycle         [][]int
+	RedrawPrivacySettings         bool
+	ErrorHost                     bool
+	SkillBaseLevel                []int
+	NPCs                          []*entity.NpcEntity
+	NPCIDs                        []int
+	MinimapZoomModifier           int
+	Varps                         []int
+	EntityRemovalIDs              []int
+	FriendName37                  []int64
+	MinimapMaskLineLengths        []int
+	LevelCollisionMap             []*dash3d.CollisionMap
+	ImageHeadIcons                []*pix32.Pix32
+	CameraModifierJitter          []int
+	ObjGrabThreshold              bool
+	RedrawSidebar                 bool
+	RedrawChatback                bool
+	CameraModifierWobbleScale     []int
+	Cutscene                      bool
+	ReportAbuseInput              string
+	ViewportInterfaceID           int
+	InGame                        bool
+	FlamesThread                  bool
+	SCROLLBAR_GRIP_LOWLIGHT       int
+	SCROLLBAR_GRIP_HIGHLIGHT      int
+	BFSStepX                      []int
+	BFSStepZ                      []int
 	ChatInterfaceID               int
 	ProjectX                      int
 	ProjectY                      int
@@ -526,25 +526,24 @@ func NewClient() *Client {
 		SCROLLBAR_GRIP_HIGHLIGHT:  7759444,
 		BFSStepX:                  make([]int, 4000),
 		BFSStepZ:                  make([]int, 4000),
-		// TODO: crc32
-		ChatInterfaceID:        -1,
-		ProjectX:               -1,
-		ProjectY:               -1,
-		StickyChatInterfaceID:  -1,
-		CameraModifierCycle:    make([]int, 5),
-		ImageMapscene:          make([]*pix8.Pix8, 50),
-		CHAT_COLORS:            []int{16776960, 16711680, 65280, 65535, 16711935, 16777215},
-		SCROLLBAR_TRACK:        2301979,
-		Spotanims:              datastruct.NewLinkList[*entity.SpotAnimEntity](),
-		LastWaveLoops:          -1,
-		TextureBuffer:          make([]byte, 16384),
-		VarCache:               make([]int, 2000),
-		SkillExperience:        make([]int, 50),
-		MinimapAngleModifier:   2,
-		MAX_CHATS:              50,
-		LOC_SHAPE_TO_LAYER:     []int{0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3},
-		CompassMaskLineLengths: make([]int, 33),
-		ImageCrosses:           make([]*pix32.Pix32, 8),
+		ChatInterfaceID:           -1,
+		ProjectX:                  -1,
+		ProjectY:                  -1,
+		StickyChatInterfaceID:     -1,
+		CameraModifierCycle:       make([]int, 5),
+		ImageMapscene:             make([]*pix8.Pix8, 50),
+		CHAT_COLORS:               []int{16776960, 16711680, 65280, 65535, 16711935, 16777215},
+		SCROLLBAR_TRACK:           2301979,
+		Spotanims:                 datastruct.NewLinkList[*entity.SpotAnimEntity](),
+		LastWaveLoops:             -1,
+		TextureBuffer:             make([]byte, 16384),
+		VarCache:                  make([]int, 2000),
+		SkillExperience:           make([]int, 50),
+		MinimapAngleModifier:      2,
+		MAX_CHATS:                 50,
+		LOC_SHAPE_TO_LAYER:        []int{0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3},
+		CompassMaskLineLengths:    make([]int, 33),
+		ImageCrosses:              make([]*pix32.Pix32, 8),
 		//MidiSync: // TODO
 		WaveIDs:                   make([]int, 50),
 		CameraOffsetXModifier:     2,
@@ -1494,7 +1493,7 @@ func (c *Client) RunMidi() {
 			var14 := signlink.CacheLoad(var2 + ".mid")
 			var6 := 0
 			if var14 != nil && var3 != 12345678 {
-				// TODO crc32
+				var6 = int(crc32.ChecksumIEEE(var14)) // TODO: verify conversion
 				if var6 != var3 {
 					var14 = nil
 				}
@@ -2357,7 +2356,7 @@ func (c *Client) LoadArchive(arg0 string, arg1 int, arg2 string, arg3 int) *io.J
 	var6 := signlink.CacheLoad(arg2)
 	var8 := 0
 	if var6 != nil {
-		// TODO: crc32
+		var8 = int(crc32.ChecksumIEEE(var6)) // TODO: verify conversion
 	}
 	if var6 != nil {
 		return io.NewJagfile(var6)
