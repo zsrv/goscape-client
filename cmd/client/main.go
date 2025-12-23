@@ -13,22 +13,22 @@ import (
 
 func main() {
 	fmt.Println("RS2 user client - release #" + strconv.Itoa(225))
-	if len(os.Args) != 4 {
+	if len(os.Args) != 5 {
 		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members]")
 		os.Exit(1)
 	}
 	var err error
-	client.NodeID, err = strconv.Atoi(os.Args[0])
+	client.NodeID, err = strconv.Atoi(os.Args[1])
 	if err != nil {
 		fmt.Printf("invalid node-id: %v\n", err)
 		os.Exit(1)
 	}
-	clientextras.PortOffset, err = strconv.Atoi(os.Args[1])
+	clientextras.PortOffset, err = strconv.Atoi(os.Args[2])
 	if err != nil {
 		fmt.Printf("invalid port-offset: %v\n", err)
 		os.Exit(1)
 	}
-	switch os.Args[2] {
+	switch os.Args[3] {
 	case "lowmem":
 		client.SetLowMemory()
 	case "highmem":
@@ -37,7 +37,7 @@ func main() {
 		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members]")
 		os.Exit(1)
 	}
-	switch os.Args[3] {
+	switch os.Args[4] {
 	case "free":
 		client.Members = false
 	case "members":

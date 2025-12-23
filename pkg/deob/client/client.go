@@ -1,10 +1,14 @@
 package client
 
 import (
+	"bytes"
+	"fmt"
 	"hash/crc32"
+	io2 "io"
 	"math"
 	"math/big"
 	"math/rand"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -1499,8 +1503,34 @@ func (c *Client) RunMidi() {
 				}
 			}
 			if var14 == nil {
-				// TODO: client.OpenURL
+				var15, err := c.OpenURL(var2 + "_" + strconv.Itoa(var3) + ".mid")
+				if err != nil {
+					fmt.Printf("RunMidi error: %v\n", err)
+					return
+				}
+				var14 = make([]byte, var4)
+				var8 := 0
+				for i := 0; i < var4; i += var8 {
+					var8, err = var15.ReadAt(var14[i:var4-i], 0) // TODO: verify
+					if err != nil {
+						var9 := make([]byte, i)
+						for j := range i {
+							var9[j] = var14[j]
+						}
+						var14 = var9
+						var4 = i
+						break
+					}
+				}
+				signlink.CacheSave(var2+".mid", var14)
 			}
+			if var14 == nil {
+				return
+			}
+			var6 = io.NewPacket(var14).G4()
+			var16 := make([]byte, var6)
+			bzip2.Read(var16, var6, var14, var4, 4)
+			c.SaveMidi(var16, var6, true)
 		}
 	}
 }
@@ -2308,7 +2338,7 @@ func (c *Client) UpdateTitle() {
 			}
 			var6 := false
 			for i := range len(CHARSET) {
-				if var5 == CHARSET[i] {
+				if var5 == int(CHARSET[i]) {
 					var6 = true
 					break
 				}
@@ -2355,6 +2385,19 @@ func (c *Client) LoadArchive(arg0 string, arg1 int, arg2 string, arg3 int) *io.J
 	var7 := 5
 	var6 := signlink.CacheLoad(arg2)
 	var8 := 0
+
+	loadingError := func() {
+		var6 = nil
+		for var8 = var7; var8 > 0; var8-- {
+			c.DrawProgress("Error loading - Will retry in "+strconv.Itoa(var8)+" secs.", arg3)
+			time.Sleep(1 * time.Second)
+		}
+		var7 *= 2
+		if var7 > 60 {
+			var7 = 60
+		}
+	}
+
 	if var6 != nil {
 		var8 = int(crc32.ChecksumIEEE(var6)) // TODO: verify conversion
 	}
@@ -2365,9 +2408,47 @@ func (c *Client) LoadArchive(arg0 string, arg1 int, arg2 string, arg3 int) *io.J
 		c.DrawProgress("Requesting "+arg0, arg3)
 		// TODO: try/except
 		var8 = 0
-		//var9 := c.OpenURL // TODO: client.OpenURL
+		var9, err := c.OpenURL(arg2 + strconv.Itoa(arg1))
+		if err != nil {
+			fmt.Printf("LoadArchive error: %v\n", err)
+			loadingError()
+			continue
+		}
+		var10 := make([]byte, 6)
+		_, err = var9.Read(var10)
+		if err != nil {
+			fmt.Printf("LoadArchive read error: %v\n", err)
+			loadingError()
+			continue
+		}
+		var11 := io.NewPacket(var10)
+		var11.Pos = 3
+		var12 := var11.G3() + 6
+		var13 := 6
+		var6 = make([]byte, var12)
+		for i := range 6 {
+			var6[i] = var10[i]
+		}
+		for var13 < var12 {
+			var15 := var12 - var13
+			if var15 > 1000 {
+				var15 = 1000
+			}
+			n, err := var9.Read(var6[var13 : var13+var15])
+			if err != nil {
+				fmt.Printf("LoadArchive read error: %v\n", err)
+				return nil
+			}
+			var13 += n
+			var16 := var13 * 100 / var12
+			if var16 != var8 {
+				c.DrawProgress("Loading "+arg0+" - "+strconv.Itoa(var16)+"%", arg3)
+			}
+			var8 = var16
+		}
 	}
-	// TODO
+	signlink.CacheSave(arg2, var6)
+	return io.NewJagfile(var6)
 }
 
 func (c *Client) UnloadTitle() {
@@ -3989,7 +4070,7 @@ func (c *Client) DrawGame() {
 				c.ImageSideIcons[6].Draw(34, 212)
 			}
 		}
-		c.AreaBackhmid1.Draw // TODO: pixmap
+		//c.AreaBackhmid1.Draw // TODO: pixmap
 		c.AreaBackbase2.Bind()
 		c.ImageBackbase2.Draw(0, 0)
 		if c.SidebarInterfaceID == -1 {
@@ -4691,7 +4772,7 @@ func GetCombatLevelColorTag(arg0 int, arg2 int) string {
 }
 
 func (c *Client) GetHost() string {
-	// TODO
+	return "" // TODO: stub
 }
 
 func (c *Client) DrawMenu() {
@@ -5174,25 +5255,44 @@ func (c *Client) Load() {
 		return
 	}
 	// TODO: try/except - recover panic?
-	var3 := 5
+	var3 := 5 // TODO
+	errorLoading := func() {
+		for i := var3; i > 0; i-- {
+			c.DrawProgress("Error loading - Will retry in "+strconv.Itoa(i)+" secs.", 10)
+			time.Sleep(1 * time.Second)
+		}
+		var3 *= 2
+		if var3 > 60 {
+			var3 = 60
+		}
+	}
 	c.ArchiveChecksum[8] = 0
 	for c.ArchiveChecksum[8] == 0 {
 		c.DrawProgress("Connecting to fileserver", 10)
 		// TODO: try/except - error loading retry
-		var35 := c.OpenURL("crc" + strconv.Itoa(int(rand.Float64()*9.9999999e7)))
+		var35, err := c.OpenURL("crc" + strconv.Itoa(int(rand.Float64()*9.9999999e7)))
+		if err != nil {
+			fmt.Printf("Client.Load OpenURL error: %v\n", err)
+			errorLoading()
+			continue
+		}
 		var5 := io.NewPacket(make([]byte, 36))
-		var35.ReadFully(var5.Data, 0, 36)
+		_, err = var35.Read(var5.Data[:36])
+		if err != nil {
+			fmt.Printf("Client.Load Read error: %v\n", err)
+			errorLoading()
+			continue
+		}
 		for i := range 9 {
 			c.ArchiveChecksum[i] = var5.G4()
 		}
-		var35.Close()
 	}
 	c.ArchiveTitle = c.LoadArchive("title screen", c.ArchiveChecksum[1], "title", 10)
 	c.FontPlain11 = pixfont.NewPixFont(c.ArchiveTitle, "p11")
 	c.FontPlain12 = pixfont.NewPixFont(c.ArchiveTitle, "p12")
 	c.FontBold12 = pixfont.NewPixFont(c.ArchiveTitle, "b12")
 	c.FontQuill8 = pixfont.NewPixFont(c.ArchiveTitle, "q8")
-	c.LoadTitleBackground()
+	//c.LoadTitleBackground() // TODO
 	c.LoadTitleImages()
 	var36 := c.LoadArchive("config", c.ArchiveChecksum[2], "config", 15)
 	var37 := c.LoadArchive("interface", c.ArchiveChecksum[3], "interface", 20)
@@ -5798,7 +5898,19 @@ func (c *Client) ShowContextMenu() {
 	c.MenuHeight = c.MenuSize*15 + 22
 }
 
-//func (c *Client) OpenURL(arg0 string) {} // TODO: OpenURL
+func (c *Client) OpenURL(arg0 string) (*bytes.Reader, error) {
+	// TODO: signlink.openurl for applets not included
+	resp, err := http.Get(c.GetCodeBase() + "/" + arg0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open url: %w", err)
+	}
+	defer resp.Body.Close()
+	b, err := io2.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+	return bytes.NewReader(b), nil
+}
 
 func (c *Client) LoadTitle() {
 	if c.ImageTitle2 != nil {
@@ -6696,7 +6808,10 @@ func (c *Client) PushSpotanims() {
 	}
 }
 
-func (c *Client) GetCodeBase() {} // TODO: getcodebase signlink - signlink.mainapp
+func (c *Client) GetCodeBase() string {
+	// TODO: getcodebase signlink - signlink.mainapp
+	return "http://127.0.0.1:" + (strconv.Itoa(clientextras.PortOffset + 8888))
+}
 
 func SetHighMemory() {
 	world3d.LowMemory = false
@@ -7722,7 +7837,7 @@ func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) int {
 		}
 		var var8 *component.Component
 		var9 := 0
-		var10 := 0
+		//var10 := 0
 		if var7 == 4 {
 			var8 = component.Instances[var4[var6]]
 			var6++
@@ -7790,9 +7905,13 @@ func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) int {
 	}
 }
 
-//func (c *Client) DrawError() {} // TODO: graphics
+func (c *Client) DrawError() {
+	// TODO: stub
+}
 
-//func (c *Client) LoadTitleBackground() {} // TODO: graphics - pix322
+func (c *Client) LoadTitleBackground() {
+	// TODO: stub - graphics - pix322
+}
 
 func (c *Client) PushLocs() {
 	for var2 := c.LocList.Head(); var2 != nil; var2 = c.LocList.Next() {
@@ -7803,7 +7922,7 @@ func (c *Client) PushLocs() {
 			v.SeqFrame = 0
 			var3 = true
 		}
-		for ok := true; ok; ok = v.SeqFrame >= 0 && v.SeqFrame < var2.Seq.FrameCount {
+		for ok := true; ok; ok = v.SeqFrame >= 0 && v.SeqFrame < v.Seq.FrameCount {
 			for ok2 := true; ok2; ok2 = v.SeqFrame < v.Seq.FrameCount {
 				if v.SeqCycle <= v.Seq.Delay[v.SeqFrame] {
 					goto afterLabel67 // TODO: verify
@@ -7921,7 +8040,7 @@ func (c *Client) HandleViewportOptions() {
 		var8 := var4 >> 14 & 0x7FFF
 		if var4 != var2 {
 			var2 = var4
-			var10 := 0
+			//var10 := 0
 			if var7 == 2 && c.Scene.GetInfo(c.CurrentLevel, var5, var6, var4) >= 0 {
 				var9 := loctype.Get(var8)
 				if c.ObjSelected == 1 {
@@ -8260,7 +8379,10 @@ func (c *Client) DrawChatback() {
 	pix3d.LineOffset = c.AreaViewportOffsets
 }
 
-//func (c *Client) Read() bool {} // TODO: c.stream
+func (c *Client) Read() bool {
+	// TODO: stub - c.stream
+	return false
+}
 
 func (c *Client) DrawSidebar() {
 	c.AreaSidebar.Bind()

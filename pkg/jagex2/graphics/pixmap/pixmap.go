@@ -5,3 +5,7 @@ type PixMap struct {
 }
 
 // TODO
+
+func (p *PixMap) Bind() {
+	// TODO: stub
+}
