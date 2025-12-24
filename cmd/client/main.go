@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"sync"
 
-	"goscape-client/pkg/deob/client"
-	"goscape-client/pkg/deob/clientextras"
+	"goscape-client/pkg/jagex2/client"
+	"goscape-client/pkg/jagex2/client/clientextras"
 	"goscape-client/pkg/sign/signlink"
 )
 

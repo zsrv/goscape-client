@@ -13,8 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"goscape-client/pkg/deob/clientextras"
-	"goscape-client/pkg/jagex2/client"
+	"goscape-client/pkg/jagex2/client/clientextras"
 	"goscape-client/pkg/jagex2/client/inputtracking"
 	"goscape-client/pkg/jagex2/config/component"
 	"goscape-client/pkg/jagex2/config/flotype"
@@ -98,7 +97,7 @@ func init() {
 }
 
 type Client struct {
-	*client.GameShell
+	*GameShell
 
 	HintTileZ                     int
 	HintHeight                    int
@@ -472,7 +471,7 @@ type Client struct {
 
 func NewClient() *Client {
 	c := &Client{
-		GameShell:                 client.NewGameShell(),
+		GameShell:                 NewGameShell(),
 		LocList:                   datastruct.NewLinkList[*entity.LocEntity](),
 		CameraModifierEnabled:     make([]bool, 5),
 		MergedLocations:           datastruct.NewLinkList[*entity.LocMergeEntity](),

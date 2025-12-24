@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"goscape-client/pkg/deob/clientextras"
+	"goscape-client/pkg/jagex2/client/clientextras"
 )
 
 var (

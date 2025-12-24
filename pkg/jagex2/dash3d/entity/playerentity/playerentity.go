@@ -1,7 +1,7 @@
 package playerentity
 
 import (
-	"goscape-client/pkg/deob/clientextras"
+	"goscape-client/pkg/jagex2/client/clientextras"
 	"goscape-client/pkg/jagex2/config/idktype"
 	"goscape-client/pkg/jagex2/config/objtype"
 	"goscape-client/pkg/jagex2/config/seqtype"
