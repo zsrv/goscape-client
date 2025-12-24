@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/op"
+
 	"goscape-client/pkg/jagex2/client/clientextras"
 	"goscape-client/pkg/jagex2/client/inputtracking"
 	"goscape-client/pkg/jagex2/config/component"
@@ -97,7 +99,34 @@ func init() {
 }
 
 type Client struct {
-	*GameShell
+	//*GameShell
+	// BEGIN GameShell
+	State        int
+	DelTime      int
+	MinDel       int
+	OTim         []int64
+	FPS          int
+	ScreenWidth  int
+	ScreenHeight int
+	//Graphics
+	DrawArea         *pixmap.PixMap
+	Frame            *ViewBox
+	Refresh          bool
+	IdleCycles       int
+	MouseButton      int
+	MouseX           int
+	MouseY           int
+	MouseClickButton int
+	MouseClickX      int
+	MouseClickY      int
+	ActionKey        []int
+	KeyQueue         []int
+	KeyQueueReadPos  int
+	KeyQueueWritePos int
+
+	// MINE
+	Ops op.Ops // Ops are the operations from the UI
+	// END GameShell
 
 	HintTileZ                     int
 	HintHeight                    int
@@ -471,7 +500,16 @@ type Client struct {
 
 func NewClient() *Client {
 	c := &Client{
-		GameShell:                 NewGameShell(),
+		//GameShell:                 NewGameShell(),
+		// BEGIN GameShell
+		DelTime:   20,
+		MinDel:    1,
+		OTim:      make([]int64, 10),
+		Refresh:   true,
+		ActionKey: make([]int, 128),
+		KeyQueue:  make([]int, 128),
+		// END GameShell
+
 		LocList:                   datastruct.NewLinkList[*entity.LocEntity](),
 		CameraModifierEnabled:     make([]bool, 5),
 		MergedLocations:           datastruct.NewLinkList[*entity.LocMergeEntity](),
@@ -5737,7 +5775,7 @@ func (c *Client) PushProjectiles() {
 	}
 }
 
-func (c *Client) Refresh() {
+func (c *Client) RefreshFunc() {
 	c.RedrawBackground = true
 }
 
@@ -6002,7 +6040,7 @@ func (c *Client) Run() {
 	} else if c.StartMidiThread {
 		c.RunMidi()
 	} else {
-		c.GameShell.Run()
+		c.RunGameShell()
 	}
 }
 
@@ -8573,7 +8611,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 func (c *Client) DrawProgress(arg1 string, arg2 int) {
 	c.LoadTitle()
 	if c.ArchiveTitle == nil {
-		c.GameShell.DrawProgress(arg1, arg2)
+		c.DrawProgressGameShell(arg1, arg2)
 		return
 	}
 	c.ImageTitle4.Bind()
