@@ -98,7 +98,7 @@ func init() {
 }
 
 type Client struct {
-	client.GameShell
+	*client.GameShell
 
 	HintTileZ                     int
 	HintHeight                    int
@@ -472,6 +472,7 @@ type Client struct {
 
 func NewClient() *Client {
 	c := &Client{
+		GameShell:                 client.NewGameShell(),
 		LocList:                   datastruct.NewLinkList[*entity.LocEntity](),
 		CameraModifierEnabled:     make([]bool, 5),
 		MergedLocations:           datastruct.NewLinkList[*entity.LocMergeEntity](),
@@ -1544,7 +1545,6 @@ func SetLowMemory() {
 
 func (c *Client) DrawFlames() {
 	var2 := 256
-	//var3 := 0
 	if c.FlameGradientCycle0 > 0 {
 		for i := range 256 {
 			if c.FlameGradientCycle0 > 768 {
@@ -1570,17 +1570,17 @@ func (c *Client) DrawFlames() {
 			c.FlameGradient[i] = c.FlameGradient0[i]
 		}
 	}
-	for range 33920 {
-		//c.ImageTitle0 // TODO: pixmap
+	for i := range 33920 {
+		c.ImageTitle0.Pixels[i] = byte(c.ImageFlamesLeft.Pixels[i]) // TODO: verify
 	}
 	var4 := 0
 	var5 := 1152
 	var7 := 0
 	var8 := 0
 	var10 := 0
-	//var11 := 0
+	var11 := 0
 	var12 := 0
-	//var13 := 0
+	var13 := 0
 	for i := 1; i < var2-1; i++ {
 		var7 = c.FlameLineOffset[i] * (var2 - i) / var2
 		var8 = var7 + 22
@@ -1597,15 +1597,16 @@ func (c *Client) DrawFlames() {
 				//var11 = var10
 				var12 = 256 - var10
 				var10 = c.FlameGradient[var10]
-				//var13 = c.ImageTitle0 // TODO: pixmap
-				// TODO: pixmap
+				var13 = int(c.ImageTitle0.Pixels[var5])                                                                                                                   // TODO: verify
+				c.ImageTitle0.Pixels[var5] = byte(((var10&0xFF00FF)*var11 + (var13&0xFF00FF)*var12&0xFF00FF00) + ((var10&0xFF00)*var11+(var13&0xFF00)*var12&0xFF0000)>>8) // TODO: verify
+				var5++
 			}
 		}
 		var5 += var8
 	}
-	//c.ImageTitle0 // TODO: pixmap
-	for range 33920 {
-		// TODO: pixmap
+	c.ImageTitle0.Draw(&c.Ops, 0, 0) // TODO: verify
+	for i := range 33920 {
+		c.ImageTitle1.Pixels[i] = byte(c.ImageFlamesRight.Pixels[i]) // TODO: verify
 	}
 	var4 = 0
 	var5 = 1176
@@ -1619,11 +1620,12 @@ func (c *Client) DrawFlames() {
 			if var12 == 0 {
 				var5++
 			} else {
-				//var13 = var12
-				//var14 := 256-var12
+				var13 = var12
+				var14 := 256 - var12
 				var12 = c.FlameGradient[var12]
-				//var15 = c.ImageTitle1 // TODO: pixmap
-				//c.ImageTitle1 // TODO: pixmap
+				var15 := int(c.ImageTitle1.Pixels[var5])                                                                                                                  // TODO: verify
+				c.ImageTitle1.Pixels[var5] = byte(((var12&0xFF00FF)*var13 + (var15&0xFF00FF)*var14&0xFF00FF00) + ((var12&0xFF00)*var13+(var15&0xFF00)*var14&0xFF0000)>>8) // TODO: verify
+				var5++
 			}
 		}
 	}
@@ -2944,12 +2946,12 @@ func (c *Client) LoadTitleImages() {
 	}
 	c.ImageFlamesLeft = pix32.NewPix321(128, 265)
 	c.ImageFlamesRight = pix32.NewPix321(128, 265)
-	//for i := range 33920 {
-	//	c.ImageFlamesLeft.Pixels[i] = c.ImageTitle0.Pixels[i] // TODO: pixmap
-	//}
-	//for i := range 33920 {
-	//	c.ImageFlamesRight.Pixels[i] = c.ImageTitle1.Pixels[i] // TODO: pixmap
-	//}
+	for i := range 33920 {
+		c.ImageFlamesLeft.Pixels[i] = int(c.ImageTitle0.Pixels[i]) // TODO: verify
+	}
+	for i := range 33920 {
+		c.ImageFlamesRight.Pixels[i] = int(c.ImageTitle1.Pixels[i]) // TODO: verify
+	}
 	c.FlameGradient0 = make([]int, 256)
 	for i := range 64 {
 		c.FlameGradient0[i] = i * 262144
@@ -3210,12 +3212,18 @@ func (c *Client) DrawTitleScreen() {
 		c.ImageTitleButton.Draw(var6-20, var5-73)
 		c.FontBold12.DrawStringTaggableCenter(var5, 16777215, true, var6+5, "Cancel")
 	}
-	//c.ImageTitle4.Draw // TODO: pixmap
+	c.ImageTitle4.Draw(&c.Ops, 214, 186) // TODO: verify
 	if !c.RedrawBackground {
 		return
 	}
 	c.RedrawBackground = false
-	//c.ImageTitle2.Draw // TODO pixmap
+	// TODO: verify
+	c.ImageTitle2.Draw(&c.Ops, 128, 0)
+	c.ImageTitle3.Draw(&c.Ops, 214, 386)
+	c.ImageTitle5.Draw(&c.Ops, 0, 265)
+	c.ImageTitle6.Draw(&c.Ops, 574, 265)
+	c.ImageTitle7.Draw(&c.Ops, 128, 186)
+	c.ImageTitle8.Draw(&c.Ops, 574, 186)
 }
 
 func (c *Client) PrepareGameScreen() {
@@ -3233,12 +3241,16 @@ func (c *Client) PrepareGameScreen() {
 	c.ImageTitle6 = nil
 	c.ImageTitle7 = nil
 	c.ImageTitle8 = nil
-	// TODO: pixmap
+	c.AreaChatback = pixmap.NewPixMap(479, 96)
+	c.AreaMapback = pixmap.NewPixMap(168, 160)
 	pix2d.Clear()
 	c.ImageMapback.Draw(0, 0)
-	// TODO: pixmap
+	c.AreaSidebar = pixmap.NewPixMap(190, 261)
+	c.AreaViewport = pixmap.NewPixMap(512, 334)
 	pix2d.Clear()
-	// TODO: pixmap
+	c.AreaBackbase1 = pixmap.NewPixMap(501, 61)
+	c.AreaBackbase2 = pixmap.NewPixMap(288, 40)
+	c.AreaBackhmid1 = pixmap.NewPixMap(269, 66)
 	c.RedrawBackground = true
 }
 
@@ -3942,13 +3954,23 @@ func (c *Client) UpdateSequences(arg1 *entity.PathingEntity) {
 func (c *Client) DrawGame() {
 	if c.RedrawBackground {
 		c.RedrawBackground = false
-		// TODO: pixmap
+		c.AreaBackleft1.Draw(&c.Ops, 0, 11)
+		c.AreaBackleft2.Draw(&c.Ops, 0, 375)
+		c.AreaBackright1.Draw(&c.Ops, 729, 5)
+		c.AreaBackright2.Draw(&c.Ops, 752, 231)
+		c.AreaBacktop1.Draw(&c.Ops, 0, 0)
+		c.AreaBacktop2.Draw(&c.Ops, 561, 0)
+		c.AreaBackvmid1.Draw(&c.Ops, 520, 11)
+		c.AreaBackvmid2.Draw(&c.Ops, 520, 231)
+		c.AreaBackvmid3.Draw(&c.Ops, 501, 375)
+		c.AreaBackhmid2.Draw(&c.Ops, 0, 345)
 		c.RedrawSidebar = true
 		c.RedrawChatback = true
 		c.RedrawSideIcons = true
 		c.RedrawPrivacySettings = true
 		if c.SceneState != 2 {
-			// TODO: pixmap
+			c.AreaViewport.Draw(&c.Ops, 8, 11)
+			c.AreaMapback.Draw(&c.Ops, 561, 5)
 		}
 	}
 	if c.SceneState == 2 {
@@ -4015,7 +4037,7 @@ func (c *Client) DrawGame() {
 	}
 	if c.SceneState == 2 {
 		c.DrawMinimap()
-		//c.AreaMapback // TODO: pixmap
+		c.AreaMapback.Draw(&c.Ops, 561, 5)
 	}
 	if c.FlashingTab != -1 {
 		c.RedrawSideIcons = true
@@ -4070,7 +4092,7 @@ func (c *Client) DrawGame() {
 				c.ImageSideIcons[6].Draw(34, 212)
 			}
 		}
-		//c.AreaBackhmid1.Draw // TODO: pixmap
+		c.AreaBackhmid1.Draw(&c.Ops, 520, 165)
 		c.AreaBackbase2.Bind()
 		c.ImageBackbase2.Draw(0, 0)
 		if c.SidebarInterfaceID == -1 {
@@ -4111,7 +4133,7 @@ func (c *Client) DrawGame() {
 				c.ImageSideIcons[12].Draw(2, 230)
 			}
 		}
-		//c.AreaBackbase2.Draw // TODO: pixmap
+		c.AreaBackbase2.Draw(&c.Ops, 501, 492)
 		c.AreaViewport.Bind()
 	}
 	if c.RedrawPrivacySettings {
@@ -4148,7 +4170,7 @@ func (c *Client) DrawGame() {
 			c.FontPlain12.DrawStringTaggableCenter(326, 16711680, true, 46, "Off")
 		}
 		c.FontPlain12.DrawStringTaggableCenter(462, 16777215, true, 38, "Report abuse")
-		//c.AreaBackbase1.Draw() // TODO: pixmap
+		c.AreaBackbase1.Draw(&c.Ops, 0, 471)
 		c.AreaViewport.Bind()
 	}
 	c.SceneDelta = 0
@@ -5373,34 +5395,34 @@ func (c *Client) Load() {
 	c.ImageRedstone2hv.FlipHorizontally()
 	c.ImageRedstone2hv.FlipVertically()
 	var14 := pix32.NewPix323(var38, "backleft1", 0)
-	//c.AreaBackleft1 = // TODO: pixmap
+	c.AreaBackleft1 = pixmap.NewPixMap(var14.Width, var14.Height)
 	var14.BlitOpaque(0, 0)
 	var39 := pix32.NewPix323(var38, "backleft2", 0)
-	// TODO: pixmap
+	c.AreaBackleft2 = pixmap.NewPixMap(var39.Width, var39.Height)
 	var39.BlitOpaque(0, 0)
 	var40 := pix32.NewPix323(var38, "backright1", 0)
-	// TODO: pixmap
+	c.AreaBackright1 = pixmap.NewPixMap(var40.Width, var40.Height)
 	var40.BlitOpaque(0, 0)
 	var41 := pix32.NewPix323(var38, "backright2", 0)
-	// TODO: pixmap
+	c.AreaBackright2 = pixmap.NewPixMap(var41.Width, var41.Height)
 	var41.BlitOpaque(0, 0)
 	var42 := pix32.NewPix323(var38, "backtop1", 0)
-	// TODO: pixmap
+	c.AreaBacktop1 = pixmap.NewPixMap(var42.Width, var42.Height)
 	var42.BlitOpaque(0, 0)
 	var43 := pix32.NewPix323(var38, "backtop2", 0)
-	// TODO: pixmap
+	c.AreaBacktop2 = pixmap.NewPixMap(var43.Width, var43.Height)
 	var43.BlitOpaque(0, 0)
 	var44 := pix32.NewPix323(var38, "backvmid1", 0)
-	// TODO: pixmap
+	c.AreaBackvmid1 = pixmap.NewPixMap(var44.Width, var44.Height)
 	var44.BlitOpaque(0, 0)
 	var45 := pix32.NewPix323(var38, "backvmid2", 0)
-	// TODO: pixmap
+	c.AreaBackvmid2 = pixmap.NewPixMap(var45.Width, var45.Height)
 	var45.BlitOpaque(0, 0)
 	var46 := pix32.NewPix323(var38, "backvmid3", 0)
-	// TODO: pixmap
+	c.AreaBackvmid3 = pixmap.NewPixMap(var46.Width, var46.Height)
 	var46.BlitOpaque(0, 0)
 	var47 := pix32.NewPix323(var38, "backhmid2", 0)
-	// TODO: pixmap
+	c.AreaBackhmid2 = pixmap.NewPixMap(var47.Width, var47.Height)
 	var47.BlitOpaque(0, 0)
 	var15 := int(rand.Float64()*21.0) - 10
 	var16 := int(rand.Float64()*21.0) - 10
@@ -5924,7 +5946,24 @@ func (c *Client) LoadTitle() {
 	c.AreaBackbase1 = nil
 	c.AreaBackbase2 = nil
 	c.AreaBackhmid1 = nil
-	// TODO: pixmap
+	c.ImageTitle0 = pixmap.NewPixMap(128, 265)
+	pix2d.Clear()
+	c.ImageTitle1 = pixmap.NewPixMap(128, 265)
+	pix2d.Clear()
+	c.ImageTitle2 = pixmap.NewPixMap(533, 186)
+	pix2d.Clear()
+	c.ImageTitle3 = pixmap.NewPixMap(360, 146)
+	pix2d.Clear()
+	c.ImageTitle4 = pixmap.NewPixMap(360, 200)
+	pix2d.Clear()
+	c.ImageTitle5 = pixmap.NewPixMap(214, 267)
+	pix2d.Clear()
+	c.ImageTitle6 = pixmap.NewPixMap(215, 267)
+	pix2d.Clear()
+	c.ImageTitle7 = pixmap.NewPixMap(86, 79)
+	pix2d.Clear()
+	c.ImageTitle8 = pixmap.NewPixMap(87, 79)
+	pix2d.Clear()
 	if c.ArchiveTitle != nil {
 		c.LoadTitleBackground()
 		c.LoadTitleImages()
@@ -7592,7 +7631,7 @@ func (c *Client) TryReconnect() {
 	c.FontPlain12.DrawStringCenter(143, 16777215, "Connection lost", 256)
 	c.FontPlain12.DrawStringCenter(159, 0, "Please wait - attempting to reestablish", 257)
 	c.FontPlain12.DrawStringCenter(158, 16777215, "Please wait - attempting to reestablish", 256)
-	//c.AreaViewport.Draw(11, ) // TODO: pixmap
+	c.AreaViewport.Draw(&c.Ops, 8, 11)
 	c.FlagSceneTileX = 0
 	// TODO: c.stream
 	c.InGame = false
@@ -8374,7 +8413,7 @@ func (c *Client) DrawChatback() {
 	if c.MenuVisible && c.MenuArea == 2 {
 		c.DrawMenu()
 	}
-	//c.AreaChatback.Draw(375) // TODO: pixmap
+	c.AreaChatback.Draw(&c.Ops, 22, 375)
 	c.AreaViewport.Bind()
 	pix3d.LineOffset = c.AreaViewportOffsets
 }
@@ -8396,7 +8435,7 @@ func (c *Client) DrawSidebar() {
 	if c.MenuVisible && c.MenuArea == 1 {
 		c.DrawMenu()
 	}
-	//c.AreaSidebar.Draw() // TODO pixmap
+	c.AreaSidebar.Draw(&c.Ops, 562, 231)
 	c.AreaViewport.Bind()
 	pix3d.LineOffset = c.AreaViewportOffsets
 }
@@ -8549,13 +8588,19 @@ func (c *Client) DrawProgress(arg1 string, arg2 int) {
 	pix2d.FillRect(var7+2, var4/2-150, 9179409, arg2*3, 30)
 	pix2d.FillRect(var7+2, var4/2-150+arg2*3, 0, 300-arg2*3, 30)
 	c.FontBold12.DrawStringCenter(var5/2+5-var6, 16777215, arg1, var4/2)
-	//c.ImageTitle4.Draw(186) // TODO pixmap
+	c.ImageTitle4.Draw(&c.Ops, 214, 186)
 	if !c.RedrawBackground {
 		return
 	}
 	c.RedrawBackground = false
 	if !c.FlameActive {
-		// TODO: pixmap
+		c.ImageTitle0.Draw(&c.Ops, 0, 0)
+		c.ImageTitle1.Draw(&c.Ops, 661, 0)
 	}
-	// TODO: pixmap
+	c.ImageTitle2.Draw(&c.Ops, 128, 0)
+	c.ImageTitle3.Draw(&c.Ops, 214, 386)
+	c.ImageTitle5.Draw(&c.Ops, 0, 265)
+	c.ImageTitle6.Draw(&c.Ops, 574, 265)
+	c.ImageTitle7.Draw(&c.Ops, 128, 186)
+	c.ImageTitle8.Draw(&c.Ops, 574, 186)
 }
