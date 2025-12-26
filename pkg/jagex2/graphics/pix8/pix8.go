@@ -63,7 +63,7 @@ func (p *Pix8) Shrink() {
 	var3 := 0
 	for i := range p.Height {
 		for j := range p.Width {
-			pixels[(j+p.CropX>>1)+(i+p.CropY>>1)*p.CropW] = p.Pixels[var3]
+			pixels[((j+p.CropX)>>1)+((i+p.CropY)>>1)*p.CropW] = p.Pixels[var3]
 			var3++
 		}
 	}
@@ -122,14 +122,14 @@ func (p *Pix8) FlipVertically() {
 func (p *Pix8) Translate(arg0 int, arg1 int, arg2 int) {
 	var6 := 0
 	for i := range len(p.Palette) {
-		var6 = p.Palette[i] >> 16 & 0xFF
+		var6 = (p.Palette[i] >> 16) & 0xFF
 		var6 += arg0
 		if var6 < 0 {
 			var6 = 0
 		} else if var6 > 255 {
 			var6 = 255
 		}
-		var7 := p.Palette[i] >> 8 & 0xFF
+		var7 := (p.Palette[i] >> 8) & 0xFF
 		var7 += arg1
 		if var7 < 0 {
 			var7 = 0

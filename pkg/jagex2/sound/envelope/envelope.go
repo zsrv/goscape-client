@@ -55,5 +55,5 @@ func (e *Envelope) Evaluate(arg1 int) int {
 	}
 	e.Amplitude += e.Delta
 	e.Ticks++
-	return e.Amplitude - e.Delta>>15
+	return (e.Amplitude - e.Delta) >> 15
 }

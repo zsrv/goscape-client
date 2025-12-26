@@ -16,7 +16,7 @@ func Unpack(arg0 *io.Packet, arg2 int) string {
 	var4 := -1
 	for range arg2 {
 		var6 := arg0.G1()
-		var7 := var6 >> 4 & 0xF
+		var7 := (var6 >> 4) & 0xF
 		if var4 != -1 {
 			CharBuffer[var3] = TABLE[(var4<<4)+var7-195]
 			var3++

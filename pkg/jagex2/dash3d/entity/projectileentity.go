@@ -76,7 +76,7 @@ func (e *ProjectileEntity) Update(arg1 int) {
 	e.Z += e.VelocityZ * float64(arg1)
 	e.Y += e.VelocityY*float64(arg1) + e.AccelerationY*0.5*float64(arg1)*float64(arg1)
 	e.VelocityY += e.AccelerationY * float64(arg1)
-	e.Yaw = int(math.Atan2(e.VelocityX, e.VelocityZ)*325.949) + 1024&0x7FF
+	e.Yaw = (int(math.Atan2(e.VelocityX, e.VelocityZ)*325.949) + 1024) & 0x7FF
 	e.Pitch = int(math.Atan2(e.VelocityY, e.Velocity)*325.949) & 0x7FF
 	if e.SpotAnim.Seq == nil {
 		return

@@ -164,7 +164,7 @@ func (w *World) LoadGround(arg0 []byte, arg1, arg3, arg4, arg5 int) {
 						if var13 <= 49 {
 							w.LevelTileOverlayIDs[i][var11][var12] = var7.G1B()
 							w.LevelTileOverlayShape[i][var11][var12] = byte((var13 - 2) / 4)
-							w.LevelTileOverlayRotation[i][var11][var12] = byte(var13 - 2&0x3)
+							w.LevelTileOverlayRotation[i][var11][var12] = byte((var13 - 2) & 0x3)
 						} else if var13 <= 81 {
 							w.LevelTileFlags[i][var11][var12] = byte(var13 - 49)
 						} else {
@@ -208,7 +208,7 @@ func (w *World) LoadLocations(arg0 []byte, arg1 *world3d.World3D, arg2 []*dash3d
 			}
 			var11 += var12 - 1
 			var13 := var11 & 0x3F
-			var14 := var11 >> 6 & 0x3F
+			var14 := (var11 >> 6) & 0x3F
 			var15 := var11 >> 12
 			var16 := var8.G1()
 			var17 := var16 >> 2
@@ -243,7 +243,7 @@ func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, ar
 	var12 := w.LevelHeightMap[arg2][arg9+1][arg3]
 	var13 := w.LevelHeightMap[arg2][arg9+1][arg3+1]
 	var14 := w.LevelHeightMap[arg2][arg9][arg3+1]
-	var15 := var11 + var12 + var13 + var14>>2 // TODO: order of operations different in java with shifts?
+	var15 := (var11 + var12 + var13 + var14) >> 2
 	var16 := loctype.Get(arg8)
 	var17 := arg9 + (arg3 << 7) + (arg8 << 14) + 1073741824
 	if !var16.Active {
@@ -371,7 +371,7 @@ func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, ar
 			var26 := 0
 			var var28 *model.Model
 			if arg5 == 2 {
-				var26 = arg4 + 1&0x3
+				var26 = (arg4 + 1) & 0x3
 				var27 := var16.GetModel(2, arg4+4, var11, var12, var13, var14, -1)
 				var28 = var16.GetModel(2, var26, var11, var12, var13, var14, -1)
 				arg6.AddWall(ROTATION_WALL_TYPE[var26], var15, arg2, ROTATION_WALL_TYPE[arg4], var27, var28, arg9, var17, arg3, var18)
@@ -440,7 +440,7 @@ func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, ar
 				var26 = 16
 				var20 = arg6.GetWallBitSet(arg2, arg9, arg3)
 				if var20 > 0 {
-					var26 = loctype.Get(var20 >> 14 & 0x7FFF).WallWidth
+					var26 = loctype.Get((var20 >> 14) & 0x7FFF).WallWidth
 				}
 				var28 = var16.GetModel(4, 0, var11, var12, var13, var14, -1)
 				arg6.SetWallDecoration(var15, arg3, WALL_DECORATION_ROTATION_FORWARD_Z[arg4]*var26, var17, arg4*512, ROTATION_WALL_TYPE[arg4], WALL_DECORATION_ROTATION_FORWARD_X[arg4]*var26, arg9, var28, var18, arg2)
@@ -530,7 +530,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 		var10 := -10
 		var11 := -50
 		var12 = int(math.Sqrt(float64(var9*var9 + var10*var10 + var11*var11)))
-		var13 = var8 * var12 >> 8
+		var13 = (var8 * var12) >> 8
 		for j := 1; j < w.MaxTileZ-1; j++ {
 			for k := 1; k < w.MaxTileX-1; k++ {
 				var16 = w.LevelHeightMap[i][k+1][j] - w.LevelHeightMap[i][k-1][j]
@@ -622,7 +622,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 								var39 = var19 / var22
 								var40 := var20 / var22
 								var36 = w.HSL24To16(var38, var39, var40)
-								var54 := var38 + RandomHueOffset&0xFF
+								var54 := (var38 + RandomHueOffset) & 0xFF
 								var40 += RandomLightnessOffset
 								if var40 < 0 {
 									var40 = 0
@@ -846,7 +846,7 @@ func (w *World) GetDrawLevel(arg0, arg2, arg3 int) int {
 }
 
 func PerlinNoise(arg0, arg1 int) int {
-	var2 := InterpolatedNoise(arg0+45365, arg1+91923, 4) - 128 + (InterpolatedNoise(arg0+10294, arg1+37821, 2) - 128>>1) + (InterpolatedNoise(arg0, arg1, 1) - 128>>2)
+	var2 := InterpolatedNoise(arg0+45365, arg1+91923, 4) - 128 + ((InterpolatedNoise(arg0+10294, arg1+37821, 2) - 128) >> 1) + ((InterpolatedNoise(arg0, arg1, 1) - 128) >> 2)
 	var2 = int(float64(var2)*0.3) + 35
 	if var2 < 10 {
 		var2 = 10
@@ -858,9 +858,9 @@ func PerlinNoise(arg0, arg1 int) int {
 
 func InterpolatedNoise(arg0, arg1, arg2 int) int {
 	var3 := arg0 / arg2
-	var4 := arg0&arg2 - 1
+	var4 := arg0 & (arg2 - 1)
 	var5 := arg1 / arg2
-	var6 := arg1&arg2 - 1
+	var6 := arg1 & (arg2 - 1)
 	var7 := SmoothNoise(var3, var5)
 	var8 := SmoothNoise(var3+1, var5)
 	var9 := SmoothNoise(var3, var5+1)
@@ -871,8 +871,8 @@ func InterpolatedNoise(arg0, arg1, arg2 int) int {
 }
 
 func Interpolate(arg0, arg1, arg2, arg3 int) int {
-	var4 := 65536 - pix3d.CosTable[arg2*1024/arg3]>>1
-	return (arg0 * (65536 - var4) >> 16) + (arg1 * var4 >> 16)
+	var4 := (65536 - pix3d.CosTable[arg2*1024/arg3]) >> 1
+	return ((arg0 * (65536 - var4)) >> 16) + ((arg1 * var4) >> 16)
 }
 
 func SmoothNoise(arg0, arg1 int) int {
@@ -884,9 +884,9 @@ func SmoothNoise(arg0, arg1 int) int {
 
 func Noise(arg0, arg1 int) int {
 	var2 := arg0 + arg1*57
-	var4 := var2<<13 ^ var2
-	var3 := var4*(var4*var4*15731+789221) + 1376312589&math.MaxInt32
-	return var3 >> 19 & 0xFF
+	var4 := (var2 << 13) ^ var2
+	var3 := (var4*(var4*var4*15731+789221) + 1376312589) & math.MaxInt32
+	return (var3 >> 19) & 0xFF
 }
 
 func MulHSL(arg0, arg1 int) int {
@@ -936,7 +936,7 @@ func (w *World) HSL24To16(arg0, arg1, arg2 int) int {
 	if arg2 > 243 {
 		arg1 /= 2
 	}
-	return (arg0 / 4 << 10) + (arg1 / 32 << 7) + arg2/2
+	return ((arg0 / 4) << 10) + ((arg1 / 32) << 7) + arg2/2
 }
 
 func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d.CollisionMap, arg3 int, arg4 int, arg5 [][][]int, arg7 int, arg8 int, arg9 int, arg10 *world3d.World3D, arg11 int) {
@@ -944,7 +944,7 @@ func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d
 	var13 := arg5[arg11][arg0+1][arg3]
 	var14 := arg5[arg11][arg0+1][arg3+1]
 	var15 := arg5[arg11][arg0][arg3+1]
-	var16 := var12 + var13 + var14 + var15>>2
+	var16 := (var12 + var13 + var14 + var15) >> 2
 	var17 := loctype.Get(arg8)
 	var18 := arg0 + (arg3 << 7) + (arg8 << 14) + 1073741824
 	if !var17.Active {
@@ -1018,7 +1018,7 @@ func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d
 		var24 := 0
 		var var26 *model.Model
 		if arg9 == 2 {
-			var24 = arg4 + 1&0x3
+			var24 = (arg4 + 1) & 0x3
 			var25 := var17.GetModel(2, arg4+4, var12, var13, var14, var15, -1)
 			var26 = var17.GetModel(2, var24, var12, var13, var14, var15, -1)
 			arg10.AddWall(ROTATION_WALL_TYPE[var24], var16, arg7, ROTATION_WALL_TYPE[arg4], var25, var26, arg0, var18, arg3, var19)
@@ -1056,7 +1056,7 @@ func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d
 			var24 = 16
 			var21 = arg10.GetWallBitSet(arg7, arg0, arg3)
 			if var21 > 0 {
-				var24 = loctype.Get(var21 >> 14 & 0x7FFF).WallWidth
+				var24 = loctype.Get((var21 >> 14) & 0x7FFF).WallWidth
 			}
 			var26 = var17.GetModel(4, 0, var12, var13, var14, var15, -1)
 			arg10.SetWallDecoration(var16, arg3, WALL_DECORATION_ROTATION_FORWARD_Z[arg4]*var24, var18, arg4*512, ROTATION_WALL_TYPE[arg4], WALL_DECORATION_ROTATION_FORWARD_X[arg4]*var24, arg0, var26, var19, arg7)

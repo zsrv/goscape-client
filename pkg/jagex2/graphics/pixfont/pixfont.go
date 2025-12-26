@@ -365,7 +365,7 @@ func (p *PixFont) DrawCharAlpha(arg0 []byte, arg2, arg3, arg4, arg5, arg6, arg7 
 }
 
 func (p *PixFont) DrawMaskAlpha(arg0 int, arg1 int, arg2 int, arg3 []int, arg4 []byte, arg5 int, arg6 int, arg7 int, arg8 int, arg10 int) {
-	var17 := ((arg10 & 0xFF00FF) * arg5 & 0xFF00FF00) + ((arg10&0xFF00)*arg5&0xFF0000)>>8
+	var17 := ((((arg10 & 0xFF00FF) * arg5) & 0xFF00FF00) + (((arg10 & 0xFF00) * arg5) & 0xFF0000)) >> 8
 	var15 := 256 - arg5
 	for i := -arg0; i < 0; i++ {
 		for j := -arg2; j < 0; j++ {
@@ -373,7 +373,7 @@ func (p *PixFont) DrawMaskAlpha(arg0 int, arg1 int, arg2 int, arg3 []int, arg4 [
 				arg1++
 			} else {
 				var14 := arg3[arg1]
-				arg3[arg1] = (((var14 & 0xFF00FF) * var15 & 0xFF00FF00) + ((var14&0xFF00)*var15&0xFF0000)>>8) + var17
+				arg3[arg1] = (((((var14 & 0xFF00FF) * var15) & 0xFF00FF00) + (((var14 & 0xFF00) * var15) & 0xFF0000)) >> 8) + var17
 				arg1++
 			}
 			arg6++

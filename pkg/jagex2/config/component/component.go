@@ -113,7 +113,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 			if var8.OverLayer == 0 {
 				var8.OverLayer = -1
 			} else {
-				var8.OverLayer = (var8.OverLayer - 1<<8) + var4.G1()
+				var8.OverLayer = ((var8.OverLayer - 1) << 8) + var4.G1()
 			}
 			var9 := var4.G1()
 			var10 := 0
@@ -235,23 +235,23 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 			if var8.Type == 6 {
 				var7 = var4.G1()
 				if var7 != 0 {
-					var8.Model = GetModel((var7 - 1<<8) + var4.G1())
+					var8.Model = GetModel(((var7 - 1) << 8) + var4.G1())
 				}
 				var7 = var4.G1()
 				if var7 != 0 {
-					var8.ActiveModel = GetModel((var7 - 1<<8) + var4.G1())
+					var8.ActiveModel = GetModel(((var7 - 1) << 8) + var4.G1())
 				}
 				var7 = var4.G1()
 				if var7 == 0 {
 					var8.Anim = -1
 				} else {
-					var8.Anim = (var7 - 1<<8) + var4.G1()
+					var8.Anim = ((var7 - 1) << 8) + var4.G1()
 				}
 				var7 = var4.G1()
 				if var7 == 0 {
 					var8.ActiveAnim = -1
 				} else {
-					var8.ActiveAnim = (var7 - 1<<8) + var4.G1()
+					var8.ActiveAnim = ((var7 - 1) << 8) + var4.G1()
 				}
 				var8.Zoom = var4.G2()
 				var8.Xan = var4.G2()

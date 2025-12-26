@@ -51,13 +51,13 @@ func HashCode(arg1 string) int64 {
 	var2 := int64(0)
 	for var4 := 0; var4 < len(var5); var4++ {
 		var2 = var2*61 + int64(var5[var4]) - 32
-		var2 = var2 + (var2>>56)&0xFFFFFFFFFFFFFF
+		var2 = (var2 + (var2 >> 56)) & 0xFFFFFFFFFFFFFF
 	}
 	return var2
 }
 
 func FormatIPv4(arg1 int32) string {
-	return fmt.Sprintf("%d.%d.%d.%d", arg1>>24&0xFF, arg1>>16&0xFF, arg1>>8&0xFF, arg1&0xFF)
+	return fmt.Sprintf("%d.%d.%d.%d", (arg1>>24)&0xFF, (arg1>>16)&0xFF, (arg1>>8)&0xFF, arg1&0xFF)
 }
 
 func FormatName(arg1 string) string {

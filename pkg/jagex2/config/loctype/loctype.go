@@ -259,7 +259,7 @@ func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *mode
 	if var8 == -1 {
 		return nil
 	}
-	var10 := int64(((loc.Index << 6) + (var8 << 3) + arg1)) + int64(((arg6 + 1) << 32))
+	var10 := int64((loc.Index<<6)+(var8<<3)+arg1) + int64((arg6+1)<<32)
 	if Reset {
 		var10 = 0
 	}

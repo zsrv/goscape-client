@@ -60,13 +60,13 @@ func NewTileOverlay(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, 
 	for i := range var26 {
 		var32 := var25[i]
 		if var32&0x1 == 0 && var32 <= 8 {
-			var32 = (var32 - arg5 - arg5 - 1&0x7) + 1
+			var32 = ((var32 - arg5 - arg5 - 1) & 0x7) + 1
 		}
 		if var32 > 8 && var32 <= 12 {
-			var32 = (var32 - 9 - arg5&0x3) + 9
+			var32 = ((var32 - 9 - arg5) & 0x3) + 9
 		}
 		if var32 > 12 && var32 <= 16 {
-			var32 = (var32 - 13 - arg5&0x3) + 13
+			var32 = ((var32 - 13 - arg5) & 0x3) + 13
 		}
 		switch var32 {
 		case 1:
@@ -78,9 +78,9 @@ func NewTileOverlay(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, 
 		case 2:
 			var33 = var29 + var22
 			var34 = var30
-			var35 = arg17 + arg3>>1
-			var36 = arg6 + arg19>>1
-			var37 = arg9 + arg2>>1
+			var35 = (arg17 + arg3) >> 1
+			var36 = (arg6 + arg19) >> 1
+			var37 = (arg9 + arg2) >> 1
 		case 3:
 			var33 = var29 + var21
 			var34 = var30
@@ -90,9 +90,9 @@ func NewTileOverlay(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, 
 		case 4:
 			var33 = var29 + var21
 			var34 = var30 + var22
-			var35 = arg3 + arg13>>1
-			var36 = arg19 + arg4>>1
-			var37 = arg2 + arg14>>1
+			var35 = (arg3 + arg13) >> 1
+			var36 = (arg19 + arg4) >> 1
+			var37 = (arg2 + arg14) >> 1
 		case 5:
 			var33 = var29 + var21
 			var34 = var30 + var21
@@ -102,9 +102,9 @@ func NewTileOverlay(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, 
 		case 6:
 			var33 = var29 + var22
 			var34 = var30 + var21
-			var35 = arg13 + arg7>>1
-			var36 = arg4 + arg15>>1
-			var37 = arg14 + arg11>>1
+			var35 = (arg13 + arg7) >> 1
+			var36 = (arg4 + arg15) >> 1
+			var37 = (arg14 + arg11) >> 1
 		case 7:
 			var33 = var29
 			var34 = var30 + var21
@@ -114,33 +114,33 @@ func NewTileOverlay(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, 
 		case 8:
 			var33 = var29
 			var34 = var30 + var22
-			var35 = arg7 + arg17>>1
-			var36 = arg15 + arg6>>1
-			var37 = arg11 + arg9>>1
+			var35 = (arg7 + arg17) >> 1
+			var36 = (arg15 + arg6) >> 1
+			var37 = (arg11 + arg9) >> 1
 		case 9:
 			var33 = var29 + var22
 			var34 = var30 + var23
-			var35 = arg17 + arg3>>1
-			var36 = arg6 + arg19>>1
-			var37 = arg9 + arg2>>1
+			var35 = (arg17 + arg3) >> 1
+			var36 = (arg6 + arg19) >> 1
+			var37 = (arg9 + arg2) >> 1
 		case 10:
 			var33 = var29 + var24
 			var34 = var30 + var22
-			var35 = arg3 + arg13>>1
-			var36 = arg19 + arg4>>1
-			var37 = arg2 + arg14>>1
+			var35 = (arg3 + arg13) >> 1
+			var36 = (arg19 + arg4) >> 1
+			var37 = (arg2 + arg14) >> 1
 		case 11:
 			var33 = var29 + var22
 			var34 = var30 + var24
-			var35 = arg13 + arg7>>1
-			var36 = arg4 + arg15>>1
-			var37 = arg14 + arg11>>1
+			var35 = (arg13 + arg7) >> 1
+			var36 = (arg4 + arg15) >> 1
+			var37 = (arg14 + arg11) >> 1
 		case 12:
 			var33 = var29 + var23
 			var34 = var30 + var22
-			var35 = arg7 + arg17>>1
-			var36 = arg15 + arg6>>1
-			var37 = arg11 + arg9>>1
+			var35 = (arg7 + arg17) >> 1
+			var36 = (arg15 + arg6) >> 1
+			var37 = (arg11 + arg9) >> 1
 		case 13:
 			var33 = var29 + var23
 			var34 = var30 + var23
@@ -191,13 +191,13 @@ func NewTileOverlay(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, 
 		var39 := var40[var34+3]
 		var34 += 4
 		if var37 < 4 {
-			var37 = var37 - arg5&0x3
+			var37 = (var37 - arg5) & 0x3
 		}
 		if var38 < 4 {
-			var38 = var38 - arg5&0x3
+			var38 = (var38 - arg5) & 0x3
 		}
 		if var39 < 4 {
-			var39 = var39 - arg5&0x3
+			var39 = (var39 - arg5) & 0x3
 		}
 		t.TriangleVertexA[i] = var37
 		t.TriangleVertexB[i] = var38

@@ -133,11 +133,11 @@ func GetAverageTextureRGB(arg1 int) int {
 	var4 := 0
 	var5 := len(TexturePalette[arg1])
 	for i := range var5 {
-		var2 += TexturePalette[arg1][i] >> 16 & 0xFF
-		var3 += TexturePalette[arg1][i] >> 8 & 0xFF
+		var2 += (TexturePalette[arg1][i] >> 16) & 0xFF
+		var3 += (TexturePalette[arg1][i] >> 8) & 0xFF
 		var4 += TexturePalette[arg1][i] & 0xFF
 	}
-	var7 := (var2 / var5 << 16) + (var3 / var5 << 8) + var4/var5
+	var7 := ((var2 / var5) << 16) + ((var3 / var5) << 8) + var4/var5
 	var7 = SetGamma(var7, 1.4)
 	if var7 == 0 {
 		var7 = 1
@@ -188,15 +188,15 @@ func GetTexels(arg0 int) []int {
 			if var5 == 0 {
 				TextureTranslucent[arg0] = true
 			}
-			var1[i+4096] = var5 - (var5>>3)&0xF8F8FF
-			var1[i+8192] = var5 - (var5>>2)&0xF8F8FF
-			var1[i+12288] = var5 - (var5 >> 2) - (var5>>3)&0xF8F8FF
+			var1[i+4096] = (var5 - (var5 >> 3)) & 0xF8F8FF
+			var1[i+8192] = (var5 - (var5 >> 2)) & 0xF8F8FF
+			var1[i+12288] = (var5 - (var5 >> 2) - (var5 >> 3)) & 0xF8F8FF
 		}
 	} else {
 		if var6.Width == 64 {
 			for i := range 128 {
 				for j := range 128 {
-					var1[j+(i<<7)] = var7[var6.Pixels[(j>>1)+(i>>1<<6)]]
+					var1[j+(i<<7)] = var7[var6.Pixels[(j>>1)+((i>>1)<<6)]]
 				}
 			}
 		} else {
@@ -211,9 +211,9 @@ func GetTexels(arg0 int) []int {
 			if var8 == 0 {
 				TextureTranslucent[arg0] = true
 			}
-			var1[i+16384] = var8 - (var8>>3)&0xF8F8FF
-			var1[i+32768] = var8 - (var8>>2)&0xF8F8FF
-			var1[i+49152] = var8 - (var8 >> 2) - (var8>>3)&0xF8F8FF
+			var1[i+16384] = (var8 - (var8 >> 3)) & 0xF8F8FF
+			var1[i+32768] = (var8 - (var8 >> 2)) & 0xF8F8FF
+			var1[i+49152] = (var8 - (var8 >> 2) - (var8 >> 3)) & 0xF8F8FF
 		}
 	}
 	return var1
@@ -299,7 +299,7 @@ func SetBrightness(arg1 float64) {
 
 func SetGamma(arg0 int, arg1 float64) int {
 	var3 := float64((arg0 >> 16) / 256.0)
-	var5 := float64((arg0 >> 8 & 0xFF) / 256.0)
+	var5 := float64(((arg0 >> 8) & 0xFF) / 256.0)
 	var7 := float64((arg0 & 0xFF) / 256.0)
 	var12 := math.Pow(var3, arg1)
 	var13 := math.Pow(var5, arg1)
@@ -314,20 +314,20 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 	var9 := 0
 	var10 := 0
 	if arg1 != arg0 {
-		var9 = (arg4 - arg3<<16) / (arg1 - arg0)
-		var10 = (arg7 - arg6<<15) / (arg1 - arg0)
+		var9 = ((arg4 - arg3) << 16) / (arg1 - arg0)
+		var10 = ((arg7 - arg6) << 15) / (arg1 - arg0)
 	}
 	var11 := 0
 	var12 := 0
 	if arg2 != arg1 {
-		var11 = (arg5 - arg4<<16) / (arg2 - arg1)
-		var12 = (arg8 - arg7<<15) / (arg2 - arg1)
+		var11 = ((arg5 - arg4) << 16) / (arg2 - arg1)
+		var12 = ((arg8 - arg7) << 15) / (arg2 - arg1)
 	}
 	var13 := 0
 	var14 := 0
 	if arg2 != arg0 {
-		var13 = (arg3 - arg5<<16) / (arg0 - arg2)
-		var14 = (arg6 - arg8<<15) / (arg0 - arg2)
+		var13 = ((arg3 - arg5) << 16) / (arg0 - arg2)
+		var14 = ((arg6 - arg8) << 15) / (arg0 - arg2)
 	}
 	if arg0 <= arg1 && arg0 <= arg2 {
 		if arg0 < pix2d.BoundBottom {
@@ -829,13 +829,13 @@ func GouraudRaster(arg0 []int, arg1, arg4, arg5, arg6, arg7 int) {
 				return
 			}
 			arg1 += arg4
-			arg3 = arg5 - arg4>>2
+			arg3 = (arg5 - arg4) >> 2
 			var8 <<= 0x2
 		} else if arg4 < arg5 {
 			arg1 += arg4
-			arg3 = arg5 - arg4>>2
+			arg3 = (arg5 - arg4) >> 2
 			if arg3 > 0 {
-				var8 = (arg7 - arg6) * DivTable[arg3] >> 15
+				var8 = ((arg7 - arg6) * DivTable[arg3]) >> 15
 			} else {
 				var8 = 0
 			}
@@ -847,7 +847,7 @@ func GouraudRaster(arg0 []int, arg1, arg4, arg5, arg6, arg7 int) {
 			for {
 				arg3--
 				if arg3 < 0 {
-					var17 = arg5 - arg4&0x3
+					var17 = (arg5 - arg4) & 0x3
 					if var17 > 0 {
 						var11 = ColourTable[arg6>>8]
 						for ok := true; ok; ok = var17 > 0 {
@@ -876,13 +876,13 @@ func GouraudRaster(arg0 []int, arg1, arg4, arg5, arg6, arg7 int) {
 			for {
 				arg3--
 				if arg3 < 0 {
-					var17 = arg5 - arg4&0x3
+					var17 = (arg5 - arg4) & 0x3
 					if var17 > 0 {
 						var11 = ColourTable[arg6>>8]
-						var11 = ((var11 & 0xFF00FF) * var10 >> 8 & 0xFF00FF) + ((var11 & 0xFF00) * var10 >> 8 & 0xFF00)
+						var11 = ((((var11 & 0xFF00FF) * var10) >> 8) & 0xFF00FF) + ((((var11 & 0xFF00) * var10) >> 8) & 0xFF00)
 						for ok := true; ok; ok = var17 > 0 {
 							arg1++
-							arg0[arg1-1] = var11 + ((arg0[arg1] & 0xFF00FF) * var9 >> 8 & 0xFF00FF) + ((arg0[arg1] & 0xFF00) * var9 >> 8 & 0xFF00)
+							arg0[arg1-1] = var11 + ((((arg0[arg1] & 0xFF00FF) * var9) >> 8) & 0xFF00FF) + ((((arg0[arg1] & 0xFF00) * var9) >> 8) & 0xFF00)
 							var17--
 						}
 					}
@@ -890,15 +890,15 @@ func GouraudRaster(arg0 []int, arg1, arg4, arg5, arg6, arg7 int) {
 				}
 				var11 = ColourTable[arg6>>8]
 				arg6 += var8
-				var11 = ((var11 & 0xFF00FF) * var10 >> 8 & 0xFF00FF) + ((var11 & 0xFF00) * var10 >> 8 & 0xFF00)
+				var11 = ((((var11 & 0xFF00FF) * var10) >> 8) & 0xFF00FF) + ((((var11 & 0xFF00) * var10) >> 8) & 0xFF00)
 				var13 = arg1 + 1
-				arg0[arg1] = var11 + ((arg0[var13] & 0xFF00FF) * var9 >> 8 & 0xFF00FF) + ((arg0[var13] & 0xFF00) * var9 >> 8 & 0xFF00)
+				arg0[arg1] = var11 + ((((arg0[var13] & 0xFF00FF) * var9) >> 8) & 0xFF00FF) + ((((arg0[var13] & 0xFF00) * var9) >> 8) & 0xFF00)
 				var13++
-				arg0[var13-1] = var11 + ((arg0[var13] & 0xFF00FF) * var9 >> 8 & 0xFF00FF) + ((arg0[var13] & 0xFF00) * var9 >> 8 & 0xFF00)
+				arg0[var13-1] = var11 + ((((arg0[var13] & 0xFF00FF) * var9) >> 8) & 0xFF00FF) + ((((arg0[var13] & 0xFF00) * var9) >> 8) & 0xFF00)
 				var13++
-				arg0[var13-1] = var11 + ((arg0[var13] & 0xFF00FF) * var9 >> 8 & 0xFF00FF) + ((arg0[var13] & 0xFF00) * var9 >> 8 & 0xFF00)
+				arg0[var13-1] = var11 + ((((arg0[var13] & 0xFF00FF) * var9) >> 8) & 0xFF00FF) + ((((arg0[var13] & 0xFF00) * var9) >> 8) & 0xFF00)
 				arg1 = var13 + 1
-				arg0[var13] = var11 + ((arg0[arg1] & 0xFF00FF) * var9 >> 8 & 0xFF00FF) + ((arg0[arg1] & 0xFF00) * var9 >> 8 & 0xFF00)
+				arg0[var13] = var11 + ((((arg0[arg1] & 0xFF00FF) * var9) >> 8) & 0xFF00FF) + ((((arg0[arg1] & 0xFF00) * var9) >> 8) & 0xFF00)
 			}
 		}
 	} else if arg4 < arg5 {
@@ -930,9 +930,9 @@ func GouraudRaster(arg0 []int, arg1, arg4, arg5, arg6, arg7 int) {
 			for ok := true; ok; ok = var17 > 0 {
 				var11 = ColourTable[arg6>>8]
 				arg6 += var8
-				var12 := ((var11 & 0xFF00FF) * var10 >> 8 & 0xFF00FF) + ((var11 & 0xFF00) * var10 >> 8 & 0xFF00)
+				var12 := ((((var11 & 0xFF00FF) * var10) >> 8) & 0xFF00FF) + ((((var11 & 0xFF00) * var10) >> 8) & 0xFF00)
 				var16++
-				arg0[var16-1] = var12 + ((arg0[var16] & 0xFF00FF) * var9 >> 8 & 0xFF00FF) + ((arg0[var16] & 0xFF00) * var9 >> 8 & 0xFF00)
+				arg0[var16-1] = var12 + ((((arg0[var16] & 0xFF00FF) * var9) >> 8) & 0xFF00FF) + ((((arg0[var16] & 0xFF00) * var9) >> 8) & 0xFF00)
 				var17--
 			}
 		}
@@ -942,15 +942,15 @@ func GouraudRaster(arg0 []int, arg1, arg4, arg5, arg6, arg7 int) {
 func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 	var7 := 0
 	if arg1 != arg0 {
-		var7 = (arg4 - arg3<<16) / (arg1 - arg0)
+		var7 = ((arg4 - arg3) << 16) / (arg1 - arg0)
 	}
 	var8 := 0
 	if arg2 != arg1 {
-		var8 = (arg5 - arg4<<16) / (arg2 - arg1)
+		var8 = ((arg5 - arg4) << 16) / (arg2 - arg1)
 	}
 	var9 := 0
 	if arg2 != arg0 {
-		var9 = (arg3 - arg5<<16) / (arg0 - arg2)
+		var9 = ((arg3 - arg5) << 16) / (arg0 - arg2)
 	}
 	if arg0 <= arg1 && arg0 <= arg2 {
 		if arg0 < pix2d.BoundBottom {
@@ -1356,13 +1356,13 @@ func FlatRaster(arg0 []int, arg1, arg2, arg4, arg5 int) {
 		return
 	}
 	arg1 += arg4
-	var15 := arg5 - arg4>>2
+	var15 := (arg5 - arg4) >> 2
 	var8 := 0
 	if Trans == 0 {
 		for {
 			var15--
 			if var15 < 0 {
-				var15 = arg5 - arg4&0x3
+				var15 = (arg5 - arg4) & 0x3
 				for {
 					var15--
 					if var15 < 0 {
@@ -1384,28 +1384,28 @@ func FlatRaster(arg0 []int, arg1, arg2, arg4, arg5 int) {
 	}
 	var6 := Trans
 	var7 := 256 - Trans
-	var10 := ((arg2 & 0xFF00FF) * var7 >> 8 & 0xFF00FF) + ((arg2 & 0xFF00) * var7 >> 8 & 0xFF00)
+	var10 := ((((arg2 & 0xFF00FF) * var7) >> 8) & 0xFF00FF) + ((((arg2 & 0xFF00) * var7) >> 8) & 0xFF00)
 	for {
 		var15--
 		if var15 < 0 {
-			var15 = arg5 - arg4&0x3
+			var15 = (arg5 - arg4) & 0x3
 			for {
 				var15--
 				if var15 < 0 {
 					return
 				}
 				arg1++
-				arg0[arg1-1] = var10 + ((arg0[arg1] & 0xFF00FF) * var6 >> 8 & 0xFF00FF) + ((arg0[arg1] & 0xFF00) * var6 >> 8 & 0xFF00)
+				arg0[arg1-1] = var10 + ((((arg0[arg1] & 0xFF00FF) * var6) >> 8) & 0xFF00FF) + ((((arg0[arg1] & 0xFF00) * var6) >> 8) & 0xFF00)
 			}
 		}
 		var8 = arg1 + 1
-		arg0[arg1] = var10 + ((arg0[var8] & 0xFF00FF) * var6 >> 8 & 0xFF00FF) + ((arg0[var8] & 0xFF00) * var6 >> 8 & 0xFF00)
+		arg0[arg1] = var10 + ((((arg0[var8] & 0xFF00FF) * var6) >> 8) & 0xFF00FF) + ((((arg0[var8] & 0xFF00) * var6) >> 8) & 0xFF00)
 		var9 := var8 + 1
-		arg0[var8] = var10 + ((arg0[var9] & 0xFF00FF) * var6 >> 8 & 0xFF00FF) + ((arg0[var9] & 0xFF00) * var6 >> 8 & 0xFF00)
+		arg0[var8] = var10 + ((((arg0[var9] & 0xFF00FF) * var6) >> 8) & 0xFF00FF) + ((((arg0[var9] & 0xFF00) * var6) >> 8) & 0xFF00)
 		var11 := var9 + 1
-		arg0[var9] = var10 + ((arg0[var11] & 0xFF00FF) * var6 >> 8 & 0xFF00FF) + ((arg0[var11] & 0xFF00) * var6 >> 8 & 0xFF00)
+		arg0[var9] = var10 + ((((arg0[var11] & 0xFF00FF) * var6) >> 8) & 0xFF00FF) + ((((arg0[var11] & 0xFF00) * var6) >> 8) & 0xFF00)
 		arg1 = var11 + 1
-		arg0[var11] = var10 + ((arg0[arg1] & 0xFF00FF) * var6 >> 8 & 0xFF00FF) + ((arg0[arg1] & 0xFF00) * var6 >> 8 & 0xFF00)
+		arg0[var11] = var10 + ((((arg0[arg1] & 0xFF00FF) * var6) >> 8) & 0xFF00FF) + ((((arg0[arg1] & 0xFF00) * var6) >> 8) & 0xFF00)
 	}
 }
 
@@ -1418,32 +1418,32 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 	var37 := arg11 - arg9
 	var39 := arg14 - arg12
 	var41 := arg17 - arg15
-	var20 := var37*arg12 - var39*arg9<<14
-	var21 := var39*arg15 - var41*arg12<<8
-	var22 := var41*arg9 - var37*arg15<<5
-	var23 := var36*arg12 - var38*arg9<<14
-	var24 := var38*arg15 - var40*arg12<<8
-	var25 := var40*arg9 - var36*arg15<<5
-	var26 := var38*var37 - var36*var39<<14
-	var27 := var40*var39 - var38*var41<<8
-	var28 := var36*var41 - var40*var37<<5
+	var20 := (var37*arg12 - var39*arg9) << 14
+	var21 := (var39*arg15 - var41*arg12) << 8
+	var22 := (var41*arg9 - var37*arg15) << 5
+	var23 := (var36*arg12 - var38*arg9) << 14
+	var24 := (var38*arg15 - var40*arg12) << 8
+	var25 := (var40*arg9 - var36*arg15) << 5
+	var26 := (var38*var37 - var36*var39) << 14
+	var27 := (var40*var39 - var38*var41) << 8
+	var28 := (var36*var41 - var40*var37) << 5
 	var29 := 0
 	var30 := 0
 	if arg1 != arg0 {
-		var29 = (arg4 - arg3<<16) / (arg1 - arg0)
-		var30 = (arg7 - arg6<<16) / (arg1 - arg0)
+		var29 = ((arg4 - arg3) << 16) / (arg1 - arg0)
+		var30 = ((arg7 - arg6) << 16) / (arg1 - arg0)
 	}
 	var31 := 0
 	var32 := 0
 	if arg2 != arg1 {
-		var31 = (arg5 - arg4<<16) / (arg2 - arg1)
-		var32 = (arg8 - arg7<<16) / (arg2 - arg1)
+		var31 = ((arg5 - arg4) << 16) / (arg2 - arg1)
+		var32 = ((arg8 - arg7) << 16) / (arg2 - arg1)
 	}
 	var33 := 0
 	var34 := 0
 	if arg2 != arg0 {
-		var33 = (arg3 - arg5<<16) / (arg0 - arg2)
-		var34 = (arg6 - arg8<<16) / (arg0 - arg2)
+		var33 = ((arg3 - arg5) << 16) / (arg0 - arg2)
+		var34 = ((arg6 - arg8) << 16) / (arg0 - arg2)
 	}
 	var35 := 0
 	if arg0 <= arg1 && arg0 <= arg2 {
@@ -2035,13 +2035,13 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 		if arg5 >= arg6 {
 			return
 		}
-		var16 = arg6 - arg5>>3
+		var16 = (arg6 - arg5) >> 3
 		var15 <<= 0xC
 		arg7 <<= 0x9
 	} else {
 		if arg6-arg5 > 7 {
-			var16 = arg6 - arg5>>3
-			var15 = (arg8 - arg7) * DivTable[var16] >> 6
+			var16 = (arg6 - arg5) >> 3
+			var15 = ((arg8 - arg7) * DivTable[var16]) >> 6
 		} else {
 			var16 = 0
 			var15 = 0
@@ -2090,9 +2090,9 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 				var17 = 4032
 			}
 		}
-		var21 = var17 - arg2>>3
-		var22 = var18 - arg3>>3
-		arg2 += arg7 >> 3 & 0xC0000
+		var21 = (var17 - arg2) >> 3
+		var22 = (var18 - arg3) >> 3
+		arg2 += (arg7 >> 3) & 0xC0000
 		var23 = arg7 >> 23
 		if Opaque {
 			for ; var16 > 0; var16-- {
@@ -2141,13 +2141,13 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 						var17 = 4032
 					}
 				}
-				var21 = var17 - arg2>>3
-				var22 = var18 - arg3>>3
+				var21 = (var17 - arg2) >> 3
+				var22 = (var18 - arg3) >> 3
 				arg7 += var15
-				arg2 += arg7 >> 3 & 0xC0000
+				arg2 += (arg7 >> 3) & 0xC0000
 				var23 = arg7 >> 23
 			}
-			var16 = arg6 - arg5&0x7
+			var16 = (arg6 - arg5) & 0x7
 			for ; var16 > 0; var16-- {
 				arg0[arg4] = arg1[(arg3&0xFC0)+(arg2>>6)] >> var23
 				arg4++
@@ -2217,13 +2217,13 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 						var17 = 4032
 					}
 				}
-				var21 = var17 - arg2>>3
-				var22 = var18 - arg3>>3
+				var21 = (var17 - arg2) >> 3
+				var22 = (var18 - arg3) >> 3
 				arg7 += var15
-				arg2 += arg7 >> 3 & 0xC0000
+				arg2 += (arg7 >> 3) & 0xC0000
 				var23 = arg7 >> 23
 			}
-			var16 = arg6 - arg5&0x7
+			var16 = (arg6 - arg5) & 0x7
 			for ; var16 > 0; var16-- {
 				if v := arg1[(arg3&0xFC0)+(arg2>>6)] >> var23; v != 0 {
 					arg0[arg4] = v
@@ -2264,8 +2264,8 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 			var17 = 16256
 		}
 	}
-	var21 = var17 - arg2>>3
-	var22 = var18 - arg3>>3
+	var21 = (var17 - arg2) >> 3
+	var22 = (var18 - arg3) >> 3
 	arg2 += arg7 & 0x600000
 	var23 = arg7 >> 23
 	if Opaque {
@@ -2315,13 +2315,13 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 					var17 = 16256
 				}
 			}
-			var21 = var17 - arg2>>3
-			var22 = var18 - arg3>>3
+			var21 = (var17 - arg2) >> 3
+			var22 = (var18 - arg3) >> 3
 			arg7 += var15
 			arg2 += arg7 & 0x600000
 			var23 = arg7 >> 23
 		}
-		var16 = arg6 - arg5&0x7
+		var16 = (arg6 - arg5) & 0x7
 		for ; var16 > 0; var16-- {
 			arg0[arg4] = arg1[(arg3&0x3F80)+(arg2>>7)] >> var23
 			arg4++
@@ -2392,13 +2392,13 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 				var17 = 16256
 			}
 		}
-		var21 = var17 - arg2>>3
-		var22 = var18 - arg3>>3
+		var21 = (var17 - arg2) >> 3
+		var22 = (var18 - arg3) >> 3
 		arg7 += var15
 		arg2 += arg7 & 0x600000
 		var23 = arg7 >> 23
 	}
-	var16 = arg6 - arg5&0x7
+	var16 = (arg6 - arg5) & 0x7
 	for ; var16 > 0; var16-- {
 		if v := arg1[(arg3&0x3F80)+(arg2>>7)] >> var23; v != 0 {
 			arg0[arg4] = v

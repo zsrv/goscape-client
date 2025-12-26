@@ -674,7 +674,7 @@ func (c *Client) Draw2DEntityElements() {
 					c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
 					if c.ProjectX > -1 {
 						for j := range 8 {
-							if var5.HeadIcons&0x1<<j != 0 {
+							if var5.HeadIcons&(0x1<<j) != 0 {
 								c.ImageHeadIcons[j].Draw(c.ProjectY-var4, c.ProjectX-12)
 								var4 -= 25
 							}
@@ -1058,7 +1058,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 	var16 := 0
 	if arg2 == 59 || arg2 == 76 {
 		var4 = arg1.G1()
-		var5 = c.BaseX + (var4 >> 4 & 0x7)
+		var5 = c.BaseX + ((var4 >> 4) & 0x7)
 		var6 = c.BaseZ + (var4 & 0x7)
 		var7 = arg1.G1()
 		var8 = var7 >> 2
@@ -1097,7 +1097,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 				}
 				if var14 != 0 {
 					var18 := c.Scene.GetInfo(c.CurrentLevel, var5, var6, var14)
-					var15 = var14 >> 14 & 0x7FFF
+					var15 = (var14 >> 14) & 0x7FFF
 					var16 = var18 & 0x1F
 					var17 = var18 >> 6
 				}
@@ -1118,7 +1118,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 		}
 	} else if arg2 == 42 {
 		var4 = arg1.G1()
-		var5 = c.BaseX + (var4 >> 4 & 0x7)
+		var5 = c.BaseX + ((var4 >> 4) & 0x7)
 		var6 = c.BaseZ + (var4 & 0x7)
 		var7 = arg1.G1()
 		var8 = var7 >> 2
@@ -1139,14 +1139,14 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 				var11 = c.Scene.GetGroundDecorationBitSet(c.CurrentLevel, var5, var6)
 			}
 			if var11 != 0 {
-				var38 := entity.NewLocEntity(false, var11>>14&0x7FFF, c.CurrentLevel, var9, seqtype.Instances[var10], var6, var5)
+				var38 := entity.NewLocEntity(false, (var11>>14)&0x7FFF, c.CurrentLevel, var9, seqtype.Instances[var10], var6, var5)
 				c.LocList.AddTail(datastruct.NewLinkable(var38))
 			}
 		}
 	} else {
 		if arg2 == 223 {
 			var4 = arg1.G1()
-			var5 = c.BaseX + (var4 >> 4 & 0x7)
+			var5 = c.BaseX + ((var4 >> 4) & 0x7)
 			var6 = c.BaseZ + (var4 & 0x7)
 			var7 = arg1.G2()
 			var8 = arg1.G2()
@@ -1162,7 +1162,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 			}
 		} else if arg2 == 49 {
 			var4 = arg1.G1()
-			var5 = c.BaseX + (var4 >> 4 & 0x7)
+			var5 = c.BaseX + ((var4 >> 4) & 0x7)
 			var6 = c.BaseZ + (var4 & 0x7)
 			var7 = arg1.G2()
 			if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
@@ -1186,7 +1186,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 			var37 := 0
 			if arg2 == 69 {
 				var4 = arg1.G1()
-				var5 = c.BaseX + (var4 >> 4 & 0x7)
+				var5 = c.BaseX + ((var4 >> 4) & 0x7)
 				var6 = c.BaseZ + (var4 & 0x7)
 				var7 = var5 + int(arg1.G1B())
 				var8 = var6 + int(arg1.G1B())
@@ -1209,7 +1209,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 				}
 			} else if arg2 == 191 {
 				var4 = arg1.G1()
-				var5 = c.BaseX + (var4 >> 4 & 0x7)
+				var5 = c.BaseX + ((var4 >> 4) & 0x7)
 				var6 = c.BaseZ + (var4 & 0x7)
 				var7 = arg1.G2()
 				var8 = arg1.G1()
@@ -1222,7 +1222,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 				}
 			} else if arg2 == 50 {
 				var4 = arg1.G1()
-				var5 = c.BaseX + (var4 >> 4 & 0x7)
+				var5 = c.BaseX + ((var4 >> 4) & 0x7)
 				var6 = c.BaseZ + (var4 & 0x7)
 				var7 = arg1.G2()
 				var8 = arg1.G2()
@@ -1240,7 +1240,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 			} else {
 				if arg2 == 23 {
 					var4 = arg1.G1()
-					var5 = c.BaseX + (var4 >> 4 & 0x7)
+					var5 = c.BaseX + ((var4 >> 4) & 0x7)
 					var6 = c.BaseZ + (var4 & 0x7)
 					var7 = arg1.G1()
 					var8 = var7 >> 2
@@ -1301,7 +1301,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 				}
 				if arg2 == 151 {
 					var4 = arg1.G1()
-					var5 = c.BaseX + (var4 >> 4 & 0x7)
+					var5 = c.BaseX + ((var4 >> 4) & 0x7)
 					var6 = c.BaseZ + (var4 & 0x7)
 					var7 = arg1.G2()
 					var8 = arg1.G2()
@@ -1484,7 +1484,7 @@ func (c *Client) DrawScene(arg0 int) {
 				c.CameraZ += var9
 			}
 			if i == 3 {
-				c.CameraYaw = c.CameraYaw + var9&0x7FF
+				c.CameraYaw = (c.CameraYaw + var9) & 0x7FF
 			}
 			if i == 4 {
 				c.CameraPitch += var9
@@ -1625,7 +1625,7 @@ func (c *Client) DrawFlames() {
 			var8 = 0
 		}
 		var4 += var8
-		for range 128 {
+		for j := var8; j < 128; j++ {
 			var10 = c.FlameBuffer3[var4]
 			var4++
 			if var10 == 0 {
@@ -1634,8 +1634,8 @@ func (c *Client) DrawFlames() {
 				//var11 = var10
 				var12 = 256 - var10
 				var10 = c.FlameGradient[var10]
-				var13 = int(c.ImageTitle0.Pixels[var5])                                                                                                                   // TODO: verify
-				c.ImageTitle0.Pixels[var5] = byte(((var10&0xFF00FF)*var11 + (var13&0xFF00FF)*var12&0xFF00FF00) + ((var10&0xFF00)*var11+(var13&0xFF00)*var12&0xFF0000)>>8) // TODO: verify
+				var13 = int(c.ImageTitle0.Pixels[var5]) // TODO: verify
+				c.ImageTitle0.Pixels[var5] = byte((((((var10 & 0xFF00FF) * var11) + ((var13 & 0xFF00FF) * var12)) & 0xFF00FF00) + ((((var10 & 0xFF00) * var11) + ((var13 & 0xFF00) * var12)) & 0xFF0000)) >> 8)
 				var5++
 			}
 		}
@@ -1660,8 +1660,8 @@ func (c *Client) DrawFlames() {
 				var13 = var12
 				var14 := 256 - var12
 				var12 = c.FlameGradient[var12]
-				var15 := int(c.ImageTitle1.Pixels[var5])                                                                                                                  // TODO: verify
-				c.ImageTitle1.Pixels[var5] = byte(((var12&0xFF00FF)*var13 + (var15&0xFF00FF)*var14&0xFF00FF00) + ((var12&0xFF00)*var13+(var15&0xFF00)*var14&0xFF0000)>>8) // TODO: verify
+				var15 := int(c.ImageTitle1.Pixels[var5]) // TODO: verify
+				c.ImageTitle1.Pixels[var5] = byte((((((var12 & 0xFF00FF) * var13) + ((var15 & 0xFF00FF) * var14)) & 0xFF00FF00) + ((((var12 & 0xFF00) * var13) + ((var15 & 0xFF00) * var14)) & 0xFF0000)) >> 8)
 				var5++
 			}
 		}
@@ -2029,9 +2029,9 @@ func (c *Client) GetHeightMapY(arg0, arg1, arg3 int) int {
 	}
 	var8 := arg1 & 0x7F
 	var9 := arg3 & 0x7F
-	var10 := c.LevelHeightmap[var7][var5][var6]*(128-var8) + c.LevelHeightmap[var7][var5+1][var6]*var8>>7
-	var11 := c.LevelHeightmap[var7][var5][var6+1]*(128-var8) + c.LevelHeightmap[var7][var5+1][var6+1]*var8>>7
-	return var10*(128-var9) + var11*var9>>7
+	var10 := (c.LevelHeightmap[var7][var5][var6]*(128-var8) + c.LevelHeightmap[var7][var5+1][var6]*var8) >> 7
+	var11 := (c.LevelHeightmap[var7][var5][var6+1]*(128-var8) + c.LevelHeightmap[var7][var5+1][var6+1]*var8) >> 7
+	return (var10*(128-var9) + var11*var9) >> 7
 }
 
 func (c *Client) AddNPCOptions(arg0 *npctype.NpcType, arg2, arg3, arg4 int) {
@@ -2512,8 +2512,8 @@ func (c *Client) UnloadTitle() {
 }
 
 func (c *Client) OrbitCamera(arg0, arg1, arg2, arg3, arg5, arg6 int) {
-	var8 := 2048 - arg3&0x7FF
-	var9 := 2048 - arg2&0x7FF
+	var8 := (2048 - arg3) & 0x7FF
+	var9 := (2048 - arg2) & 0x7FF
 	var10 := 0
 	var11 := 0
 	var12 := arg6
@@ -2523,15 +2523,15 @@ func (c *Client) OrbitCamera(arg0, arg1, arg2, arg3, arg5, arg6 int) {
 	if var8 != 0 {
 		var13 = model.Sin[var8]
 		var14 = model.Cos[var8]
-		var15 = var11*var14 - arg6*var13>>16
-		var12 = var11*var13 + arg6*var14>>16
+		var15 = (var11*var14 - arg6*var13) >> 16
+		var12 = (var11*var13 + arg6*var14) >> 16
 		var11 = var15
 	}
 	if var9 != 0 {
 		var13 = model.Sin[var9]
 		var14 = model.Cos[var9]
-		var15 = var12*var13 + var10*var14>>16
-		var12 = var12*var14 - var10*var13>>16
+		var15 = (var12*var13 + var10*var14) >> 16
+		var12 = (var12*var14 - var10*var13) >> 16
 		var10 = var15
 	}
 	c.CameraX = arg1 - var10
@@ -2570,7 +2570,7 @@ func (c *Client) UpdateTextures(arg0 int) {
 		var6 = var3.Pixels
 		var7 = c.TextureBuffer
 		for i := 0; i <= var4; i++ {
-			var7[i] = var6[i-var5&var4]
+			var7[i] = var6[(i-var5)&var4]
 		}
 		var3.Pixels = var7
 		c.TextureBuffer = var6
@@ -2585,7 +2585,7 @@ func (c *Client) UpdateTextures(arg0 int) {
 	var6 = var3.Pixels
 	var7 = c.TextureBuffer
 	for i := 0; i <= var4; i++ {
-		var7[i] = var6[i-var5&var4]
+		var7[i] = var6[(i-var5)&var4]
 	}
 	var3.Pixels = var7
 	c.TextureBuffer = var6
@@ -2597,7 +2597,7 @@ func (c *Client) UpdateFlames() {
 	for i := 10; i < 117; i++ {
 		var4 := int(rand.Float64() * 100.0)
 		if var4 < 50 {
-			c.FlameBuffer3[i+(var2-2<<7)] = 255
+			c.FlameBuffer3[i+((var2-2)<<7)] = 255
 		}
 	}
 	var5 := 0
@@ -2625,7 +2625,7 @@ func (c *Client) UpdateFlames() {
 	for i := 1; i < var2-1; i++ {
 		for j := 1; j < 127; j++ {
 			var8 = j + (i << 7)
-			var9 := c.FlameBuffer2[var8+128] - c.FlameBuffer0[var8+c.FlameCycle0&len(c.FlameBuffer0)-1]/5
+			var9 := c.FlameBuffer2[var8+128] - c.FlameBuffer0[(var8+c.FlameCycle0)&(len(c.FlameBuffer0)-1)]/5
 			if var9 < 0 {
 				var9 = 0
 			}
@@ -2656,7 +2656,7 @@ func (c *Client) UpdateFlames() {
 
 func (c *Client) DrawMinimap() {
 	c.AreaMapback.Bind()
-	var2 := c.OrbitCameraYaw + c.MinimapAnticheatAngle&0x7FF
+	var2 := (c.OrbitCameraYaw + c.MinimapAnticheatAngle) & 0x7FF
 	var3 := c.LocalPlayer.X/32 + 48
 	var4 := 464 - c.LocalPlayer.Z/32
 	c.ImageMinimap.DrawRotatedMasked(var2, 146, c.MinimapMaskLineOffsets, 151, var4, c.MinimapZoom+256, var3, 21, 9, c.MinimapMaskLineLengths)
@@ -2751,8 +2751,8 @@ func (c *Client) CreateMinimap(arg0 int) {
 			var7 += 4
 		}
 	}
-	var7 := (int(rand.Float64()*20.0) + 238 - 10<<16) + (int(rand.Float64()*20.0) + 238 - 10<<8) + (int(rand.Float64()*20.0) + 238 - 10)
-	var8 := int(rand.Float64()*20.0) + 238 - 10<<16
+	var7 := ((int(rand.Float64()*20.0) + 238 - 10) << 16) + ((int(rand.Float64()*20.0) + 238 - 10) << 8) + (int(rand.Float64()*20.0) + 238 - 10)
+	var8 := (int(rand.Float64()*20.0) + 238 - 10) << 16
 	c.ImageMinimap.Bind()
 	for i := 1; i < 103; i++ {
 		for j := 1; j < 103; j++ {
@@ -2770,7 +2770,7 @@ func (c *Client) CreateMinimap(arg0 int) {
 		for j := range 104 {
 			var12 := c.Scene.GetGroundDecorationBitSet(c.CurrentLevel, i, j)
 			if var12 != 0 {
-				var12 = var12 >> 14 & 0x7FFF
+				var12 = (var12 >> 14) & 0x7FFF
 				var13 := loctype.Get(var12).MapFunction
 				if var13 >= 0 {
 					var14 := i
@@ -2815,7 +2815,7 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 	var14 := 0
 	if var7 != 0 {
 		var8 = c.Scene.GetInfo(arg1, arg3, arg5, var7)
-		var9 = var8 >> 6 & 0x3
+		var9 = (var8 >> 6) & 0x3
 		var10 = var8 & 0x1F
 		var11 = arg2
 		if var7 > 0 {
@@ -2823,7 +2823,7 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 		}
 		var12 := c.ImageMinimap.Pixels
 		var13 = arg3*4 + 24624 + (103-arg5)*512*4
-		var14 = var7 >> 14 & 0x7FFF
+		var14 = (var7 >> 14) & 0x7FFF
 		var15 := loctype.Get(var14)
 		if var15.MapScene == -1 {
 			if var10 == 0 || var10 == 2 {
@@ -2896,9 +2896,9 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 	var7 = c.Scene.GetLocBitSet(arg1, arg3, arg5)
 	if var7 != 0 {
 		var8 = c.Scene.GetInfo(arg1, arg3, arg5, var7)
-		var9 = var8 >> 6 & 0x3
+		var9 = (var8 >> 6) & 0x3
 		var10 = var8 & 0x1F
-		var11 = var7 >> 14 & 0x7FFF
+		var11 = (var7 >> 14) & 0x7FFF
 		var22 := loctype.Get(var11)
 		var26 := 0
 		if var22.MapScene != -1 {
@@ -2932,7 +2932,7 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 	if var7 == 0 {
 		return
 	}
-	var8 = var7 >> 14 & 0x7FFF
+	var8 = (var7 >> 14) & 0x7FFF
 	var20 := loctype.Get(var8)
 	if var20.MapScene == -1 {
 		return
@@ -3519,8 +3519,8 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 					var16 = pix3d.CenterH3D
 					pix3d.CenterW3D = var25 + var14.Width/2
 					pix3d.CenterH3D = var26 + var14.Height/2
-					var17 = pix3d.SinTable[var14.Xan] * var14.Zoom >> 16
-					var18 = pix3d.CosTable[var14.Xan] * var14.Zoom >> 16
+					var17 = (pix3d.SinTable[var14.Xan] * var14.Zoom) >> 16
+					var18 = (pix3d.CosTable[var14.Xan] * var14.Zoom) >> 16
 					var31 := c.ExecuteInterfaceScript(var14)
 					if var31 {
 						var33 = var14.ActiveAnim
@@ -3810,7 +3810,7 @@ func (c *Client) UpdateMovement(arg1 *entity.PathingEntity) {
 	} else {
 		arg1.DstYaw = 0
 	}
-	var7 := arg1.DstYaw - arg1.Yaw&0x7FF
+	var7 := (arg1.DstYaw - arg1.Yaw) & 0x7FF
 	if var7 > 1024 {
 		var7 -= 2048
 	}
@@ -3910,7 +3910,7 @@ func (c *Client) UpdateFacingDirection(arg0 *entity.PathingEntity) {
 		arg0.TargetTileX = 0
 		arg0.TargetTileZ = 0
 	}
-	var7 = arg0.DstYaw - arg0.Yaw&0x7FF
+	var7 = (arg0.DstYaw - arg0.Yaw) & 0x7FF
 	if var7 == 0 {
 		return
 	}
@@ -4376,7 +4376,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.Out.P2(c.ObjSelectedInterface)
 	}
 	if var5 == 1175 {
-		var15 := var6 >> 14 & 0x7FFF
+		var15 := (var6 >> 14) & 0x7FFF
 		var16 := loctype.Get(var15)
 		if var16.Desc == nil {
 			var9 = "It's a " + var16.Name + "."
@@ -5544,7 +5544,7 @@ func (c *Client) Load() {
 		var25 := i*32 + 128 + 15
 		var26 := var25*3 + 600
 		var27 := pix3d.SinTable[var25]
-		var50[i] = var26 * var27 >> 16
+		var50[i] = (var26 * var27) >> 16
 	}
 	world3d.Init(var50, 800, 512, 334, 500)
 	wordfilter.Unpack(var9)
@@ -5704,7 +5704,7 @@ func (c *Client) UpdateOrbitCamera(arg0 int) {
 	} else {
 		c.OrbitCameraPitchVelocity /= 2
 	}
-	c.OrbitCameraYaw = c.OrbitCameraYaw + c.OrbitCameraYawVelocity/2&0x7FF
+	c.OrbitCameraYaw = (c.OrbitCameraYaw + c.OrbitCameraYawVelocity/2) & 0x7FF
 	c.PacketSize += arg0
 	c.OrbitCameraPitch += c.OrbitCameraPitchVelocity / 2
 	if c.OrbitCameraPitch < 128 {
@@ -5780,7 +5780,7 @@ func (c *Client) RefreshFunc() {
 }
 
 func (c *Client) DrawOnMinimap(arg0 int, arg2 *pix32.Pix32, arg3 int) {
-	var5 := c.OrbitCameraYaw + c.MinimapAnticheatAngle&0x7FF
+	var5 := (c.OrbitCameraYaw + c.MinimapAnticheatAngle) & 0x7FF
 	var6 := arg3*arg3 + arg0*arg0
 	if var6 > 6400 {
 		return
@@ -5789,8 +5789,8 @@ func (c *Client) DrawOnMinimap(arg0 int, arg2 *pix32.Pix32, arg3 int) {
 	var8 := model.Cos[var5]
 	var11 := var7 * 256 / (c.MinimapZoom + 256)
 	var12 := var8 * 256 / (c.MinimapZoom + 256)
-	var9 := arg0*var11 + arg3*var12>>16
-	var10 := arg0*var12 - arg3*var11>>16
+	var9 := (arg0*var11 + arg3*var12) >> 16
+	var10 := (arg0*var12 - arg3*var11) >> 16
 	if var6 > 2500 {
 		arg2.DrawMasked(c.ImageMapback, 83-var10-arg2.CropH/2, var9+94-arg2.CropW/2)
 	} else {
@@ -5800,7 +5800,7 @@ func (c *Client) DrawOnMinimap(arg0 int, arg2 *pix32.Pix32, arg3 int) {
 
 func (c *Client) Mix(arg0, arg1, arg2 int) int {
 	var5 := 256 - arg1
-	return ((arg0&0xFF00FF)*var5 + (arg2&0xFF00FF)*arg1&0xFF00FF00) + ((arg0&0xFF00)*var5+(arg2&0xFF00)*arg1&0xFF0000)>>8
+	return ((((arg0&0xFF00FF)*var5 + (arg2&0xFF00FF)*arg1) & 0xFF00FF00) + (((arg0&0xFF00)*var5 + (arg2&0xFF00)*arg1) & 0xFF0000)) >> 8
 }
 
 func (c *Client) GetIntString(arg0 int) string {
@@ -5828,11 +5828,11 @@ func (c *Client) ProjectFromGround2(arg0, arg1, arg3 int) {
 	var7 := model.Cos[c.CameraPitch]
 	var8 := model.Sin[c.CameraYaw]
 	var9 := model.Cos[c.CameraYaw]
-	var10 := var11*var8 + var13*var9>>16
-	var12 := var11*var9 - var13*var8>>16
+	var10 := (var11*var8 + var13*var9) >> 16
+	var12 := (var11*var9 - var13*var8) >> 16
 	var13 = var10
-	var10 = var14*var7 - var12*var6>>16
-	var11 = var14*var6 + var12*var7>>16
+	var10 = (var14*var7 - var12*var6) >> 16
+	var11 = (var14*var6 + var12*var7) >> 16
 	if var11 >= 50 {
 		c.ProjectX = pix3d.CenterW3D + (var13<<9)/var11
 		c.ProjectY = pix3d.CenterH3D + (var10<<9)/var11
@@ -5843,13 +5843,13 @@ func (c *Client) ProjectFromGround2(arg0, arg1, arg3 int) {
 }
 
 func (c *Client) InteractWithLoc(arg0, arg1, arg2, arg3 int) bool {
-	var6 := arg3 >> 14 & 0x7FFF
+	var6 := (arg3 >> 14) & 0x7FFF
 	var7 := c.Scene.GetInfo(c.CurrentLevel, arg1, arg2, arg3)
 	if var7 == -1 {
 		return false
 	}
 	var8 := var7 & 0x1F
-	var9 := var7 >> 6 & 0x3
+	var9 := (var7 >> 6) & 0x3
 	if var8 == 10 || var8 == 11 || var8 == 22 {
 		var10 := loctype.Get(var6)
 		var11 := 0
@@ -5863,7 +5863,7 @@ func (c *Client) InteractWithLoc(arg0, arg1, arg2, arg3 int) bool {
 		}
 		var13 := var10.ForceApproach
 		if var9 != 0 {
-			var13 = (var13 << var9 & 0xF) + (var13>>4 - var9)
+			var13 = ((var13 << var9) & 0xF) + (var13 >> (4 - var9))
 		}
 		c.TryMove(c.LocalPlayer.PathTileX[0], var11, false, arg1, c.LocalPlayer.PathTileZ[0], 2, var12, arg2, 0, 0, var13)
 	} else {
@@ -6164,7 +6164,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.CameraAnticheatAngle = int(rand.Float64()*80.0) - 40
 		c.MinimapAnticheatAngle = int(rand.Float64()*120.0) - 60
 		c.MinimapZoom = int(rand.Float64()*30.0) - 20
-		c.OrbitCameraYaw = int(rand.Float64()*20.0) - 10&0x7FF
+		c.OrbitCameraYaw = (int(rand.Float64()*20.0) - 10) & 0x7FF
 		c.MinimapLevel = -1
 		c.FlagSceneTileX = 0
 		c.FlagSceneTileZ = 0
@@ -6329,7 +6329,7 @@ func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
 	}
 	if var9 != 0 {
 		var13 := c.Scene.GetInfo(arg7, arg1, arg2, var9)
-		var15 := var9 >> 14 & 0x7FFF
+		var15 := (var9 >> 14) & 0x7FFF
 		var16 := var13 & 0x1F
 		var17 := var13 >> 6
 		var var14 *loctype.LocType
@@ -7250,15 +7250,15 @@ func (c *Client) HandleMinimapInput() {
 	}
 	var2 -= 73
 	var3 -= 75
-	var4 := c.OrbitCameraYaw + c.MinimapAnticheatAngle&0x7FF
+	var4 := (c.OrbitCameraYaw + c.MinimapAnticheatAngle) & 0x7FF
 	var5 := pix3d.SinTable[var4]
 	var6 := pix3d.CosTable[var4]
-	var12 := var5 * (c.MinimapZoom + 256) >> 8
-	var13 := var6 * (c.MinimapZoom + 256) >> 8
-	var7 := var3*var12 + var2*var13>>11
-	var8 := var3*var13 - var2*var12>>11
-	var9 := c.LocalPlayer.X + var7>>7
-	var10 := c.LocalPlayer.Z - var8>>7
+	var12 := (var5 * (c.MinimapZoom + 256)) >> 8
+	var13 := (var6 * (c.MinimapZoom + 256)) >> 8
+	var7 := (var3*var12 + var2*var13) >> 11
+	var8 := (var3*var13 - var2*var12) >> 11
+	var9 := (c.LocalPlayer.X + var7) >> 7
+	var10 := (c.LocalPlayer.Z - var8) >> 7
 	var11 := c.TryMove(c.LocalPlayer.PathTileX[0], 0, true, var9, c.LocalPlayer.PathTileZ[0], 1, 0, var10, 0, 0, 0)
 	if !var11 {
 		return
@@ -7972,7 +7972,7 @@ func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) int {
 			var6++
 			var9 = var4[var6]
 			var6++
-			if var12&0x1<<var9 == 0 {
+			if var12&(0x1<<var9) == 0 {
 				var5 += 0
 			} else {
 				var5 += 1
@@ -8029,7 +8029,7 @@ func (c *Client) PushLocs() {
 			if v.Type == 3 {
 				var7 = c.Scene.GetGroundDecorationBitSet(var4, var5, var6)
 			}
-			if var7 != 0 && (var7>>14&0x7FFF) == v.Index {
+			if var7 != 0 && ((var7>>14)&0x7FFF) == v.Index {
 				var8 := c.LevelHeightmap[var4][var5][var6]
 				var9 := c.LevelHeightmap[var4][var5+1][var6]
 				var10 := c.LevelHeightmap[var4][var5+1][var6+1]
@@ -8060,7 +8060,7 @@ func (c *Client) PushLocs() {
 					var15 = var14 & 0x1F
 					var16 = var14 >> 6
 					if var15 == 2 {
-						var23 := var16 + 1&0x3
+						var23 := (var16 + 1) & 0x3
 						var18 := var12.GetModel(2, var16+4, var8, var9, var10, var11, var13)
 						var19 := var12.GetModel(2, var23, var8, var9, var10, var11, var13)
 						c.Scene.SetWallModels(var18, var19, var6, var5, var4)
@@ -8111,9 +8111,9 @@ func (c *Client) HandleViewportOptions() {
 	for i := range model.PickedCount {
 		var4 := model.PickedBitsets[i]
 		var5 := var4 & 0x7F
-		var6 := var4 >> 7 & 0x7F
-		var7 := var4 >> 29 & 0x3
-		var8 := var4 >> 14 & 0x7FFF
+		var6 := (var4 >> 7) & 0x7F
+		var7 := (var4 >> 29) & 0x3
+		var8 := (var4 >> 14) & 0x7FFF
 		if var4 != var2 {
 			var2 = var4
 			//var10 := 0
@@ -8303,7 +8303,7 @@ func (c *Client) DrawTileHint() {
 	if c.HintType != 2 {
 		return
 	}
-	c.ProjectFromGround2((c.HintTileZ-c.SceneBaseTileZ<<7)+c.HintOffsetZ, (c.HintTileX-c.SceneBaseTileX<<7)+c.HintOffsetX, c.HintHeight*2)
+	c.ProjectFromGround2(((c.HintTileZ-c.SceneBaseTileZ)<<7)+c.HintOffsetZ, ((c.HintTileX-c.SceneBaseTileX)<<7)+c.HintOffsetX, c.HintHeight*2)
 	if c.ProjectX > -1 && clientextras.LoopCycle%20 < 10 {
 		c.ImageHeadIcons[2].Draw(c.ProjectY-28, c.ProjectX-12)
 	}

@@ -83,14 +83,14 @@ func (p *Pix32) Translate(arg0, arg1, arg2 int) {
 	for i := range len(p.Pixels) {
 		var6 := p.Pixels[i]
 		if var6 != 0 {
-			var7 := var6 >> 16 & 0xFF
+			var7 := (var6 >> 16) & 0xFF
 			var7 += arg0
 			if var7 < 1 {
 				var7 = 1
 			} else if var7 > 255 {
 				var7 = 255
 			}
-			var8 := var6 >> 8 & 0xFF
+			var8 := (var6 >> 8) & 0xFF
 			var8 += arg1
 			if var8 < 1 {
 				var8 = 1
@@ -282,10 +282,10 @@ func (p *Pix32) Crop(arg0, arg1, arg2, arg4 int) {
 	arg4 += (p.CropX*arg2 + var12 - 1) / var12
 	arg1 += (p.CropY*arg0 + var13 - 1) / var13
 	if p.CropX*arg2%var12 != 0 {
-		var8 = (var12 - p.CropX*arg2%var12<<16) / arg2
+		var8 = ((var12 - (p.CropX*arg2)%var12) << 16) / arg2
 	}
 	if p.CropY*arg0%var13 != 0 {
-		var9 = (var13 - p.CropY*arg0%var13<<16) / arg0
+		var9 = ((var13 - (p.CropY*arg0)%var13) << 16) / arg0
 	}
 	arg2 = arg2 * (p.Width - (var8 >> 16)) / var12
 	arg0 = arg0 * (p.Height - (var9 >> 16)) / var13
@@ -386,7 +386,7 @@ func (p *Pix32) CopyPixelsAlpha(arg0 int, arg2 []int, arg3 int, arg4 int, arg5 [
 				arg0++
 			} else {
 				var15 := arg5[arg0]
-				arg5[arg0] = ((var16&0xFF00FF)*arg3 + (var15&0xFF00FF)*var12&0xFF00FF00) + ((var16&0xFF00)*arg3+(var15&0xFF00)*var12&0xFF0000)>>8
+				arg5[arg0] = ((((var16&0xFF00FF)*arg3 + (var15&0xFF00FF)*var12) & 0xFF00FF00) + (((var16&0xFF00)*arg3 + (var15&0xFF00)*var12) & 0xFF0000)) >> 8
 				arg0++
 			}
 		}
@@ -400,8 +400,8 @@ func (p *Pix32) DrawRotatedMasked(arg0 int, arg1 int, arg2 []int, arg3 int, arg4
 	var13 := -arg3 / 2
 	var14 := int(math.Sin(float64(arg0)/326.11) * 65536.0)
 	var15 := int(math.Cos(float64(arg0)/326.11) * 65536.0)
-	var24 := var14 * arg5 >> 8
-	var25 := var15 * arg5 >> 8
+	var24 := (var14 * arg5) >> 8
+	var25 := (var15 * arg5) >> 8
 	var16 := (arg6 << 16) + var13*var24 + var12*var25
 	var17 := (arg4 << 16) + (var13*var25 - var12*var24)
 	var18 := arg7 + arg8*pix2d.Width2D

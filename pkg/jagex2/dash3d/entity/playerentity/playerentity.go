@@ -112,10 +112,10 @@ func (e *PlayerEntity) Read(arg1 *io.Packet) {
 		}
 	}
 	if e.Appearances[0] >= 256 {
-		e.AppearanceHashCode += int64(e.Appearances[0] - 256>>4)
+		e.AppearanceHashCode += int64((e.Appearances[0] - 256) >> 4)
 	}
 	if e.Appearances[1] >= 256 {
-		e.AppearanceHashCode += int64(e.Appearances[1] - 256>>8)
+		e.AppearanceHashCode += int64((e.Appearances[1] - 256) >> 8)
 	}
 	for i := range 5 {
 		e.AppearanceHashCode <<= 0x3
@@ -200,11 +200,11 @@ func (e *PlayerEntity) GetSequencedModel() *model.Model {
 		}
 		if var8.RightHand >= 0 {
 			var6 = var8.RightHand
-			var2 += int64(var6 - e.Appearances[5]<<8)
+			var2 += int64((var6 - e.Appearances[5]) << 8)
 		}
 		if var8.LeftHand >= 0 {
 			var7 = var8.LeftHand
-			var2 += int64(var7 - e.Appearances[3]<<16)
+			var2 += int64((var7 - e.Appearances[3]) << 16)
 		}
 	} else if e.SecondarySeqID >= 0 {
 		var4 = seqtype.Instances[e.SecondarySeqID].Frames[e.SecondarySeqFrame]

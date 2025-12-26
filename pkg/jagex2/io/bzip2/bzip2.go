@@ -464,9 +464,9 @@ func GetBits(arg0 int, arg1 *bzip2state.BZip2State) int {
 			arg1.TotalInHi32++
 		}
 	}
-	var3 := arg1.BsBuff>>arg1.BsLive - arg0&(0x1<<arg0) - 1
+	var3 := int32(arg1.BsBuff) >> (int32(arg1.BsLive) - int32(arg0)) & ((0x1 << int32(arg0)) - 1)
 	arg1.BsLive -= arg0
-	return var3
+	return int(var3)
 }
 
 func MakeMaps(arg0 *bzip2state.BZip2State) {
@@ -508,6 +508,6 @@ func CreateDecodeTables(arg0 [258]int, arg1 [258]int, arg2 [258]int, arg3 [258]b
 		var10 <<= 0x1
 	}
 	for i := arg4 + 1; i <= arg5; i++ {
-		arg1[i] = (arg0[i-1] + 1<<1) - arg1[i]
+		arg1[i] = ((arg0[i-1] + 1) << 1) - arg1[i]
 	}
 }

@@ -475,7 +475,7 @@ func (w *World3D) SetLocModel(arg0 int, arg1 *model.Model, arg3 int, arg4 int) {
 	}
 	for i := range var6.LocCount {
 		var8 := var6.Locs[i]
-		if var8.BitSet>>29&0x3 == 2 {
+		if (var8.BitSet>>29)&0x3 == 2 {
 			var8.Model = arg1
 			return
 		}
@@ -572,7 +572,7 @@ func (w *World3D) RemoveLoc2(arg0, arg1, arg3 int) {
 	}
 	for i := range var5.LocCount {
 		var7 := var5.Locs[i]
-		if var7.BitSet>>29&0x3 == 2 && var7.MinSceneTileX == arg0 && var7.MinSceneTileZ == arg1 {
+		if (var7.BitSet>>29)&0x3 == 2 && var7.MinSceneTileX == arg0 && var7.MinSceneTileZ == arg1 {
 			w.RemoveLoc1(var7)
 			return
 		}
@@ -616,7 +616,7 @@ func (w *World3D) GetLocBitSet(arg0, arg1, arg2 int) int {
 	}
 	for i := range var4.LocCount {
 		var6 := var4.Locs[i]
-		if var6.BitSet>>29&0x3 == 2 && var6.MinSceneTileX == arg1 && var6.MinSceneTileZ == arg2 {
+		if (var6.BitSet>>29)&0x3 == 2 && var6.MinSceneTileX == arg1 && var6.MinSceneTileZ == arg2 {
 			return var6.BitSet
 		}
 	}
@@ -624,7 +624,7 @@ func (w *World3D) GetLocBitSet(arg0, arg1, arg2 int) int {
 }
 
 func (w *World3D) GetGroundDecorationBitSet(arg0, arg1, arg2 int) int {
-	var4 := w.LevelTiles[arg0][arg1][arg1]
+	var4 := w.LevelTiles[arg0][arg1][arg2]
 	if var4 == nil || var4.GroundDecor == nil {
 		return 0
 	}
@@ -974,10 +974,10 @@ func Init(arg0 []int, arg1, arg2, arg4, arg5 int) {
 }
 
 func TestPoint(arg0, arg1, arg2 int) bool {
-	var4 := arg1*SinEyeYaw + arg0*CosEyeYaw>>16
-	var5 := arg1*CosEyeYaw - arg0*SinEyeYaw>>16
-	var6 := arg2*SinEyePitch + var5*CosEyePitch>>16
-	var7 := arg2*CosEyePitch - var5*SinEyePitch>>16
+	var4 := (arg1*SinEyeYaw + arg0*CosEyeYaw) >> 16
+	var5 := (arg1*CosEyeYaw - arg0*SinEyeYaw) >> 16
+	var6 := (arg2*SinEyePitch + var5*CosEyePitch) >> 16
+	var7 := (arg2*CosEyePitch - var5*SinEyePitch) >> 16
 	if var6 < 50 || var6 > 3500 {
 		return false
 	}
@@ -1345,7 +1345,7 @@ func (w *World3D) DrawTile(arg0 *typ.Ground, arg1 bool) {
 												if var28.Type&0x200 != 0 && var19 > var18 {
 													var20 = var14 + WALL_DECORATION_OUTSET_X[var17]
 													var21 = var16 + WALL_DECORATION_OUTSET_Z[var17]
-													var28.Model.Draw1(var17*512+1280&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var20, var15, var21, var28.BitSet)
+													var28.Model.Draw1((var17*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var20, var15, var21, var28.BitSet)
 												}
 											}
 										}
@@ -1568,7 +1568,7 @@ func (w *World3D) DrawTile(arg0 *typ.Ground, arg1 bool) {
 					if var31.Type&0x200 != 0 && var16 <= var15 {
 						var17 = var11 + WALL_DECORATION_OUTSET_X[var14]
 						var18 = var29 + WALL_DECORATION_OUTSET_Z[var14]
-						var31.Model.Draw1(var14*512+1280&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var17, var26, var18, var31.BitSet)
+						var31.Model.Draw1((var14*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var17, var26, var18, var31.BitSet)
 					}
 				}
 			}
@@ -1629,38 +1629,38 @@ func (w *World3D) DrawTileUnderlay(arg0 *typ.TileUnderlay, arg1, arg2, arg3, arg
 	var18 := w.LevelHeightMaps[arg1][arg6+1][arg7] - EyeY
 	var19 := w.LevelHeightMaps[arg1][arg6+1][arg7+1] - EyeY
 	var20 := w.LevelHeightMaps[arg1][arg6][arg7+1] - EyeY
-	var21 := var12*arg4 + var10*arg5>>16
-	var35 := var12*arg5 - var10*arg4>>16
+	var21 := (var12*arg4 + var10*arg5) >> 16
+	var35 := (var12*arg5 - var10*arg4) >> 16
 	var32 := var21
-	var41 := var17*arg3 - var35*arg2>>16
-	var36 := var17*arg2 + var35*arg3>>16
+	var41 := (var17*arg3 - var35*arg2) >> 16
+	var36 := (var17*arg2 + var35*arg3) >> 16
 	var40 := var41
 	if var36 < 50 {
 		return
 	}
-	var21 = var11*arg4 + var14*arg5>>16
-	var33 := var11*arg5 - var14*arg4>>16
+	var21 = (var11*arg4 + var14*arg5) >> 16
+	var33 := (var11*arg5 - var14*arg4) >> 16
 	var14 = var21
-	var21 = var18*arg3 - var33*arg2>>16
-	var34 := var18*arg2 + var33*arg3>>16
+	var21 = (var18*arg3 - var33*arg2) >> 16
+	var34 := (var18*arg2 + var33*arg3) >> 16
 	var18 = var21
 	if var34 < 50 {
 		return
 	}
-	var21 = var16*arg4 + var13*arg5>>16
-	var16 = var16*arg5 - var13*arg4>>16
+	var21 = (var16*arg4 + var13*arg5) >> 16
+	var16 = (var16*arg5 - var13*arg4) >> 16
 	var37 := var21
-	var21 = var19*arg3 - var16*arg2>>16
-	var16 = var19*arg2 + var16*arg3>>16
+	var21 = (var19*arg3 - var16*arg2) >> 16
+	var16 = (var19*arg2 + var16*arg3) >> 16
 	var19 = var21
 	if var16 < 50 {
 		return
 	}
-	var21 = var15*arg4 + var9*arg5>>16
-	var38 := var15*arg5 - var9*arg4>>16
+	var21 = (var15*arg4 + var9*arg5) >> 16
+	var38 := (var15*arg5 - var9*arg4) >> 16
 	var31 := var21
-	var21 = var20*arg3 - var38*arg2>>16
-	var39 := var20*arg2 + var38*arg3>>16
+	var21 = (var20*arg3 - var38*arg2) >> 16
+	var39 := (var20*arg2 + var38*arg3) >> 16
 	if var39 < 50 {
 		return
 	}
@@ -1725,10 +1725,10 @@ func (w *World3D) DrawTileOverlay(arg0 int, arg1 int, arg2 *typ.TileOverlay, arg
 		var11 := arg2.VertexX[i] - EyeX
 		var12 := arg2.VertexY[i] - EyeY
 		var13 := arg2.VertexZ[i] - EyeZ
-		var14 := var13*arg0 + var11*arg6>>16
-		var23 := var13*arg6 - var11*arg0>>16
-		var25 := var12*arg4 - var23*arg5>>16
-		var24 := var12*arg5 + var23*arg4>>16
+		var14 := (var13*arg0 + var11*arg6) >> 16
+		var23 := (var13*arg6 - var11*arg0) >> 16
+		var25 := (var12*arg4 - var23*arg5) >> 16
+		var24 := (var12*arg5 + var23*arg4) >> 16
 		if var24 < 50 {
 			return
 		}
@@ -1848,10 +1848,10 @@ func (w *World3D) UpdateActiveOccluders() {
 						var5.Mode = 2
 						var10 = -var10
 					}
-					var5.MinDeltaZ = (var5.MinZ - EyeZ<<8) / var10
-					var5.MaxDeltaZ = (var5.MaxZ - EyeZ<<8) / var10
-					var5.MinDeltaY = (var5.MinY - EyeY<<8) / var10
-					var5.MaxDeltaY = (var5.MaxY - EyeY<<8) / var10
+					var5.MinDeltaZ = ((var5.MinZ - EyeZ) << 8) / var10
+					var5.MaxDeltaZ = ((var5.MaxZ - EyeZ) << 8) / var10
+					var5.MinDeltaY = ((var5.MinY - EyeY) << 8) / var10
+					var5.MaxDeltaY = ((var5.MaxY - EyeY) << 8) / var10
 					ActiveOccluders[ActiveOccluderCount] = var5
 					ActiveOccluderCount++
 				}
@@ -1886,10 +1886,10 @@ func (w *World3D) UpdateActiveOccluders() {
 						var5.Mode = 4
 						var10 = -var10
 					}
-					var5.MinDeltaX = (var5.MinX - EyeX<<8) / var10
-					var5.MaxDeltaX = (var5.MaxX - EyeX<<8) / var10
-					var5.MinDeltaY = (var5.MinY - EyeY<<8) / var10
-					var5.MaxDeltaY = (var5.MaxY - EyeY<<8) / var10
+					var5.MinDeltaX = ((var5.MinX - EyeX) << 8) / var10
+					var5.MaxDeltaX = ((var5.MaxX - EyeX) << 8) / var10
+					var5.MinDeltaY = ((var5.MinY - EyeY) << 8) / var10
+					var5.MaxDeltaY = ((var5.MaxY - EyeY) << 8) / var10
 					ActiveOccluders[ActiveOccluderCount] = var5
 					ActiveOccluderCount++
 				}
@@ -1926,10 +1926,10 @@ func (w *World3D) UpdateActiveOccluders() {
 					}
 					if var11 {
 						var5.Mode = 5
-						var5.MinDeltaX = (var5.MinX - EyeX<<8) / var6
-						var5.MaxDeltaX = (var5.MaxX - EyeX<<8) / var6
-						var5.MinDeltaZ = (var5.MinZ - EyeZ<<8) / var6
-						var5.MaxDeltaZ = (var5.MaxZ - EyeZ<<8) / var6
+						var5.MinDeltaX = ((var5.MinX - EyeX) << 8) / var6
+						var5.MaxDeltaX = ((var5.MaxX - EyeX) << 8) / var6
+						var5.MinDeltaZ = ((var5.MinZ - EyeZ) << 8) / var6
+						var5.MaxDeltaZ = ((var5.MaxZ - EyeZ) << 8) / var6
 						ActiveOccluders[ActiveOccluderCount] = var5
 						ActiveOccluderCount++
 					}
@@ -2154,10 +2154,10 @@ func (w *World3D) Occluded(arg0, arg1, arg2 int) bool {
 		case 1:
 			var6 = var5.MinX - arg0
 			if var6 > 0 {
-				var7 = var5.MinZ + (var5.MinDeltaZ * var6 >> 8)
-				var8 = var5.MaxZ + (var5.MaxDeltaZ * var6 >> 8)
-				var9 = var5.MinY + (var5.MinDeltaY * var6 >> 8)
-				var10 = var5.MaxY + (var5.MaxDeltaY * var6 >> 8)
+				var7 = var5.MinZ + ((var5.MinDeltaZ * var6) >> 8)
+				var8 = var5.MaxZ + ((var5.MaxDeltaZ * var6) >> 8)
+				var9 = var5.MinY + ((var5.MinDeltaY * var6) >> 8)
+				var10 = var5.MaxY + ((var5.MaxDeltaY * var6) >> 8)
 				if arg2 >= var7 && arg2 <= var8 && arg1 >= var9 && arg1 <= var10 {
 					return true
 				}
@@ -2165,10 +2165,10 @@ func (w *World3D) Occluded(arg0, arg1, arg2 int) bool {
 		case 2:
 			var6 = arg0 - var5.MinX
 			if var6 > 0 {
-				var7 = var5.MinZ + (var5.MinDeltaZ * var6 >> 8)
-				var8 = var5.MaxZ + (var5.MaxDeltaZ * var6 >> 8)
-				var9 = var5.MinY + (var5.MinDeltaY * var6 >> 8)
-				var10 = var5.MaxY + (var5.MaxDeltaY * var6 >> 8)
+				var7 = var5.MinZ + ((var5.MinDeltaZ * var6) >> 8)
+				var8 = var5.MaxZ + ((var5.MaxDeltaZ * var6) >> 8)
+				var9 = var5.MinY + ((var5.MinDeltaY * var6) >> 8)
+				var10 = var5.MaxY + ((var5.MaxDeltaY * var6) >> 8)
 				if arg2 >= var7 && arg2 <= var8 && arg1 >= var9 && arg1 <= var10 {
 					return true
 				}
@@ -2176,10 +2176,10 @@ func (w *World3D) Occluded(arg0, arg1, arg2 int) bool {
 		case 3:
 			var6 = var5.MinZ - arg2
 			if var6 > 0 {
-				var7 = var5.MinX + (var5.MinDeltaX * var6 >> 8)
-				var8 = var5.MaxX + (var5.MaxDeltaX * var6 >> 8)
-				var9 = var5.MinY + (var5.MinDeltaY * var6 >> 8)
-				var10 = var5.MaxY + (var5.MaxDeltaY * var6 >> 8)
+				var7 = var5.MinX + ((var5.MinDeltaX * var6) >> 8)
+				var8 = var5.MaxX + ((var5.MaxDeltaX * var6) >> 8)
+				var9 = var5.MinY + ((var5.MinDeltaY * var6) >> 8)
+				var10 = var5.MaxY + ((var5.MaxDeltaY * var6) >> 8)
 				if arg0 >= var7 && arg0 <= var8 && arg1 >= var9 && arg1 <= var10 {
 					return true
 				}
@@ -2187,10 +2187,10 @@ func (w *World3D) Occluded(arg0, arg1, arg2 int) bool {
 		case 4:
 			var6 = arg2 - var5.MinZ
 			if var6 > 0 {
-				var7 = var5.MinX + (var5.MinDeltaX * var6 >> 8)
-				var8 = var5.MaxX + (var5.MaxDeltaX * var6 >> 8)
-				var9 = var5.MinY + (var5.MinDeltaY * var6 >> 8)
-				var10 = var5.MaxY + (var5.MaxDeltaY * var6 >> 8)
+				var7 = var5.MinX + ((var5.MinDeltaX * var6) >> 8)
+				var8 = var5.MaxX + ((var5.MaxDeltaX * var6) >> 8)
+				var9 = var5.MinY + ((var5.MinDeltaY * var6) >> 8)
+				var10 = var5.MaxY + ((var5.MaxDeltaY * var6) >> 8)
 				if arg0 >= var7 && arg0 <= var8 && arg1 >= var9 && arg1 <= var10 {
 					return true
 				}
@@ -2198,10 +2198,10 @@ func (w *World3D) Occluded(arg0, arg1, arg2 int) bool {
 		case 5:
 			var6 = arg1 - var5.MinY
 			if var6 > 0 {
-				var7 = var5.MinX + (var5.MinDeltaX * var6 >> 8)
-				var8 = var5.MaxX + (var5.MaxDeltaX * var6 >> 8)
-				var9 = var5.MinZ + (var5.MinDeltaX * var6 >> 8)
-				var10 = var5.MaxZ + (var5.MaxDeltaZ * var6 >> 8)
+				var7 = var5.MinX + ((var5.MinDeltaX * var6) >> 8)
+				var8 = var5.MaxX + ((var5.MaxDeltaX * var6) >> 8)
+				var9 = var5.MinZ + ((var5.MinDeltaX * var6) >> 8)
+				var10 = var5.MaxZ + ((var5.MaxDeltaZ * var6) >> 8)
 				if arg0 >= var7 && arg0 <= var8 && arg2 >= var9 && arg2 <= var10 {
 					return true
 				}

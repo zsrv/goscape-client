@@ -118,7 +118,7 @@ func MouseMoved(arg0, arg2 int) {
 		EnsureCapacity(3)
 		OutBuffer.P1(5)
 		OutBuffer.P1(int(var5))
-		OutBuffer.P1(arg2 - LastX + 8 + (arg0 - LastY + 8<<4))
+		OutBuffer.P1(arg2 - LastX + 8 + (arg0 - (LastY+8)<<4))
 	} else if arg2-LastX < 128 && arg2-LastX >= -128 && arg0-LastY < 128 && arg0-LastY >= -128 {
 		EnsureCapacity(4)
 		OutBuffer.P1(6)

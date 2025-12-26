@@ -255,7 +255,7 @@ func (p *Packet) GBit(arg1 int) int {
 	var5 := int(0)
 	p.BitPos += arg1
 	for arg1 > var4 {
-		var5 += (int(p.Data[var3])&BITMASK[var4])<<arg1 - var4
+		var5 += (int(p.Data[var3]) & BITMASK[var4]) << (arg1 - var4)
 		var3++
 		arg1 -= var4
 		var4 = 8
@@ -263,7 +263,7 @@ func (p *Packet) GBit(arg1 int) int {
 	if arg1 == var4 {
 		var5 += int(p.Data[var3]) & BITMASK[var4]
 	} else {
-		var5 += int(p.Data[var3])>>var4 - arg1&BITMASK[arg1]
+		var5 += int(p.Data[var3]) >> ((var4 - arg1) & BITMASK[arg1])
 	}
 	return int(var5)
 }

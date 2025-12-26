@@ -1072,22 +1072,22 @@ func (m *Model) ApplyTransform2(arg0 int, arg1 []int, arg2 int, arg3 int, arg4 i
 					if var14 != 0 {
 						var15 = Sin[var14]
 						var16 = Cos[var14]
-						var17 = m.VertexY[var11]*var15 + m.VertexX[var11]*var16>>16
-						m.VertexY[var11] = m.VertexY[var11]*var16 - m.VertexX[var11]*var15>>16
+						var17 = (m.VertexY[var11]*var15 + m.VertexX[var11]*var16) >> 16
+						m.VertexY[var11] = (m.VertexY[var11]*var16 - m.VertexX[var11]*var15) >> 16
 						m.VertexX[var11] = var17
 					}
 					if var12 != 0 {
 						var15 = Sin[var12]
 						var16 = Cos[var12]
-						var17 = m.VertexY[var11]*var16 - m.VertexZ[var11]*var15>>16
-						m.VertexZ[var11] = m.VertexY[var11]*var15 + m.VertexZ[var11]*var16>>16
+						var17 = (m.VertexY[var11]*var16 - m.VertexZ[var11]*var15) >> 16
+						m.VertexZ[var11] = (m.VertexY[var11]*var15 + m.VertexZ[var11]*var16) >> 16
 						m.VertexY[var11] = var17
 					}
 					if var13 != 0 {
 						var15 = Sin[var13]
 						var16 = Cos[var13]
-						var17 = m.VertexZ[var11]*var15 + m.VertexX[var11]*var16>>16
-						m.VertexZ[var11] = m.VertexZ[var11]*var16 - m.VertexX[var11]*var15>>16
+						var17 = (m.VertexZ[var11]*var15 + m.VertexX[var11]*var16) >> 16
+						m.VertexZ[var11] = (m.VertexZ[var11]*var16 - m.VertexX[var11]*var15) >> 16
 						m.VertexX[var11] = var17
 					}
 					m.VertexX[var11] += BaseX
@@ -1147,8 +1147,8 @@ func (m *Model) RotateX(arg1 int) {
 	var3 := Sin[arg1]
 	var4 := Cos[arg1]
 	for i := range m.VertexCount {
-		var6 := m.VertexY[i]*var4 - m.VertexZ[i]*var3>>16
-		m.VertexZ[i] = m.VertexY[i]*var3 + m.VertexZ[i]*var4>>16
+		var6 := (m.VertexY[i]*var4 - m.VertexZ[i]*var3) >> 16
+		m.VertexZ[i] = (m.VertexY[i]*var3 + m.VertexZ[i]*var4) >> 16
 		m.VertexY[i] = var6
 	}
 }
@@ -1190,7 +1190,7 @@ func (m *Model) Scale(arg0, arg2, arg3 int) {
 
 func (m *Model) CalculateNormals(arg0, arg1, arg2, arg3, arg4 int, arg5 bool) {
 	var7 := int(math.Sqrt(float64(arg2*arg2 + arg3*arg3 + arg4*arg4)))
-	var8 := arg1 * var7 >> 8
+	var8 := (arg1 * var7) >> 8
 	if m.FaceColourA == nil {
 		m.FaceColourA = make([]int, m.FaceCount)
 		m.FaceColourB = make([]int, m.FaceCount)
@@ -1322,7 +1322,7 @@ func MulColourLightness(arg0, arg1, arg2 int) int {
 		}
 		return 127 - arg1
 	}
-	arg1 = arg1 * (arg0 & 0x7F) >> 7
+	arg1 = (arg1 * (arg0 & 0x7F)) >> 7
 	if arg1 < 2 {
 		arg1 = 2
 	} else if arg1 > 126 {
@@ -1342,32 +1342,32 @@ func (m *Model) DrawSimple(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 	var15 := Cos[arg2]
 	var16 := Sin[arg3]
 	var17 := Cos[arg3]
-	var18 := arg5*var16 + arg6*var17>>16
+	var18 := (arg5*var16 + arg6*var17) >> 16
 	for i := range m.VertexCount {
 		var20 := m.VertexX[i]
 		var21 := m.VertexY[i]
 		var22 := m.VertexZ[i]
 		var23 := 0
 		if arg2 != 0 {
-			var23 = var21*var14 + var20*var15>>16
-			var21 = var21*var15 - var20*var14>>16
+			var23 = (var21*var14 + var20*var15) >> 16
+			var21 = (var21*var15 - var20*var14) >> 16
 			var20 = var23
 		}
 		if arg0 != 0 {
-			var23 = var21*var11 - var22*var10>>16
-			var22 = var21*var10 + var22*var11>>16
+			var23 = (var21*var11 - var22*var10) >> 16
+			var22 = (var21*var10 + var22*var11) >> 16
 			var21 = var23
 		}
 		if arg1 != 0 {
-			var23 = var22*var12 + var20*var13>>16
-			var22 = var22*var13 - var20*var12>>16
+			var23 = (var22*var12 + var20*var13) >> 16
+			var22 = (var22*var13 - var20*var12) >> 16
 			var20 = var23
 		}
 		var20 += arg4
 		var21 += arg5
 		var22 += arg6
-		var23 = var21*var17 - var22*var16>>16
-		var22 = var21*var16 + var22*var17>>16
+		var23 = (var21*var17 - var22*var16) >> 16
+		var22 = (var21*var16 + var22*var17) >> 16
 		VertexScreenZ[i] = var22 - var18
 		VertexScreenX[i] = var8 + (var20<<9)/var22
 		VertexScreenY[i] = var9 + (var23<<9)/var22
@@ -1381,34 +1381,34 @@ func (m *Model) DrawSimple(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 }
 
 func (m *Model) Draw1(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
-	var10 := arg7*arg4 - arg5*arg3>>16
-	var11 := arg6*arg1 + var10*arg2>>16
-	var12 := m.Radius * arg2 >> 16
+	var10 := (arg7*arg4 - arg5*arg3) >> 16
+	var11 := (arg6*arg1 + var10*arg2) >> 16
+	var12 := (m.Radius * arg2) >> 16
 	var13 := var11 + var12
 	if var13 <= 50 || var11 >= 3500 {
 		return
 	}
-	var14 := arg7*arg3 + arg5*arg4>>16
-	var15 := var14 - m.Radius<<9
+	var14 := (arg7*arg3 + arg5*arg4) >> 16
+	var15 := (var14 - m.Radius) << 9
 	if var15/var13 >= pix2d.CenterW2D {
 		return
 	}
-	var16 := var14 + m.Radius<<9
+	var16 := (var14 + m.Radius) << 9
 	if var16/var13 <= -pix2d.CenterW2D {
 		return
 	}
-	var17 := arg6*arg2 - var10*arg1>>16
-	var18 := m.Radius * arg1 >> 16
-	var19 := var17 + var18<<9
+	var17 := (arg6*arg2 - var10*arg1) >> 16
+	var18 := (m.Radius * arg1) >> 16
+	var19 := (var17 + var18) << 9
 	if var19/var13 <= -pix2d.CenterH2D {
 		return
 	}
-	var20 := var18 + (m.MaxY * arg2 >> 16)
-	var21 := var17 - var20<<9
+	var20 := var18 + ((m.MaxY * arg2) >> 16)
+	var21 := (var17 - var20) << 9
 	if var21/var13 >= pix2d.CenterH2D {
 		return
 	}
-	var22 := var12 + (m.MaxY * arg1 >> 16)
+	var22 := var12 + ((m.MaxY * arg1) >> 16)
 	var23 := false
 	if var11-var22 <= 50 {
 		var23 = true
@@ -1461,18 +1461,18 @@ func (m *Model) Draw1(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) 
 		var32 := m.VertexZ[i]
 		var33 := 0
 		if arg0 != 0 {
-			var33 = var32*var27 + var30*var28>>16
-			var32 = var32*var28 - var30*var27>>16
+			var33 = (var32*var27 + var30*var28) >> 16
+			var32 = (var32*var28 - var30*var27) >> 16
 			var30 = var33
 		}
 		var30 += arg5
 		var31 += arg6
 		var32 += arg7
-		var33 = var32*arg3 + var30*arg4>>16
-		var32 = var32*arg4 - var30*arg3>>16
+		var33 = (var32*arg3 + var30*arg4) >> 16
+		var32 = (var32*arg4 - var30*arg3) >> 16
 		var30 = var33
-		var33 = var31*arg2 - var32*arg1>>16
-		var32 = var31*arg1 + var32*arg2>>16
+		var33 = (var31*arg2 - var32*arg1) >> 16
+		var32 = (var31*arg1 + var32*arg2) >> 16
 		VertexScreenZ[i] = var32 - var11
 		if var32 >= 50 {
 			VertexScreenX[i] = var25 + (var30<<9)/var32
@@ -1731,16 +1731,16 @@ func (m *Model) DrawNearClippedFace(arg0 int) {
 		var13 = m.FaceColourA[arg0]
 		if var10 >= 50 {
 			var14 = (50 - var8) * Reciprocal16[var10-var8]
-			ClippedX[var4] = var2 + (var11+((VertexViewSpaceX[var7]-var11)*var14>>16)<<9)/50
-			ClippedY[var4] = var3 + (var12+((VertexViewSpaceY[var7]-var12)*var14>>16)<<9)/50
-			ClippedColour[var4] = var13 + ((m.FaceColourC[arg0] - var13) * var14 >> 16)
+			ClippedX[var4] = var2 + ((var11+(((VertexViewSpaceX[var7]-var11)*var14)>>16))<<9)/50
+			ClippedY[var4] = var3 + ((var12+(((VertexViewSpaceY[var7]-var12)*var14)>>16))<<9)/50
+			ClippedColour[var4] = var13 + (((m.FaceColourC[arg0] - var13) * var14) >> 16)
 			var4++
 		}
 		if var9 >= 50 {
 			var14 = (50 - var8) * Reciprocal16[var9-var8]
-			ClippedX[var4] = var2 + (var11+((VertexViewSpaceX[var6]-var11)*var14>>16)<<9)/50
-			ClippedY[var4] = var3 + (var12+((VertexViewSpaceY[var6]-var12)*var14>>16)<<9)/50
-			ClippedColour[var4] = var13 + ((m.FaceColourB[arg0] - var13) * var14 >> 16)
+			ClippedX[var4] = var2 + ((var11+(((VertexViewSpaceX[var6]-var11)*var14)>>16))<<9)/50
+			ClippedY[var4] = var3 + ((var12+(((VertexViewSpaceY[var6]-var12)*var14)>>16))<<9)/50
+			ClippedColour[var4] = var13 + (((m.FaceColourB[arg0] - var13) * var14) >> 16)
 			var4++
 		}
 	}
@@ -1755,16 +1755,16 @@ func (m *Model) DrawNearClippedFace(arg0 int) {
 		var13 = m.FaceColourB[arg0]
 		if var8 >= 50 {
 			var14 = (50 - var9) * Reciprocal16[var8-var9]
-			ClippedX[var4] = var2 + (var11+((VertexViewSpaceX[var5]-var11)*var14>>16)<<9)/50
-			ClippedY[var4] = var3 + (var12+((VertexViewSpaceY[var5]-var12)*var14>>16)<<9)/50
-			ClippedColour[var4] = var13 + ((m.FaceColourA[arg0] - var13) * var14 >> 16)
+			ClippedX[var4] = var2 + ((var11+(((VertexViewSpaceX[var5]-var11)*var14)>>16))<<9)/50
+			ClippedY[var4] = var3 + ((var12+(((VertexViewSpaceY[var5]-var12)*var14)>>16))<<9)/50
+			ClippedColour[var4] = var13 + (((m.FaceColourA[arg0] - var13) * var14) >> 16)
 			var4++
 		}
 		if var10 >= 50 {
 			var14 = (50 - var9) * Reciprocal16[var10-var9]
-			ClippedX[var4] = var2 + (var11+((VertexViewSpaceX[var7]-var11)*var14>>16)<<9)/50
-			ClippedY[var4] = var3 + (var12+((VertexViewSpaceY[var7]-var12)*var14>>16)<<9)/50
-			ClippedColour[var4] = var13 + ((m.FaceColourC[arg0] - var13) * var14 >> 16)
+			ClippedX[var4] = var2 + ((var11+(((VertexViewSpaceX[var7]-var11)*var14)>>16))<<9)/50
+			ClippedY[var4] = var3 + ((var12+(((VertexViewSpaceY[var7]-var12)*var14)>>16))<<9)/50
+			ClippedColour[var4] = var13 + (((m.FaceColourC[arg0] - var13) * var14) >> 16)
 			var4++
 		}
 	}
@@ -1779,16 +1779,16 @@ func (m *Model) DrawNearClippedFace(arg0 int) {
 		var13 = m.FaceColourC[arg0]
 		if var9 >= 50 {
 			var14 = (50 - var10) * Reciprocal16[var9-var10]
-			ClippedX[var4] = var2 + (var11+((VertexViewSpaceX[var6]-var11)*var14>>16)<<9)/50
-			ClippedY[var4] = var3 + (var12+((VertexViewSpaceY[var6]-var12)*var14>>16)<<9)/50
-			ClippedColour[var4] = var13 + ((m.FaceColourB[arg0] - var13) * var14 >> 16)
+			ClippedX[var4] = var2 + ((var11+(((VertexViewSpaceX[var6]-var11)*var14)>>16))<<9)/50
+			ClippedY[var4] = var3 + ((var12+(((VertexViewSpaceY[var6]-var12)*var14)>>16))<<9)/50
+			ClippedColour[var4] = var13 + (((m.FaceColourB[arg0] - var13) * var14) >> 16)
 			var4++
 		}
 		if var8 >= 50 {
 			var14 = (50 - var10) * Reciprocal16[var8-var10]
-			ClippedX[var4] = var2 + (var11+((VertexViewSpaceX[var5]-var11)*var14>>16)<<9)/50
-			ClippedY[var4] = var3 + (var12+((VertexViewSpaceY[var5]-var12)*var14>>16)<<9)/50
-			ClippedColour[var4] = var13 + ((m.FaceColourA[arg0] - var13) * var14 >> 16)
+			ClippedX[var4] = var2 + ((var11+(((VertexViewSpaceX[var5]-var11)*var14)>>16))<<9)/50
+			ClippedY[var4] = var3 + ((var12+(((VertexViewSpaceY[var5]-var12)*var14)>>16))<<9)/50
+			ClippedColour[var4] = var13 + (((m.FaceColourA[arg0] - var13) * var14) >> 16)
 			var4++
 		}
 	}

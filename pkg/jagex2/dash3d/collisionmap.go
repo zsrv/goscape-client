@@ -452,7 +452,7 @@ func (m *CollisionMap) TestWDecor(arg0, arg1, arg3, arg4, arg5, arg6 int) bool {
 	var11 := arg6 - m.OffsetZ
 	if arg1 == 6 || arg1 == 7 {
 		if arg1 == 7 {
-			arg0 = arg0 + 2&0x3
+			arg0 = (arg0 + 2) & 0x3
 		}
 		switch arg0 {
 		case 0:

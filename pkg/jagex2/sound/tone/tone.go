@@ -109,20 +109,20 @@ func (t *Tone) Generate(arg0, arg1 int) []int {
 			var16 := t.FrequencyModRate.Evaluate(arg0)
 			var17 := t.FrequencyModRange.Evaluate(arg0)
 			var14 += t.Generate2(var17, var8, t.FrequencyModRate.Form) >> 1
-			var8 += (var16 * var6 >> 16) + var7
+			var8 += ((var16 * var6) >> 16) + var7
 		}
 		if t.AmplitudeModRate != nil {
 			var16 := t.AmplitudeModRate.Evaluate(arg0)
 			var17 := t.AmplitudeModRange.Evaluate(arg0)
-			var15 = var15 * ((t.Generate2(var17, var11, t.AmplitudeModRate.Form) >> 1) + 32768) >> 15
-			var11 += (var16 * var9 >> 16) + var10
+			var15 = (var15 * ((t.Generate2(var17, var11, t.AmplitudeModRate.Form) >> 1) + 32768)) >> 15
+			var11 += ((var16 * var9) >> 16) + var10
 		}
 		for j := range 5 {
 			if t.HarmonicVolume[j] != 0 {
 				var17 := i + TmpDelays[j]
 				if var17 < arg0 {
-					Buffer[var17] += t.Generate2(var15*TmpVolumes[j]>>15, TmpPhases[j], t.FrequencyBase.Form)
-					TmpPhases[j] += (var14 * TmpSemitones[j] >> 16) + TmpStarts[j]
+					Buffer[var17] += t.Generate2((var15*TmpVolumes[j])>>15, TmpPhases[j], t.FrequencyBase.Form)
+					TmpPhases[j] += ((var14 * TmpSemitones[j]) >> 16) + TmpStarts[j]
 				}
 			}
 		}
@@ -136,9 +136,9 @@ func (t *Tone) Generate(arg0, arg1 int) []int {
 			var18 := t.Release.Evaluate(arg0)
 			var19 := t.Attack.Evaluate(arg0)
 			if var21 {
-				var15 = t.Release.Start + ((t.Release.End - t.Release.Start) * var18 >> 8)
+				var15 = t.Release.Start + (((t.Release.End - t.Release.Start) * var18) >> 8)
 			} else {
-				var15 = t.Release.Start + ((t.Release.End - t.Release.Start) * var19 >> 8)
+				var15 = t.Release.Start + (((t.Release.End - t.Release.Start) * var19) >> 8)
 			}
 			var14 += 256
 			if var14 >= var15 {
@@ -175,11 +175,11 @@ func (t *Tone) Generate2(arg1, arg2, arg3 int) int {
 		}
 		return -arg1
 	case 2:
-		return Sin[arg2&0x7FFF] * arg1 >> 14
+		return (Sin[arg2&0x7FFF] * arg1) >> 14
 	case 3:
-		return ((arg2 & 0x7FFF) * arg1 >> 14) - arg1
+		return (((arg2 & 0x7FFF) * arg1) >> 14) - arg1
 	case 4:
-		return Noise[arg2/2607&0x7FFF] * arg1
+		return Noise[(arg2/2607)&0x7FFF] * arg1
 	default:
 		return 0
 	}
