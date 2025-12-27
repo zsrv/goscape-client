@@ -48,6 +48,8 @@ type PlayerEntity struct {
 
 func NewPlayerEntity() *PlayerEntity {
 	return &PlayerEntity{
+		PathingEntity: *entity.NewPathingEntity(),
+
 		Appearances: make([]int, 12),
 		Colors:      make([]int, 5),
 	}

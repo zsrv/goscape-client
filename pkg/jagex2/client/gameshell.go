@@ -20,7 +20,50 @@ func (c *Client) InitApplication(screenHeight int, screenWidth int) {
 	//c.Frame
 	//c.Graphics
 	c.DrawArea = pixmap.NewPixMap(screenWidth, screenHeight)
-	c.Run()
+	// TODO: open the window here, before Run()
+	// TODO: start mine
+	go func() {
+		// Create new window
+		w := new(app.Window)
+		w.Option(app.Title("Jagex"))
+		w.Option(app.Size(unit.Dp(c.ScreenWidth), unit.Dp(c.ScreenHeight)))
+		w.Option(app.MinSize(unit.Dp(c.ScreenWidth), unit.Dp(c.ScreenHeight)))
+		w.Option(app.MaxSize(unit.Dp(c.ScreenWidth), unit.Dp(c.ScreenHeight)))
+
+		if err := c.draw(w); err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	}()
+	go app.Main() // TODO: go?
+	// TODO: end mine
+	go c.Run()
+}
+
+func (c *Client) draw(w *app.Window) error {
+	//// ops are the operations from the UI
+	//var ops op.Ops
+
+	// Listen for events in the window
+	for {
+		// detect what type of event
+		switch e := w.Event().(type) {
+
+		case app.FrameEvent:
+			// A request to draw the window state
+			// This is sent when the application should re-render
+			gtx := app.NewContext(&c.Ops, e)
+
+			// Draw the state into ops
+
+			// Update the display
+			e.Frame(gtx.Ops)
+
+		case app.DestroyEvent:
+			// The window was closed
+			return e.Err
+		}
+	}
 }
 
 func (c *Client) RunGameShell() {
@@ -85,54 +128,11 @@ func (c *Client) RunGameShell() {
 			c.FPS = var4 * 1000 / (c.DelTime * 256)
 		}
 		c.Draw()
-
-		// TODO: start mine
-		go func() {
-			// Create new window
-			w := new(app.Window)
-			w.Option(app.Title("Jagex"))
-			w.Option(app.Size(unit.Dp(c.ScreenWidth), unit.Dp(c.ScreenHeight)))
-			w.Option(app.MinSize(unit.Dp(c.ScreenWidth), unit.Dp(c.ScreenHeight)))
-			w.Option(app.MaxSize(unit.Dp(c.ScreenWidth), unit.Dp(c.ScreenHeight)))
-
-			if err := c.draw(w); err != nil {
-				log.Fatal(err)
-			}
-			os.Exit(0)
-		}()
-		app.Main()
-		// TODO: end mine
 	}
 	if c.State == -1 {
 		c.Shutdown()
 	}
 
-}
-
-func (c *Client) draw(w *app.Window) error {
-	//// ops are the operations from the UI
-	//var ops op.Ops
-
-	// Listen for events in the window
-	for {
-		// detect what type of event
-		switch e := w.Event().(type) {
-
-		case app.FrameEvent:
-			// A request to draw the window state
-			// This is sent when the application should re-render
-			gtx := app.NewContext(&c.Ops, e)
-
-			// Draw the state into ops
-
-			// Update the display
-			e.Frame(gtx.Ops)
-
-		case app.DestroyEvent:
-			// The window was closed
-			return e.Err
-		}
-	}
 }
 
 func (c *Client) Shutdown() {
@@ -146,10 +146,10 @@ func (c *Client) SetFrameRate(arg1 int) {
 	c.DelTime = 1000 / arg1
 }
 
-func (g *Client) PollKey() int {
+func (c *Client) PollKey() int {
 	return 0 // TODO: stub
 }
 
-func (g *Client) DrawProgressGameShell(arg1 string, arg2 int) {
+func (c *Client) DrawProgressGameShell(arg1 string, arg2 int) {
 	// TODO: stub
 }

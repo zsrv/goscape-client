@@ -148,9 +148,9 @@ label67:
 
 func Decompress(arg0 *bzip2state.BZip2State) {
 	var23 := 0
-	var var24 [258]int
-	var var25 [258]int
-	var var26 [258]int
+	var var24 []int
+	var var25 []int
+	var var26 []int
 	arg0.BlockSize100k = 1
 	if bzip2state.TT == nil {
 		bzip2state.TT = make([]int, arg0.BlockSize100k*100_000)
@@ -479,7 +479,7 @@ func MakeMaps(arg0 *bzip2state.BZip2State) {
 	}
 }
 
-func CreateDecodeTables(arg0 [258]int, arg1 [258]int, arg2 [258]int, arg3 [258]byte, arg4, arg5, arg6 int) {
+func CreateDecodeTables(arg0 []int, arg1 []int, arg2 []int, arg3 []byte, arg4, arg5, arg6 int) {
 	var7 := 0
 	for i := arg4; i <= arg5; i++ {
 		for j := range arg6 {

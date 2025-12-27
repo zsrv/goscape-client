@@ -52,13 +52,13 @@ func (jf *Jagfile) Load(arg1 []byte) {
 }
 
 func (jf *Jagfile) Read(arg0 string, arg1 []byte) []byte {
-	var4 := 0
+	var4 := int32(0)
 	var8 := strings.ToUpper(arg0)
 	for i := 0; i < len(var8); i++ {
-		var4 = var4*61 + int(var8[i]) - 32
+		var4 = var4*61 + int32(var8[i]) - 32
 	}
 	for i := 0; i < jf.FileCount; i++ {
-		if jf.FileHash[i] == var4 {
+		if int32(jf.FileHash[i]) == var4 {
 			if arg1 == nil {
 				arg1 = make([]byte, jf.FileUnpackedSize[i])
 			}

@@ -3,7 +3,6 @@ package pixfont
 import (
 	"math"
 	"math/rand"
-	"strings"
 
 	"goscape-client/pkg/jagex2/graphics/pix2d"
 	"goscape-client/pkg/jagex2/io"
@@ -24,9 +23,17 @@ type PixFont struct {
 }
 
 func init() {
-	var0 := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"£$%^&*()-_=+[{]};:'@#~,<.>/?\\| "
+	var0 := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"£$%^&*()-_=+[{]};:'@#~,<.>/?\\| ")
 	for i := range 256 {
-		var2 := strings.IndexByte(var0, byte(i))
+		//var2 := strings.IndexByte(var0, byte(i))
+		//var2 := strings.IndexRune(var0, rune(i))
+		var2 := -1
+		for r := range var0 {
+			if var0[r] == rune(i) {
+				var2 = r
+				break
+			}
+		}
 		if var2 == -1 {
 			var2 = 74
 		}

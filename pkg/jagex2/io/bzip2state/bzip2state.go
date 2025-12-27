@@ -34,20 +34,20 @@ type BZip2State struct {
 	BsLive          int
 	BlockSize100k   int
 	CurrBlockNo     int
-	UnZFTab         [256]int
-	CFTab           [257]int
-	InUse           [256]bool
-	InUse16         [16]bool
-	SeqToUnseq      [256]byte
-	MTFA            [4096]byte
-	MTFBase         [16]int
-	Selector        [18002]byte
-	SelectorMTF     [18002]byte
-	Len             [6][258]byte
-	Limit           [6][258]int
-	Base            [6][258]int
-	Perm            [6][258]int
-	MinLens         [6]int
+	UnZFTab         []int
+	CFTab           []int
+	InUse           []bool
+	InUse16         []bool
+	SeqToUnseq      []byte
+	MTFA            []byte
+	MTFBase         []int
+	Selector        []byte
+	SelectorMTF     []byte
+	Len             [][]byte
+	Limit           [][]int
+	Base            [][]int
+	Perm            [][]int
+	MinLens         []int
 	OrigPtr         int
 	TPos            int
 	K0              int
@@ -57,5 +57,32 @@ type BZip2State struct {
 }
 
 func NewBZip2State() *BZip2State {
-	return new(BZip2State)
+	var s BZip2State
+	s.UnZFTab = make([]int, 256)
+	s.CFTab = make([]int, 257)
+	s.InUse = make([]bool, 256)
+	s.InUse16 = make([]bool, 16)
+	s.SeqToUnseq = make([]byte, 256)
+	s.MTFA = make([]byte, 4096)
+	s.MTFBase = make([]int, 16)
+	s.Selector = make([]byte, 18002)
+	s.SelectorMTF = make([]byte, 18002)
+	s.Len = make([][]byte, 6)
+	for i := range s.Len {
+		s.Len[i] = make([]byte, 258)
+	}
+	s.Limit = make([][]int, 6)
+	for i := range s.Limit {
+		s.Limit[i] = make([]int, 258)
+	}
+	s.Base = make([][]int, 6)
+	for i := range s.Base {
+		s.Base[i] = make([]int, 258)
+	}
+	s.Perm = make([][]int, 6)
+	for i := range s.Perm {
+		s.Perm[i] = make([]int, 258)
+	}
+	s.MinLens = make([]int, 6)
+	return &s
 }

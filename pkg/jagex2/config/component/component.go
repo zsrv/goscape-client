@@ -90,7 +90,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 	Instances = make([]*Component, var6)
 	for {
 		var var8 *Component
-		for ok := true; ok; ok = var8.ButtonType != -1 && var8.ButtonType != 4 && var8.ButtonType != 5 && var8.ButtonType != 6 {
+		for ok := true; ok; ok = var8.ButtonType != 1 && var8.ButtonType != 4 && var8.ButtonType != 5 && var8.ButtonType != 6 {
 			if var4.Pos >= len(var4.Data) {
 				ImageCache = nil
 				ModelCache = nil
@@ -102,6 +102,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 				var7 = var4.G2()
 			}
 			Instances[var7] = NewComponent()
+			var8 = Instances[var7]
 			var8.Id = var7
 			var8.Layer = var5
 			var8.Type = var4.G1()

@@ -50,6 +50,12 @@ import (
 	"goscape-client/pkg/sign/signlink"
 )
 
+func RecoverPanic() {
+	if err := recover(); err != nil {
+		fmt.Printf("recovered from panic: %v\n", err)
+	}
+}
+
 var (
 	CycleLogic2     int
 	OpLogic3        int
@@ -1509,7 +1515,7 @@ func (c *Client) DrawScene(arg0 int) {
 	c.DrawTileHint()
 	c.UpdateTextures(var9)
 	c.Draw3DEntityElements()
-	//c.AreaViewport // TODO: pixmap
+	c.AreaViewport.Draw(&c.Ops, 8, 11)
 	c.CameraX = var3
 	c.CameraY = var4
 	c.CameraZ = var5
@@ -2106,7 +2112,7 @@ func (c *Client) AddNPCOptions(arg0 *npctype.NpcType, arg2, arg3, arg4 int) {
 				}
 			}
 		}
-		c.MenuOption[c.MenuSize] = "Examien @yel@" + var6
+		c.MenuOption[c.MenuSize] = "Examine @yel@" + var6
 		c.MenuAction[c.MenuSize] = 1607
 		c.MenuParamA[c.MenuSize] = arg4
 		c.MenuParamB[c.MenuSize] = arg3
@@ -3038,7 +3044,7 @@ func (c *Client) LoadTitleImages() {
 	if !c.FlameActive {
 		c.FlamesThread = true
 		c.FlameActive = true
-		//c.StartThread() // TODO: StartThread
+		go c.Run() // TODO: go?
 	}
 }
 
@@ -4831,7 +4837,7 @@ func GetCombatLevelColorTag(arg0 int, arg2 int) string {
 }
 
 func (c *Client) GetHost() string {
-	return "" // TODO: stub
+	return "127.0.0.1" // TODO: stub
 }
 
 func (c *Client) DrawMenu() {
@@ -5276,6 +5282,7 @@ func (c *Client) Load() {
 		c.StartMidiThread = true
 		c.MidiThreadActive = true
 		//c.startthread(this, 2) // TODO: this.startthread
+		go c.Run() // TODO: this.startthread?
 		c.SetMidi(12345678, "scape_main", 40000)
 	}
 	if Started {
@@ -5351,7 +5358,7 @@ func (c *Client) Load() {
 	c.FontPlain12 = pixfont.NewPixFont(c.ArchiveTitle, "p12")
 	c.FontBold12 = pixfont.NewPixFont(c.ArchiveTitle, "b12")
 	c.FontQuill8 = pixfont.NewPixFont(c.ArchiveTitle, "q8")
-	//c.LoadTitleBackground() // TODO
+	c.LoadTitleBackground()
 	c.LoadTitleImages()
 	var36 := c.LoadArchive("config", c.ArchiveChecksum[2], "config", 15)
 	var37 := c.LoadArchive("interface", c.ArchiveChecksum[3], "interface", 20)
@@ -5387,21 +5394,27 @@ func (c *Client) Load() {
 	c.ImageBackbase2 = pix8.NewPix8(var38, "backbase2", 0)
 	c.ImageBackhmid1 = pix8.NewPix8(var38, "backhmid1", 0)
 	for i := range 13 {
-		c.ImageSideIcons[i] = pix8.NewPix8(var8, "sideicons", i)
+		c.ImageSideIcons[i] = pix8.NewPix8(var38, "sideicons", i)
 	}
 	c.ImageCompass = pix32.NewPix323(var38, "compass", 0)
 	for i := range 50 {
 		c.ImageMapscene[i] = pix8.NewPix8(var38, "mapscene", i)
 	}
 	for i := range 50 {
-		c.ImageMapFunction[i] = pix32.NewPix323(var8, "mapfunction", i)
+		c.ImageMapFunction[i] = pix32.NewPix323(var38, "mapfunction", i)
 	}
-	for i := range 20 {
-		c.ImageHitmarks[i] = pix32.NewPix323(var38, "hitmarks", i)
-	}
-	for i := range 20 {
-		c.ImageHeadIcons[i] = pix32.NewPix323(var38, "headicons", i)
-	}
+	func() {
+		defer RecoverPanic()
+		for i := range 20 {
+			c.ImageHitmarks[i] = pix32.NewPix323(var38, "hitmarks", i)
+		}
+	}()
+	func() {
+		defer RecoverPanic()
+		for i := range 20 {
+			c.ImageHeadIcons[i] = pix32.NewPix323(var38, "headicons", i)
+		}
+	}()
 	c.ImageMapflag = pix32.NewPix323(var38, "mapflag", 0)
 	for i := range 8 {
 		c.ImageCrosses[i] = pix32.NewPix323(var38, "cross", i)
@@ -8609,6 +8622,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 }
 
 func (c *Client) DrawProgress(arg1 string, arg2 int) {
+	fmt.Printf("DrawProgress %v: %v\n", arg1, arg2) // debug
 	c.LoadTitle()
 	if c.ArchiveTitle == nil {
 		c.DrawProgressGameShell(arg1, arg2)
