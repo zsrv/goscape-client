@@ -191,290 +191,345 @@ func (w *World) LoadGround(arg0 []byte, arg1, arg3, arg4, arg5 int) {
 	}
 }
 
-func (w *World) LoadLocations(arg0 []byte, arg1 *world3d.World3D, arg2 []*dash3d.CollisionMap, arg3 *datastruct.LinkList[*entity.LocEntity], arg5 int, arg6 int) {
-	var8 := io.NewPacket(arg0)
-	var9 := -1
+func (w *World) LoadLocations(src []byte, scene *world3d.World3D, collision []*dash3d.CollisionMap, arg3 *datastruct.LinkList[*entity.LocEntity], zOffset int, xOffset int) {
+	buf := io.NewPacket(src)
+	locId := -1
+
 	for {
-		var10 := var8.GSmartS()
-		if var10 == 0 {
+		deltaId := buf.GSmartS()
+		if deltaId == 0 {
 			return
 		}
-		var9 += var10
-		var11 := 0
+
+		locId += deltaId
+
+		locPos := 0
 		for {
-			var12 := var8.GSmartS()
-			if var12 == 0 {
+			deltaPos := buf.GSmartS()
+			if deltaPos == 0 {
 				break
 			}
-			var11 += var12 - 1
-			var13 := var11 & 0x3F
-			var14 := (var11 >> 6) & 0x3F
-			var15 := var11 >> 12
-			var16 := var8.G1()
-			var17 := var16 >> 2
-			var18 := var16 & 0x3
-			var19 := var14 + arg6
-			var20 := var13 + arg5
-			if var19 > 0 && var20 > 0 && var19 < 103 && var20 < 103 {
-				var21 := var15
-				if w.LevelTileFlags[1][var19][var20]&0x2 == 2 {
-					var21 = var15 - 1
+
+			locPos += deltaPos - 1
+
+			z := locPos & 0x3F
+			x := (locPos >> 6) & 0x3F
+			level := locPos >> 12
+
+			info := buf.G1()
+			shape := info >> 2
+			angle := info & 0x3
+			stx := x + xOffset
+			stz := z + zOffset
+
+			if stx > 0 && stz > 0 && stx < 103 && stz < 103 {
+				currentLevel := level
+				if w.LevelTileFlags[1][stx][stz]&0x2 == 2 {
+					currentLevel = level - 1
 				}
-				var var22 *dash3d.CollisionMap
-				if var21 >= 0 {
-					var22 = arg2[var21]
+
+				var collisionMap *dash3d.CollisionMap
+				if currentLevel >= 0 {
+					collisionMap = collision[currentLevel]
 				}
-				w.AddLoc(var22, var15, var20, var18, var17, arg1, arg3, var9, var19)
+
+				w.AddLoc(collisionMap, level, stz, angle, shape, scene, arg3, locId, stx)
 			}
 		}
 	}
 }
 
-func (w *World) AddLoc(arg0 *dash3d.CollisionMap, arg2, arg3, arg4, arg5 int, arg6 *world3d.World3D, arg7 *datastruct.LinkList[*entity.LocEntity], arg8, arg9 int) {
+func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape int, scene *world3d.World3D, arg7 *datastruct.LinkList[*entity.LocEntity], locId, x int) {
 	if LowMemory {
-		if w.LevelTileFlags[arg2][arg9][arg3]&0x10 != 0 {
+		if w.LevelTileFlags[level][x][z]&0x10 != 0 {
 			return
 		}
-		if w.GetDrawLevel(arg2, arg9, arg3) != LevelBuilt {
+
+		if w.GetDrawLevel(level, x, z) != LevelBuilt {
 			return
 		}
 	}
-	var11 := w.LevelHeightMap[arg2][arg9][arg3]
-	var12 := w.LevelHeightMap[arg2][arg9+1][arg3]
-	var13 := w.LevelHeightMap[arg2][arg9+1][arg3+1]
-	var14 := w.LevelHeightMap[arg2][arg9][arg3+1]
-	var15 := (var11 + var12 + var13 + var14) >> 2
-	var16 := loctype.Get(arg8)
-	var17 := arg9 + (arg3 << 7) + (arg8 << 14) + 1073741824
-	if !var16.Active {
-		var17 += math.MinInt32
+
+	heightSW := w.LevelHeightMap[level][x][z]
+	heightSE := w.LevelHeightMap[level][x+1][z]
+	heightNW := w.LevelHeightMap[level][x+1][z+1]
+	heightNE := w.LevelHeightMap[level][x][z+1]
+	y := (heightSW + heightSE + heightNW + heightNE) >> 2
+
+	loc := loctype.Get(locId)
+
+	typeCode := x + (z << 7) + (locId << 14) + 0x40000000
+	if !loc.Active {
+		typeCode += math.MinInt32
 	}
-	var18 := byte((arg4 << 6) + arg5)
-	var var19 *model.Model
-	if arg5 != 22 {
-		var20 := 0
-		if arg5 == 10 || arg5 == 11 {
-			var19 = var16.GetModel(10, arg4, var11, var12, var13, var14, -1)
-			if var19 != nil {
-				var22 := 0
-				if arg5 == 11 {
-					var22 += 256
+
+	info := byte((angle << 6) + shape)
+
+	if shape != 22 {
+		if shape == 10 || shape == 11 {
+			mdl := loc.GetModel(10, angle, heightSW, heightSE, heightNW, heightNE, -1)
+
+			if mdl != nil {
+				yaw := 0
+				if shape == 11 {
+					yaw += 256
 				}
-				var21 := 0
-				if arg4 == 1 || arg4 == 3 {
-					var20 = var16.Length
-					var21 = var16.Width
+
+				width := 0
+				length := 0
+				if angle == 1 || angle == 3 {
+					width = loc.Length
+					length = loc.Width
 				} else {
-					var20 = var16.Width
-					var21 = var16.Length
+					width = loc.Width
+					length = loc.Length
 				}
-				if arg6.AddLoc1(var15, arg2, nil, var17, arg3, arg9, var20, var18, var19, var22, var21) && var16.Shadow {
-					for i := 0; i <= var20; i++ {
-						for j := 0; j <= var21; j++ {
-							var25 := var19.Radius / 4
-							if var25 > 30 {
-								var25 = 30
+
+				if scene.AddLoc1(y, level, nil, typeCode, z, x, length, info, mdl, yaw, width) && loc.Shadow {
+					for dx := 0; dx <= length; dx++ { // TODO: length/width swapped?
+						for dz := 0; dz <= width; dz++ {
+							shade := mdl.Radius / 4
+							if shade > 30 {
+								shade = 30
 							}
-							if var25 > int(w.LevelShadeMap[arg2][arg9+i][arg3+j]) {
-								w.LevelShadeMap[arg2][arg9+i][arg3+j] = byte(var25)
+
+							if shade > int(w.LevelShadeMap[level][x+dx][z+dz]) {
+								w.LevelShadeMap[level][x+dx][z+dz] = byte(shade)
 							}
 						}
 					}
 				}
 			}
-			if var16.BlockWalk && arg0 != nil {
-				arg0.AddLoc(arg4, var16.Length, var16.Width, arg9, arg3, var16.BlockRange)
+
+			if loc.BlockWalk && collision != nil {
+				collision.AddLoc(angle, loc.Length, loc.Width, x, z, loc.BlockRange)
 			}
-			if var16.Anim != -1 {
-				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 2, seqtype.Instances[var16.Anim], arg3, arg9)))
+			if loc.Anim != -1 {
+				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 2, seqtype.Instances[loc.Anim], z, x)))
 			}
-		} else if arg5 >= 12 {
-			var19 = var16.GetModel(arg5, arg4, var11, var12, var13, var14, -1)
-			arg6.AddLoc1(var15, arg2, nil, var17, arg3, arg9, 1, var18, var19, 0, 1)
-			if arg5 >= 12 && arg5 <= 17 && arg5 != 13 && arg2 > 0 {
-				w.LevelOccludeMap[arg2][arg9][arg3] |= 0x924
+		} else if shape >= 12 {
+			mdl := loc.GetModel(shape, angle, heightSW, heightSE, heightNW, heightNE, -1)
+
+			scene.AddLoc1(y, level, nil, typeCode, z, x, 1, info, mdl, 0, 1)
+
+			if shape >= 12 && shape <= 17 && shape != 13 && level > 0 {
+				w.LevelOccludeMap[level][x][z] |= 0x924
 			}
-			if var16.BlockWalk && arg0 != nil {
-				arg0.AddLoc(arg4, var16.Length, var16.Width, arg9, arg3, var16.BlockRange)
+
+			if loc.BlockWalk && collision != nil {
+				collision.AddLoc(angle, loc.Length, loc.Width, x, z, loc.BlockRange)
 			}
-			if var16.Anim != -1 {
-				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 2, seqtype.Instances[var16.Anim], arg3, arg9)))
+
+			if loc.Anim != -1 {
+				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 2, seqtype.Instances[loc.Anim], z, x)))
 			}
-		} else if arg5 == 0 {
-			var19 = var16.GetModel(0, arg4, var11, var12, var13, var14, -1)
-			arg6.AddWall(0, var15, arg2, ROTATION_WALL_TYPE[arg4], var19, nil, arg9, var17, arg3, var18)
-			switch arg4 {
+		} else if shape == 0 {
+			mdl := loc.GetModel(0, angle, heightSW, heightSE, heightNW, heightNE, -1)
+
+			scene.AddWall(0, y, level, ROTATION_WALL_TYPE[angle], mdl, nil, x, typeCode, z, info)
+
+			switch angle {
 			case 0:
-				if var16.Shadow {
-					w.LevelShadeMap[arg2][arg9][arg3] = 50
-					w.LevelShadeMap[arg2][arg9][arg3+1] = 50
+				if loc.Shadow {
+					w.LevelShadeMap[level][x][z] = 50
+					w.LevelShadeMap[level][x][z+1] = 50
 				}
-				if var16.Occlude {
-					w.LevelOccludeMap[arg2][arg9][arg3] |= 0x249
+				if loc.Occlude {
+					w.LevelOccludeMap[level][x][z] |= 0x249
 				}
 			case 1:
-				if var16.Shadow {
-					w.LevelShadeMap[arg2][arg9][arg3+1] = 50
-					w.LevelShadeMap[arg2][arg9+1][arg3+1] = 50
+				if loc.Shadow {
+					w.LevelShadeMap[level][x][z+1] = 50
+					w.LevelShadeMap[level][x+1][z+1] = 50
 				}
-				if var16.Occlude {
-					w.LevelOccludeMap[arg2][arg9][arg3+1] |= 0x492
+				if loc.Occlude {
+					w.LevelOccludeMap[level][x][z+1] |= 0x492
 				}
 			case 2:
-				if var16.Shadow {
-					w.LevelShadeMap[arg2][arg9+1][arg3] = 50
-					w.LevelShadeMap[arg2][arg9+1][arg3+1] = 50
+				if loc.Shadow {
+					w.LevelShadeMap[level][x+1][z] = 50
+					w.LevelShadeMap[level][x+1][z+1] = 50
 				}
-				if var16.Occlude {
-					w.LevelOccludeMap[arg2][arg9+1][arg3] |= 0x249
+				if loc.Occlude {
+					w.LevelOccludeMap[level][x+1][z] |= 0x249
 				}
 			case 3:
-				if var16.Shadow {
-					w.LevelShadeMap[arg2][arg9][arg3] = 50
-					w.LevelShadeMap[arg2][arg9+1][arg3] = 50
+				if loc.Shadow {
+					w.LevelShadeMap[level][x][z] = 50
+					w.LevelShadeMap[level][x+1][z] = 50
 				}
-				if var16.Occlude {
-					w.LevelOccludeMap[arg2][arg9][arg3] |= 0x492
+				if loc.Occlude {
+					w.LevelOccludeMap[level][x][z] |= 0x492
 				}
 			}
-			if var16.BlockWalk && arg0 != nil {
-				arg0.AddWall(arg4, arg3, arg9, var16.BlockRange, arg5)
+
+			if loc.BlockWalk && collision != nil {
+				collision.AddWall(angle, z, x, loc.BlockRange, shape)
 			}
-			if var16.Anim != -1 {
-				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 0, seqtype.Instances[var16.Anim], arg3, arg9)))
+
+			if loc.Anim != -1 {
+				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
 			}
-			if var16.WallWidth != 16 {
-				arg6.SetWallDecorationOffset(arg2, arg3, arg9, var16.WallWidth)
+
+			if loc.WallWidth != 16 {
+				scene.SetWallDecorationOffset(level, z, x, loc.WallWidth)
 			}
-		} else if arg5 == 1 {
-			var19 = var16.GetModel(1, arg4, var11, var12, var13, var14, -1)
-			arg6.AddWall(0, var15, arg2, ROTATION_WALL_CORNER_TYPE[arg4], var19, nil, arg9, var17, arg3, var18)
-			if var16.Shadow {
-				switch arg4 {
+		} else if shape == 1 {
+			mdl := loc.GetModel(1, angle, heightSW, heightSE, heightNW, heightNE, -1)
+
+			scene.AddWall(0, y, level, ROTATION_WALL_CORNER_TYPE[angle], mdl, nil, x, typeCode, z, info)
+
+			if loc.Shadow {
+				switch angle {
 				case 0:
-					w.LevelShadeMap[arg2][arg9][arg3+1] = 50
+					w.LevelShadeMap[level][x][z+1] = 50
 				case 1:
-					w.LevelShadeMap[arg2][arg9+1][arg3+1] = 50
+					w.LevelShadeMap[level][x+1][z+1] = 50
 				case 2:
-					w.LevelShadeMap[arg2][arg9+1][arg3] = 50
+					w.LevelShadeMap[level][x+1][z] = 50
 				case 3:
-					w.LevelShadeMap[arg2][arg9][arg3] = 50
+					w.LevelShadeMap[level][x][z] = 50
 				}
 			}
-			if var16.BlockWalk && arg0 != nil {
-				arg0.AddWall(arg4, arg3, arg9, var16.BlockRange, arg5)
+
+			if loc.BlockWalk && collision != nil {
+				collision.AddWall(angle, z, x, loc.BlockRange, shape)
 			}
-			if var16.Anim != -1 {
-				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 0, seqtype.Instances[var16.Anim], arg3, arg9)))
+
+			if loc.Anim != -1 {
+				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
 			}
 		} else {
-			var26 := 0
-			var var28 *model.Model
-			if arg5 == 2 {
-				var26 = (arg4 + 1) & 0x3
-				var27 := var16.GetModel(2, arg4+4, var11, var12, var13, var14, -1)
-				var28 = var16.GetModel(2, var26, var11, var12, var13, var14, -1)
-				arg6.AddWall(ROTATION_WALL_TYPE[var26], var15, arg2, ROTATION_WALL_TYPE[arg4], var27, var28, arg9, var17, arg3, var18)
-				if var16.Occlude {
-					switch arg4 {
+			if shape == 2 {
+				offset := (angle + 1) & 0x3
+
+				mdl1 := loc.GetModel(2, angle+4, heightSW, heightSE, heightNW, heightNE, -1)
+				mdl2 := loc.GetModel(2, offset, heightSW, heightSE, heightNW, heightNE, -1)
+
+				scene.AddWall(ROTATION_WALL_TYPE[offset], y, level, ROTATION_WALL_TYPE[angle], mdl1, mdl2, x, typeCode, z, info)
+
+				if loc.Occlude {
+					switch angle {
 					case 0:
-						w.LevelOccludeMap[arg2][arg9][arg3] |= 0x249
-						w.LevelOccludeMap[arg2][arg9][arg3+1] |= 0x492
+						w.LevelOccludeMap[level][x][z] |= 0x249
+						w.LevelOccludeMap[level][x][z+1] |= 0x492
 					case 1:
-						w.LevelOccludeMap[arg2][arg9][arg3+1] |= 0x492
-						w.LevelOccludeMap[arg2][arg9+1][arg3] |= 0x249
+						w.LevelOccludeMap[level][x][z+1] |= 0x492
+						w.LevelOccludeMap[level][x+1][z] |= 0x249
 					case 2:
-						w.LevelOccludeMap[arg2][arg9+1][arg3] |= 0x249
-						w.LevelOccludeMap[arg2][arg9][arg3] |= 0x492
+						w.LevelOccludeMap[level][x+1][z] |= 0x249
+						w.LevelOccludeMap[level][x][z] |= 0x492
 					case 3:
-						w.LevelOccludeMap[arg2][arg9][arg3] |= 0x492
-						w.LevelOccludeMap[arg2][arg9][arg3] |= 0x249
+						w.LevelOccludeMap[level][x][z] |= 0x492
+						w.LevelOccludeMap[level][x][z] |= 0x249
 					}
 				}
-				if var16.BlockWalk && arg0 != nil {
-					arg0.AddWall(arg4, arg3, arg9, var16.BlockRange, arg5)
+
+				if loc.BlockWalk && collision != nil {
+					collision.AddWall(angle, z, x, loc.BlockRange, shape)
 				}
-				if var16.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 0, seqtype.Instances[var16.Anim], arg3, arg9)))
+
+				if loc.Anim != -1 {
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
 				}
-				if var16.WallWidth != 16 {
-					arg6.SetWallDecorationOffset(arg2, arg3, arg9, var16.WallWidth)
+
+				if loc.WallWidth != 16 {
+					scene.SetWallDecorationOffset(level, z, x, loc.WallWidth)
 				}
-			} else if arg5 == 3 {
-				var19 = var16.GetModel(3, arg4, var11, var12, var13, var14, -1)
-				arg6.AddWall(0, var15, arg2, ROTATION_WALL_CORNER_TYPE[arg4], var19, nil, arg9, var17, arg3, var18)
-				if var16.Shadow {
-					switch arg4 {
+			} else if shape == 3 {
+				mdl := loc.GetModel(3, angle, heightSW, heightSE, heightNW, heightNE, -1)
+
+				scene.AddWall(0, y, level, ROTATION_WALL_CORNER_TYPE[angle], mdl, nil, x, typeCode, z, info)
+
+				if loc.Shadow {
+					switch angle {
 					case 0:
-						w.LevelShadeMap[arg2][arg9][arg3+1] = 50
+						w.LevelShadeMap[level][x][z+1] = 50
 					case 1:
-						w.LevelShadeMap[arg2][arg9+1][arg3+1] = 50
+						w.LevelShadeMap[level][x+1][z+1] = 50
 					case 2:
-						w.LevelShadeMap[arg2][arg9+1][arg3] = 50
+						w.LevelShadeMap[level][x+1][z] = 50
 					case 3:
-						w.LevelShadeMap[arg2][arg9][arg3] = 50
+						w.LevelShadeMap[level][x][z] = 50
 					}
 				}
-				if var16.BlockWalk && arg0 != nil {
-					arg0.AddWall(arg4, arg3, arg9, var16.BlockRange, arg5)
+
+				if loc.BlockWalk && collision != nil {
+					collision.AddWall(angle, z, x, loc.BlockRange, shape)
 				}
-				if var16.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 0, seqtype.Instances[var16.Anim], arg3, arg9)))
+
+				if loc.Anim != -1 {
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
 				}
-			} else if arg5 == 9 {
-				var19 = var16.GetModel(arg5, arg4, var11, var12, var13, var14, -1)
-				arg6.AddLoc1(var15, arg2, nil, var17, arg3, arg9, 1, var18, var19, 0, 1)
-				if var16.BlockWalk && arg0 != nil {
-					arg0.AddLoc(arg4, var16.Length, var16.Width, arg9, arg3, var16.BlockRange)
+			} else if shape == 9 {
+				mdl := loc.GetModel(shape, angle, heightSW, heightSE, heightNW, heightNE, -1)
+
+				scene.AddLoc1(y, level, nil, typeCode, z, x, 1, info, mdl, 0, 1)
+
+				if loc.BlockWalk && collision != nil {
+					collision.AddLoc(angle, loc.Length, loc.Width, x, z, loc.BlockRange)
 				}
-				if var16.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 2, seqtype.Instances[var16.Anim], arg3, arg9)))
+
+				if loc.Anim != -1 {
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 2, seqtype.Instances[loc.Anim], z, x)))
 				}
-			} else if arg5 == 4 {
-				var19 = var16.GetModel(4, 0, var11, var12, var13, var14, -1)
-				arg6.SetWallDecoration(var15, arg3, 0, var17, arg4*512, ROTATION_WALL_TYPE[arg4], 0, arg9, var19, var18, arg2)
-				if var16.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9)))
+			} else if shape == 4 {
+				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNW, heightNE, -1)
+
+				scene.SetWallDecoration(y, z, 0, typeCode, angle*512, ROTATION_WALL_TYPE[angle], 0, x, mdl, info, level)
+
+				if loc.Anim != -1 {
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
-			} else if arg5 == 5 {
-				var26 = 16
-				var20 = arg6.GetWallBitSet(arg2, arg9, arg3)
-				if var20 > 0 {
-					var26 = loctype.Get((var20 >> 14) & 0x7FFF).WallWidth
+			} else if shape == 5 {
+				wallWidth := 16
+
+				wallType := scene.GetWallBitSet(level, x, z)
+				if wallType > 0 {
+					wallWidth = loctype.Get((wallType >> 14) & 0x7FFF).WallWidth
 				}
-				var28 = var16.GetModel(4, 0, var11, var12, var13, var14, -1)
-				arg6.SetWallDecoration(var15, arg3, WALL_DECORATION_ROTATION_FORWARD_Z[arg4]*var26, var17, arg4*512, ROTATION_WALL_TYPE[arg4], WALL_DECORATION_ROTATION_FORWARD_X[arg4]*var26, arg9, var28, var18, arg2)
-				if var16.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9)))
+
+				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNW, heightNE, -1)
+
+				scene.SetWallDecoration(y, z, WALL_DECORATION_ROTATION_FORWARD_Z[angle]*wallWidth, typeCode, angle*512, ROTATION_WALL_TYPE[angle], WALL_DECORATION_ROTATION_FORWARD_X[angle]*wallWidth, x, mdl, info, level)
+
+				if loc.Anim != -1 {
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
-			} else if arg5 == 6 {
-				var19 = var16.GetModel(4, 0, var11, var12, var13, var14, -1)
-				arg6.SetWallDecoration(var15, arg3, 0, var17, arg4, 256, 0, arg9, var19, var18, arg2)
-				if var16.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9)))
+			} else if shape == 6 {
+				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNW, heightNE, -1)
+
+				scene.SetWallDecoration(y, z, 0, typeCode, angle, 256, 0, x, mdl, info, level)
+
+				if loc.Anim != -1 {
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
-			} else if arg5 == 7 {
-				var19 = var16.GetModel(4, 0, var11, var12, var13, var14, -1)
-				arg6.SetWallDecoration(var15, arg3, 0, var17, arg4, 512, 0, arg9, var19, var18, arg2)
-				if var16.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9)))
+			} else if shape == 7 {
+				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNW, heightNE, -1)
+
+				scene.SetWallDecoration(y, z, 0, typeCode, angle, 512, 0, x, mdl, info, level)
+
+				if loc.Anim != -1 {
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
-			} else if arg5 == 8 {
-				var19 = var16.GetModel(4, 0, var11, var12, var13, var14, -1)
-				arg6.SetWallDecoration(var15, arg3, 0, var17, arg4, 768, 0, arg9, var19, var18, arg2)
-				if var16.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 1, seqtype.Instances[var16.Anim], arg3, arg9)))
+			} else if shape == 8 {
+				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNW, heightNE, -1)
+
+				scene.SetWallDecoration(y, z, 0, typeCode, angle, 768, 0, x, mdl, info, level)
+
+				if loc.Anim != -1 {
+					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
 			}
 		}
-	} else if !LowMemory || var16.Active || var16.ForceDecor {
-		var19 = var16.GetModel(22, arg4, var11, var12, var13, var14, -1)
-		arg6.AddGroundDecoration(var19, arg9, var17, arg3, arg2, var18, var15)
-		if var16.BlockWalk && var16.Active && arg0 != nil {
-			arg0.SetBlocked(arg3, arg9)
+	} else if !LowMemory || loc.Active || loc.ForceDecor {
+		mdl := loc.GetModel(22, angle, heightSW, heightSE, heightNW, heightNE, -1)
+		scene.AddGroundDecoration(mdl, x, typeCode, z, level, info, y)
+		if loc.BlockWalk && loc.Active && collision != nil {
+			collision.SetBlocked(z, x)
 		}
-		if var16.Anim != -1 {
-			arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg2, 3, seqtype.Instances[var16.Anim], arg3, arg9)))
+		if loc.Anim != -1 {
+			arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 3, seqtype.Instances[loc.Anim], z, x)))
 		}
 	}
 }
@@ -939,147 +994,151 @@ func (w *World) HSL24To16(arg0, arg1, arg2 int) int {
 	return ((arg0 / 4) << 10) + ((arg1 / 32) << 7) + arg2/2
 }
 
-func AddLoc(arg0 int, arg1 *datastruct.LinkList[*entity.LocEntity], arg2 *dash3d.CollisionMap, arg3 int, arg4 int, arg5 [][][]int, arg7 int, arg8 int, arg9 int, arg10 *world3d.World3D, arg11 int) {
-	var12 := arg5[arg11][arg0][arg3]
-	var13 := arg5[arg11][arg0+1][arg3]
-	var14 := arg5[arg11][arg0+1][arg3+1]
-	var15 := arg5[arg11][arg0][arg3+1]
-	var16 := (var12 + var13 + var14 + var15) >> 2
-	var17 := loctype.Get(arg8)
-	var18 := arg0 + (arg3 << 7) + (arg8 << 14) + 1073741824
-	if !var17.Active {
+func AddLoc(x int, arg1 *datastruct.LinkList[*entity.LocEntity], collision *dash3d.CollisionMap, z int, angle int, heightMap [][][]int, arg7 int, arg8 int, shape int, scene *world3d.World3D, level int) {
+	heightSW := heightMap[level][x][z]
+	heightSE := heightMap[level][x+1][z]
+	heightNE := heightMap[level][x+1][z+1]
+	heightNW := heightMap[level][x][z+1]
+
+	y := (heightSW + heightSE + heightNE + heightNW) >> 2
+
+	locType := loctype.Get(arg8)
+
+	var18 := x + (z << 7) + (arg8 << 14) + 1073741824
+	if !locType.Active {
 		var18 += math.MinInt32
 	}
-	var19 := byte((arg4 << 6) + arg9)
-	var var20 *model.Model
-	if arg9 == 22 {
-		var20 = var17.GetModel(22, arg4, var12, var13, var14, var15, -1)
-		arg10.AddGroundDecoration(var20, arg0, var18, arg3, arg7, var19, var16)
-		if var17.BlockWalk && var17.Active {
-			arg2.SetBlocked(arg3, arg0)
+
+	var19 := byte((angle << 6) + shape)
+
+	if shape == 22 {
+		mdl := locType.GetModel(22, angle, heightSW, heightSE, heightNE, heightNW, -1)
+		scene.AddGroundDecoration(mdl, x, var18, z, arg7, var19, y)
+		if locType.BlockWalk && locType.Active {
+			collision.SetBlocked(z, x)
 		}
-		if var17.Anim != -1 {
-			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 3, seqtype.Instances[var17.Anim], arg3, arg0)))
+		if locType.Anim != -1 {
+			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 3, seqtype.Instances[locType.Anim], z, x)))
 		}
 		return
 	}
 	var21 := 0
-	if arg9 == 10 || arg9 == 11 {
-		var20 = var17.GetModel(10, arg4, var12, var13, var14, var15, -1)
-		if var20 != nil {
+	if shape == 10 || shape == 11 {
+		mdl := locType.GetModel(10, angle, heightSW, heightSE, heightNE, heightNW, -1)
+		if mdl != nil {
 			var23 := 0
-			if arg9 == 11 {
+			if shape == 11 {
 				var23 += 256
 			}
 			var22 := 0
-			if arg4 == 1 || arg4 == 3 {
-				var21 = var17.Length
-				var22 = var17.Width
+			if angle == 1 || angle == 3 {
+				var21 = locType.Length
+				var22 = locType.Width
 			} else {
-				var21 = var17.Width
-				var22 = var17.Length
+				var21 = locType.Width
+				var22 = locType.Length
 			}
-			arg10.AddLoc1(var16, arg7, nil, var18, arg3, arg0, var21, var19, var20, var23, var22)
+			scene.AddLoc1(y, arg7, nil, var18, z, x, var21, var19, mdl, var23, var22)
 		}
-		if var17.BlockWalk {
-			arg2.AddLoc(arg4, var17.Length, var17.Width, arg0, arg3, var17.BlockRange)
+		if locType.BlockWalk {
+			collision.AddLoc(angle, locType.Length, locType.Width, x, z, locType.BlockRange)
 		}
-		if var17.Anim != -1 {
-			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[var17.Anim], arg3, arg0)))
+		if locType.Anim != -1 {
+			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[locType.Anim], z, x)))
 		}
-	} else if arg9 >= 12 {
-		var20 = var17.GetModel(arg9, arg4, var12, var13, var14, var15, -1)
-		arg10.AddLoc1(var16, arg7, nil, var18, arg3, arg0, 1, var19, var20, 0, 1)
-		if var17.BlockWalk {
-			arg2.AddLoc(arg4, var17.Length, var17.Width, arg0, arg3, var17.BlockRange)
+	} else if shape >= 12 {
+		mdl := locType.GetModel(shape, angle, heightSW, heightSE, heightNE, heightNW, -1)
+		scene.AddLoc1(y, arg7, nil, var18, z, x, 1, var19, mdl, 0, 1)
+		if locType.BlockWalk {
+			collision.AddLoc(angle, locType.Length, locType.Width, x, z, locType.BlockRange)
 		}
-		if var17.Anim != -1 {
-			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[var17.Anim], arg3, arg0)))
+		if locType.Anim != -1 {
+			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[locType.Anim], z, x)))
 		}
-	} else if arg9 == 0 {
-		var20 = var17.GetModel(0, arg4, var12, var13, var14, var15, -1)
-		arg10.AddWall(0, var16, arg7, ROTATION_WALL_TYPE[arg4], var20, nil, arg0, var18, arg3, var19)
-		if var17.BlockWalk {
-			arg2.AddWall(arg4, arg3, arg0, var17.BlockRange, arg9)
+	} else if shape == 0 {
+		mdl := locType.GetModel(0, angle, heightSW, heightSE, heightNE, heightNW, -1)
+		scene.AddWall(0, y, arg7, ROTATION_WALL_TYPE[angle], mdl, nil, x, var18, z, var19)
+		if locType.BlockWalk {
+			collision.AddWall(angle, z, x, locType.BlockRange, shape)
 		}
-		if var17.Anim != -1 {
-			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[var17.Anim], arg3, arg0)))
+		if locType.Anim != -1 {
+			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[locType.Anim], z, x)))
 		}
-	} else if arg9 == 1 {
-		var20 = var17.GetModel(1, arg4, var12, var13, var14, var15, -1)
-		arg10.AddWall(0, var16, arg7, ROTATION_WALL_CORNER_TYPE[arg4], var20, nil, arg0, var18, arg3, var19)
-		if var17.BlockWalk {
-			arg2.AddWall(arg4, arg3, arg0, var17.BlockRange, arg9)
+	} else if shape == 1 {
+		mdl := locType.GetModel(1, angle, heightSW, heightSE, heightNE, heightNW, -1)
+		scene.AddWall(0, y, arg7, ROTATION_WALL_CORNER_TYPE[angle], mdl, nil, x, var18, z, var19)
+		if locType.BlockWalk {
+			collision.AddWall(angle, z, x, locType.BlockRange, shape)
 		}
-		if var17.Anim != -1 {
-			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[var17.Anim], arg3, arg0)))
+		if locType.Anim != -1 {
+			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[locType.Anim], z, x)))
 		}
 	} else {
 		var24 := 0
 		var var26 *model.Model
-		if arg9 == 2 {
-			var24 = (arg4 + 1) & 0x3
-			var25 := var17.GetModel(2, arg4+4, var12, var13, var14, var15, -1)
-			var26 = var17.GetModel(2, var24, var12, var13, var14, var15, -1)
-			arg10.AddWall(ROTATION_WALL_TYPE[var24], var16, arg7, ROTATION_WALL_TYPE[arg4], var25, var26, arg0, var18, arg3, var19)
-			if var17.BlockWalk {
-				arg2.AddWall(arg4, arg3, arg0, var17.BlockRange, arg9)
+		if shape == 2 {
+			var24 = (angle + 1) & 0x3
+			var25 := locType.GetModel(2, angle+4, heightSW, heightSE, heightNE, heightNW, -1)
+			var26 = locType.GetModel(2, var24, heightSW, heightSE, heightNE, heightNW, -1)
+			scene.AddWall(ROTATION_WALL_TYPE[var24], y, arg7, ROTATION_WALL_TYPE[angle], var25, var26, x, var18, z, var19)
+			if locType.BlockWalk {
+				collision.AddWall(angle, z, x, locType.BlockRange, shape)
 			}
-			if var17.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[var17.Anim], arg3, arg0)))
+			if locType.Anim != -1 {
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[locType.Anim], z, x)))
 			}
-		} else if arg9 == 3 {
-			var20 = var17.GetModel(3, arg4, var12, var13, var14, var15, -1)
-			arg10.AddWall(0, var16, arg7, ROTATION_WALL_CORNER_TYPE[arg4], var20, nil, arg0, var18, arg3, var19)
-			if var17.BlockWalk {
-				arg2.AddWall(arg4, arg3, arg0, var17.BlockRange, arg9)
+		} else if shape == 3 {
+			mdl := locType.GetModel(3, angle, heightSW, heightSE, heightNE, heightNW, -1)
+			scene.AddWall(0, y, arg7, ROTATION_WALL_CORNER_TYPE[angle], mdl, nil, x, var18, z, var19)
+			if locType.BlockWalk {
+				collision.AddWall(angle, z, x, locType.BlockRange, shape)
 			}
-			if var17.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[var17.Anim], arg3, arg0)))
+			if locType.Anim != -1 {
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[locType.Anim], z, x)))
 			}
-		} else if arg9 == 9 {
-			var20 = var17.GetModel(arg9, arg4, var12, var13, var14, var15, -1)
-			arg10.AddLoc1(var16, arg7, nil, var18, arg3, arg0, 1, var19, var20, 0, 1)
-			if var17.BlockWalk {
-				arg2.AddLoc(arg4, var17.Length, var17.Width, arg0, arg3, var17.BlockRange)
+		} else if shape == 9 {
+			mdl := locType.GetModel(shape, angle, heightSW, heightSE, heightNE, heightNW, -1)
+			scene.AddLoc1(y, arg7, nil, var18, z, x, 1, var19, mdl, 0, 1)
+			if locType.BlockWalk {
+				collision.AddLoc(angle, locType.Length, locType.Width, x, z, locType.BlockRange)
 			}
-			if var17.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[var17.Anim], arg3, arg0)))
+			if locType.Anim != -1 {
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[locType.Anim], z, x)))
 			}
-		} else if arg9 == 4 {
-			var20 = var17.GetModel(4, 0, var12, var13, var14, var15, -1)
-			arg10.SetWallDecoration(var16, arg3, 0, var18, arg4*512, ROTATION_WALL_TYPE[arg4], 0, arg0, var20, var19, arg7)
-			if var17.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0)))
+		} else if shape == 4 {
+			mdl := locType.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
+			scene.SetWallDecoration(y, z, 0, var18, angle*512, ROTATION_WALL_TYPE[angle], 0, x, mdl, var19, arg7)
+			if locType.Anim != -1 {
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
 			}
-		} else if arg9 == 5 {
+		} else if shape == 5 {
 			var24 = 16
-			var21 = arg10.GetWallBitSet(arg7, arg0, arg3)
+			var21 = scene.GetWallBitSet(arg7, x, z)
 			if var21 > 0 {
 				var24 = loctype.Get((var21 >> 14) & 0x7FFF).WallWidth
 			}
-			var26 = var17.GetModel(4, 0, var12, var13, var14, var15, -1)
-			arg10.SetWallDecoration(var16, arg3, WALL_DECORATION_ROTATION_FORWARD_Z[arg4]*var24, var18, arg4*512, ROTATION_WALL_TYPE[arg4], WALL_DECORATION_ROTATION_FORWARD_X[arg4]*var24, arg0, var26, var19, arg7)
-			if var17.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0)))
+			var26 = locType.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
+			scene.SetWallDecoration(y, z, WALL_DECORATION_ROTATION_FORWARD_Z[angle]*var24, var18, angle*512, ROTATION_WALL_TYPE[angle], WALL_DECORATION_ROTATION_FORWARD_X[angle]*var24, x, var26, var19, arg7)
+			if locType.Anim != -1 {
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
 			}
-		} else if arg9 == 6 {
-			var20 = var17.GetModel(4, 0, var12, var13, var14, var15, -1)
-			arg10.SetWallDecoration(var16, arg3, 0, var18, arg4, 256, 0, arg0, var20, var19, arg7)
-			if var17.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0)))
+		} else if shape == 6 {
+			mdl := locType.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
+			scene.SetWallDecoration(y, z, 0, var18, angle, 256, 0, x, mdl, var19, arg7)
+			if locType.Anim != -1 {
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
 			}
-		} else if arg9 == 7 {
-			var20 = var17.GetModel(4, 0, var12, var13, var14, var15, -1)
-			arg10.SetWallDecoration(var16, arg3, 0, var18, arg4, 512, 0, arg0, var20, var19, arg7)
-			if var17.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0)))
+		} else if shape == 7 {
+			mdl := locType.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
+			scene.SetWallDecoration(y, z, 0, var18, angle, 512, 0, x, mdl, var19, arg7)
+			if locType.Anim != -1 {
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
 			}
-		} else if arg9 == 8 {
-			var20 = var17.GetModel(4, 0, var12, var13, var14, var15, -1)
-			arg10.SetWallDecoration(var16, arg3, 0, var18, arg4, 768, 0, arg0, var20, var19, arg7)
-			if var17.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[var17.Anim], arg3, arg0)))
+		} else if shape == 8 {
+			mdl := locType.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
+			scene.SetWallDecoration(y, z, 0, var18, angle, 768, 0, x, mdl, var19, arg7)
+			if locType.Anim != -1 {
+				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
 			}
 		}
 	}

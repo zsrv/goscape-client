@@ -90,11 +90,11 @@ func ClearTexels() {
 	}
 }
 
-func InitPool(arg0 int) {
+func InitPool(size int) {
 	if TexelPool != nil {
 		return
 	}
-	PoolSize = arg0
+	PoolSize = size
 	if LowDetail {
 		TexelPool = make([][]int, PoolSize)
 		for i := range TexelPool {
@@ -111,10 +111,10 @@ func InitPool(arg0 int) {
 	}
 }
 
-func UnpackTextures(arg1 *io.Jagfile) {
+func UnpackTextures(jag *io.Jagfile) {
 	TextureCount = 0
 	for i := range 50 {
-		Textures[i] = pix8.NewPix8(arg1, strconv.Itoa(i), 0)
+		Textures[i] = pix8.NewPix8(jag, strconv.Itoa(i), 0)
 		if LowDetail && Textures[i].CropW == 128 {
 			Textures[i].Shrink()
 		} else {

@@ -7,6 +7,7 @@ import (
 	"goscape-client/pkg/jagex2/graphics/model"
 )
 
+// ClientProj
 type ProjectileEntity struct {
 	SpotAnim      *spotanimtype.SpotAnimType
 	Level         int

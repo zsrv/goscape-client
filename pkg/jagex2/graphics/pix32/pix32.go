@@ -18,12 +18,12 @@ type Pix32 struct {
 	CropX  int
 }
 
-func NewPix321(arg0 int, arg1 int) *Pix32 {
+func NewPix321(width int, height int) *Pix32 {
 	var p Pix32
-	p.Pixels = make([]int, arg0*arg1)
-	p.CropW = arg0
+	p.Pixels = make([]int, width*height)
+	p.CropW = width
 	p.Width = p.CropW
-	p.CropH = arg1
+	p.CropH = height
 	p.Height = p.CropH
 	p.CropY = 0
 	p.CropX = 0
@@ -32,43 +32,43 @@ func NewPix321(arg0 int, arg1 int) *Pix32 {
 
 //func NewPix322(arg0 []byte, arg1 Component) *Pix32 {} // TODO: java.awt.Component
 
-func NewPix323(arg0 *io.Jagfile, arg1 string, arg2 int) *Pix32 {
+func NewPix323(jag *io.Jagfile, name string, sprite int) *Pix32 {
 	var p Pix32
 
-	var4 := io.NewPacket(arg0.Read(arg1+".dat", nil))
-	var5 := io.NewPacket(arg0.Read("index.dat", nil))
-	var5.Pos = var4.G2()
-	p.CropW = var5.G2()
-	p.CropH = var5.G2()
-	var6 := var5.G1()
-	var7 := make([]int, var6)
-	for i := range var6 - 1 {
-		var7[i+1] = var5.G3()
-		if var7[i+1] == 0 {
-			var7[i+1] = 1
+	dat := io.NewPacket(jag.Read(name+".dat", nil))
+	idx := io.NewPacket(jag.Read("index.dat", nil))
+	idx.Pos = dat.G2()
+	p.CropW = idx.G2()
+	p.CropH = idx.G2()
+	palCount := idx.G1()
+	bPal := make([]int, palCount) // base palette
+	for i := range palCount - 1 {
+		bPal[i+1] = idx.G3()
+		if bPal[i+1] == 0 {
+			bPal[i+1] = 1
 		}
 	}
-	for range arg2 {
-		var5.Pos += 2
-		var4.Pos += var5.G2() * var5.G2()
-		var5.Pos++
+	for range sprite {
+		idx.Pos += 2
+		dat.Pos += idx.G2() * idx.G2()
+		idx.Pos++
 	}
-	p.CropX = var5.G1()
-	p.CropY = var5.G1()
-	p.Width = var5.G2()
-	p.Height = var5.G2()
-	var10 := var5.G1()
-	var11 := p.Width * p.Height
-	p.Pixels = make([]int, var11)
-	switch var10 {
+	p.CropX = idx.G1()
+	p.CropY = idx.G1()
+	p.Width = idx.G2()
+	p.Height = idx.G2()
+	pixelOrder := idx.G1()
+	length := p.Width * p.Height
+	p.Pixels = make([]int, length)
+	switch pixelOrder {
 	case 0:
-		for i := range var11 {
-			p.Pixels[i] = var7[var4.G1()]
+		for i := range length {
+			p.Pixels[i] = bPal[dat.G1()]
 		}
 	case 1:
-		for i := range p.Width {
-			for j := range p.Height {
-				p.Pixels[i+j*p.Width] = var7[var4.G1()]
+		for x := range p.Width {
+			for y := range p.Height {
+				p.Pixels[x+y*p.Width] = bPal[dat.G1()]
 			}
 		}
 	}
@@ -79,7 +79,7 @@ func (p *Pix32) Bind() {
 	pix2d.Bind(p.Width, p.Pixels, p.Height)
 }
 
-func (p *Pix32) Translate(arg0, arg1, arg2 int) {
+func (p *Pix32) Translate(arg0, arg1, arg2 int) { // RGBAdjust
 	for i := range len(p.Pixels) {
 		var6 := p.Pixels[i]
 		if var6 != 0 {
@@ -109,6 +109,7 @@ func (p *Pix32) Translate(arg0, arg1, arg2 int) {
 	}
 }
 
+// QuickPlotSprite
 func (p *Pix32) BlitOpaque(arg1, arg2 int) {
 	arg1 += p.CropX
 	arg2 += p.CropY
@@ -148,6 +149,7 @@ func (p *Pix32) BlitOpaque(arg1, arg2 int) {
 	}
 }
 
+// QuickPlot
 func (p *Pix32) CopyPixels1(arg1 []int, arg2 int, arg3 int, arg4 int, arg5 int, arg6 int, arg7 int, arg8 []int) {
 	var10 := -(arg7 >> 2)
 	var14 := -(arg7 & 0x3)
@@ -176,45 +178,55 @@ func (p *Pix32) CopyPixels1(arg1 []int, arg2 int, arg3 int, arg4 int, arg5 int, 
 	}
 }
 
-func (p *Pix32) Draw(arg0 int, arg1 int) {
-	arg1 += p.CropX
-	arg0 += p.CropY
-	var4 := arg1 + arg0*pix2d.Width2D
-	var5 := 0
-	var6 := p.Height
-	var7 := p.Width
-	var8 := pix2d.Width2D - var7
-	var9 := 0
-	if arg0 < pix2d.BoundTop {
-		var10 := pix2d.BoundTop - arg0
-		var6 -= var10
-		arg0 = pix2d.BoundTop
-		var5 += var10 * var7
-		var4 += var10 * pix2d.Width2D
+// PlotSprite
+func (p *Pix32) Draw(y int, x int) {
+	x += p.CropX
+	y += p.CropY
+
+	dstOff := x + y*pix2d.Width2D
+	srcOff := 0
+
+	h := p.Height
+	w := p.Width
+
+	dstStep := pix2d.Width2D - w
+	srcStep := 0
+
+	if y < pix2d.BoundTop {
+		cutoff := pix2d.BoundTop - y
+		h -= cutoff
+		y = pix2d.BoundTop
+		srcOff += cutoff * w
+		dstOff += cutoff * pix2d.Width2D
 	}
-	if arg0+var6 > pix2d.BoundBottom {
-		var6 -= arg0 + var6 - pix2d.BoundBottom
+
+	if y+h > pix2d.BoundBottom {
+		h -= y + h - pix2d.BoundBottom
 	}
-	if arg1 < pix2d.BoundLeft {
-		var10 := pix2d.BoundLeft - arg1
-		var7 -= var10
-		arg1 = pix2d.BoundLeft
-		var5 += var10
-		var4 += var10
-		var9 += var10
-		var8 += var10
+
+	if x < pix2d.BoundLeft {
+		cutoff := pix2d.BoundLeft - x
+		w -= cutoff
+		x = pix2d.BoundLeft
+		srcOff += cutoff
+		dstOff += cutoff
+		srcStep += cutoff
+		dstStep += cutoff
 	}
-	if arg1+var7 > pix2d.BoundRight {
-		var10 := arg1 + var7 - pix2d.BoundRight
-		var7 -= var10
-		var9 += var10
-		var8 += var10
+
+	if x+w > pix2d.BoundRight {
+		cutoff := x + w - pix2d.BoundRight
+		w -= cutoff
+		srcStep += cutoff
+		dstStep += cutoff
 	}
-	if var7 > 0 && var6 > 0 {
-		p.CopyPixels2(pix2d.Data, p.Pixels, var5, var4, var7, var6, var8, var9)
+
+	if w > 0 && h > 0 {
+		p.CopyPixels2(pix2d.Data, p.Pixels, srcOff, dstOff, w, h, dstStep, srcStep)
 	}
 }
 
+// Plot
 func (p *Pix32) CopyPixels2(arg0 []int, arg1 []int, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 	var10 := -(arg5 >> 2)
 	var15 := -(arg5 & 0x3)
@@ -395,30 +407,36 @@ func (p *Pix32) CopyPixelsAlpha(arg0 int, arg2 []int, arg3 int, arg4 int, arg5 [
 	}
 }
 
-func (p *Pix32) DrawRotatedMasked(arg0 int, arg1 int, arg2 []int, arg3 int, arg4 int, arg5 int, arg6 int, arg7 int, arg8 int, arg10 []int) {
-	var12 := -arg1 / 2
-	var13 := -arg3 / 2
-	var14 := int(math.Sin(float64(arg0)/326.11) * 65536.0)
-	var15 := int(math.Cos(float64(arg0)/326.11) * 65536.0)
-	var24 := (var14 * arg5) >> 8
-	var25 := (var15 * arg5) >> 8
-	var16 := (arg6 << 16) + var13*var24 + var12*var25
-	var17 := (arg4 << 16) + (var13*var25 - var12*var24)
-	var18 := arg7 + arg8*pix2d.Width2D
-	for i := range arg3 {
-		var19 := arg2[i]
-		var20 := var18 + var19
-		var21 := var16 + var25*var19
-		var22 := var17 - var24*var19
-		for j := -arg10[i]; j < 0; j++ {
-			pix2d.Data[var20] = p.Pixels[(var21>>16)+(var22>>16)*p.Width]
-			var20++
-			var21 += var25
-			var22 -= var24
+func (p *Pix32) DrawRotatedMasked(arg0 int, w int, lineStart []int, h int, anchorY int, arg5 int, anchorX int, x int, y int, lineWidth []int) {
+	centerX := -w / 2
+	centerY := -h / 2
+
+	sin := int(math.Sin(float64(arg0)/326.11) * 65536.0)
+	cos := int(math.Cos(float64(arg0)/326.11) * 65536.0)
+	sinZoom := (sin * arg5) >> 8
+	cosZoom := (cos * arg5) >> 8
+
+	leftX := (anchorX << 16) + centerY*sinZoom + centerX*cosZoom
+	leftY := (anchorY << 16) + (centerY*cosZoom - centerX*sinZoom)
+	leftOff := x + y*pix2d.Width2D
+
+	for i := range h {
+		dstOff := lineStart[i]
+		dstX := leftOff + dstOff
+
+		srcX := leftX + cosZoom*dstOff
+		srcY := leftY - sinZoom*dstOff
+
+		for j := -lineWidth[i]; j < 0; j++ {
+			pix2d.Data[dstX] = p.Pixels[(srcX>>16)+(srcY>>16)*p.Width]
+			dstX++
+			srcX += cosZoom
+			srcY -= sinZoom
 		}
-		var16 += var24
-		var17 += var25
-		var18 += pix2d.Width2D
+
+		leftX += sinZoom
+		leftY += cosZoom
+		leftOff += pix2d.Width2D
 	}
 }
 

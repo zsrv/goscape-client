@@ -7,47 +7,48 @@ type LruCache[T any] struct {
 	History   *DoublyLinkList[T]
 }
 
-func NewLruCache[T any](arg1 int32) *LruCache[T] {
+func NewLruCache[T any](size int32) *LruCache[T] {
 	l := &LruCache[T]{
-		Capacity:  arg1,
-		Available: arg1,
+		Capacity:  size,
+		Available: size,
 		HashTable: make(map[int64]T, 1024), // TODO: not limited to 1024
 		History:   NewDoublyLinkList[T](),
 	}
 	return l
 }
 
-func (l *LruCache[T]) Get(arg0 int64) T {
-	var3, ok := l.HashTable[arg0]
+func (l *LruCache[T]) Get(key int64) T {
+	v, ok := l.HashTable[key]
 	if !ok {
 		var zero T
 		return zero
 	}
-	v := NewDoublyLinkable(var3)
-	l.History.Push(v)
-	return var3
+	node := NewDoublyLinkable(v)
+	l.History.Push(node)
+	return v
 }
 
-func (l *LruCache[T]) Put(arg1 int64, arg2 T) {
+func (l *LruCache[T]) Put(key int64, v T) {
 	if l.Available == 0 {
-		var5 := l.History.Pop()
-		var5.Unlink()
-		var5.Uncache()
+		sentinel := l.History.Pop()
+		sentinel.Unlink()
+		sentinel.Uncache()
 	} else {
 		l.Available--
 	}
-	l.HashTable[arg1] = arg2
-	l.History.Push(NewDoublyLinkable(arg2))
+
+	l.HashTable[key] = v
+	l.History.Push(NewDoublyLinkable(v))
 }
 
 func (l *LruCache[T]) Clear() {
 	for {
-		var1 := l.History.Pop()
-		if var1 == nil {
+		node := l.History.Pop()
+		if node == nil {
 			l.Available = l.Capacity
 			return
 		}
-		var1.Unlink()
-		var1.Uncache()
+		node.Unlink()
+		node.Uncache()
 	}
 }

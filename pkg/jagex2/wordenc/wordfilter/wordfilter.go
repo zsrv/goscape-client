@@ -16,615 +16,720 @@ var (
 	ALLOWLIST       []string = []string{"cook", "cook's", "cooks", "seeks", "sheet"}
 )
 
-func Unpack(arg0 *io.Jagfile) {
-	var1 := io.NewPacket(arg0.Read("fragmentsenc.txt", nil))
-	var2 := io.NewPacket(arg0.Read("badenc.txt", nil))
-	var3 := io.NewPacket(arg0.Read("domainenc.txt", nil))
-	var4 := io.NewPacket(arg0.Read("tldlist.txt", nil))
-	Read(var1, var2, var3, var4)
+func Unpack(jag *io.Jagfile) {
+	fragments := io.NewPacket(jag.Read("fragmentsenc.txt", nil))
+	bad := io.NewPacket(jag.Read("badenc.txt", nil))
+	domain := io.NewPacket(jag.Read("domainenc.txt", nil))
+	tld := io.NewPacket(jag.Read("tldlist.txt", nil))
+	Read(fragments, bad, domain, tld)
 }
 
-func Read(arg0, arg1, arg2, arg3 *io.Packet) {
-	ReadBadWords(arg1)
-	ReadDomains(arg2)
-	ReadFragments(arg0)
-	ReadTLD(arg3)
+// DecodeAll
+func Read(fragments, bad, domain, tld *io.Packet) {
+	ReadBadWords(bad)
+	ReadDomains(domain)
+	ReadFragments(fragments)
+	ReadTLD(tld)
 }
 
-func ReadTLD(arg1 *io.Packet) {
-	var2 := arg1.G4()
-	TLDs = make([][]rune, var2)
-	TLDType = make([]int, var2)
-	for i := range var2 {
-		TLDType[i] = arg1.G1()
-		var4 := make([]rune, arg1.G1())
-		for j := range len(var4) {
-			var4[j] = rune(arg1.G1())
+// DecodeTldsTxt
+func ReadTLD(buf *io.Packet) {
+	count := buf.G4()
+	TLDs = make([][]rune, count)
+	TLDType = make([]int, count)
+
+	for i := range count {
+		TLDType[i] = buf.G1()
+
+		tld := make([]rune, buf.G1())
+		for j := range len(tld) {
+			tld[j] = rune(buf.G1())
 		}
-		TLDs[i] = var4
+
+		TLDs[i] = tld
 	}
 }
 
-func ReadBadWords(arg1 *io.Packet) {
-	var2 := arg1.G4()
-	BadWords = make([][]rune, var2)
-	BadCombinations = make([][][]byte, var2)
-	ReadBadCombinations(BadCombinations, BadWords, arg1)
+// DecodeBadWordsTxt
+func ReadBadWords(buf *io.Packet) {
+	count := buf.G4()
+	BadWords = make([][]rune, count)
+	BadCombinations = make([][][]byte, count)
+
+	ReadBadCombinations(BadCombinations, BadWords, buf)
 }
 
-func ReadDomains(arg0 *io.Packet) {
-	var2 := arg0.G4()
-	Domains = make([][]rune, var2)
-	ReadDomain(arg0, Domains)
+// DecodeDomainsTxt
+func ReadDomains(buf *io.Packet) {
+	count := buf.G4()
+	Domains = make([][]rune, count)
+
+	ReadDomain(buf, Domains)
 }
 
-func ReadFragments(arg1 *io.Packet) {
-	Fragments = make([]int, arg1.G4())
+// DecodeFragmentsTxt
+func ReadFragments(buf *io.Packet) {
+	Fragments = make([]int, buf.G4())
 	for i := range len(Fragments) {
-		Fragments[i] = arg1.G2()
+		Fragments[i] = buf.G2()
 	}
 }
 
-func ReadBadCombinations(arg0 [][][]byte, arg1 [][]rune, arg2 *io.Packet) {
-	for i := range len(arg1) {
-		var5 := make([]rune, arg2.G1())
-		for j := range len(var5) {
-			var5[j] = rune(arg2.G1())
+// DecodeBadCombinations
+func ReadBadCombinations(badCombinations [][][]byte, badWords [][]rune, buf *io.Packet) {
+	for i := range len(badWords) {
+		badWord := make([]rune, buf.G1())
+		for j := range len(badWord) {
+			badWord[j] = rune(buf.G1())
 		}
-		arg1[i] = var5
-		var7 := make([][]byte, arg2.G1())
-		for j := range len(var7) {
-			var7[j] = make([]byte, 2)
-			var7[j][0] = byte(arg2.G1())
-			var7[j][1] = byte(arg2.G1())
+
+		badWords[i] = badWord
+
+		combination := make([][]byte, buf.G1())
+		for j := range len(combination) {
+			combination[j] = make([]byte, 2)
+			combination[j][0] = byte(buf.G1())
+			combination[j][1] = byte(buf.G1())
 		}
-		if len(var7) > 0 {
-			arg0[i] = var7
+
+		if len(combination) > 0 {
+			badCombinations[i] = combination
 		}
 	}
 }
 
-func ReadDomain(arg1 *io.Packet, arg2 [][]rune) {
-	for i := range len(arg2) {
-		var4 := make([]rune, arg1.G1())
-		for j := range len(var4) {
-			var4[j] = rune(arg1.G1())
+// DecodeDomains
+func ReadDomain(buf *io.Packet, domains [][]rune) {
+	for i := range len(domains) {
+		domain := make([]rune, buf.G1())
+		for j := range len(domain) {
+			domain[j] = rune(buf.G1())
 		}
-		arg2[i] = var4
+
+		domains[i] = domain
 	}
 }
 
-func FilterCharacters(arg0 []rune) {
-	var2 := 0
-	for i := range len(arg0) {
-		if AllowCharacter(arg0[i]) {
-			arg0[var2] = arg0[i]
+func FilterCharacters(in []rune) {
+	pos := 0
+	for i := range len(in) {
+		if AllowCharacter(in[i]) {
+			in[pos] = in[i]
 		} else {
-			arg0[var2] = ' '
+			in[pos] = ' '
 		}
-		if var2 == 0 || arg0[var2] != ' ' || arg0[var2-1] != ' ' {
-			var2++
+
+		if pos == 0 || in[pos] != ' ' || in[pos-1] != ' ' {
+			pos++
 		}
 	}
-	for i := var2; i < len(arg0); i++ {
-		arg0[i] = ' '
+
+	for i := pos; i < len(in); i++ {
+		in[i] = ' '
 	}
 }
 
-func AllowCharacter(arg1 rune) bool {
-	return arg1 >= ' ' && arg1 <= 127 || arg1 == ' ' || arg1 == '\n' || arg1 == '\t' || arg1 == 163 || arg1 == 8364
+func AllowCharacter(c rune) bool {
+	return c >= ' ' && c <= 127 || c == ' ' || c == '\n' || c == '\t' || c == 163 || c == 8364
 }
 
-func Filter(arg0 string) string {
-	var4 := []rune(arg0)
-	FilterCharacters(var4)
-	var5 := strings.TrimSpace(string(var4))
-	var11 := []rune(strings.ToLower(var5))
-	var6 := strings.ToLower(var5)
-	FilterTLD(var11)
-	FilterBad(var11)
-	FilterDomains(var11)
-	FilterFragments(var11)
-	var8 := 0
+func Filter(input string) string {
+	outputPre := []rune(input)
+	FilterCharacters(outputPre)
+
+	trimmed := strings.TrimSpace(string(outputPre))
+	output := []rune(strings.ToLower(trimmed))
+	lowercase := strings.ToLower(trimmed)
+
+	FilterTLD(output)
+	FilterBad(output)
+	FilterDomains(output)
+	FilterFragments(output)
+
 	for i := range len(ALLOWLIST) {
-		var8 = -1
-		for var8 = strings.Index(ALLOWLIST[i], var6[var8+1:]); var8 != -1; {
+		j := -1
+		for j = strings.Index(ALLOWLIST[i], lowercase[j+1:]); j != -1; {
 			var9 := []rune(ALLOWLIST[i])
-			for j := range len(var9) {
-				var11[j+var8] = var9[j]
+			for k := range len(var9) {
+				output[j+k] = var9[k]
 			}
 		}
 	}
-	ReplaceUpperCases(var11, []rune(var5))
-	FormatUpperCases(var11)
-	return strings.TrimSpace(string(var11))
+
+	ReplaceUpperCases(output, []rune(trimmed))
+	FormatUpperCases(output)
+
+	return strings.TrimSpace(string(output))
 }
 
-func ReplaceUpperCases(arg0, arg2 []rune) {
-	for i := range len(arg2) {
-		if arg0[i] != '*' && IsUpperCase(arg2[i]) {
-			arg0[i] = arg2[i]
+// ReplaceUppercase
+func ReplaceUpperCases(in, unfiltered []rune) {
+	for i := range len(unfiltered) {
+		if in[i] != '*' && IsUpperCase(unfiltered[i]) {
+			in[i] = unfiltered[i]
 		}
 	}
 }
 
-func FormatUpperCases(arg1 []rune) {
-	var2 := true
-	for i := range len(arg1) {
-		var4 := arg1[i]
-		if !IsAlpha(var4) {
-			var2 = true
-		} else if var2 {
-			if IsLowerCase(var4) {
-				var2 = false
+// FormatUppercase
+func FormatUpperCases(in []rune) {
+	upper := true
+
+	for i := range len(in) {
+		c := in[i]
+
+		if !IsAlpha(c) {
+			upper = true
+		} else if upper {
+			if IsLowerCase(c) {
+				upper = false
 			}
-		} else if IsUpperCase(var4) {
-			arg1[i] = var4 + 'a' - 65
+		} else if IsUpperCase(c) {
+			in[i] = c + 'a' - 65
 		}
 	}
 }
 
-func FilterBad(arg1 []rune) {
-	for range 2 {
-		for j := len(BadWords) - 1; j >= 0; j-- {
-			Filter2(BadCombinations[j], arg1, BadWords[j])
+func FilterBad(in []rune) {
+	for range 2 { // passes
+		for i := len(BadWords) - 1; i >= 0; i-- {
+			Filter2(BadCombinations[i], in, BadWords[i])
 		}
 	}
 }
 
-func FilterDomains(arg1 []rune) {
-	var2 := make([]rune, len(arg1))
-	copy(var2, arg1)
-	var3 := []rune{'(', 'a', ')'}
-	Filter2(nil, var2, var3)
-	var4 := make([]rune, len(arg1))
-	copy(var4, arg1)
-	var5 := []rune{'d', 'o', 't'}
-	Filter2(nil, var4, var5)
+func FilterDomains(in []rune) {
+	filteredAt := make([]rune, len(in))
+	copy(filteredAt, in)
+	at := []rune{'(', 'a', ')'}
+	Filter2(nil, filteredAt, at)
+
+	filteredDot := make([]rune, len(in))
+	copy(filteredDot, in)
+	dot := []rune{'d', 'o', 't'}
+	Filter2(nil, filteredDot, dot)
+
 	for i := len(Domains) - 1; i >= 0; i-- {
-		FilterDomain(var4, var2, Domains[i], arg1)
+		FilterDomain(filteredDot, filteredAt, Domains[i], in)
 	}
 }
 
-func FilterDomain(arg0, arg2, arg3, arg4 []rune) {
-	if len(arg3) > len(arg4) {
+func FilterDomain(arg0, arg2, domain, in []rune) {
+	if len(domain) > len(in) {
 		return
 	}
-	var13 := 0
-	for i := 0; i <= len(arg4)-len(arg3); i += var13 {
-		var7 := i
-		var8 := 0
-		var13 = 1
-		var9 := false
+
+	stride := 0
+	for start := 0; start <= len(in)-len(domain); start += stride {
+		end := start
+		offset := 0
+		stride = 1
+
+		match := false
 		for {
-			if var7 >= len(arg4) {
+			if end >= len(in) {
 				break
 			}
-			var9 = false
-			var10 := arg4[var7]
-			var11 := rune(0)
-			if var7+1 < len(arg4) {
-				var11 = arg4[var7+1]
+
+			match = false
+			b := in[end]
+			c := rune(0)
+			if end+1 < len(in) {
+				c = in[end+1]
 			}
-			if var8 < len(arg3) && GetEmulatedDomainCharSize(var11, arg3[var8], var10) > 0 {
-				var7 += GetEmulatedDomainCharSize(var11, arg3[var8], var10)
-				var8++
+
+			if offset < len(domain) && GetEmulatedDomainCharSize(c, domain[offset], b) > 0 {
+				end += GetEmulatedDomainCharSize(c, domain[offset], b)
+				offset++
 			} else {
-				if var8 == 0 {
+				if offset == 0 {
 					break
 				}
-				if GetEmulatedDomainCharSize(var11, arg3[var8-1], var10) > 0 {
-					var7 += GetEmulatedDomainCharSize(var11, arg3[var8-1], var10)
-					if var8 == 1 {
-						var13++
+
+				charSize2 := GetEmulatedDomainCharSize(c, domain[offset-1], b)
+				if charSize2 > 0 {
+					end += charSize2
+
+					if offset == 1 {
+						stride++
 					}
 				} else {
-					if var8 >= len(arg3) || !IsSymbol(var10) {
+					if offset >= len(domain) || !IsSymbol(b) {
 						break
 					}
-					var7++
+
+					end++
 				}
 			}
 		}
 
-		if var8 >= len(arg3) {
-			var9 = false
-			var16 := GetDomainAtFilterStatus(i, arg4, arg2)
-			var17 := GetDomainDotFilterStatus(arg0, arg4, var7-1)
-			if var16 > 2 || var17 > 2 {
-				var9 = true
+		if offset >= len(domain) {
+			match = false
+			atFilter := GetDomainAtFilterStatus(start, in, arg2)
+			dotFilter := GetDomainDotFilterStatus(arg0, in, end-1)
+
+			if atFilter > 2 || dotFilter > 2 {
+				match = true
 			}
-			if var9 {
-				for j := i; j < var7; j++ {
-					arg4[j] = '*'
+
+			if match {
+				for i := start; i < end; i++ {
+					in[i] = '*'
 				}
 			}
 		}
 	}
 }
 
-func GetDomainAtFilterStatus(arg0 int, arg1 []rune, arg3 []rune) int {
-	if arg0 == 0 {
+func GetDomainAtFilterStatus(end int, a []rune, b []rune) int {
+	if end == 0 {
 		return 2
 	}
-	for i := arg0 - 1; i >= 0 && IsSymbol(arg1[i]); i-- {
-		if arg1[i] == '@' {
+
+	for i := end - 1; i >= 0 && IsSymbol(a[i]); i-- {
+		if a[i] == '@' {
 			return 3
 		}
 	}
-	var5 := 0
-	for i := arg0 - 1; i >= 0 && IsSymbol(arg3[i]); i-- {
-		if arg3[i] == '*' {
-			var5++
+
+	asteriskCount := 0
+	for i := end - 1; i >= 0 && IsSymbol(b[i]); i-- {
+		if b[i] == '*' {
+			asteriskCount++
 		}
 	}
-	if var5 >= 3 {
+
+	if asteriskCount >= 3 {
 		return 4
-	} else if IsSymbol(arg1[arg0-1]) {
+	} else if IsSymbol(a[end-1]) {
 		return 1
 	} else {
 		return 0
 	}
 }
 
-func GetDomainDotFilterStatus(arg0 []rune, arg1 []rune, arg2 int) int {
-	if arg2+1 == len(arg1) {
+func GetDomainDotFilterStatus(b []rune, a []rune, start int) int {
+	if start+1 == len(a) {
 		return 2
 	}
-	var4 := arg2 + 1
+
+	i := start + 1
 	for {
-		if var4 < len(arg1) && IsSymbol(arg1[var4]) {
-			if arg1[var4] != '.' && arg1[var4] != ',' {
-				var4++
+		if i < len(a) && IsSymbol(a[i]) {
+			if a[i] != '.' && a[i] != ',' {
+				i++
 				continue
 			}
+
 			return 3
 		}
-		var5 := 0
-		for i := arg2 + 1; i < len(arg1) && IsSymbol(arg0[i]); i++ {
-			if arg0[i] == '*' {
-				var5++
+
+		asteriskCount := 0
+		for j := start + 1; j < len(a) && IsSymbol(b[j]); j++ {
+			if b[j] == '*' {
+				asteriskCount++
 			}
 		}
-		if var5 >= 3 {
+
+		if asteriskCount >= 3 {
 			return 4
 		}
-		if IsSymbol(arg1[arg2+1]) {
+		if IsSymbol(a[start+1]) {
 			return 1
 		}
 		return 0
 	}
 }
 
-func FilterTLD(arg0 []rune) {
-	var2 := make([]rune, len(arg0))
-	copy(var2, arg0)
-	var3 := []rune{'d', 'o', 't'}
-	Filter2(nil, var2, var3)
-	var4 := make([]rune, len(arg0))
-	copy(var4, arg0)
-	var5 := []rune{'s', 'l', 'a', 's', 'h'}
-	Filter2(nil, var4, var5)
+func FilterTLD(in []rune) {
+	filteredDot := make([]rune, len(in))
+	copy(filteredDot, in)
+
+	dot := []rune{'d', 'o', 't'}
+	Filter2(nil, filteredDot, dot)
+
+	filteredSlash := make([]rune, len(in))
+	copy(filteredSlash, in)
+
+	slash := []rune{'s', 'l', 'a', 's', 'h'}
+	Filter2(nil, filteredSlash, slash)
+
 	for i := range len(TLDs) {
-		FilterTLD2(var4, TLDType[i], arg0, TLDs[i], var2)
+		FilterTLD2(filteredSlash, TLDType[i], in, TLDs[i], filteredDot)
 	}
 }
 
-func FilterTLD2(arg0 []rune, arg1 int, arg3, arg4, arg5 []rune) {
-	var6 := 0
-	if len(arg4) > len(arg3) {
+func FilterTLD2(filteredSlash []rune, typ int, chars, tld, filteredDot []rune) {
+	if len(tld) > len(chars) {
 		return
 	}
-	for i := 0; i <= len(arg3)-len(arg4); i += var6 {
-		var8 := i
-		var9 := 0
-		var6 = 1
-		var10 := false
+
+	stride := 0
+	for start := 0; start <= len(chars)-len(tld); start += stride {
+		end := start
+		offset := 0
+		stride = 1
+		match := false
+
 		for {
-			if var8 >= len(arg3) {
+			if end >= len(chars) {
 				break
 			}
-			var10 = false
-			var11 := arg3[var8]
-			var12 := rune(0)
-			if var8+1 < len(arg3) {
-				var12 = arg3[var8+1]
+
+			match = false
+			b := chars[end]
+			c := rune(0)
+
+			if end+1 < len(chars) {
+				c = chars[end+1]
 			}
-			if var9 < len(arg4) && GetEmulatedDomainCharSize(var12, arg4[var9], var11) > 0 {
-				var8 += GetEmulatedDomainCharSize(var12, arg4[var9], var11)
-				var9++
+
+			if offset < len(tld) && GetEmulatedDomainCharSize(c, tld[offset], b) > 0 {
+				end += GetEmulatedDomainCharSize(c, tld[offset], b)
+				offset++
 			} else {
-				if var9 == 0 {
+				if offset == 0 {
 					break
 				}
-				if GetEmulatedDomainCharSize(var12, arg4[var9-1], var11) > 0 {
-					var8 += GetEmulatedDomainCharSize(var12, arg4[var9-1], var11)
-					if var9 == 1 {
-						var6++
+
+				charLen2 := GetEmulatedDomainCharSize(c, tld[offset-1], b)
+				if charLen2 > 0 {
+					end += charLen2
+
+					if offset == 1 {
+						stride++
 					}
 				} else {
-					if var9 >= len(arg4) || !IsSymbol(var11) {
+					if offset >= len(tld) || !IsSymbol(b) {
 						break
 					}
-					var8++
+
+					end++
 				}
 			}
 		}
-		if var9 >= len(arg4) {
-			var10 = false
-			var20 := GetTLDDotFilterStatus(arg3, arg5, i)
-			var21 := GetTLDSlashFilterStatus(arg0, -678, var8-1, arg3)
-			if arg1 == 1 && var20 > 0 && var21 > 0 {
-				var10 = true
+
+		if offset >= len(tld) {
+			match = false
+
+			status0 := GetTLDDotFilterStatus(chars, filteredDot, start)
+			status1 := GetTLDSlashFilterStatus(filteredSlash, end-1, chars)
+
+			if typ == 1 && status0 > 0 && status1 > 0 {
+				match = true
 			}
-			if arg1 == 2 && (var20 > 2 && var21 > 0 || var20 > 0 && var21 > 2) {
-				var10 = true
+
+			if typ == 2 && (status0 > 2 && status1 > 0 || status0 > 0 && status1 > 2) {
+				match = true
 			}
-			if arg1 == 3 && var20 > 0 && var21 > 2 {
-				var10 = true
+
+			if typ == 3 && status0 > 0 && status1 > 2 {
+				match = true
 			}
-			if var10 {
-				var13 := i
-				var14 := var8 - 1
-				var15 := false
-				if var20 > 2 {
-					if var20 == 4 {
-						var15 = false
-						for j := i - 1; j >= 0; j-- {
-							if var15 {
-								if arg5[j] != '*' {
+
+			if match {
+				first := start
+				last := end - 1
+
+				if status0 > 2 {
+					if status0 == 4 {
+						findStart := false
+						for i := start - 1; i >= 0; i-- {
+							if findStart {
+								if filteredDot[i] != '*' {
 									break
 								}
-								var13 = j
-							} else if arg5[j] == '*' {
-								var13 = j
-								var15 = true
+
+								first = i
+							} else if filteredDot[i] == '*' {
+								first = i
+								findStart = true
 							}
 						}
 					}
-					var15 = false
-					for j := var13 - 1; j >= 0; j-- {
-						if var15 {
-							if IsSymbol(arg3[j]) {
+
+					findStart := false
+					for i := first - 1; i >= 0; i-- {
+						if findStart {
+							if IsSymbol(chars[i]) {
 								break
 							}
-							var13 = j
-						} else if !IsSymbol(arg3[j]) {
-							var15 = true
-							var13 = j
+
+							first = i
+						} else if !IsSymbol(chars[i]) {
+							findStart = true
+							first = i
 						}
 					}
 				}
-				if var21 > 2 {
-					if var21 == 4 {
-						var15 = false
-						for j := var14 + 1; j < len(arg3); j++ {
-							if var15 {
-								if arg0[j] != '*' {
+
+				if status1 > 2 {
+					if status1 == 4 {
+						findStart := false
+						for i := last + 1; i < len(chars); i++ {
+							if findStart {
+								if filteredSlash[i] != '*' {
 									break
 								}
-								var14 = j
-							} else if arg0[j] == '*' {
-								var14 = j
-								var15 = true
+
+								last = i
+							} else if filteredSlash[i] == '*' {
+								last = i
+								findStart = true
 							}
 						}
 					}
-					var15 = false
-					for j := var14 + 1; j < len(arg3); j++ {
-						if var15 {
-							if IsSymbol(arg3[j]) {
+
+					findStart := false
+					for i := last + 1; i < len(chars); i++ {
+						if findStart {
+							if IsSymbol(chars[i]) {
 								break
 							}
-							var14 = j
-						} else if !IsSymbol(arg3[j]) {
-							var15 = true
-							var14 = j
+
+							last = i
+						} else if !IsSymbol(chars[i]) {
+							findStart = true
+							last = i
 						}
 					}
 				}
-				for j := var13; j <= var14; j++ {
-					arg3[j] = '*'
+
+				for j := first; j <= last; j++ {
+					chars[j] = '*'
 				}
 			}
 		}
 	}
 }
 
-func GetTLDDotFilterStatus(arg0 []rune, arg2 []rune, arg3 int) int {
-	if arg3 == 0 {
+func GetTLDDotFilterStatus(a []rune, b []rune, start int) int {
+	if start == 0 {
 		return 2
 	}
-	var4 := arg3 - 1
+
+	i := start - 1
 	for {
-		if var4 >= 0 && IsSymbol(arg0[var4]) {
-			if arg0[var4] != ',' && arg0[var4] != '.' {
-				var4--
+		if i >= 0 && IsSymbol(a[i]) {
+			if a[i] != ',' && a[i] != '.' {
+				i--
 				continue
 			}
+
 			return 3
 		}
-		var5 := 0
-		for i := arg3 - 1; i >= 0 && IsSymbol(arg2[i]); i-- {
-			if arg2[i] == '*' {
-				var5++
+
+		asteriskCount := 0
+		for j := start - 1; j >= 0 && IsSymbol(b[j]); j-- {
+			if b[j] == '*' {
+				asteriskCount++
 			}
 		}
-		if var5 >= 3 {
+
+		if asteriskCount >= 3 {
 			return 4
 		}
-		if IsSymbol(arg0[arg3-1]) {
+		if IsSymbol(a[start-1]) {
 			return 1
 		}
 		return 0
 	}
 }
 
-func GetTLDSlashFilterStatus(arg0 []rune, arg1 int, arg2 int, arg3 []rune) int {
-	if arg2+1 == len(arg3) {
+func GetTLDSlashFilterStatus(b []rune, start int, a []rune) int {
+	if start+1 == len(a) {
 		return 2
 	}
-	var4 := arg2 + 1
+
+	i := start + 1
 	for {
-		if var4 < len(arg3) && IsSymbol(arg3[var4]) {
-			if arg3[var4] != '\\' && arg3[var4] != '/' {
-				var4++
+		if i < len(a) && IsSymbol(a[i]) {
+			if a[i] != '\\' && a[i] != '/' {
+				i++
 				continue
 			}
 			return 3
 		}
-		var5 := 0
-		for i := arg2 + 1; i < len(arg3) && IsSymbol(arg0[i]); i++ {
-			if arg0[i] == '*' {
-				var5++
+
+		asteriskCount := 0
+		for j := start + 1; j < len(a) && IsSymbol(b[j]); j++ {
+			if b[j] == '*' {
+				asteriskCount++
 			}
 		}
-		if arg1 >= 0 {
-			return 3
-		}
-		if var5 >= 5 {
+
+		if asteriskCount >= 5 {
 			return 4
 		}
-		if IsSymbol(arg3[arg2+1]) {
+		if IsSymbol(a[start+1]) {
 			return 1
 		}
 		return 0
 	}
 }
 
-func Filter2(arg1 [][]byte, arg2 []rune, arg3 []rune) {
-	if len(arg3) > len(arg2) {
+func Filter2(badCombinations [][]byte, chars []rune, fragment []rune) {
+	if len(fragment) > len(chars) {
 		return
 	}
-	var20 := 0
-	for i := 0; i <= len(arg2)-len(arg3); i += var20 {
-		var6 := i
-		var7 := 0
-		var8 := 0
-		var20 = 1
-		var9 := false
-		var10 := false
-		var11 := false
-		var12 := false
-		var13 := rune(0)
-		var14 := rune(0)
+
+	stride := 0
+	for start := 0; start <= len(chars)-len(fragment); start += stride {
+		end := start
+		fragOff := 0
+		iterations := 0
+		stride = 1
+
+		isSymbol := false
+		isEmulated := false
+		isNumeral := false
+
+		bad := false
+		b := rune(0)
+		c := rune(0)
 		for {
-			if var6 >= len(arg2) || var10 && var11 {
+			if end >= len(chars) || isEmulated && isNumeral {
 				break
 			}
-			var12 = false
-			var13 = arg2[var6]
-			var14 = 0
-			if var6+1 < len(arg2) {
-				var14 = arg2[var6+1]
+
+			bad = false
+			b = chars[end]
+			c = 0
+
+			if end+1 < len(chars) {
+				c = chars[end+1]
 			}
-			if var7 < len(arg3) && GetEmulatedSize(var14, arg3[var7], var13) > 0 {
-				var21 := GetEmulatedSize(var14, arg3[var7], var13)
-				if var21 == 1 && IsNumber(var13) {
-					var10 = true
+
+			if fragOff < len(fragment) && GetEmulatedSize(c, fragment[fragOff], b) > 0 {
+				charLen := GetEmulatedSize(c, fragment[fragOff], b)
+
+				if charLen == 1 && IsNumber(b) {
+					isEmulated = true
 				}
-				if var21 == 2 && (IsNumber(var13) || IsNumber(var14)) {
-					var10 = true
+
+				if charLen == 2 && (IsNumber(b) || IsNumber(c)) {
+					isEmulated = true
 				}
-				var6 += var21
-				var7++
+
+				end += charLen
+				fragOff++
 			} else {
-				if var7 == 0 {
+				if fragOff == 0 {
 					break
 				}
-				if GetEmulatedSize(var14, arg3[var7-1], var13) > 0 {
-					var6 += GetEmulatedSize(var14, arg3[var7-1], var13)
-					if var7 == 1 {
-						var20++
+
+				if GetEmulatedSize(c, fragment[fragOff-1], b) > 0 {
+					end += GetEmulatedSize(c, fragment[fragOff-1], b)
+
+					if fragOff == 1 {
+						stride++
 					}
 				} else {
-					if var7 >= len(arg3) || !IsLowerCaseAlpha(var13) {
+					if fragOff >= len(fragment) || !IsLowerCaseAlpha(b) {
 						break
 					}
-					if IsSymbol(var13) && var13 != '\'' {
-						var9 = true
+
+					if IsSymbol(b) && b != '\'' {
+						isSymbol = true
 					}
-					if IsNumber(var13) {
-						var11 = true
+
+					if IsNumber(b) {
+						isNumeral = true
 					}
-					var6++
-					var8++
-					if var8*100/(var6-i) > 90 {
+
+					end++
+					iterations++
+
+					if iterations*100/(end-start) > 90 {
 						break
 					}
 				}
 			}
 		}
-		if var7 >= len(arg3) && (!var10 || !var11) {
-			var12 = true
-			var28 := 0
-			if var9 {
-				var23 := false
-				var27 := false
-				if i-1 < 0 || IsSymbol(arg2[i-1]) && arg2[i-1] != '\'' {
-					var23 = true
+
+		if fragOff >= len(fragment) && (!isEmulated || !isNumeral) {
+			bad = true
+
+			if isSymbol {
+				badCurrent := false
+				badNext := false
+
+				if start-1 < 0 || IsSymbol(chars[start-1]) && chars[start-1] != '\'' {
+					badCurrent = true
 				}
-				if var6 >= len(arg2) || IsSymbol(arg2[var6]) && arg2[var6] != '\'' {
-					var27 = true
+
+				if end >= len(chars) || IsSymbol(chars[end]) && chars[end] != '\'' {
+					badNext = true
 				}
-				if !var23 || !var27 {
-					var24 := false
-					var28 = i - 2
-					if var23 {
-						var28 = i
+
+				if !badCurrent || !badNext {
+					good := false
+					cur := start - 2
+					if badCurrent {
+						cur = start
 					}
-					for !var24 && var28 < var6 {
-						if var28 >= 0 && (!IsSymbol(arg2[var28]) || arg2[var28] == '\'') {
-							var17 := make([]rune, 3)
-							var18 := 0
-							for var18 = 0; var18 < 3 && var28+var18 < len(arg2) && (!IsSymbol(arg2[var28+var18]) || arg2[var28+var18] == '\''); var18++ {
-								var17[var18] = arg2[var28+var18]
+
+					for !good && cur < end {
+						if cur >= 0 && (!IsSymbol(chars[cur]) || chars[cur] == '\'') {
+							frag := make([]rune, 3)
+
+							off := 0
+							for off = 0; off < 3 && cur+off < len(chars) && (!IsSymbol(chars[cur+off]) || chars[cur+off] == '\''); off++ {
+								frag[off] = chars[cur+off]
 							}
-							var19 := true
-							if var18 == 0 {
-								var19 = false
+
+							valid := true
+							if off == 0 {
+								valid = false
 							}
-							if var18 < 3 && var28-1 >= 0 && (!IsSymbol(arg2[var28-1]) || arg2[var28-1] == '\'') {
-								var19 = false
+							if off < 3 && cur-1 >= 0 && (!IsSymbol(chars[cur-1]) || chars[cur-1] == '\'') {
+								valid = false
 							}
-							if var19 && !IsBadFragment(var17) {
-								var24 = true
+							if valid && !IsBadFragment(frag) {
+								good = true
 							}
 						}
-						var28++
+
+						cur++
 					}
-					if !var24 {
-						var12 = false
+
+					if !good {
+						bad = false
 					}
 				}
 			} else {
-				var13 = ' '
-				if i-1 >= 0 {
-					var13 = arg2[i-1]
+				b = ' '
+				if start-1 >= 0 {
+					b = chars[start-1]
 				}
-				var14 = ' '
-				if var6 < len(arg2) {
-					var14 = arg2[var6]
+
+				c = ' '
+				if end < len(chars) {
+					c = chars[end]
 				}
-				var15 := GetIndex(var13)
-				var16 := GetIndex(var14)
-				if arg1 != nil && ComboMatches(var15, arg1, var16) {
-					var12 = false
+
+				bIndex := GetIndex(b)
+				cIndex := GetIndex(c)
+
+				if badCombinations != nil && ComboMatches(bIndex, badCombinations, cIndex) {
+					bad = false
 				}
 			}
-			if var12 {
-				var25 := 0
-				var29 := 0
-				for j := i; j < var6; j++ {
-					if IsNumber(arg2[j]) {
-						var25++
-					} else if IsAlpha(arg2[j]) {
-						var29++
+
+			if bad {
+				numeralCount := 0
+				alphaCount := 0
+				for i := start; i < end; i++ {
+					if IsNumber(chars[i]) {
+						numeralCount++
+					} else if IsAlpha(chars[i]) {
+						alphaCount++
 					}
 				}
-				if var25 <= var29 {
-					for j := i; j < var6; j++ {
-						arg2[j] = '*'
+
+				if numeralCount <= alphaCount {
+					for i := start; i < end; i++ {
+						chars[i] = '*'
 					}
 				}
 			}
@@ -632,394 +737,448 @@ func Filter2(arg1 [][]byte, arg2 []rune, arg3 []rune) {
 	}
 }
 
-func ComboMatches(arg1 byte, arg2 [][]byte, arg3 byte) bool {
-	var4 := 0
-	if arg2[var4][0] == arg1 && arg2[var4][1] == arg3 {
+func ComboMatches(a byte, combos [][]byte, b byte) bool {
+	first := 0
+	if combos[first][0] == a && combos[first][1] == b {
 		return true
 	}
-	var5 := len(arg2) - 1
-	if arg2[var5][0] == arg1 && arg2[var5][1] == arg3 {
+
+	last := len(combos) - 1
+	if combos[last][0] == a && combos[last][1] == b {
 		return true
 	}
-	for ok := true; ok; ok = var4 != var5 && var4+1 != var5 {
-		var6 := (var4 + var5) / 2
-		if arg2[var6][0] == arg1 && arg2[var6][1] == arg3 {
+
+	for ok := true; ok; ok = first != last && first+1 != last {
+		middle := (first + last) / 2
+		if combos[middle][0] == a && combos[middle][1] == b {
 			return true
 		}
-		if arg1 < arg2[var6][0] || arg1 == arg2[var6][0] && arg3 < arg2[var6][1] {
-			var5 = var6
+
+		if a < combos[middle][0] || a == combos[middle][0] && b < combos[middle][1] {
+			last = middle
 		} else {
-			var4 = var6
+			first = middle
 		}
 	}
+
 	return false
 }
 
-func GetEmulatedDomainCharSize(arg1, arg2, arg3 rune) int {
-	if arg2 == arg3 {
+func GetEmulatedDomainCharSize(c, b, a rune) int {
+	if b == a {
 		return 1
 	}
-	if arg2 == 'o' && arg3 == '0' {
+	if b == 'o' && a == '0' {
 		return 1
 	}
-	if arg2 == 'o' && arg3 == '(' && arg1 == ')' {
+	if b == 'o' && a == '(' && c == ')' {
 		return 2
 	}
-	if arg2 == 'c' && (arg3 == '(' || arg3 == '<' || arg3 == '[') {
+	if b == 'c' && (a == '(' || a == '<' || a == '[') {
 		return 1
 	}
-	if arg2 == 'e' && arg3 == 8364 {
+	if b == 'e' && a == 8364 {
 		return 1
 	}
-	if arg2 == 's' && arg3 == '$' {
+	if b == 's' && a == '$' {
 		return 1
 	}
-	if arg2 == 'l' && arg3 == 'i' {
+	if b == 'l' && a == 'i' {
 		return 1
 	}
 	return 0
 }
 
-func GetEmulatedSize(arg0, arg1, arg2 rune) int {
-	if arg1 == arg2 {
+func GetEmulatedSize(c, a, b rune) int {
+	if a == b {
 		return 1
 	}
-	if arg1 >= 'a' && arg1 <= 'm' {
-		if arg1 == 'a' {
-			if arg2 != '4' && arg2 != '@' && arg2 != '^' {
-				if arg2 == '/' && arg0 == '\\' {
+
+	if a >= 'a' && a <= 'm' {
+		if a == 'a' {
+			if b != '4' && b != '@' && b != '^' {
+				if b == '/' && c == '\\' {
 					return 2
 				}
 				return 0
 			}
 			return 1
 		}
-		if arg1 == 'b' {
-			if arg2 != '6' && arg2 != '8' {
-				if arg2 == '1' && arg0 == '3' {
+
+		if a == 'b' {
+			if b != '6' && b != '8' {
+				if b == '1' && c == '3' {
 					return 2
 				}
 				return 0
 			}
 			return 1
 		}
-		if arg1 == 'c' {
-			if arg2 != '(' && arg2 != '<' && arg2 != '{' && arg2 != '[' {
+
+		if a == 'c' {
+			if b != '(' && b != '<' && b != '{' && b != '[' {
 				return 0
 			}
 			return 1
 		}
-		if arg1 == 'd' {
-			if arg2 == '[' && arg0 == ')' {
+
+		if a == 'd' {
+			if b == '[' && c == ')' {
 				return 2
 			}
 			return 0
 		}
-		if arg1 == 'e' {
-			if arg2 != '3' && arg2 != 8364 {
+
+		if a == 'e' {
+			if b != '3' && b != 8364 {
 				return 0
 			}
 			return 1
 		}
-		if arg1 == 'f' {
-			if arg2 == 'p' && arg0 == 'h' {
+
+		if a == 'f' {
+			if b == 'p' && c == 'h' {
 				return 2
 			}
-			if arg2 == 163 {
+			if b == 163 {
 				return 1
 			}
 			return 0
 		}
-		if arg1 == 'g' {
-			if arg2 != '9' && arg2 != '6' {
+
+		if a == 'g' {
+			if b != '9' && b != '6' {
 				return 0
 			}
 			return 1
 		}
-		if arg1 == 'h' {
-			if arg2 == '#' {
+
+		if a == 'h' {
+			if b == '#' {
 				return 1
 			}
 			return 0
 		}
-		if arg1 == 'i' {
-			if arg2 != 'y' && arg2 != 'l' && arg2 != 'j' && arg2 != '1' && arg2 != '!' && arg2 != ':' && arg2 != ';' && arg2 != '|' {
+
+		if a == 'i' {
+			if b != 'y' && b != 'l' && b != 'j' && b != '1' && b != '!' && b != ':' && b != ';' && b != '|' {
 				return 0
 			}
 			return 1
 		}
-		if arg1 == 'j' {
+
+		if a == 'j' {
 			return 0
 		}
-		if arg1 == 'k' {
+
+		if a == 'k' {
 			return 0
 		}
-		if arg1 == 'l' {
-			if arg2 != '1' && arg2 != '|' && arg2 != 'i' {
+
+		if a == 'l' {
+			if b != '1' && b != '|' && b != 'i' {
 				return 0
 			}
 			return 1
 		}
-		if arg1 == 'm' {
+
+		if a == 'm' {
 			return 0
 		}
 	}
-	if arg1 >= 'n' && arg1 <= 'z' {
-		if arg1 == 'n' {
+
+	if a >= 'n' && a <= 'z' {
+		if a == 'n' {
 			return 0
 		}
-		if arg1 == 'o' {
-			if arg2 != '0' && arg2 != '*' {
-				if (arg2 != '(' || arg0 != ')') && (arg2 != '[' || arg0 != ']') && (arg2 != '{' || arg0 != '}') && (arg2 != '<' || arg0 != '>') {
+
+		if a == 'o' {
+			if b != '0' && b != '*' {
+				if (b != '(' || c != ')') && (b != '[' || c != ']') && (b != '{' || c != '}') && (b != '<' || c != '>') {
 					return 0
 				}
 				return 2
 			}
 			return 1
 		}
-		if arg1 == 'p' {
+
+		if a == 'p' {
 			return 0
 		}
-		if arg1 == 'q' {
+
+		if a == 'q' {
 			return 0
 		}
-		if arg1 == 'r' {
+
+		if a == 'r' {
 			return 0
 		}
-		if arg1 == 's' {
-			if arg2 != '5' && arg2 != 'z' && arg2 != '$' && arg2 != '2' {
+
+		if a == 's' {
+			if b != '5' && b != 'z' && b != '$' && b != '2' {
 				return 0
 			}
 			return 1
 		}
-		if arg1 == 't' {
-			if arg2 != '7' && arg2 != '+' {
+
+		if a == 't' {
+			if b != '7' && b != '+' {
 				return 0
 			}
 			return 1
 		}
-		if arg1 == 'u' {
-			if arg2 == 'v' {
+
+		if a == 'u' {
+			if b == 'v' {
 				return 1
 			}
-			if arg2 == '\\' && arg0 == '/' || arg2 == '\\' && arg0 == '|' || arg2 == '|' && arg0 == '/' {
+			if b == '\\' && c == '/' || b == '\\' && c == '|' || b == '|' && c == '/' {
 				return 2
 			}
 			return 0
 		}
-		if arg1 == 'v' {
-			if (arg2 != '\\' || arg0 != '/') && (arg2 != '\\' || arg0 != '|') && (arg2 != '|' || arg0 != '/') {
+
+		if a == 'v' {
+			if (b != '\\' || c != '/') && (b != '\\' || c != '|') && (b != '|' || c != '/') {
 				return 0
 			}
 			return 2
 		}
-		if arg1 == 'w' {
-			if arg2 == 'v' && arg0 == 'v' {
+
+		if a == 'w' {
+			if b == 'v' && c == 'v' {
 				return 2
 			}
 			return 0
 		}
-		if arg1 == 'x' {
-			if (arg2 != ')' || arg0 != '(') && (arg2 != '}' || arg0 != '{') && (arg2 != ']' || arg0 != '[') && (arg2 != '>' || arg0 != '<') {
+
+		if a == 'x' {
+			if (b != ')' || c != '(') && (b != '}' || c != '{') && (b != ']' || c != '[') && (b != '>' || c != '<') {
 				return 0
 			}
 			return 2
 		}
-		if arg1 == 'y' {
+
+		if a == 'y' {
 			return 0
 		}
-		if arg1 == 'z' {
+
+		if a == 'z' {
 			return 0
 		}
 	}
-	if arg1 >= '0' && arg1 <= '9' {
-		if arg1 == '0' {
-			if arg2 == 'o' || arg2 == 'O' {
+
+	if a >= '0' && a <= '9' {
+		if a == '0' {
+			if b == 'o' || b == 'O' {
 				return 1
 			}
-			if (arg2 != '(' || arg0 != ')') && (arg2 != '{' || arg0 != '}') && (arg2 != '[' || arg0 != ']') {
+			if (b != '(' || c != ')') && (b != '{' || c != '}') && (b != '[' || c != ']') {
 				return 0
 			}
 			return 2
 		}
-		if arg1 == '1' {
-			if arg2 == 'l' {
+
+		if a == '1' {
+			if b == 'l' {
 				return 1
 			}
 			return 0
 		}
+
 		return 0
 	}
-	if arg1 == ',' {
-		if arg2 == '.' {
+
+	if a == ',' {
+		if b == '.' {
 			return 1
 		}
 		return 0
 	}
-	if arg1 == '.' {
-		if arg2 == ',' {
+
+	if a == '.' {
+		if b == ',' {
 			return 1
 		}
 		return 0
 	}
-	if arg1 == '!' {
-		if arg2 == 'i' {
+
+	if a == '!' {
+		if b == 'i' {
 			return 1
 		}
 		return 0
 	}
+
 	return 0
 }
 
-func GetIndex(arg1 rune) byte {
-	if arg1 >= 'a' && arg1 <= 'z' {
-		return byte(arg1 - 'a' + 1)
+func GetIndex(c rune) byte {
+	if c >= 'a' && c <= 'z' {
+		return byte(c - 'a' + 1)
 	}
-	if arg1 == '\'' {
+	if c == '\'' {
 		return 28
 	}
-	if arg1 >= '0' && arg1 <= '9' {
-		return byte(arg1 - '0' + 29)
+	if c >= '0' && c <= '9' {
+		return byte(c - '0' + 29)
 	}
 	return 27
 }
 
-func FilterFragments(arg1 []rune) {
-	var3 := 0
-	var4 := 0
-	var5 := 0
+func FilterFragments(chars []rune) {
+	end := 0
+	count := 0
+	start := 0
+
 	for {
-		for ok := true; ok; ok = var4 != 4 {
-			var11 := IndexOfNumber(arg1, var3)
-			if var11 == -1 {
+		for ok := true; ok; ok = count != 4 {
+			index := IndexOfNumber(chars, end)
+			if index == -1 {
 				return
 			}
-			var6 := false
-			for i := var3; i >= 0 && i < var11 && !var6; i++ {
-				if !IsSymbol(arg1[i]) && !IsLowerCaseAlpha(arg1[i]) {
-					var6 = true
+
+			foundLowercase := false
+			for i := end; i >= 0 && i < index && !foundLowercase; i++ {
+				if !IsSymbol(chars[i]) && !IsLowerCaseAlpha(chars[i]) {
+					foundLowercase = true
 				}
 			}
-			if var6 {
-				var4 = 0
+
+			if foundLowercase {
+				count = 0
 			}
-			if var4 == 0 {
-				var5 = var11
+
+			if count == 0 {
+				start = index
 			}
-			var3 = IndexOfNonNumber(var11, arg1)
-			var8 := 0
-			for i := var11; i < var3; i++ {
-				var8 = var8*10 + int(arg1[i]) - 48
+
+			end = IndexOfNonNumber(index, chars)
+
+			value := 0
+			for i := index; i < end; i++ {
+				value = value*10 + int(chars[i]) - 48
 			}
-			if var8 <= 255 && var3-var11 <= 8 {
-				var4++
+
+			if value <= 255 && end-index <= 8 {
+				count++
 			} else {
-				var4 = 0
+				count = 0
 			}
 		}
-		for i := var5; i < var3; i++ {
-			arg1[i] = '*'
+
+		for i := start; i < end; i++ {
+			chars[i] = '*'
 		}
-		var4 = 0
+
+		count = 0
 	}
 }
 
-func IndexOfNumber(arg1 []rune, arg2 int) int {
-	for i := arg2; i < len(arg1) && i >= 0; i++ {
-		if arg1[i] >= '0' && arg1[i] <= '9' {
+func IndexOfNumber(in []rune, off int) int {
+	for i := off; i < len(in) && i >= 0; i++ {
+		if in[i] >= '0' && in[i] <= '9' {
 			return i
 		}
 	}
 	return -1
 }
 
-func IndexOfNonNumber(arg1 int, arg2 []rune) int {
-	var3 := arg1
+func IndexOfNonNumber(off int, in []rune) int {
+	i := off
 	for {
-		if var3 < len(arg2) && var3 >= 0 {
-			if arg2[var3] >= '0' && arg2[var3] <= '9' {
-				var3++
+		if i < len(in) && i >= 0 {
+			if in[i] >= '0' && in[i] <= '9' {
+				i++
 				continue
 			}
-			return var3
+			return i
 		}
-		return len(arg2)
+		return len(in)
 	}
 }
 
-func IsSymbol(arg0 rune) bool {
-	return !IsAlpha(arg0) && !IsNumber(arg0)
+func IsSymbol(c rune) bool {
+	return !IsAlpha(c) && !IsNumber(c)
 }
 
-func IsLowerCaseAlpha(arg0 rune) bool {
-	if arg0 >= 'a' && arg0 <= 'z' {
-		return arg0 == 'v' || arg0 == 'x' || arg0 == 'j' || arg0 == 'q' || arg0 == 'z'
+func IsLowerCaseAlpha(c rune) bool {
+	if c >= 'a' && c <= 'z' {
+		return c == 'v' || c == 'x' || c == 'j' || c == 'q' || c == 'z'
 	}
 	return true
 }
 
-func IsAlpha(arg1 rune) bool {
-	return arg1 >= 'a' && arg1 <= 'z' || arg1 >= 'A' && arg1 <= 'Z'
+func IsAlpha(c rune) bool {
+	return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
 }
 
-func IsNumber(arg0 rune) bool {
-	return arg0 >= '0' && arg0 <= '9'
+func IsNumber(c rune) bool {
+	return c >= '0' && c <= '9'
 }
 
-func IsLowerCase(arg1 rune) bool {
-	return arg1 >= 'a' && arg1 <= 'z'
+func IsLowerCase(c rune) bool {
+	return c >= 'a' && c <= 'z'
 }
 
-func IsUpperCase(arg1 rune) bool {
-	return arg1 >= 'A' && arg1 <= 'Z'
+func IsUpperCase(c rune) bool {
+	return c >= 'A' && c <= 'Z'
 }
 
-func IsBadFragment(arg0 []rune) bool {
-	var2 := true
-	for i := range len(arg0) {
-		if !IsNumber(arg0[i]) && arg0[i] != 0 {
-			var2 = false
+func IsBadFragment(in []rune) bool {
+	skip := true
+	for i := range len(in) {
+		if !IsNumber(in[i]) && in[i] != 0 {
+			skip = false
 		}
 	}
-	if var2 {
+
+	if skip {
 		return true
 	}
-	var4 := FirstFragmentID(arg0)
-	var5 := 0
-	var6 := len(Fragments) - 1
-	if var4 == Fragments[var5] || var4 == Fragments[var6] {
+
+	i := FirstFragmentID(in)
+	start := 0
+	end := len(Fragments) - 1
+
+	if i == Fragments[start] || i == Fragments[end] {
 		return true
 	}
-	for ok := true; ok; ok = var5 != var6 && var5+1 != var6 {
-		var7 := (var5 + var6) / 2
-		if var4 == Fragments[var7] {
+
+	for ok := true; ok; ok = start != end && start+1 != end {
+		middle := (start + end) / 2
+		if i == Fragments[middle] {
 			return true
 		}
-		if var4 < Fragments[var7] {
-			var6 = var7
+
+		if i < Fragments[middle] {
+			end = middle
 		} else {
-			var5 = var7
+			start = middle
 		}
 	}
+
 	return false
 }
 
-func FirstFragmentID(arg1 []rune) int {
-	if len(arg1) > 6 {
+func FirstFragmentID(chars []rune) int {
+	if len(chars) > 6 {
 		return 0
 	}
-	var2 := 0
-	for i := range len(arg1) {
-		var4 := arg1[len(arg1)-i-1]
-		if var4 >= 'a' && var4 <= 'z' {
-			var2 = var2*38 + int(var4) - 'a' + 1
-		} else if var4 == '\'' {
-			var2 = var2*38 + 27
-		} else if var4 >= '0' && var4 <= '9' {
-			var2 = var2*38 + int(var4) - '0' + 28
-		} else if var4 != 0 {
+
+	value := 0
+	for i := range len(chars) {
+		c := chars[len(chars)-i-1]
+		if c >= 'a' && c <= 'z' {
+			value = value*38 + int(c) - 'a' + 1
+		} else if c == '\'' {
+			value = value*38 + 27
+		} else if c >= '0' && c <= '9' {
+			value = value*38 + int(c) - '0' + 28
+		} else if c != 0 {
 			return 0
 		}
 	}
-	return var2
+
+	return value
 }

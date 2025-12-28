@@ -60,171 +60,204 @@ func Init() {
 	for i := range 32768 {
 		Sin[i] = int(math.Sin(float64(i)/5215.1903) * 16384.0)
 	}
-	Buffer = make([]int, 220500)
+	Buffer = make([]int, 22050*10)
 }
 
-func (t *Tone) Generate(arg0, arg1 int) []int {
-	for i := range arg0 {
+func (t *Tone) Generate(samples, length int) []int {
+	for i := range samples {
 		Buffer[i] = 0
 	}
-	if arg1 < 10 {
+
+	if length < 10 {
 		return Buffer
 	}
-	var4 := float64(arg0) / (float64(arg1) + 0.0)
+
+	samplesPerStep := float64(samples) / (float64(length) + 0.0)
+
 	t.FrequencyBase.Reset()
 	t.AmplitudeBase.Reset()
-	var6 := 0
-	var7 := 0
-	var8 := 0
+
+	frequencyStart := 0
+	frequencyDuration := 0
+	frequencyPhase := 0
+
 	if t.FrequencyModRate != nil {
 		t.FrequencyModRate.Reset()
 		t.FrequencyModRange.Reset()
-		var6 = int(float64(t.FrequencyModRate.End-t.FrequencyModRate.Start) * 32.768 / var4)
-		var7 = int(float64(t.FrequencyModRate.Start) * 32.768 / var4)
+		frequencyStart = int(float64(t.FrequencyModRate.End-t.FrequencyModRate.Start) * 32.768 / samplesPerStep)
+		frequencyDuration = int(float64(t.FrequencyModRate.Start) * 32.768 / samplesPerStep)
 	}
-	var9 := 0
-	var10 := 0
-	var11 := 0
+
+	amplitudeStart := 0
+	amplitudeDuration := 0
+	amplitudePhase := 0
+
 	if t.AmplitudeModRate != nil {
 		t.AmplitudeModRate.Reset()
 		t.AmplitudeModRange.Reset()
-		var9 = int(float64(t.AmplitudeModRate.End-t.AmplitudeModRate.Start) * 32.768 / var4)
-		var10 = int(float64(t.AmplitudeModRate.Start) * 32.768 / var4)
+		amplitudeStart = int(float64(t.AmplitudeModRate.End-t.AmplitudeModRate.Start) * 32.768 / samplesPerStep)
+		amplitudeDuration = int(float64(t.AmplitudeModRate.Start) * 32.768 / samplesPerStep)
 	}
+
 	for i := range 5 {
 		if t.HarmonicVolume[i] != 0 {
 			TmpPhases[i] = 0
-			TmpDelays[i] = int(float64(t.HarmonicDelay[i]) * var4)
+			TmpDelays[i] = int(float64(t.HarmonicDelay[i]) * samplesPerStep)
 			TmpVolumes[i] = (t.HarmonicVolume[i] << 14) / 100
-			TmpSemitones[i] = int(float64(t.FrequencyBase.End-t.FrequencyBase.Start) * 32.768 * math.Pow(1.0057929410678534, float64(t.HarmonicSemitone[i])) / var4)
-			TmpStarts[i] = int(float64(t.FrequencyBase.Start) * 32.768 / var4)
+			TmpSemitones[i] = int(float64(t.FrequencyBase.End-t.FrequencyBase.Start) * 32.768 * math.Pow(1.0057929410678534, float64(t.HarmonicSemitone[i])) / samplesPerStep)
+			TmpStarts[i] = int(float64(t.FrequencyBase.Start) * 32.768 / samplesPerStep)
 		}
 	}
-	var14 := 0
-	var15 := 0
-	for i := range arg0 {
-		var14 = t.FrequencyBase.Evaluate(arg0)
-		var15 = t.AmplitudeBase.Evaluate(arg0)
+
+	for sample := range samples {
+		frequency := t.FrequencyBase.Evaluate(samples)
+		amplitude := t.AmplitudeBase.Evaluate(samples)
+
 		if t.FrequencyModRate != nil {
-			var16 := t.FrequencyModRate.Evaluate(arg0)
-			var17 := t.FrequencyModRange.Evaluate(arg0)
-			var14 += t.Generate2(var17, var8, t.FrequencyModRate.Form) >> 1
-			var8 += ((var16 * var6) >> 16) + var7
+			rate := t.FrequencyModRate.Evaluate(samples)
+			rng := t.FrequencyModRange.Evaluate(samples)
+			frequency += t.Generate2(rng, frequencyPhase, t.FrequencyModRate.Form) >> 1
+			frequencyPhase += ((rate * frequencyStart) >> 16) + frequencyDuration
 		}
+
 		if t.AmplitudeModRate != nil {
-			var16 := t.AmplitudeModRate.Evaluate(arg0)
-			var17 := t.AmplitudeModRange.Evaluate(arg0)
-			var15 = (var15 * ((t.Generate2(var17, var11, t.AmplitudeModRate.Form) >> 1) + 32768)) >> 15
-			var11 += ((var16 * var9) >> 16) + var10
+			rate := t.AmplitudeModRate.Evaluate(samples)
+			rng := t.AmplitudeModRange.Evaluate(samples)
+			amplitude = (amplitude * ((t.Generate2(rng, amplitudePhase, t.AmplitudeModRate.Form) >> 1) + 32768)) >> 15
+			amplitudePhase += ((rate * amplitudeStart) >> 16) + amplitudeDuration
 		}
-		for j := range 5 {
-			if t.HarmonicVolume[j] != 0 {
-				var17 := i + TmpDelays[j]
-				if var17 < arg0 {
-					Buffer[var17] += t.Generate2((var15*TmpVolumes[j])>>15, TmpPhases[j], t.FrequencyBase.Form)
-					TmpPhases[j] += ((var14 * TmpSemitones[j]) >> 16) + TmpStarts[j]
+
+		for harmonic := range 5 {
+			if t.HarmonicVolume[harmonic] != 0 {
+				pos := sample + TmpDelays[harmonic]
+				if pos < samples {
+					Buffer[pos] += t.Generate2((amplitude*TmpVolumes[harmonic])>>15, TmpPhases[harmonic], t.FrequencyBase.Form)
+					TmpPhases[harmonic] += ((frequency * TmpSemitones[harmonic]) >> 16) + TmpStarts[harmonic]
 				}
 			}
 		}
 	}
+
 	if t.Release != nil {
 		t.Release.Reset()
 		t.Attack.Reset()
-		var14 = 0
-		var21 := true
-		for i := range arg0 {
-			var18 := t.Release.Evaluate(arg0)
-			var19 := t.Attack.Evaluate(arg0)
-			if var21 {
-				var15 = t.Release.Start + (((t.Release.End - t.Release.Start) * var18) >> 8)
+
+		counter := 0
+		muted := true
+
+		for sample := range samples {
+			releaseValue := t.Release.Evaluate(samples)
+			attackValue := t.Attack.Evaluate(samples)
+
+			threshold := 0
+			if muted {
+				threshold = t.Release.Start + (((t.Release.End - t.Release.Start) * releaseValue) >> 8)
 			} else {
-				var15 = t.Release.Start + (((t.Release.End - t.Release.Start) * var19) >> 8)
+				threshold = t.Release.Start + (((t.Release.End - t.Release.Start) * attackValue) >> 8)
 			}
-			var14 += 256
-			if var14 >= var15 {
-				var14 = 0
-				var21 = !var21
+
+			counter += 256
+			if counter >= threshold {
+				counter = 0
+				muted = !muted
 			}
-			if var21 {
-				Buffer[i] = 0
+
+			if muted {
+				Buffer[sample] = 0
 			}
 		}
 	}
+
 	if t.ReverbDelay > 0 && t.ReverbVolume > 0 {
-		var14 = int(float64(t.ReverbDelay) * var4)
-		for i := var14; i < arg0; i++ {
-			Buffer[i] += Buffer[i-var14] * t.ReverbVolume / 100
+		start := int(float64(t.ReverbDelay) * samplesPerStep)
+		for sample := start; sample < samples; sample++ {
+			Buffer[sample] += Buffer[sample-start] * t.ReverbVolume / 100
 		}
 	}
-	for i := range arg0 {
-		if Buffer[i] < -32768 {
-			Buffer[i] = -32768
+
+	for sample := range samples {
+		if Buffer[sample] < -32768 {
+			Buffer[sample] = -32768
 		}
-		if Buffer[i] > 32767 {
-			Buffer[i] = 32767
+
+		if Buffer[sample] > 32767 {
+			Buffer[sample] = 32767
 		}
 	}
+
 	return Buffer
 }
 
-func (t *Tone) Generate2(arg1, arg2, arg3 int) int {
-	switch arg3 {
+// WaveFunc
+func (t *Tone) Generate2(amplitude, phase, form int) int {
+	switch form {
 	case 1:
-		if arg2&0x7FFF < 16384 {
-			return arg1
+		if phase&0x7FFF < 16384 {
+			return amplitude
 		}
-		return -arg1
+		return -amplitude
 	case 2:
-		return (Sin[arg2&0x7FFF] * arg1) >> 14
+		return (Sin[phase&0x7FFF] * amplitude) >> 14
 	case 3:
-		return (((arg2 & 0x7FFF) * arg1) >> 14) - arg1
+		return (((phase & 0x7FFF) * amplitude) >> 14) - amplitude
 	case 4:
-		return Noise[(arg2/2607)&0x7FFF] * arg1
+		return Noise[(phase/2607)&0x7FFF] * amplitude
 	default:
 		return 0
 	}
 }
 
-func (t *Tone) Read(arg1 *io.Packet) {
+// Unpack
+func (t *Tone) Read(buf *io.Packet) {
 	t.FrequencyBase = envelope.NewEnvelope()
-	t.FrequencyBase.Read(arg1)
+	t.FrequencyBase.Read(buf)
+
 	t.AmplitudeBase = envelope.NewEnvelope()
-	t.AmplitudeBase.Read(arg1)
-	var3 := arg1.G1()
-	if var3 != 0 {
-		arg1.Pos--
+	t.AmplitudeBase.Read(buf)
+
+	hasFrequencyMod := buf.G1()
+	if hasFrequencyMod != 0 {
+		buf.Pos--
+
 		t.FrequencyModRate = envelope.NewEnvelope()
-		t.FrequencyModRate.Read(arg1)
+		t.FrequencyModRate.Read(buf)
 		t.FrequencyModRange = envelope.NewEnvelope()
-		t.FrequencyModRange.Read(arg1)
+		t.FrequencyModRange.Read(buf)
 	}
-	var3 = arg1.G1()
-	if var3 != 0 {
-		arg1.Pos--
+
+	hasAmplitudeMod := buf.G1()
+	if hasAmplitudeMod != 0 {
+		buf.Pos--
+
 		t.AmplitudeModRate = envelope.NewEnvelope()
-		t.AmplitudeModRate.Read(arg1)
+		t.AmplitudeModRate.Read(buf)
 		t.AmplitudeModRange = envelope.NewEnvelope()
-		t.AmplitudeModRange.Read(arg1)
+		t.AmplitudeModRange.Read(buf)
 	}
-	var3 = arg1.G1()
-	if var3 != 0 {
-		arg1.Pos--
+
+	hasReleaseAttack := buf.G1()
+	if hasReleaseAttack != 0 {
+		buf.Pos--
+
 		t.Release = envelope.NewEnvelope()
-		t.Release.Read(arg1)
+		t.Release.Read(buf)
 		t.Attack = envelope.NewEnvelope()
-		t.Attack.Read(arg1)
+		t.Attack.Read(buf)
 	}
+
 	for i := range 10 {
-		var5 := arg1.GSmartS()
-		if var5 == 0 {
+		volume := buf.GSmartS()
+		if volume == 0 {
 			break
 		}
-		t.HarmonicVolume[i] = var5
-		t.HarmonicSemitone[i] = arg1.GSmart()
-		t.HarmonicDelay[i] = arg1.GSmartS()
+
+		t.HarmonicVolume[i] = volume
+		t.HarmonicSemitone[i] = buf.GSmart()
+		t.HarmonicDelay[i] = buf.GSmartS()
 	}
-	t.ReverbDelay = arg1.GSmartS()
-	t.ReverbVolume = arg1.GSmartS()
-	t.Length = arg1.G2()
-	t.Start = arg1.G2()
+
+	t.ReverbDelay = buf.GSmartS()
+	t.ReverbVolume = buf.GSmartS()
+	t.Length = buf.G2()
+	t.Start = buf.G2()
 }

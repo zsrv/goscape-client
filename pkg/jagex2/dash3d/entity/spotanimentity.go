@@ -5,6 +5,7 @@ import (
 	"goscape-client/pkg/jagex2/graphics/model"
 )
 
+// MapSpotAnim
 type SpotAnimEntity struct {
 	Type        *spotanimtype.SpotAnimType
 	StartCycle  int
@@ -46,31 +47,37 @@ func (e *SpotAnimEntity) Update(arg0 int) {
 	}
 }
 
+// GetModel
 func (e *SpotAnimEntity) Draw() *model.Model {
-	var2 := e.Type.GetModel()
-	var3 := model.NewModel4(var2, true, !e.Type.AnimHasAlpha, false)
+	mdl := e.Type.GetModel()
+
+	spot := model.NewModel4(mdl, true, !e.Type.AnimHasAlpha, false)
+
 	if !e.SeqComplete {
-		var3.CreateLabelReferences()
-		var3.ApplyTransform(e.Type.Seq.Frames[e.SeqFrame])
-		var3.LabelFaces = nil
-		var3.LabelVertices = nil
+		spot.CreateLabelReferences()
+		spot.ApplyTransform(e.Type.Seq.Frames[e.SeqFrame])
+		spot.LabelFaces = nil
+		spot.LabelVertices = nil
 	}
+
 	if e.Type.ResizeH != 128 || e.Type.ResizeV != 128 {
-		var3.Scale(e.Type.ResizeH, e.Type.ResizeV, e.Type.ResizeH)
+		spot.Scale(e.Type.ResizeH, e.Type.ResizeV, e.Type.ResizeH)
 	}
+
 	if e.Type.Orientation != 0 {
 		switch e.Type.Orientation {
 		case 90:
-			var3.RotateY90()
+			spot.RotateY90()
 		case 180:
-			var3.RotateY90()
-			var3.RotateY90()
+			spot.RotateY90()
+			spot.RotateY90()
 		case 270:
-			var3.RotateY90()
-			var3.RotateY90()
-			var3.RotateY90()
+			spot.RotateY90()
+			spot.RotateY90()
+			spot.RotateY90()
 		}
 	}
-	var3.CalculateNormals(e.Type.Ambient+64, e.Type.Contrast+850, -30, -50, -30, true)
-	return var3
+
+	spot.CalculateNormals(e.Type.Ambient+64, e.Type.Contrast+850, -30, -50, -30, true)
+	return spot
 }

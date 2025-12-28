@@ -10,14 +10,15 @@ var (
 	State = bzip2state.NewBZip2State()
 )
 
-func Read(arg0 []byte, arg1 int, arg2 []byte, arg3 int, arg4 int) int {
+// Decompress
+func Read(decompressed []byte, length int, stream []byte, availIn int, nextIn int) int {
 	// TODO: synchronized
-	State.Stream = arg2
-	State.NextIn = arg4
-	State.Decompressed = arg0
+	State.Stream = stream
+	State.NextIn = nextIn
+	State.Decompressed = decompressed
 	State.NextOut = 0
-	State.AvailIn = arg3
-	State.AvailOut = arg1
+	State.AvailIn = availIn
+	State.AvailOut = length
 	State.BsLive = 0
 	State.BsBuff = 0
 	State.TotalInLo32 = 0
@@ -26,418 +27,537 @@ func Read(arg0 []byte, arg1 int, arg2 []byte, arg3 int, arg4 int) int {
 	State.TotalOutHi32 = 0
 	State.CurrBlockNo = 0
 	Decompress(State)
-	return arg1 - State.AvailOut
+	return length - State.AvailOut
 }
 
-func Finish(arg0 *bzip2state.BZip2State) {
-	var2 := arg0.StateOutCh
-	var3 := arg0.StateOutLen
-	var4 := arg0.CNBlockUsed
-	var5 := arg0.K0
-	var6 := bzip2state.TT
-	var7 := arg0.TPos
-	var8 := arg0.Decompressed
-	var9 := arg0.NextOut
-	var10 := arg0.AvailOut
-	var11 := var10
-	var12 := arg0.SaveNBlock + 1
+// unRLE_obuf_to_output_FAST
+func Finish(s *bzip2state.BZip2State) {
+	cStateOutCh := s.StateOutCh
+	cStateOutLen := s.StateOutLen
+	cNBlockUsed := s.CNBlockUsed
+	cK0 := s.K0
+	cTT := bzip2state.TT
+	cTPos := s.TPos
+	csDecompressed := s.Decompressed
+	csNextOut := s.NextOut
+	csAvailOut := s.AvailOut
+	availOutInit := csAvailOut
+	sSaveNBlockPP := s.SaveNBlock + 1
+
 label67:
 	for {
-		if var3 > 0 {
+		if cStateOutLen > 0 {
 			for {
-				if var10 == 0 {
+				if csAvailOut == 0 {
 					break label67
 				}
-				if var3 == 1 {
-					if var10 == 0 {
-						var3 = 1
+
+				if cStateOutLen == 1 {
+					if csAvailOut == 0 {
+						cStateOutLen = 1
 						break label67
 					}
-					var8[var9] = var2
-					var9++
-					var10--
+
+					csDecompressed[csNextOut] = cStateOutCh
+					csNextOut++
+					csAvailOut--
 					break
 				}
-				var8[var9] = var2
-				var3--
-				var9++
-				var10--
+
+				csDecompressed[csNextOut] = cStateOutCh
+				cStateOutLen--
+				csNextOut++
+				csAvailOut--
 			}
 		}
-		var14 := true
-		var1 := byte(0)
-		for var14 {
-			var14 = false
-			if var4 == var12 {
-				var3 = 0
+
+		next := true
+		k1 := byte(0)
+		for next {
+			next = false
+			if cNBlockUsed == sSaveNBlockPP {
+				cStateOutLen = 0
 				break label67
 			}
-			var2 = byte(var5)
-			var7 = var6[var7]
-			var1 = byte(var7 & 0xFF)
-			var7 >>= 0x8
-			var4++
-			if int(var1) != var5 {
-				var5 = int(var1)
-				if var10 == 0 {
-					var3 = 1
+
+			// macro: BZ_GET_FAST_C
+			cStateOutCh = byte(cK0)
+			cTPos = cTT[cTPos]
+			k1 = byte(cTPos & 0xFF)
+			cTPos >>= 0x8
+			cNBlockUsed++
+
+			if int(k1) != cK0 {
+				cK0 = int(k1)
+				if csAvailOut == 0 {
+					cStateOutLen = 1
 					break label67
 				}
-				var8[var9] = var2
-				var9++
-				var10--
-				var14 = true
-			} else if var4 == var12 {
-				if var10 == 0 {
-					var3 = 1
+
+				csDecompressed[csNextOut] = cStateOutCh
+				csNextOut++
+				csAvailOut--
+				next = true
+			} else if cNBlockUsed == sSaveNBlockPP {
+				if csAvailOut == 0 {
+					cStateOutLen = 1
 					break label67
 				}
-				var8[var9] = var2
-				var9++
-				var10--
-				var14 = true
+
+				csDecompressed[csNextOut] = cStateOutCh
+				csNextOut++
+				csAvailOut--
+				next = true
 			}
 		}
-		var3 = 2
-		var7 = var6[var7]
-		var1 = byte(var7 & 0xFF)
-		var7 >>= 0x8
-		var4++
-		if var4 != var12 {
-			if int(var1) == var5 {
-				var3 = 3
-				var7 = var6[var7]
-				var1 = byte(var7 & 0xFF)
-				var7 >>= 0x8
-				var4++
-				if var4 != var12 {
-					if int(var1) == var5 {
-						var7 = var6[var7]
-						var1 = byte(var7 & 0xFF)
-						var7 >>= 0x8
-						var4++
-						var3 = int((var1 & 0xFF) + 4)
-						var7 = var6[var7]
-						var5 = var7 & 0xFF // TODO: java converts to byte?
-						var7 >>= 0x8
-						var4++
+
+		// macro: BZ_GET_FAST_C
+		cStateOutLen = 2
+		cTPos = cTT[cTPos]
+		k1 = byte(cTPos & 0xFF)
+		cTPos >>= 0x8
+		cNBlockUsed++
+
+		if cNBlockUsed != sSaveNBlockPP {
+			if int(k1) == cK0 {
+				// macro: BZ_GET_FAST_C
+				cStateOutLen = 3
+				cTPos = cTT[cTPos]
+				k1 = byte(cTPos & 0xFF)
+				cTPos >>= 0x8
+				cNBlockUsed++
+
+				if cNBlockUsed != sSaveNBlockPP {
+					if int(k1) == cK0 {
+						// macro: BZ_GET_FAST_C
+						cTPos = cTT[cTPos]
+						k1 = byte(cTPos & 0xFF)
+						cTPos >>= 0x8
+						cNBlockUsed++
+
+						// macro: BZ_GET_FAST_C
+						cStateOutLen = int((k1 & 0xFF) + 4)
+						cTPos = cTT[cTPos]
+						cK0 = cTPos & 0xFF // TODO: java converts to byte?
+						cTPos >>= 0x8
+						cNBlockUsed++
 					} else {
-						var5 = int(var1)
+						cK0 = int(k1)
 					}
 				}
 			} else {
-				var5 = int(var1)
+				cK0 = int(k1)
 			}
 		}
 	}
-	var13 := arg0.TotalOutLo32
-	arg0.TotalOutLo32 += var11 - var10
-	if arg0.TotalOutLo32 < var13 {
-		arg0.TotalOutHi32++
+
+	var13 := s.TotalOutLo32
+	s.TotalOutLo32 += availOutInit - csAvailOut
+	if s.TotalOutLo32 < var13 {
+		s.TotalOutHi32++
 	}
-	arg0.StateOutCh = var2
-	arg0.StateOutLen = var3
-	arg0.CNBlockUsed = var4
-	arg0.K0 = var5
-	bzip2state.TT = var6
-	arg0.TPos = var7
-	arg0.Decompressed = var8
-	arg0.NextOut = var9
-	arg0.AvailOut = var10
+
+	// save
+	s.StateOutCh = cStateOutCh
+	s.StateOutLen = cStateOutLen
+	s.CNBlockUsed = cNBlockUsed
+	s.K0 = cK0
+	bzip2state.TT = cTT
+	s.TPos = cTPos
+	s.Decompressed = csDecompressed
+	s.NextOut = csNextOut
+	s.AvailOut = csAvailOut
+	// end save
 }
 
-func Decompress(arg0 *bzip2state.BZip2State) {
-	var23 := 0
-	var var24 []int
-	var var25 []int
-	var var26 []int
-	arg0.BlockSize100k = 1
+func Decompress(s *bzip2state.BZip2State) {
+	// libbzip2 uses these variables in a save area
+	/*boolean save_i = false;
+	boolean save_j = false;
+	boolean save_t = false;
+	boolean save_alphaSize = false;
+	boolean save_nGroups = false;
+	boolean save_nSelectors = false;
+	boolean save_EOB = false;
+	boolean save_groupNo = false;
+	boolean save_groupPos = false;
+	boolean save_nextSym = false;
+	boolean save_nblockMAX = false;
+	boolean save_nblock = false;
+	boolean save_es = false;
+	boolean save_N = false;
+	boolean save_curr = false;
+	boolean save_zt = false;
+	boolean save_zn = false;
+	boolean save_zvec = false;
+	boolean save_zj = false;*/
+
+	gMinLen := 0
+	var gLimit []int
+	var gBase []int
+	var gPerm []int
+
+	s.BlockSize100k = 1
 	if bzip2state.TT == nil {
-		bzip2state.TT = make([]int, arg0.BlockSize100k*100_000)
+		bzip2state.TT = make([]int, s.BlockSize100k*100_000)
 	}
-	var27 := true
+
+	reading := true
 	for {
-		for var27 {
-			var1 := GetUnsignedChar(arg0)
-			if var1 == 23 {
+		for reading {
+			uc := GetUnsignedChar(s)
+			if uc == 0x17 {
 				return
 			}
-			var1 = GetUnsignedChar(arg0)
-			var1 = GetUnsignedChar(arg0)
-			var1 = GetUnsignedChar(arg0)
-			var1 = GetUnsignedChar(arg0)
-			var1 = GetUnsignedChar(arg0)
-			arg0.CurrBlockNo++
-			var1 = GetUnsignedChar(arg0)
-			var1 = GetUnsignedChar(arg0)
-			var1 = GetUnsignedChar(arg0)
-			var1 = GetUnsignedChar(arg0)
-			var1 = GetBit(arg0)
-			if var1 == 0 {
-				arg0.BlockRandomized = false
+
+			uc = GetUnsignedChar(s)
+			uc = GetUnsignedChar(s)
+			uc = GetUnsignedChar(s)
+			uc = GetUnsignedChar(s)
+			uc = GetUnsignedChar(s)
+
+			s.CurrBlockNo++
+
+			uc = GetUnsignedChar(s)
+			uc = GetUnsignedChar(s)
+			uc = GetUnsignedChar(s)
+			uc = GetUnsignedChar(s)
+
+			uc = GetBit(s)
+			if uc == 0 {
+				s.BlockRandomized = false
 			} else {
-				arg0.BlockRandomized = true
+				s.BlockRandomized = true
 			}
-			if arg0.BlockRandomized {
+
+			if s.BlockRandomized {
 				fmt.Println("PANIC! RANDOMISED BLOCK!")
 			}
-			arg0.OrigPtr = 0
-			var1 = GetUnsignedChar(arg0)
-			arg0.OrigPtr = arg0.OrigPtr<<8 | int(var1&0xFF)
-			var1 = GetUnsignedChar(arg0)
-			arg0.OrigPtr = arg0.OrigPtr<<8 | int(var1&0xFF)
-			var1 = GetUnsignedChar(arg0)
-			arg0.OrigPtr = arg0.OrigPtr<<8 | int(var1&0xFF)
+
+			s.OrigPtr = 0
+			uc = GetUnsignedChar(s)
+			s.OrigPtr = s.OrigPtr<<8 | int(uc&0xFF)
+			uc = GetUnsignedChar(s)
+			s.OrigPtr = s.OrigPtr<<8 | int(uc&0xFF)
+			uc = GetUnsignedChar(s)
+			s.OrigPtr = s.OrigPtr<<8 | int(uc&0xFF)
+
+			// Receive the mapping table
 			for i := range 16 {
-				var1 = GetBit(arg0)
-				if var1 == 1 {
-					arg0.InUse16[i] = true
+				uc = GetBit(s)
+				if uc == 1 {
+					s.InUse16[i] = true
 				} else {
-					arg0.InUse16[i] = false
+					s.InUse16[i] = false
 				}
 			}
+
 			for i := range 256 {
-				arg0.InUse[i] = false
+				s.InUse[i] = false
 			}
+
 			for i := range 16 {
-				if arg0.InUse16[i] {
+				if s.InUse16[i] {
 					for j := range 16 {
-						var1 = GetBit(arg0)
-						if var1 == 1 {
-							arg0.InUse[i*16+j] = true
+						uc = GetBit(s)
+						if uc == 1 {
+							s.InUse[i*16+j] = true
 						}
 					}
 				}
 			}
-			MakeMaps(arg0)
-			var45 := arg0.NInUse + 2
-			var46 := GetBits(3, arg0)
-			var47 := GetBits(15, arg0)
-			for i := range var47 {
-				var43 := 0
+			MakeMaps(s)
+			alphaSize := s.NInUse + 2
+
+			nGroups := GetBits(3, s)
+			nSelectors := GetBits(15, s)
+			for i := range nSelectors {
+				j := 0
 				for {
-					var1 = GetBit(arg0)
-					if var1 == 0 {
-						arg0.SelectorMTF[i] = byte(var43)
+					uc = GetBit(s)
+					if uc == 0 {
+						s.SelectorMTF[i] = byte(j)
 						break
 					}
-					var43++
+
+					j++
 				}
 			}
-			var28 := make([]byte, 6)
-			var30 := 0
-			for var30 < var46 {
-				var28[var30] = byte(var30)
-				var30++
+
+			// Undo the MTF values for the selectors
+			pos := make([]byte, bzip2state.BZ_N_GROUPS)
+			v := 0
+			for v < nGroups {
+				pos[v] = byte(v)
+				v++
 			}
-			for i := range var47 {
-				var30 = int(arg0.SelectorMTF[i])
-				var29 := var28[var30]
-				for var30 > 0 {
-					var28[var30] = var28[var30-1]
-					var30--
+
+			for i := range nSelectors {
+				v = int(s.SelectorMTF[i])
+				tmp := pos[v]
+				for v > 0 {
+					pos[v] = pos[v-1]
+					v--
 				}
-				var28[0] = var29
-				arg0.Selector[i] = var29
+				pos[0] = tmp
+				s.Selector[i] = tmp
 			}
-			for i := range var46 {
-				var57 := GetBits(5, arg0)
-				for j := range var45 {
+
+			// Now the coding tables
+			for t := range nGroups {
+				curr := GetBits(5, s)
+
+				for i := range alphaSize {
 					for {
-						var1 = GetBit(arg0)
-						if var1 == 0 {
-							arg0.Len[i][j] = byte(var57)
+						uc = GetBit(s)
+						if uc == 0 {
+							s.Len[t][i] = byte(curr)
 							break
 						}
-						var1 = GetBit(arg0)
-						if var1 == 0 {
-							var57++
+
+						uc = GetBit(s)
+						if uc == 0 {
+							curr++
 						} else {
-							var57--
+							curr--
 						}
 					}
 				}
 			}
-			for i := range var46 {
-				var2 := byte(32)
-				var3 := byte(0)
-				for j := range var45 {
-					if arg0.Len[i][j] > var3 {
-						var3 = arg0.Len[i][j]
+
+			// Create the Huffman decoding tables
+			for t := range nGroups {
+				minLen := byte(32)
+				maxLen := byte(0)
+				for i := range alphaSize {
+					if s.Len[t][i] > maxLen {
+						maxLen = s.Len[t][i]
 					}
-					if arg0.Len[i][j] < var2 {
-						var2 = arg0.Len[i][j]
+
+					if s.Len[t][i] < minLen {
+						minLen = s.Len[t][i]
 					}
 				}
-				CreateDecodeTables(arg0.Limit[i], arg0.Base[i], arg0.Perm[i], arg0.Len[i], int(var2), int(var3), var45)
-				arg0.MinLens[i] = int(var2)
+
+				CreateDecodeTables(s.Limit[t], s.Base[t], s.Perm[t], s.Len[t], int(minLen), int(maxLen), alphaSize)
+				s.MinLens[t] = int(minLen)
 			}
-			var48 := arg0.NInUse + 1
-			var49 := -1
-			var50 := byte(0)
+
+			// Now the MTF values
+			eob := s.NInUse + 1
+			groupNo := -1
+			groupPos := byte(0)
+
 			for i := 0; i <= 255; i++ {
-				arg0.UnZFTab[i] = 0
+				s.UnZFTab[i] = 0
 			}
-			var33 := 4095
-			for i := 15; i >= 0; i-- {
-				for j := 15; j >= 0; j-- {
-					arg0.MTFA[var33] = byte(i*16 + j)
-					var33--
+
+			// MTF init
+			kk := bzip2state.MTFA_SIZE - 1
+			for ii := 256/bzip2state.MTFL_SIZE - 1; ii >= 0; ii-- {
+				for jj := bzip2state.MTFL_SIZE - 1; jj >= 0; jj-- {
+					s.MTFA[kk] = byte(ii*16 + jj)
+					kk--
 				}
-				arg0.MTFBase[i] = var33 + 1
+
+				s.MTFBase[ii] = kk + 1
 			}
-			var54 := 0
-			var61 := byte(0)
-			if var50 == 0 {
-				var49++
-				var50 = 50
-				var61 = arg0.Selector[var49]
-				var23 = arg0.MinLens[var61]
-				var24 = arg0.Limit[var61]
-				var26 = arg0.Perm[var61]
-				var25 = arg0.Base[var61]
+			// end MTF init
+
+			nBlock := 0
+
+			// macro: GET_MTF_VAL
+			if groupPos == 0 {
+				groupNo++
+				groupPos = 50
+				gSel := s.Selector[groupNo]
+				gMinLen = s.MinLens[gSel]
+				gLimit = s.Limit[gSel]
+				gPerm = s.Perm[gSel]
+				gBase = s.Base[gSel]
 			}
-			var51 := var50 - 1
-			var58 := var23
-			var59 := 0
-			var60 := byte(0)
-			for var59 = GetBits(var23, arg0); var59 > var24[var58]; var59 = var59<<1 | int(var60) { // TODO: my conversion to int
-				var58++
-				var60 = GetBit(arg0)
+
+			gPos := groupPos - 1
+			zn := gMinLen
+			zvec := 0
+			zj := byte(0)
+			for zvec = GetBits(gMinLen, s); zvec > gLimit[zn]; zvec = zvec<<1 | int(zj) { // TODO: my conversion to int
+				zn++
+				zj = GetBit(s)
 			}
-			var52 := var26[var59-var25[var58]]
+
+			nextSym := gPerm[zvec-gBase[zn]]
 			for {
-				for var52 != var48 {
-					if var52 == 0 || var52 == 1 {
-						var55 := -1
-						var56 := 1
-						for ok := true; ok; ok = var52 == 0 || var52 == 1 {
-							if var52 == 0 {
-								var55 += var56
-							} else if var52 == 1 {
-								var55 += var56 * 2
+				for nextSym != eob {
+					if nextSym == 0 || nextSym == 1 {
+						es := -1
+						n := 1
+
+						for ok := true; ok; ok = nextSym == 0 || nextSym == 1 {
+							if nextSym == 0 {
+								es += n
+							} else if nextSym == 1 {
+								es += n * 2
 							}
-							var56 *= 2
-							if var51 == 0 {
-								var49++
-								var51 = 50
-								var61 = arg0.Selector[var49]
-								var23 = arg0.MinLens[var61]
-								var24 = arg0.Limit[var61]
-								var26 = arg0.Perm[var61]
-								var25 = arg0.Base[var61]
+
+							n *= 2
+
+							// macro: GET_MTF_VAL
+							if gPos == 0 {
+								groupNo++
+								gPos = 50
+								gSel := s.Selector[groupNo]
+								gMinLen = s.MinLens[gSel]
+								gLimit = s.Limit[gSel]
+								gPerm = s.Perm[gSel]
+								gBase = s.Base[gSel]
 							}
-							var51--
-							var58 = var23
-							for var59 = GetBits(var23, arg0); var59 > var24[var58]; var59 = var59<<1 | int(var60) { // TODO: my conversion to int
-								var58++
-								var60 = GetBit(arg0)
+
+							gPos--
+							zn = gMinLen
+							for zvec = GetBits(gMinLen, s); zvec > gLimit[zn]; zvec = zvec<<1 | int(zj) { // TODO: my conversion to int
+								zn++
+								zj = GetBit(s)
 							}
-							var52 = var26[var59-var25[var58]]
+
+							nextSym = gPerm[zvec-gBase[zn]]
 						}
-						var55++
-						var1 = arg0.SeqToUnseq[arg0.MTFA[arg0.MTFBase[0]]&0xFF]
-						arg0.UnZFTab[var1&0xFF] += var55
-						for var55 > 0 {
-							bzip2state.TT[var54] = int(var1 & 0xFF)
-							var54++
-							var55--
+
+						es++
+						var84 := s.SeqToUnseq[s.MTFA[s.MTFBase[0]]&0xFF]
+						s.UnZFTab[var84&0xFF] += es
+
+						for es > 0 {
+							bzip2state.TT[nBlock] = int(var84 & 0xFF)
+							nBlock++
+							es--
 						}
 					} else {
-						var40 := var52 - 1
-						var37 := 0
-						if var40 < 16 {
-							var37 = arg0.MTFBase[0]
-							var1 = arg0.MTFA[var37+var40]
-							for var40 > 3 {
-								var41 := var37 + var40
-								arg0.MTFA[var41] = arg0.MTFA[var41-1]
-								arg0.MTFA[var41-1] = arg0.MTFA[var41-2]
-								arg0.MTFA[var41-2] = arg0.MTFA[var41-3]
-								arg0.MTFA[var41-3] = arg0.MTFA[var41-4]
-								var40 -= 4
+						// uc = MTF ( nextSym-1 )
+
+						nn := nextSym - 1
+
+						if nn < bzip2state.MTFL_SIZE {
+							pp := s.MTFBase[0]
+							uc = s.MTFA[pp+nn]
+
+							for nn > 3 {
+								z := pp + nn
+								s.MTFA[z] = s.MTFA[z-1]
+								s.MTFA[z-1] = s.MTFA[z-2]
+								s.MTFA[z-2] = s.MTFA[z-3]
+								s.MTFA[z-3] = s.MTFA[z-4]
+								nn -= 4
 							}
-							for var40 > 0 {
-								arg0.MTFA[var37+var40] = arg0.MTFA[var37+var40-1]
-								var40--
+
+							for nn > 0 {
+								s.MTFA[pp+nn] = s.MTFA[pp+nn-1]
+								nn--
 							}
-							arg0.MTFA[var37] = var1
+
+							s.MTFA[pp] = uc
 						} else {
-							var38 := var40 / 16
-							var39 := var40 % 16
-							var37 = arg0.MTFBase[var38] + var39
-							var1 = arg0.MTFA[var37]
-							for var37 > arg0.MTFBase[var38] {
-								arg0.MTFA[var37] = arg0.MTFA[var37-1]
-								var37--
+							// general case
+							lno := nn / bzip2state.MTFL_SIZE
+							off := nn % bzip2state.MTFL_SIZE
+
+							pp := s.MTFBase[lno] + off
+							uc = s.MTFA[pp]
+
+							for pp > s.MTFBase[lno] {
+								s.MTFA[pp] = s.MTFA[pp-1]
+								pp--
 							}
-							arg0.MTFBase[var38]++
-							for var38 > 0 {
-								arg0.MTFBase[var38]--
-								arg0.MTFA[arg0.MTFBase[var38]] = arg0.MTFA[arg0.MTFBase[var38-1]+16-1]
-								var38--
+
+							s.MTFBase[lno]++
+
+							for lno > 0 {
+								s.MTFBase[lno]--
+								s.MTFA[s.MTFBase[lno]] = s.MTFA[s.MTFBase[lno-1]+16-1]
+								lno--
 							}
-							arg0.MTFBase[0]--
-							arg0.MTFA[arg0.MTFBase[0]] = var1
-							if arg0.MTFBase[0] == 0 {
-								var36 := 4095
-								for i := 15; i >= 0; i-- {
-									for j := 15; j >= 0; j-- {
-										arg0.MTFA[var36] = arg0.MTFA[arg0.MTFBase[i]+j]
-										var36--
+
+							s.MTFBase[0]--
+							s.MTFA[s.MTFBase[0]] = uc
+
+							if s.MTFBase[0] == 0 {
+								kk = bzip2state.MTFA_SIZE - 1
+
+								for ii := 256/bzip2state.MTFL_SIZE - 1; ii >= 0; ii-- {
+									for jj := bzip2state.MTFL_SIZE - 1; jj >= 0; jj-- {
+										s.MTFA[kk] = s.MTFA[s.MTFBase[ii]+jj]
+										kk--
 									}
-									arg0.MTFBase[i] = var36 + 1
+
+									s.MTFBase[ii] = kk + 1
 								}
 							}
 						}
-						arg0.UnZFTab[arg0.SeqToUnseq[var1&0xFF]&0xFF]++
-						bzip2state.TT[var54] = int(arg0.SeqToUnseq[var1&0xFF] & 0xFF)
-						var54++
-						if var51 == 0 {
-							var49++
-							var51 = 50
-							var61 = arg0.Selector[var49]
-							var23 = arg0.MinLens[var61]
-							var24 = arg0.Limit[var61]
-							var26 = arg0.Perm[var61]
-							var25 = arg0.Base[var61]
+						// end uc = MTF ( nextSym-1 )
+
+						s.UnZFTab[s.SeqToUnseq[uc&0xFF]&0xFF]++
+						bzip2state.TT[nBlock] = int(s.SeqToUnseq[uc&0xFF] & 0xFF)
+						nBlock++
+
+						// macro: GET_MTF_VAL
+						if gPos == 0 {
+							groupNo++
+							gPos = 50
+							gSel := s.Selector[groupNo]
+							gMinLen = s.MinLens[gSel]
+							gLimit = s.Limit[gSel]
+							gPerm = s.Perm[gSel]
+							gBase = s.Base[gSel]
 						}
-						var51--
-						var58 = var23
-						for var59 = GetBits(var23, arg0); var59 > var24[var58]; var59 = var59<<1 | int(var60) { // TODO: my conversion to int
-							var58++
-							var60 = GetBit(arg0)
+
+						gPos--
+						zn = gMinLen
+						for zvec = GetBits(gMinLen, s); zvec > gLimit[zn]; zvec = zvec<<1 | int(zj) { // TODO: my conversion to int
+							zn++
+							zj = GetBit(s)
 						}
-						var52 = var26[var59-var25[var58]]
+						nextSym = gPerm[zvec-gBase[zn]]
 					}
 				}
-				arg0.StateOutLen = 0
-				arg0.StateOutCh = 0
-				arg0.CFTab[0] = 0
+
+				// Set up cftab to facilitate generation of T^(-1)
+
+				// Actually generate cftab
+				s.StateOutLen = 0
+				s.StateOutCh = 0
+				s.CFTab[0] = 0
+
 				for i := 1; i <= 256; i++ {
-					arg0.CFTab[i] = arg0.UnZFTab[i-1]
+					s.CFTab[i] = s.UnZFTab[i-1]
 				}
+
 				for i := 1; i <= 256; i++ {
-					arg0.CFTab[i] += arg0.CFTab[i-1]
+					s.CFTab[i] += s.CFTab[i-1]
 				}
-				for i := range var54 {
-					var1 = byte(bzip2state.TT[i] & 0xFF)
-					bzip2state.TT[arg0.CFTab[var1&0xFF]] |= i << 8
-					arg0.CFTab[var1&0xFF]++
+
+				for i := range nBlock {
+					uc = byte(bzip2state.TT[i] & 0xFF)
+					bzip2state.TT[s.CFTab[uc&0xFF]] |= i << 8
+					s.CFTab[uc&0xFF]++
 				}
-				arg0.TPos = bzip2state.TT[arg0.OrigPtr] >> 8
-				arg0.CNBlockUsed = 0
-				arg0.TPos = bzip2state.TT[arg0.TPos]
-				arg0.K0 = int(byte(arg0.TPos & 0xFF)) // TODO: my double conversion
-				arg0.TPos >>= 0x8
-				arg0.CNBlockUsed++
-				arg0.SaveNBlock = var54
-				Finish(arg0)
-				if arg0.CNBlockUsed == arg0.SaveNBlock+1 && arg0.StateOutLen == 0 {
-					var27 = true
+
+				s.TPos = bzip2state.TT[s.OrigPtr] >> 8
+				s.CNBlockUsed = 0
+
+				// macro: BZ_GET_FAST
+				s.TPos = bzip2state.TT[s.TPos]
+				s.K0 = int(byte(s.TPos & 0xFF)) // TODO: my double conversion
+				s.TPos >>= 0x8
+				s.CNBlockUsed++
+
+				s.SaveNBlock = nBlock
+				Finish(s)
+
+				if s.CNBlockUsed == s.SaveNBlock+1 && s.StateOutLen == 0 {
+					reading = true
 					break
 				}
-				var27 = false
+				reading = false
 				break
 			}
 		}
@@ -445,69 +565,79 @@ func Decompress(arg0 *bzip2state.BZip2State) {
 	}
 }
 
-func GetUnsignedChar(arg0 *bzip2state.BZip2State) byte {
-	return byte(GetBits(8, arg0))
+func GetUnsignedChar(s *bzip2state.BZip2State) byte {
+	return byte(GetBits(8, s))
 }
 
-func GetBit(arg0 *bzip2state.BZip2State) byte {
-	return byte(GetBits(1, arg0))
+func GetBit(s *bzip2state.BZip2State) byte {
+	return byte(GetBits(1, s))
 }
 
-func GetBits(arg0 int, arg1 *bzip2state.BZip2State) int {
-	for arg1.BsLive < arg0 {
-		arg1.BsBuff = arg1.BsBuff<<8 | int(arg1.Stream[arg1.NextIn]&0xFF) // TODO: my conversion to int
-		arg1.BsLive += 8
-		arg1.NextIn++
-		arg1.AvailIn--
-		arg1.TotalInLo32++
-		if arg1.TotalInLo32 == 0 {
-			arg1.TotalInHi32++
+func GetBits(n int, s *bzip2state.BZip2State) int {
+	for s.BsLive < n {
+		s.BsBuff = s.BsBuff<<8 | int(s.Stream[s.NextIn]&0xFF) // TODO: my conversion to int
+		s.BsLive += 8
+
+		s.NextIn++
+		s.AvailIn--
+
+		s.TotalInLo32++
+		if s.TotalInLo32 == 0 {
+			s.TotalInHi32++
 		}
 	}
-	var3 := int32(arg1.BsBuff) >> (int32(arg1.BsLive) - int32(arg0)) & ((0x1 << int32(arg0)) - 1)
-	arg1.BsLive -= arg0
-	return int(var3)
+
+	value := int32(s.BsBuff) >> (int32(s.BsLive) - int32(n)) & ((0x1 << int32(n)) - 1)
+	s.BsLive -= n
+	return int(value)
 }
 
-func MakeMaps(arg0 *bzip2state.BZip2State) {
-	arg0.NInUse = 0
+func MakeMaps(s *bzip2state.BZip2State) {
+	s.NInUse = 0
 	for i := range 256 {
-		if arg0.InUse[i] {
-			arg0.SeqToUnseq[arg0.NInUse] = byte(i)
-			arg0.NInUse++
+		if s.InUse[i] {
+			s.SeqToUnseq[s.NInUse] = byte(i)
+			s.NInUse++
 		}
 	}
 }
 
-func CreateDecodeTables(arg0 []int, arg1 []int, arg2 []int, arg3 []byte, arg4, arg5, arg6 int) {
-	var7 := 0
-	for i := arg4; i <= arg5; i++ {
-		for j := range arg6 {
-			if int(arg3[j]) == i {
-				arg2[var7] = j
-				var7++
+func CreateDecodeTables(limit []int, base []int, perm []int, length []byte, minLen, maxLen, alphaSize int) {
+	pp := 0
+
+	for i := minLen; i <= maxLen; i++ {
+		for j := range alphaSize {
+			if int(length[j]) == i {
+				perm[pp] = j
+				pp++
 			}
 		}
 	}
-	for i := range 23 {
-		arg1[i] = 0
+
+	for i := range bzip2state.BZ_MAX_CODE_LEN {
+		base[i] = 0
 	}
-	for i := range arg6 {
-		arg1[arg3[i]+1]++
+
+	for i := range alphaSize {
+		base[length[i]+1]++
 	}
-	for i := 1; i < 23; i++ {
-		arg1[i] += arg1[i-1]
+
+	for i := 1; i < bzip2state.BZ_MAX_CODE_LEN; i++ {
+		base[i] += base[i-1]
 	}
-	for i := range 23 {
-		arg0[i] = 0
+
+	for i := range bzip2state.BZ_MAX_CODE_LEN {
+		limit[i] = 0
 	}
-	var10 := 0
-	for i := arg4; i <= arg5; i++ {
-		var10 += arg1[i+1] - arg1[i]
-		arg0[i] = var10 - 1
-		var10 <<= 0x1
+
+	vec := 0
+	for i := minLen; i <= maxLen; i++ {
+		vec += base[i+1] - base[i]
+		limit[i] = vec - 1
+		vec <<= 1
 	}
-	for i := arg4 + 1; i <= arg5; i++ {
-		arg1[i] = ((arg0[i-1] + 1) << 1) - arg1[i]
+
+	for i := minLen + 1; i <= maxLen; i++ {
+		base[i] = ((limit[i-1] + 1) << 1) - base[i]
 	}
 }

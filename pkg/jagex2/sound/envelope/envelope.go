@@ -20,19 +20,23 @@ func NewEnvelope() *Envelope {
 	return new(Envelope)
 }
 
-func (e *Envelope) Read(arg1 *io.Packet) {
-	e.Form = arg1.G1()
-	e.Start = arg1.G4()
-	e.End = arg1.G4()
-	e.Length = arg1.G1()
+// Unpack
+func (e *Envelope) Read(buf *io.Packet) {
+	e.Form = buf.G1()
+	e.Start = buf.G4()
+	e.End = buf.G4()
+
+	// load points
+	e.Length = buf.G1()
 	e.ShapeDelta = make([]int, e.Length)
 	e.ShapePeak = make([]int, e.Length)
 	for i := range e.Length {
-		e.ShapeDelta[i] = arg1.G2()
-		e.ShapePeak[i] = arg1.G2()
+		e.ShapeDelta[i] = buf.G2()
+		e.ShapePeak[i] = buf.G2()
 	}
 }
 
+// GenInit
 func (e *Envelope) Reset() {
 	e.Threshold = 0
 	e.Position = 0
@@ -41,14 +45,15 @@ func (e *Envelope) Reset() {
 	e.Ticks = 0
 }
 
-func (e *Envelope) Evaluate(arg1 int) int {
+// GenNext
+func (e *Envelope) Evaluate(delta int) int {
 	if e.Ticks >= e.Threshold {
 		e.Amplitude = e.ShapePeak[e.Position] << 15
 		e.Position++
 		if e.Position >= e.Length {
 			e.Position = e.Length - 1
 		}
-		e.Threshold = int(float64(e.ShapeDelta[e.Position]) / 65536.0 * float64(arg1))
+		e.Threshold = int(float64(e.ShapeDelta[e.Position]) / 65536.0 * float64(delta))
 		if e.Threshold > e.Ticks {
 			e.Delta = ((e.ShapePeak[e.Position] << 15) - e.Amplitude) / (e.Threshold - e.Ticks)
 		}

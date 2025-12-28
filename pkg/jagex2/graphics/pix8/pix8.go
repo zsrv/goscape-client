@@ -16,40 +16,40 @@ type Pix8 struct {
 	Height  int
 }
 
-func NewPix8(arg0 *io.Jagfile, arg1 string, arg2 int) *Pix8 {
+func NewPix8(jag *io.Jagfile, name string, sprite int) *Pix8 {
 	p := new(Pix8)
 
-	var4 := io.NewPacket(arg0.Read(arg1+".dat", nil))
-	var5 := io.NewPacket(arg0.Read("index.dat", nil))
-	var5.Pos = var4.G2()
+	dat := io.NewPacket(jag.Read(name+".dat", nil))
+	idx := io.NewPacket(jag.Read("index.dat", nil))
+	idx.Pos = dat.G2()
 
-	p.CropW = int(var5.G2())
-	p.CropH = int(var5.G2())
-	var6 := var5.G1()
-	p.Palette = make([]int, var6)
-	for i := range var6 - 1 {
-		p.Palette[i+1] = int(var5.G3())
+	p.CropW = int(idx.G2())
+	p.CropH = int(idx.G2())
+	palCount := idx.G1()
+	p.Palette = make([]int, palCount)
+	for i := range palCount - 1 {
+		p.Palette[i+1] = int(idx.G3())
 	}
-	for range arg2 {
-		var5.Pos += 2
-		var4.Pos += var5.G2() * var5.G2()
-		var5.Pos++
+	for range sprite {
+		idx.Pos += 2
+		dat.Pos += idx.G2() * idx.G2()
+		idx.Pos++
 	}
-	p.CropX = int(var5.G1())
-	p.CropY = int(var5.G1())
-	p.Width = int(var5.G2())
-	p.Height = int(var5.G2())
-	var9 := var5.G1()
-	var10 := p.Width * p.Height
-	p.Pixels = make([]byte, var10)
-	if var9 == 0 {
-		for i := range var10 {
-			p.Pixels[i] = var4.G1B()
+	p.CropX = int(idx.G1())
+	p.CropY = int(idx.G1())
+	p.Width = int(idx.G2())
+	p.Height = int(idx.G2())
+	pixelOrder := idx.G1()
+	length := p.Width * p.Height
+	p.Pixels = make([]byte, length)
+	if pixelOrder == 0 {
+		for i := range length {
+			p.Pixels[i] = dat.G1B()
 		}
-	} else if var9 == 1 {
+	} else if pixelOrder == 1 {
 		for i := range p.Width {
 			for j := range p.Height {
-				p.Pixels[i+j*p.Width] = var4.G1B()
+				p.Pixels[i+j*p.Width] = dat.G1B()
 			}
 		}
 	}
@@ -61,9 +61,9 @@ func (p *Pix8) Shrink() {
 	p.CropH /= 2
 	pixels := make([]byte, p.CropW*p.CropH)
 	var3 := 0
-	for i := range p.Height {
-		for j := range p.Width {
-			pixels[((j+p.CropX)>>1)+((i+p.CropY)>>1)*p.CropW] = p.Pixels[var3]
+	for y := range p.Height {
+		for x := range p.Width {
+			pixels[((x+p.CropX)>>1)+((y+p.CropY)>>1)*p.CropW] = p.Pixels[var3]
 			var3++
 		}
 	}
@@ -79,11 +79,11 @@ func (p *Pix8) Crop() {
 		return
 	}
 	pixels := make([]byte, p.CropW*p.CropH)
-	var3 := 0
-	for i := range p.Height {
-		for j := range p.Width {
-			pixels[j+p.CropX+(i+p.CropY)*p.CropW] = p.Pixels[var3]
-			var3++
+	i := 0
+	for y := range p.Height {
+		for x := range p.Width {
+			pixels[x+p.CropX+(y+p.CropY)*p.CropW] = p.Pixels[i]
+			i++
 		}
 	}
 	p.Pixels = pixels
@@ -95,11 +95,11 @@ func (p *Pix8) Crop() {
 
 func (p *Pix8) FlipHorizontally() {
 	pixels := make([]byte, p.Width*p.Height)
-	var3 := 0
-	for i := range p.Height {
-		for j := p.Width - 1; j >= 0; j-- {
-			pixels[var3] = p.Pixels[j+i+p.Width]
-			var3++
+	i := 0
+	for y := range p.Height {
+		for x := p.Width - 1; x >= 0; x-- {
+			pixels[i] = p.Pixels[x+y+p.Width]
+			i++
 		}
 	}
 	p.Pixels = pixels
@@ -108,11 +108,11 @@ func (p *Pix8) FlipHorizontally() {
 
 func (p *Pix8) FlipVertically() {
 	pixels := make([]byte, p.Width*p.Height)
-	var3 := 0
-	for i := p.Height - 1; i >= 0; i-- {
-		for j := range p.Width {
-			pixels[var3] = p.Pixels[j+i*p.Width]
-			var3++
+	i := 0
+	for y := p.Height - 1; y >= 0; y-- {
+		for x := range p.Width {
+			pixels[i] = p.Pixels[x+y*p.Width]
+			i++
 		}
 	}
 	p.Pixels = pixels
@@ -147,37 +147,37 @@ func (p *Pix8) Translate(arg0 int, arg1 int, arg2 int) {
 	}
 }
 
-func (p *Pix8) Draw(arg0 int, arg1 int) {
-	arg1 += p.CropX
-	arg0 += p.CropY
-	var4 := arg1 + arg0*pix2d.Width2D
+func (p *Pix8) Draw(y int, x int) {
+	x += p.CropX
+	y += p.CropY
+	var4 := x + y*pix2d.Width2D
 	var5 := 0
 	var6 := p.Height
 	var7 := p.Width
 	var8 := pix2d.Width2D - var7
 	var9 := 0
 	var10 := 0
-	if arg0 < pix2d.BoundTop {
-		var10 = pix2d.BoundTop - arg0
+	if y < pix2d.BoundTop {
+		var10 = pix2d.BoundTop - y
 		var6 -= var10
-		arg0 = pix2d.BoundTop
+		y = pix2d.BoundTop
 		var5 += var10 * var7
 		var4 += var10 * pix2d.Width2D
 	}
-	if arg0+var6 > pix2d.BoundBottom {
-		var6 -= arg0 + var6 - pix2d.BoundBottom
+	if y+var6 > pix2d.BoundBottom {
+		var6 -= y + var6 - pix2d.BoundBottom
 	}
-	if arg1 < pix2d.BoundLeft {
-		var10 = pix2d.BoundLeft - arg1
+	if x < pix2d.BoundLeft {
+		var10 = pix2d.BoundLeft - x
 		var7 -= var10
-		arg1 = pix2d.BoundLeft
+		x = pix2d.BoundLeft
 		var5 += var10
 		var4 += var10
 		var9 += var10
 		var8 += var10
 	}
-	if arg1+var7 > pix2d.BoundRight {
-		var10 = arg1 + var7 - pix2d.BoundRight
+	if x+var7 > pix2d.BoundRight {
+		var10 = x + var7 - pix2d.BoundRight
 		var7 -= var10
 		var9 += var10
 		var8 += var10

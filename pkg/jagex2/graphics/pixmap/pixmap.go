@@ -8,6 +8,8 @@ import (
 	"gioui.org/op/paint"
 )
 
+// TODO
+
 // PixMap is a CPU-side pixel buffer that can be efficiently uploaded to GPU.
 type PixMap struct {
 	Pixels []byte

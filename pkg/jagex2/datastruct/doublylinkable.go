@@ -13,6 +13,7 @@ func NewDoublyLinkable[T any](value T) *DoublyLinkable[T] {
 	}
 }
 
+// Unlink2
 func (d *DoublyLinkable[T]) Uncache() {
 	if d.prev2 != nil {
 		d.prev2.next2 = d.next2

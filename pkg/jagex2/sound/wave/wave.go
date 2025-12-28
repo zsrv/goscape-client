@@ -24,135 +24,152 @@ func NewWave() *Wave {
 	}
 }
 
-func Unpack(arg0 *io.Packet) {
+func Unpack(buf *io.Packet) {
 	WaveBytes = make([]byte, 441_000)
 	WaveBuffer = io.NewPacket(WaveBytes)
+
 	tone.Init()
+
 	for {
-		var2 := arg0.G2()
-		if var2 == 65535 {
+		id := buf.G2()
+		if id == 65535 {
 			return
 		}
-		Tracks[var2] = NewWave()
-		Tracks[var2].Read(arg0)
-		Delays[var2] = Tracks[var2].Trim()
+		Tracks[id] = NewWave()
+		Tracks[id].Read(buf)
+		Delays[id] = Tracks[id].Trim()
 	}
 }
 
-func Generate(arg1, arg2 int) *io.Packet {
-	if Tracks[arg2] == nil {
+func Generate(loopCount, id int) *io.Packet {
+	if Tracks[id] == nil {
 		return nil
 	}
-	var3 := Tracks[arg2]
-	return var3.GetWave(arg1)
+	wave := Tracks[id]
+	return wave.GetWave(loopCount)
 }
 
-func (w *Wave) Read(arg1 *io.Packet) {
-	for i := range 10 {
-		var4 := arg1.G1()
-		if var4 != 0 {
-			arg1.Pos--
-			w.Tones[i] = tone.NewTone()
-			w.Tones[i].Read(arg1)
+func (w *Wave) Read(buf *io.Packet) {
+	for tn := range 10 {
+		hasTone := buf.G1()
+		if hasTone != 0 {
+			buf.Pos--
+			w.Tones[tn] = tone.NewTone()
+			w.Tones[tn].Read(buf)
 		}
 	}
-	w.LoopBegin = arg1.G2()
-	w.LoopEnd = arg1.G2()
+
+	w.LoopBegin = buf.G2()
+	w.LoopEnd = buf.G2()
 }
 
 func (w *Wave) Trim() int {
-	var2 := 9999999
-	for i := range 10 {
-		if w.Tones[i] != nil && w.Tones[i].Start/20 < var2 {
-			var2 = w.Tones[i].Start / 20
+	start := 9999999
+	for tn := range 10 {
+		if w.Tones[tn] != nil && w.Tones[tn].Start/20 < start {
+			start = w.Tones[tn].Start / 20
 		}
 	}
-	if w.LoopBegin < w.LoopEnd && w.LoopBegin/20 < var2 {
-		var2 = w.LoopBegin / 20
+
+	if w.LoopBegin < w.LoopEnd && w.LoopBegin/20 < start {
+		start = w.LoopBegin / 20
 	}
-	if var2 == 9999999 || var2 == 0 {
+
+	if start == 9999999 || start == 0 {
 		return 0
 	}
-	for i := range 10 {
-		if w.Tones[i] != nil {
-			w.Tones[i].Start -= var2 * 20
+
+	for tn := range 10 {
+		if w.Tones[tn] != nil {
+			w.Tones[tn].Start -= start * 20
 		}
 	}
+
 	if w.LoopBegin < w.LoopEnd {
-		w.LoopBegin -= var2 * 20
-		w.LoopEnd -= var2 * 20
+		w.LoopBegin -= start * 20
+		w.LoopEnd -= start * 20
 	}
-	return var2
+
+	return start
 }
 
-func (w *Wave) GetWave(arg1 int) *io.Packet {
-	var3 := w.Generate(arg1)
+func (w *Wave) GetWave(loopCount int) *io.Packet {
+	length := w.Generate(loopCount)
 	WaveBuffer.Pos = 0
-	WaveBuffer.P4(1380533830)
-	WaveBuffer.IP4(var3 + 36)
-	WaveBuffer.P4(1463899717)
-	WaveBuffer.P4(1718449184)
-	WaveBuffer.IP4(16)
-	WaveBuffer.IP2(1)
-	WaveBuffer.IP2(1)
-	WaveBuffer.IP4(22050)
-	WaveBuffer.IP4(22050)
-	WaveBuffer.IP2(1)
-	WaveBuffer.IP2(8)
-	WaveBuffer.P4(1684108385)
-	WaveBuffer.IP4(var3)
-	WaveBuffer.Pos += var3
+	WaveBuffer.P4(0x52494646)   // "RIFF" ChunkID
+	WaveBuffer.IP4(length + 36) // ChunkSize
+	WaveBuffer.P4(0x57415645)   // "WAVE" format
+	WaveBuffer.P4(0x666d7420)   // "fmt " chunk id
+	WaveBuffer.IP4(16)          // chunk size
+	WaveBuffer.IP2(1)           // audio format
+	WaveBuffer.IP2(1)           // num channels
+	WaveBuffer.IP4(22050)       // sample rate
+	WaveBuffer.IP4(22050)       // byte rate
+	WaveBuffer.IP2(1)           // block align
+	WaveBuffer.IP2(8)           // bits per sample
+	WaveBuffer.P4(0x64617461)   // "data"
+	WaveBuffer.IP4(length)
+	WaveBuffer.Pos += length
 	return WaveBuffer
 }
 
-func (w *Wave) Generate(arg0 int) int {
-	var2 := 0
-	for i := range 10 {
-		if w.Tones[i] != nil && w.Tones[i].Length+w.Tones[i].Start > var2 {
-			var2 = w.Tones[i].Length + w.Tones[i].Start
+func (w *Wave) Generate(loopCount int) int {
+	duration := 0
+	for tn := range 10 {
+		if w.Tones[tn] != nil && w.Tones[tn].Length+w.Tones[tn].Start > duration {
+			duration = w.Tones[tn].Length + w.Tones[tn].Start
 		}
 	}
-	if var2 == 0 {
+
+	if duration == 0 {
 		return 0
 	}
-	var4 := var2 * 22050 / 1000
-	var5 := w.LoopBegin * 22050 / 1000
-	var6 := w.LoopEnd * 22050 / 1000
-	if var5 < 0 || var5 > var4 || var6 < 0 || var6 > var4 || var5 >= var6 {
-		arg0 = 0
+
+	sampleCount := duration * 22050 / 1000
+	loopStart := w.LoopBegin * 22050 / 1000
+	loopStop := w.LoopEnd * 22050 / 1000
+
+	if loopStart < 0 || loopStart > sampleCount || loopStop < 0 || loopStop > sampleCount || loopStart >= loopStop {
+		loopCount = 0
 	}
-	var7 := var4 + (var6-var5)*(arg0-1)
-	for i := 44; i < var7+44; i++ {
-		WaveBytes[i] = -128 & 0xFF // TODO: AND is mine, verify behavior
+
+	totalSampleCount := sampleCount + (loopStop-loopStart)*(loopCount-1)
+	for sample := 44; sample < totalSampleCount+44; sample++ {
+		WaveBytes[sample] = -128 & 0xFF // TODO: AND is mine, verify behavior
 	}
-	var10 := 0
-	var11 := 0
-	for i := range 10 {
-		if w.Tones[i] != nil {
-			var10 = w.Tones[i].Length * 22050 / 1000
-			var11 = w.Tones[i].Start * 22050 / 1000
-			var12 := w.Tones[i].Generate(var10, w.Tones[i].Length)
-			for j := range var10 {
-				WaveBytes[j+var11+44] += byte(var12[j] >> 8)
+
+	for tn := range 10 {
+		if w.Tones[tn] != nil {
+			toneSampleCount := w.Tones[tn].Length * 22050 / 1000
+			start := w.Tones[tn].Start * 22050 / 1000
+			samples := w.Tones[tn].Generate(toneSampleCount, w.Tones[tn].Length)
+			for sample := range toneSampleCount {
+				WaveBytes[sample+start+44] += byte(samples[sample] >> 8)
 			}
 		}
 	}
-	if arg0 > 1 {
-		var5 += 44
-		var6 += 44
-		var4 += 44
-		var7 += 44
-		var10 = var7 - var4
-		for i := var4 - 1; i >= var6; i-- {
-			WaveBytes[i+var10] = WaveBytes[i]
+
+	if loopCount > 1 {
+		loopStart += 44
+		loopStop += 44
+		sampleCount += 44
+		totalSampleCount += 44
+
+		endOffset := totalSampleCount - sampleCount
+		for sample := sampleCount - 1; sample >= loopStop; sample-- {
+			WaveBytes[sample+endOffset] = WaveBytes[sample]
 		}
-		for i := 1; i < arg0; i++ {
-			var10 = (var6 - var5) * i
-			for j := var5; j < var6; j++ {
-				WaveBytes[j+var10] = WaveBytes[j]
+
+		for loop := 1; loop < loopCount; loop++ {
+			offset := (loopStop - loopStart) * loop
+
+			for sample := loopStart; sample < loopStop; sample++ {
+				WaveBytes[sample+offset] = WaveBytes[sample]
 			}
 		}
-		var7 -= 44
+
+		totalSampleCount -= 44
 	}
-	return var7
+
+	return totalSampleCount
 }

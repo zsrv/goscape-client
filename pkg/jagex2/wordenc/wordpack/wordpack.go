@@ -11,81 +11,92 @@ var (
 	TABLE      []rune = []rune{' ', 'e', 't', 'a', 'o', 'i', 'h', 'n', 's', 'r', 'd', 'l', 'u', 'm', 'w', 'c', 'y', 'f', 'g', 'p', 'b', 'v', 'k', 'x', 'j', 'q', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '?', '.', ',', ':', ';', '(', ')', '-', '&', '*', '\\', '\'', '@', '#', '+', '=', '£', '$', '%', '"', '[', ']'}
 )
 
-func Unpack(arg0 *io.Packet, arg2 int) string {
-	var3 := 0
-	var4 := -1
-	for range arg2 {
-		var6 := arg0.G1()
-		var7 := (var6 >> 4) & 0xF
-		if var4 != -1 {
-			CharBuffer[var3] = TABLE[(var4<<4)+var7-195]
-			var3++
-			var4 = -1
-		} else if var7 < 13 {
-			CharBuffer[var3] = TABLE[var7]
-			var3++
+func Unpack(buf *io.Packet, length int) string {
+	pos := 0
+	carry := -1
+
+	for range length {
+		value := buf.G1()
+
+		nibble := (value >> 4) & 0xF
+		if carry != -1 {
+			CharBuffer[pos] = TABLE[(carry<<4)+nibble-195]
+			pos++
+			carry = -1
+		} else if nibble < 13 {
+			CharBuffer[pos] = TABLE[nibble]
+			pos++
 		} else {
-			var4 = var7
+			carry = nibble
 		}
-		var7 = var6 & 0xF
-		if var4 != -1 {
-			CharBuffer[var3] = TABLE[(var4<<4)+var7-195]
-			var3++
-			var4 = -1
-		} else if var7 < 13 {
-			CharBuffer[var3] = TABLE[var7]
-			var3++
+
+		nibble = value & 0xF
+		if carry != -1 {
+			CharBuffer[pos] = TABLE[(carry<<4)+nibble-195]
+			pos++
+			carry = -1
+		} else if nibble < 13 {
+			CharBuffer[pos] = TABLE[nibble]
+			pos++
 		} else {
-			var4 = var7
+			carry = nibble
 		}
 	}
-	var10 := true
-	for i := range var3 {
-		var8 := CharBuffer[i]
-		if var10 && var8 >= 'a' && var8 <= 'z' {
+
+	uppercase := true
+	for i := range pos {
+		c := CharBuffer[i]
+		if uppercase && c >= 'a' && c <= 'z' {
 			CharBuffer[i] = CharBuffer[i] + -32
-			var10 = false
+			uppercase = false
 		}
-		if var8 == '.' || var8 == '!' {
-			var10 = true
+
+		if c == '.' || c == '!' {
+			uppercase = true
 		}
 	}
-	return string(CharBuffer[0:var3]) // TODO: var3 or var3-1?
+
+	return string(CharBuffer[0:pos]) // TODO: pos or pos-1?
 }
 
-func Pack(arg0 *io.Packet, arg1 bool, arg2 string) {
-	if len(arg2) > 80 {
-		arg2 = arg2[0:80] // TODO: verify 80
+func Pack(buf *io.Packet, str string) {
+	if len(str) > 80 {
+		str = str[0:80] // TODO: verify 80
 	}
-	arg2 = strings.ToLower(arg2)
-	var3 := -1
-	for i := range len(arg2) {
-		var5 := rune(arg2[i])
-		var6 := 0
+	str = strings.ToLower(str)
+
+	carry := -1
+	for i := range len(str) {
+		c := rune(str[i])
+
+		index := 0
 		for j := range len(TABLE) {
-			if var5 == TABLE[j] {
-				var6 = j
+			if c == TABLE[j] {
+				index = j
 				break
 			}
 		}
-		if var6 > 12 {
-			var6 += 195
+
+		if index > 12 {
+			index += 195
 		}
-		if var3 == -1 {
-			if var6 < 13 {
-				var3 = var6
+
+		if carry == -1 {
+			if index < 13 {
+				carry = index
 			} else {
-				arg0.P1(var6)
+				buf.P1(index)
 			}
-		} else if var6 < 13 {
-			arg0.P1((var3 << 4) + var6)
-			var3 = -1
+		} else if index < 13 {
+			buf.P1((carry << 4) + index)
+			carry = -1
 		} else {
-			arg0.P1((var3 << 4) + (var6 >> 4))
-			var3 = var6 & 0xF
+			buf.P1((carry << 4) + (index >> 4))
+			carry = index & 0xF
 		}
 	}
-	if arg1 && var3 != -1 {
-		arg0.P1(var3 << 4)
+
+	if carry != -1 {
+		buf.P1(carry << 4)
 	}
 }

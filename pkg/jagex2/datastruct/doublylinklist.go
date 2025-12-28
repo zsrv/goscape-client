@@ -13,21 +13,21 @@ func NewDoublyLinkList[T any]() *DoublyLinkList[T] {
 	}
 }
 
-func (l *DoublyLinkList[T]) Push(arg0 *DoublyLinkable[T]) {
-	if arg0.prev2 != nil {
-		arg0.Uncache()
+func (l *DoublyLinkList[T]) Push(node *DoublyLinkable[T]) {
+	if node.prev2 != nil {
+		node.Uncache()
 	}
-	arg0.prev2 = l.head.prev2
-	arg0.next2 = l.head
-	arg0.prev2.next2 = arg0
-	arg0.next2.prev2 = arg0
+	node.prev2 = l.head.prev2
+	node.next2 = l.head
+	node.prev2.next2 = node
+	node.next2.prev2 = node
 }
 
 func (l *DoublyLinkList[T]) Pop() *DoublyLinkable[T] {
-	var1 := l.head.next2
-	if var1 == l.head {
+	node := l.head.next2
+	if node == l.head {
 		return nil
 	}
-	var1.Uncache()
-	return var1
+	node.Uncache()
+	return node
 }

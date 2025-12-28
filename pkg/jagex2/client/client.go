@@ -2170,7 +2170,7 @@ func (c *Client) HandleInputKey() {
 							c.Out.P1(0)
 							var7 = c.Out.Pos
 							c.Out.P8(c.SocialName37)
-							wordpack.Pack(c.Out, true, c.SocialInput)
+							wordpack.Pack(c.Out, c.SocialInput)
 							c.Out.PSize1(c.Out.Pos - var7)
 							c.SocialInput = jstring.ToSentenceCase(c.SocialInput)
 							c.SocialInput = wordfilter.Filter(c.SocialInput)
@@ -2291,7 +2291,7 @@ func (c *Client) HandleInputKey() {
 							var5 := c.Out.Pos
 							c.Out.P1(var3)
 							c.Out.P1(var4)
-							wordpack.Pack(c.Out, true, c.ChatTyped)
+							wordpack.Pack(c.Out, c.ChatTyped)
 							c.Out.PSize1(c.Out.Pos - var5)
 							c.ChatTyped = jstring.ToSentenceCase(c.ChatTyped)
 							c.ChatTyped = wordfilter.Filter(c.ChatTyped)

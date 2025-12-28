@@ -8,10 +8,10 @@ type CollisionMap struct {
 	Flags   [][]int
 }
 
-func NewCollisionMap(sizeX, sizeZ int) *CollisionMap {
+func NewCollisionMap(x, z int) *CollisionMap {
 	var m CollisionMap
-	m.SizeX = sizeX
-	m.SizeZ = sizeZ
+	m.SizeX = x
+	m.SizeZ = z
 	m.Flags = make([][]int, m.SizeX)
 	for i := range m.Flags {
 		m.Flags[i] = make([]int, m.SizeZ)
@@ -21,12 +21,12 @@ func NewCollisionMap(sizeX, sizeZ int) *CollisionMap {
 }
 
 func (m *CollisionMap) Reset() {
-	for i := range m.SizeX {
-		for j := range m.SizeZ {
-			if i == 0 || j == 0 || i == m.SizeX-1 || j == m.SizeZ-1 {
-				m.Flags[i][j] = 16777215
+	for x := range m.SizeX {
+		for z := range m.SizeZ {
+			if x == 0 || z == 0 || x == m.SizeX-1 || z == m.SizeZ-1 {
+				m.Flags[x][z] = 0xFFFFFF
 			} else {
-				m.Flags[i][j] = 0
+				m.Flags[x][z] = 0
 			}
 		}
 	}
@@ -171,8 +171,8 @@ func (m *CollisionMap) SetBlocked(arg1, arg2 int) {
 	m.Flags[var5][var4] |= 0x200000
 }
 
-func (m *CollisionMap) AddCMap(arg0, arg1, arg2 int) {
-	m.Flags[arg0][arg1] |= arg2
+func (m *CollisionMap) AddCMap(x, z, flag int) {
+	m.Flags[x][z] |= flag
 }
 
 func (m *CollisionMap) DelWall(arg0 bool, arg1, arg2, arg3, arg5 int) {
@@ -308,8 +308,8 @@ func (m *CollisionMap) DelLoc(arg0, arg1, arg2, arg3 int, arg5 bool, arg6 int) {
 	}
 }
 
-func (m *CollisionMap) RemCMap(arg0, arg2, arg3 int) {
-	m.Flags[arg2][arg0] &= 16777215 - arg3
+func (m *CollisionMap) RemCMap(z, x, flag int) {
+	m.Flags[x][z] &= 0xFFFFFF - flag
 }
 
 func (m *CollisionMap) RemoveBlocked(arg0, arg1 int) {

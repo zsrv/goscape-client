@@ -280,47 +280,52 @@ func (w *World3D) AddObjStack(arg0, arg1 *model.Model, arg2, arg3, arg4, arg5, a
 	w.LevelTiles[arg3][arg6][arg5].GroundObj = var10
 }
 
-func (w *World3D) AddWall(arg0, arg1, arg2, arg3 int, arg5 *model.Model, arg6 *model.Model, arg7, arg8, arg9 int, arg10 byte) {
-	if arg5 == nil && arg6 == nil {
+func (w *World3D) AddWall(angle2, y, level, angle1 int, model1 *model.Model, model2 *model.Model, tileX, typecode1, tileZ int, typecode2 byte) {
+	if model1 == nil && model2 == nil {
 		return
 	}
-	var12 := typ.NewWall()
-	var12.BitSet = arg8
-	var12.Info = arg10
-	var12.X = arg7*128 + 64
-	var12.Z = arg9*128 + 64
-	var12.Y = arg1
-	var12.ModelA = arg5
-	var12.ModelB = arg6
-	var12.TypeA = arg3
-	var12.TypeB = arg0
-	for i := arg2; i >= 0; i-- {
-		if w.LevelTiles[i][arg7][arg9] == nil {
-			w.LevelTiles[i][arg7][arg9] = typ.NewGround(i, arg7, arg9)
+
+	wall := typ.NewWall()
+	wall.BitSet = typecode1
+	wall.Info = typecode2
+	wall.X = tileX*128 + 64
+	wall.Z = tileZ*128 + 64
+	wall.Y = y
+	wall.ModelA = model1
+	wall.ModelB = model2
+	wall.TypeA = angle1
+	wall.TypeB = angle2
+
+	for i := level; i >= 0; i-- {
+		if w.LevelTiles[i][tileX][tileZ] == nil {
+			w.LevelTiles[i][tileX][tileZ] = typ.NewGround(i, tileX, tileZ)
 		}
 	}
-	w.LevelTiles[arg2][arg7][arg9].Wall = var12
+
+	w.LevelTiles[level][tileX][tileZ].Wall = wall
 }
 
-func (w *World3D) SetWallDecoration(arg0, arg1, arg2, arg3, arg4, arg5, arg7, arg8 int, arg9 *model.Model, arg10 byte, arg11 int) {
-	if arg9 == nil {
+// AddDecor
+func (w *World3D) SetWallDecoration(y, z, zOffset, typecode, angle2, angle1, xOffset, x int, model *model.Model, typecode2 byte, level int) {
+	if model == nil {
 		return
 	}
-	var13 := typ.NewDecor()
-	var13.BitSet = arg3
-	var13.Info = arg10
-	var13.X = arg8*128 + 64 + arg7
-	var13.Z = arg1*128 + 64 + arg2
-	var13.Y = arg0
-	var13.Model = arg9
-	var13.Type = arg5
-	var13.Angle = arg4
-	for i := arg11; i >= 0; i-- {
-		if w.LevelTiles[i][arg8][arg1] == nil {
-			w.LevelTiles[i][arg8][arg1] = typ.NewGround(i, arg8, arg1)
+
+	decor := typ.NewDecor()
+	decor.BitSet = typecode
+	decor.Info = typecode2
+	decor.X = x*128 + 64 + xOffset
+	decor.Z = z*128 + 64 + zOffset
+	decor.Y = y
+	decor.Model = model
+	decor.Type = angle1
+	decor.Angle = angle2
+	for l := level; l >= 0; l-- {
+		if w.LevelTiles[l][x][z] == nil {
+			w.LevelTiles[l][x][z] = typ.NewGround(l, x, z)
 		}
 	}
-	w.LevelTiles[arg11][arg8][arg1].Decor = var13
+	w.LevelTiles[level][x][z].Decor = decor
 }
 
 func (w *World3D) AddLoc1(arg0 int, arg2 int, arg3 entity.Entity, arg4, arg5, arg6, arg7 int, arg8 byte, arg9 *model.Model, arg10, arg11 int) bool {
@@ -332,33 +337,40 @@ func (w *World3D) AddLoc1(arg0 int, arg2 int, arg3 entity.Entity, arg4, arg5, ar
 	return w.AddLoc2(arg2, arg6, arg5, arg7, arg11, var13, var14, arg0, arg9, arg3, arg10, false, arg4, arg8)
 }
 
-func (w *World3D) AddTemporary1(arg1, arg2, arg3, arg4, arg5 int, arg6 bool, arg7 *model.Model, arg8 entity.Entity, arg9, arg10 int) bool {
+func (w *World3D) AddTemporary1(arg1, arg2, yaw, arg4, arg5 int, forwardPadding bool, arg7 *model.Model, arg8 entity.Entity, arg9, arg10 int) bool {
 	if arg7 == nil && arg8 == nil {
 		return true
 	}
-	var12 := arg4 - arg2
-	var13 := arg1 - arg2
-	var14 := arg4 + arg2
-	var15 := arg1 + arg2
-	if arg6 {
-		if arg3 > 640 && arg3 < 1408 {
-			var15 += 128
+
+	x0 := arg4 - arg2
+	z0 := arg1 - arg2
+	x1 := arg4 + arg2
+	z1 := arg1 + arg2
+
+	if forwardPadding {
+		if yaw > 640 && yaw < 1408 {
+			z1 += 128
 		}
-		if arg3 > 1152 && arg3 < 1920 {
-			var14 += 128
+
+		if yaw > 1152 && yaw < 1920 {
+			x1 += 128
 		}
-		if arg3 > 1664 || arg3 < 384 {
-			var13 -= 128
+
+		if yaw > 1664 || yaw < 384 {
+			z0 -= 128
 		}
-		if arg3 > 128 && arg3 < 896 {
-			var12 -= 128
+
+		if yaw > 128 && yaw < 896 {
+			x0 -= 128
 		}
 	}
-	var12 /= 128
-	var13 /= 128
-	var14 /= 128
-	var15 /= 128
-	return w.AddLoc2(arg10, var12, var13, var14-var12+1, var15-var13+1, arg4, arg1, arg9, arg7, arg8, arg3, true, arg5, byte(0))
+
+	x0 /= 128
+	z0 /= 128
+	x1 /= 128
+	z1 /= 128
+
+	return w.AddLoc2(arg10, x0, z0, x1-x0+1, z1-z0+1, arg4, arg1, arg9, arg7, arg8, yaw, true, arg5, byte(0))
 }
 
 func (w *World3D) AddTemporary2(arg0 int, arg2 *model.Model, arg3, arg4, arg5, arg6, arg7, arg8 int, arg9 entity.Entity, arg11, arg12, arg13 int) bool {
@@ -431,12 +443,14 @@ func (w *World3D) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, ar
 	return true
 }
 
+// ClearLocChanges
 func (w *World3D) ClearTemporaryLocs() {
 	for i := range w.TemporaryLocCount {
-		var3 := w.TemporaryLocs[i]
-		w.RemoveLoc1(var3)
+		loc := w.TemporaryLocs[i]
+		w.RemoveLoc1(loc)
 		w.TemporaryLocs[i] = nil
 	}
+
 	w.TemporaryLocCount = 0
 }
 
@@ -653,35 +667,38 @@ func (w *World3D) GetInfo(arg0, arg1, arg2, arg3 int) int {
 	return -1
 }
 
-func (w *World3D) BuildModels(arg0, arg1, arg2, arg3, arg4 int) {
-	var7 := int(math.Sqrt(float64(arg2*arg2 + arg0*arg0 + arg4*arg4)))
-	var8 := arg3 * var7 >> 8
-	for i := range w.MaxLevel {
-		for j := range w.MaxTileX {
-			for k := range w.MaxTileZ {
-				var12 := w.LevelTiles[i][j][k]
-				if var12 != nil {
-					var13 := var12.Wall
+func (w *World3D) BuildModels(arg0, arg1, arg2, lightAttenuation, arg4 int) {
+	lightMagnitude := int(math.Sqrt(float64(arg2*arg2 + arg0*arg0 + arg4*arg4)))
+	attenuation := (lightAttenuation * lightMagnitude) >> 8
+
+	for level := range w.MaxLevel {
+		for tileX := range w.MaxTileX {
+			for tileZ := range w.MaxTileZ {
+				tile := w.LevelTiles[level][tileX][tileZ]
+				if tile != nil {
+					var13 := tile.Wall
 					if var13 != nil && var13.ModelA != nil && var13.ModelA.VertexNormal != nil {
-						w.MergeLocNormals(j, 1, 1, i, var13.ModelA, k)
+						w.MergeLocNormals(tileX, 1, 1, level, var13.ModelA, tileZ)
 						if var13.ModelB != nil && var13.ModelB.VertexNormal != nil {
-							w.MergeLocNormals(j, 1, 1, i, var13.ModelB, k)
+							w.MergeLocNormals(tileX, 1, 1, level, var13.ModelB, tileZ)
 							w.MergeNormals(var13.ModelA, var13.ModelB, 0, 0, 0, false)
-							var13.ModelB.ApplyLighting(arg1, var8, arg2, arg0, arg4)
+							var13.ModelB.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
 						}
-						var13.ModelA.ApplyLighting(arg1, var8, arg2, arg0, arg4)
+						var13.ModelA.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
 					}
-					for l := range var12.LocCount {
-						var15 := var12.Locs[l]
-						if var15 != nil && var15.Model != nil && var15.Model.VertexNormal != nil {
-							w.MergeLocNormals(j, var15.MaxSceneTileX-var15.MinSceneTileX+1, var15.MaxSceneTileZ-var15.MinSceneTileZ+1, i, var15.Model, k)
-							var15.Model.ApplyLighting(arg1, var8, arg2, arg0, arg4)
+
+					for l := range tile.LocCount {
+						loc := tile.Locs[l]
+						if loc != nil && loc.Model != nil && loc.Model.VertexNormal != nil {
+							w.MergeLocNormals(tileX, loc.MaxSceneTileX-loc.MinSceneTileX+1, loc.MaxSceneTileZ-loc.MinSceneTileZ+1, level, loc.Model, tileZ)
+							loc.Model.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
 						}
 					}
-					var16 := var12.GroundDecor
-					if var16 != nil && var16.Model.VertexNormal != nil {
-						w.MergeGroundDecorationNormals(i, k, var16.Model, j)
-						var16.Model.ApplyLighting(arg1, var8, arg2, arg0, arg4)
+
+					decor := tile.GroundDecor
+					if decor != nil && decor.Model.VertexNormal != nil {
+						w.MergeGroundDecorationNormals(level, tileZ, decor.Model, tileX)
+						decor.Model.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
 					}
 				}
 			}
@@ -758,35 +775,38 @@ func (w *World3D) MergeLocNormals(arg0, arg1, arg2, arg3 int, arg5 *model.Model,
 	}
 }
 
-func (w *World3D) MergeNormals(arg0, arg1 *model.Model, arg2, arg3, arg4 int, arg5 bool) {
+func (w *World3D) MergeNormals(modelA, modelB *model.Model, arg2, offsetY, arg4 int, arg5 bool) {
 	w.TmpMergeIndex++
-	var7 := 0
-	var8 := arg1.VertexX
-	var9 := arg1.VertexCount
-	for i := range arg0.VertexCount {
-		var11 := arg0.VertexNormal[i]
-		var12 := arg0.VertexNormalOriginal[i]
-		if var12.W != 0 {
-			var13 := arg0.VertexY[i] - arg3
-			if var13 <= arg1.MinY {
-				var14 := arg0.VertexX[i] - arg2
-				if var14 >= arg1.MinX && var14 <= arg1.MaxX {
-					var15 := arg0.VertexZ[i] - arg4
-					if var15 >= arg1.MinZ && var15 <= arg1.MaxZ {
-						for j := range var9 {
-							var17 := arg1.VertexNormal[j]
-							var18 := arg1.VertexNormalOriginal[j]
-							if var14 == var8[j] && var15 == arg1.VertexZ[j] && var13 == arg1.VertexY[j] && var18.W != 0 {
-								var11.X += var18.X
-								var11.Y += var18.Y
-								var11.Z += var18.Z
-								var11.W += var18.W
-								var17.X += var12.X
-								var17.Y += var12.Y
-								var17.Z += var12.Z
-								var17.W += var12.W
-								var7++
-								w.MergeIndexA[i] = w.TmpMergeIndex
+
+	merged := 0
+	vertexX := modelB.VertexX
+	vertexCountB := modelB.VertexCount
+
+	for vertexA := range modelA.VertexCount {
+		normalA := modelA.VertexNormal[vertexA]
+		originalNormalA := modelA.VertexNormalOriginal[vertexA]
+
+		if originalNormalA.W != 0 {
+			y := modelA.VertexY[vertexA] - offsetY
+			if y <= modelB.MinY {
+				x := modelA.VertexX[vertexA] - arg2
+				if x >= modelB.MinX && x <= modelB.MaxX {
+					z := modelA.VertexZ[vertexA] - arg4
+					if z >= modelB.MinZ && z <= modelB.MaxZ {
+						for j := range vertexCountB {
+							var17 := modelB.VertexNormal[j]
+							var18 := modelB.VertexNormalOriginal[j]
+							if x == vertexX[j] && z == modelB.VertexZ[j] && y == modelB.VertexY[j] && var18.W != 0 {
+								normalA.X += var18.X
+								normalA.Y += var18.Y
+								normalA.Z += var18.Z
+								normalA.W += var18.W
+								var17.X += originalNormalA.X
+								var17.Y += originalNormalA.Y
+								var17.Z += originalNormalA.Z
+								var17.W += originalNormalA.W
+								merged++
+								w.MergeIndexA[vertexA] = w.TmpMergeIndex
 								w.MergeIndexB[j] = w.TmpMergeIndex
 							}
 						}
@@ -795,17 +815,17 @@ func (w *World3D) MergeNormals(arg0, arg1 *model.Model, arg2, arg3, arg4 int, ar
 			}
 		}
 	}
-	if var7 < 3 || !arg5 {
+	if merged < 3 || !arg5 {
 		return
 	}
-	for i := range arg0.FaceCount {
-		if w.MergeIndexA[arg0.FaceVertexA[i]] == w.TmpMergeIndex && w.MergeIndexA[arg0.FaceVertexB[i]] == w.TmpMergeIndex && w.MergeIndexA[arg0.FaceVertexC[i]] == w.TmpMergeIndex {
-			arg0.FaceInfo[i] = -1
+	for i := range modelA.FaceCount {
+		if w.MergeIndexA[modelA.FaceVertexA[i]] == w.TmpMergeIndex && w.MergeIndexA[modelA.FaceVertexB[i]] == w.TmpMergeIndex && w.MergeIndexA[modelA.FaceVertexC[i]] == w.TmpMergeIndex {
+			modelA.FaceInfo[i] = -1
 		}
 	}
-	for i := range arg1.FaceCount {
-		if w.MergeIndexB[arg1.FaceVertexA[i]] == w.TmpMergeIndex && w.MergeIndexB[arg1.FaceVertexB[i]] == w.TmpMergeIndex && w.MergeIndexB[arg1.FaceVertexC[i]] == w.TmpMergeIndex {
-			arg1.FaceInfo[i] = -1
+	for i := range modelB.FaceCount {
+		if w.MergeIndexB[modelB.FaceVertexA[i]] == w.TmpMergeIndex && w.MergeIndexB[modelB.FaceVertexB[i]] == w.TmpMergeIndex && w.MergeIndexB[modelB.FaceVertexC[i]] == w.TmpMergeIndex {
+			modelB.FaceInfo[i] = -1
 		}
 	}
 }
@@ -1157,101 +1177,97 @@ func (w *World3D) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 	}
 }
 
-func (w *World3D) DrawTile(arg0 *typ.Ground, arg1 bool) {
-	DrawTileQueue.AddTail(datastruct.NewLinkable(arg0))
+func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
+	DrawTileQueue.AddTail(datastruct.NewLinkable(next))
+
 	for {
-		var var3 *typ.Ground
-		var4 := 0
-		var5 := 0
-		var6 := 0
-		var7 := 0
-		var var8 [][]*typ.Ground
+		var tile *typ.Ground
+		tileX := 0
+		tileZ := 0
+		level := 0
+		originalLevel := 0
+		var tiles [][]*typ.Ground
 		var var9 *typ.Ground
-		var11 := 0
-		var14 := 0
-		var15 := 0
-		var16 := 0
-		var17 := 0
-		var18 := 0
-		var var25 *typ.Wall
-		var26 := 0
-		var29 := 0
+
 		for ok1 := true; ok1; ok1 = var9 != nil && var9.Update {
 			for ok2 := true; ok2; ok2 = var9 != nil && var9.Update {
 				for ok3 := true; ok3; ok3 = var9 != nil && var9.Update {
 					for ok4 := true; ok4; ok4 = var9 != nil && var9.Update {
-						for ok5 := true; ok5; ok5 = var3.CheckLocSpans != 0 {
-							for ok6 := true; ok6; ok6 = !var3.Update {
+						for ok5 := true; ok5; ok5 = tile.CheckLocSpans != 0 {
+							for ok6 := true; ok6; ok6 = !tile.Update {
 								for {
 									var var12 *typ.Location
-									var22 := 0
-									var23 := false
-									var var35 *typ.Ground
 									for {
-										for ok7 := true; ok7; ok7 = !var3.Update {
-											var3 = DrawTileQueue.RemoveHead().Value
-											if var3 == nil {
+										for ok7 := true; ok7; ok7 = !tile.Update {
+											tile = DrawTileQueue.RemoveHead().Value
+											if tile == nil {
 												return
 											}
 										}
-										var4 = var3.X
-										var5 = var3.Z
-										var6 = var3.Level
-										var7 = var3.OccludeLevel
-										var8 = w.LevelTiles[var6]
-										if !var3.Visible {
+
+										tileX = tile.X
+										tileZ = tile.Z
+										level = tile.Level
+										originalLevel = tile.OccludeLevel
+										tiles = w.LevelTiles[level]
+										if !tile.Visible {
+
 											break
 										}
-										if arg1 {
-											if var6 > 0 {
-												var9 = w.LevelTiles[var6-1][var4][var5]
-												if var9 != nil && var9.Update {
+
+										if checkAdjacent {
+											if level > 0 {
+												above := w.LevelTiles[level-1][tileX][tileZ]
+												if above != nil && above.Update {
 													continue
 												}
 											}
-											if var4 <= EyeTileX && var4 > MinDrawTileX {
-												var9 = var8[var4-1][var5]
-												if var9 != nil && var9.Update && (var9.Visible || (var3.LocSpans&0x1) == 0) {
+
+											if tileX <= EyeTileX && tileX > MinDrawTileX {
+												t := tiles[tileX-1][tileZ]
+												if t != nil && t.Update && (t.Visible || (tile.LocSpans&0x1) == 0) {
 													continue
 												}
 											}
-											if var4 >= EyeTileX && var4 < MaxDrawTileX-1 {
-												var9 = var8[var4+1][var5]
-												if var9 != nil && var9.Update && (var9.Visible || (var3.LocSpans&0x4) == 0) {
+											if tileX >= EyeTileX && tileX < MaxDrawTileX-1 {
+												t := tiles[tileX+1][tileZ]
+												if t != nil && t.Update && (t.Visible || (tile.LocSpans&0x4) == 0) {
 													continue
 												}
 											}
-											if var5 <= EyeTileZ && var5 > MinDrawTileZ {
-												var9 = var8[var4][var5-1]
-												if var9 != nil && var9.Update && (var9.Visible || (var3.LocSpans&0x8) == 0) {
+											if tileZ <= EyeTileZ && tileZ > MinDrawTileZ {
+												t := tiles[tileX][tileZ-1]
+												if t != nil && t.Update && (t.Visible || (tile.LocSpans&0x8) == 0) {
 													continue
 												}
 											}
-											if var5 >= EyeTileZ && var5 < MaxDrawTileZ-1 {
-												var9 = var8[var4][var5+1]
-												if var9 != nil && var9.Update && (var9.Visible || (var3.LocSpans&0x2) == 0) {
+											if tileZ >= EyeTileZ && tileZ < MaxDrawTileZ-1 {
+												adjacent := tiles[tileX][tileZ+1]
+												if adjacent != nil && adjacent.Update && (adjacent.Visible || (tile.LocSpans&0x2) == 0) {
 													continue
 												}
 											}
 										} else {
-											arg1 = true
+											checkAdjacent = true
 										}
-										var3.Visible = false
-										if var3.Bridge != nil {
-											var9 = var3.Bridge
+
+										tile.Visible = false
+
+										if tile.Bridge != nil {
+											var9 = tile.Bridge
 											if var9.Underlay == nil {
-												if var9.Overlay != nil && !w.TileVisible(0, var4, var5) {
-													w.DrawTileOverlay(SinEyeYaw, var5, var9.Overlay, var4, CosEyePitch, SinEyePitch, CosEyeYaw)
+												if var9.Overlay != nil && !w.TileVisible(0, tileX, tileZ) {
+													w.DrawTileOverlay(SinEyeYaw, tileZ, var9.Overlay, tileX, CosEyePitch, SinEyePitch, CosEyeYaw)
 												}
-											} else if !w.TileVisible(0, var4, var5) {
-												w.DrawTileUnderlay(var9.Underlay, 0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var4, var5)
+											} else if !w.TileVisible(0, tileX, tileZ) {
+												w.DrawTileUnderlay(var9.Underlay, 0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, tileX, tileZ)
 											}
 											var10 := var9.Wall
 											if var10 != nil {
 												var10.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var10.X-EyeX, var10.Y-EyeY, var10.Z-EyeZ, var10.BitSet)
 											}
-											for var11 = 0; var11 < var9.LocCount; var11++ {
-												var12 = var9.Locs[var11]
+											for i := 0; i < var9.LocCount; i++ {
+												var12 = var9.Locs[i]
 												if var12 != nil {
 													var13 := var12.Model
 													if var13 == nil {
@@ -1261,356 +1277,411 @@ func (w *World3D) DrawTile(arg0 *typ.Ground, arg1 bool) {
 												}
 											}
 										}
-										var23 = false
-										if var3.Underlay == nil {
-											if var3.Overlay != nil && !w.TileVisible(var7, var4, var5) {
-												var23 = true
-												w.DrawTileOverlay(SinEyeYaw, var5, var3.Overlay, var4, CosEyePitch, SinEyePitch, CosEyeYaw)
+										tileDrawn := false
+										if tile.Underlay == nil {
+											if tile.Overlay != nil && !w.TileVisible(originalLevel, tileX, tileZ) {
+												tileDrawn = true
+												w.DrawTileOverlay(SinEyeYaw, tileZ, tile.Overlay, tileX, CosEyePitch, SinEyePitch, CosEyeYaw)
 											}
-										} else if !w.TileVisible(var7, var4, var5) {
-											var23 = true
-											w.DrawTileUnderlay(var3.Underlay, var7, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var4, var5)
+										} else if !w.TileVisible(originalLevel, tileX, tileZ) {
+											tileDrawn = true
+											w.DrawTileUnderlay(tile.Underlay, originalLevel, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, tileX, tileZ)
 										}
-										var22 = 0
-										var11 = 0
-										var24 := var3.Wall
-										var28 := var3.Decor
-										if var24 != nil || var28 != nil {
-											if EyeTileX == var4 {
-												var22++
-											} else if EyeTileX < var4 {
-												var22 += 2
+
+										direction := 0
+										frontWallTypes := 0
+
+										wall := tile.Wall
+										decor := tile.Decor
+
+										if wall != nil || decor != nil {
+											if EyeTileX == tileX {
+												direction++
+											} else if EyeTileX < tileX {
+												direction += 2
 											}
-											if EyeTileZ == var5 {
-												var22 += 3
-											} else if EyeTileZ > var5 {
-												var22 += 6
+
+											if EyeTileZ == tileZ {
+												direction += 3
+											} else if EyeTileZ > tileZ {
+												direction += 6
 											}
-											var11 = FRONT_WALL_TYPES[var22]
-											var3.BackWallTypes = BACK_WALL_TYPES[var22]
+
+											frontWallTypes = FRONT_WALL_TYPES[direction]
+											tile.BackWallTypes = BACK_WALL_TYPES[direction]
 										}
-										if var24 != nil {
-											if var24.TypeA&DIRECTION_ALLOW_WALL_CORNER_TYPE[var22] == 0 {
-												var3.CheckLocSpans = 0
-											} else if var24.TypeA == 16 {
-												var3.CheckLocSpans = 3
-												var3.BlockLocSpans = WALL_CORNER_TYPE_16_BLOCK_LOC_SPANS[var22]
-												var3.InverseBlockLocSpans = 3 - var3.BlockLocSpans
-											} else if var24.TypeA == 32 {
-												var3.CheckLocSpans = 6
-												var3.BlockLocSpans = WALL_CORNER_TYPE_32_BLOCK_LOC_SPANS[var22]
-												var3.InverseBlockLocSpans = 6 - var3.BlockLocSpans
-											} else if var24.TypeA == 64 {
-												var3.CheckLocSpans = 12
-												var3.BlockLocSpans = WALL_CORNER_TYPE_64_BLOCK_LOC_SPANS[var22]
-												var3.InverseBlockLocSpans = 12 - var3.BlockLocSpans
+
+										if wall != nil {
+											if wall.TypeA&DIRECTION_ALLOW_WALL_CORNER_TYPE[direction] == 0 {
+												tile.CheckLocSpans = 0
+											} else if wall.TypeA == 16 {
+												tile.CheckLocSpans = 3
+												tile.BlockLocSpans = WALL_CORNER_TYPE_16_BLOCK_LOC_SPANS[direction]
+												tile.InverseBlockLocSpans = 3 - tile.BlockLocSpans
+											} else if wall.TypeA == 32 {
+												tile.CheckLocSpans = 6
+												tile.BlockLocSpans = WALL_CORNER_TYPE_32_BLOCK_LOC_SPANS[direction]
+												tile.InverseBlockLocSpans = 6 - tile.BlockLocSpans
+											} else if wall.TypeA == 64 {
+												tile.CheckLocSpans = 12
+												tile.BlockLocSpans = WALL_CORNER_TYPE_64_BLOCK_LOC_SPANS[direction]
+												tile.InverseBlockLocSpans = 12 - tile.BlockLocSpans
 											} else {
-												var3.CheckLocSpans = 9
-												var3.BlockLocSpans = WALL_CORNER_TYPE_128_BLOCK_LOC_SPANS[var22]
-												var3.InverseBlockLocSpans = 9 - var3.BlockLocSpans
+												tile.CheckLocSpans = 9
+												tile.BlockLocSpans = WALL_CORNER_TYPE_128_BLOCK_LOC_SPANS[direction]
+												tile.InverseBlockLocSpans = 9 - tile.BlockLocSpans
 											}
-											if var24.TypeA&var11 != 0 && !w.WallVisible(var7, var4, var5, var24.TypeA) {
-												var24.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var24.X-EyeX, var24.Y-EyeY, var24.Z-EyeZ, var24.BitSet)
+											if wall.TypeA&frontWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeA) {
+												wall.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
 											}
-											if var24.TypeB&var11 != 0 && w.WallVisible(var7, var4, var5, var24.TypeB) {
-												var24.ModelB.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var24.X-EyeX, var24.Y-EyeY, var24.Z-EyeZ, var24.BitSet)
+											if wall.TypeB&frontWallTypes != 0 && w.WallVisible(originalLevel, tileX, tileZ, wall.TypeB) {
+												wall.ModelB.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
 											}
 										}
-										if var28 != nil && !w.Visible(var7, var4, var5, var28.Model.MaxY) {
-											if var28.Type&var11 != 0 {
-												var28.Model.Draw1(var28.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var28.X-EyeX, var28.Y-EyeY, var28.Z-EyeZ, var28.BitSet)
-											} else if var28.Type&0x300 != 0 {
-												var14 = var28.X - EyeX
-												var15 = var28.Y - EyeY
-												var16 = var28.Z - EyeZ
-												var17 = var28.Angle
-												if var17 == 1 || var17 == 2 {
-													var18 = -var14
+
+										if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.Model.MaxY) {
+											if decor.Type&frontWallTypes != 0 {
+												decor.Model.Draw1(decor.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, decor.X-EyeX, decor.Y-EyeY, decor.Z-EyeZ, decor.BitSet)
+											} else if decor.Type&0x300 != 0 {
+												x := decor.X - EyeX
+												y := decor.Y - EyeY
+												z := decor.Z - EyeZ
+												angle := decor.Angle
+
+												nearestX := 0
+												if angle == 1 || angle == 2 {
+													nearestX = -x
 												} else {
-													var18 = var14
+													nearestX = x
 												}
-												var19 := 0
-												if var17 == 2 || var17 == 3 {
-													var19 = -var16
+
+												nearestZ := 0
+												if angle == 2 || angle == 3 {
+													nearestZ = -z
 												} else {
-													var19 = var16
+													nearestZ = z
 												}
-												var20 := 0
-												var21 := 0
-												if var28.Type&0x100 != 0 && var19 < var18 {
-													var20 = var14 + WALL_DECORATION_INSET_X[var17]
-													var21 = var16 + WALL_DECORATION_INSET_Z[var17]
-													var28.Model.Draw1(var17*512+256, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var20, var15, var21, var28.BitSet)
+
+												if decor.Type&0x100 != 0 && nearestZ < nearestX {
+													drawX := x + WALL_DECORATION_INSET_X[angle]
+													drawZ := z + WALL_DECORATION_INSET_Z[angle]
+													decor.Model.Draw1(angle*512+256, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
 												}
-												if var28.Type&0x200 != 0 && var19 > var18 {
-													var20 = var14 + WALL_DECORATION_OUTSET_X[var17]
-													var21 = var16 + WALL_DECORATION_OUTSET_Z[var17]
-													var28.Model.Draw1((var17*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var20, var15, var21, var28.BitSet)
-												}
-											}
-										}
-										if var23 {
-											var30 := var3.GroundDecor
-											if var30 != nil {
-												var30.Model.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var30.X-EyeX, var30.Y-EyeY, var30.Z-EyeZ, var30.BitSet)
-											}
-											var34 := var3.GroundObj
-											if var34 != nil && var34.Offset == 0 {
-												if var34.BottomObj != nil {
-													var34.BottomObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var34.X-EyeX, var34.Y-EyeY, var34.Z-EyeZ, var34.BitSet)
-												}
-												if var34.MiddleObj != nil {
-													var34.MiddleObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var34.X-EyeX, var34.Y-EyeY, var34.Z-EyeZ, var34.BitSet)
-												}
-												if var34.TopObj != nil {
-													var34.TopObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var34.X-EyeX, var34.Y-EyeY, var34.Z-EyeZ, var34.BitSet)
+												if decor.Type&0x200 != 0 && nearestZ > nearestX {
+													drawX := x + WALL_DECORATION_OUTSET_X[angle]
+													drawZ := z + WALL_DECORATION_OUTSET_Z[angle]
+													decor.Model.Draw1((angle*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
 												}
 											}
 										}
-										var14 = var3.LocSpans
-										if var14 != 0 {
-											if var4 < EyeTileX && var14&0x4 != 0 {
-												var35 = var8[var4+1][var5]
-												if var35 != nil && var35.Update {
-													DrawTileQueue.AddTail(datastruct.NewLinkable(var35))
+
+										if tileDrawn {
+											groundDecor := tile.GroundDecor
+											if groundDecor != nil {
+												groundDecor.Model.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, groundDecor.X-EyeX, groundDecor.Y-EyeY, groundDecor.Z-EyeZ, groundDecor.BitSet)
+											}
+
+											objs := tile.GroundObj
+											if objs != nil && objs.Offset == 0 {
+												if objs.BottomObj != nil {
+													objs.BottomObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY, objs.Z-EyeZ, objs.BitSet)
+												}
+												if objs.MiddleObj != nil {
+													objs.MiddleObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY, objs.Z-EyeZ, objs.BitSet)
+												}
+												if objs.TopObj != nil {
+													objs.TopObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY, objs.Z-EyeZ, objs.BitSet)
 												}
 											}
-											if var5 < EyeTileZ && var14&0x2 != 0 {
-												var35 = var8[var4][var5+1]
-												if var35 != nil && var35.Update {
-													DrawTileQueue.AddTail(datastruct.NewLinkable(var35))
+										}
+
+										spans := tile.LocSpans
+										if spans != 0 {
+											if tileX < EyeTileX && spans&0x4 != 0 {
+												adjacent := tiles[tileX+1][tileZ]
+												if adjacent != nil && adjacent.Update {
+													DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
 												}
 											}
-											if var4 > EyeTileX && var14&0x1 != 0 {
-												var35 = var8[var4-1][var5]
-												if var35 != nil && var35.Update {
-													DrawTileQueue.AddTail(datastruct.NewLinkable(var35))
+
+											if tileZ < EyeTileZ && spans&0x2 != 0 {
+												adjacent := tiles[tileX][tileZ+1]
+												if adjacent != nil && adjacent.Update {
+													DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
 												}
 											}
-											if var5 > EyeTileZ && var14&0x8 != 0 {
-												var35 = var8[var4][var5-1]
-												if var35 != nil && var35.Update {
-													DrawTileQueue.AddTail(datastruct.NewLinkable(var35))
+
+											if tileX > EyeTileX && spans&0x1 != 0 {
+												adjacent := tiles[tileX-1][tileZ]
+												if adjacent != nil && adjacent.Update {
+													DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
+												}
+											}
+
+											if tileZ > EyeTileZ && spans&0x8 != 0 {
+												adjacent := tiles[tileX][tileZ-1]
+												if adjacent != nil && adjacent.Update {
+													DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
 												}
 											}
 										}
 										break
 									}
-									if var3.CheckLocSpans != 0 {
-										var23 = true
-										for var22 = 0; var22 < var3.LocCount; var22++ {
-											if var3.Locs[var22].Cycle != Cycle && var3.LocSpan[var22]&var3.CheckLocSpans == var3.BlockLocSpans {
-												var23 = false
+
+									if tile.CheckLocSpans != 0 {
+										draw := true
+										for i := 0; i < tile.LocCount; i++ {
+											if tile.Locs[i].Cycle != Cycle && tile.LocSpan[i]&tile.CheckLocSpans == tile.BlockLocSpans {
+												draw = false
 												break
 											}
 										}
-										if var23 {
-											var25 = var3.Wall
-											if !w.WallVisible(var7, var4, var5, var25.TypeA) {
-												var25.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var25.X-EyeX, var25.Y-EyeY, var25.Z-EyeZ, var25.BitSet)
+
+										if draw {
+											wall := tile.Wall
+
+											if !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeA) {
+												wall.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
 											}
-											var3.CheckLocSpans = 0
+
+											tile.CheckLocSpans = 0
 										}
 									}
-									if !var3.ContainsLocs {
+
+									if !tile.ContainsLocs {
 										break
 									}
-									var27 := var3.LocCount
-									var3.ContainsLocs = false
-									var22 = 0
-								label559:
-									for var11 = 0; var11 < var27; var11++ {
-										var12 = var3.Locs[var11]
-										if var12.Cycle != Cycle {
-											for var29 = var12.MinSceneTileX; var29 <= var12.MaxSceneTileX; var29++ {
-												for var14 = var12.MinSceneTileZ; var14 <= var12.MaxSceneTileZ; var14++ {
-													var35 = var8[var29][var14]
-													if var35.Visible {
-														var3.ContainsLocs = true
-														continue label559
+
+									locCount := tile.LocCount
+									tile.ContainsLocs = false
+									locBufferSize := 0
+								iterateLocs:
+									for var11 := 0; var11 < locCount; var11++ {
+										loc := tile.Locs[var11]
+										if loc.Cycle != Cycle {
+											for x := loc.MinSceneTileX; x <= loc.MaxSceneTileX; x++ {
+												for z := loc.MinSceneTileZ; z <= loc.MaxSceneTileZ; z++ {
+													other := tiles[x][z]
+
+													if other.Visible {
+														tile.ContainsLocs = true
+														continue iterateLocs
 													}
-													if var35.CheckLocSpans != 0 {
-														var16 = 0
-														if var29 > var12.MinSceneTileX {
-															var16++
+
+													if other.CheckLocSpans != 0 {
+														spans := 0
+														if x > loc.MinSceneTileX {
+															spans++
 														}
-														if var29 < var12.MaxSceneTileX {
-															var16 += 4
+
+														if x < loc.MaxSceneTileX {
+															spans += 4
 														}
-														if var14 > var12.MinSceneTileZ {
-															var16 += 8
+
+														if z > loc.MinSceneTileZ {
+															spans += 8
 														}
-														if var14 < var12.MaxSceneTileZ {
-															var16 += 2
+
+														if z < loc.MaxSceneTileZ {
+															spans += 2
 														}
-														if var16&var35.CheckLocSpans == var3.InverseBlockLocSpans {
-															var3.ContainsLocs = true
-															continue label559
+
+														if spans&other.CheckLocSpans == tile.InverseBlockLocSpans {
+															tile.ContainsLocs = true
+															continue iterateLocs
 														}
 													}
 												}
 											}
-											LocBuffer[var22] = var12
-											var22++
-											var14 = EyeTileX - var12.MinSceneTileX
-											var15 = var12.MaxSceneTileX - EyeTileX
-											if var15 > var14 {
-												var14 = var15
+
+											LocBuffer[locBufferSize] = loc
+											locBufferSize++
+
+											minTileDistanceX := EyeTileX - loc.MinSceneTileX
+											maxTileDistanceX := loc.MaxSceneTileX - EyeTileX
+											if maxTileDistanceX > minTileDistanceX {
+												minTileDistanceX = maxTileDistanceX
 											}
-											var16 = EyeTileZ - var12.MinSceneTileZ
-											var17 = var12.MaxSceneTileZ - EyeTileZ
-											if var17 > var16 {
-												var12.Distance = var14 + var17
+
+											minTileDistanceZ := EyeTileZ - loc.MinSceneTileZ
+											maxTileDistanceZ := loc.MaxSceneTileZ - EyeTileZ
+											if maxTileDistanceZ > minTileDistanceZ {
+												loc.Distance = minTileDistanceX + maxTileDistanceZ
 											} else {
-												var12.Distance = var14 + var16
+												loc.Distance = minTileDistanceX + minTileDistanceZ
 											}
 										}
 									}
-									for var22 > 0 {
-										var26 = -50
-										var29 = -1
-										var var36 *typ.Location
-										for var14 = 0; var14 < var22; var14++ {
-											var36 = LocBuffer[var14]
-											if var36.Distance > var26 && var36.Cycle != Cycle {
-												var26 = var36.Distance
-												var29 = var14
+
+									for locBufferSize > 0 {
+										farthestDistance := -50
+										farthestIndex := -1
+
+										for index := 0; index < locBufferSize; index++ {
+											loc := LocBuffer[index]
+
+											if loc.Distance > farthestDistance && loc.Cycle != Cycle {
+												farthestDistance = loc.Distance
+												farthestIndex = index
 											}
 										}
-										if var29 == -1 {
+
+										if farthestIndex == -1 {
 											break
 										}
-										var36 = LocBuffer[var29]
-										var36.Cycle = Cycle
-										var37 := var36.Model
-										if var37 == nil {
-											var37 = var36.Entity.Draw()
+
+										farthest := LocBuffer[farthestIndex]
+										farthest.Cycle = Cycle
+
+										farthestModel := farthest.Model
+										if farthestModel == nil {
+											farthestModel = farthest.Entity.Draw()
 										}
-										if !w.LocVisible(var7, var36.MinSceneTileX, var36.MaxSceneTileX, var36.MinSceneTileZ, var36.MaxSceneTileZ, var37.MaxY) {
-											var37.Draw1(var36.Yaw, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var36.X-EyeX, var36.Y-EyeY, var36.Z-EyeZ, var36.BitSet)
+
+										if !w.LocVisible(originalLevel, farthest.MinSceneTileX, farthest.MaxSceneTileX, farthest.MinSceneTileZ, farthest.MaxSceneTileZ, farthestModel.MaxY) {
+											farthestModel.Draw1(farthest.Yaw, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, farthest.X-EyeX, farthest.Y-EyeY, farthest.Z-EyeZ, farthest.BitSet)
 										}
-										for var17 = var36.MinSceneTileX; var17 <= var36.MaxSceneTileX; var17++ {
-											for var18 = var36.MinSceneTileZ; var18 <= var36.MaxSceneTileZ; var18++ {
-												var38 := var8[var17][var18]
-												if var38.CheckLocSpans != 0 {
-													DrawTileQueue.AddTail(datastruct.NewLinkable(var38))
-												} else if (var17 != var4 || var18 != var5) && var38.Update {
-													DrawTileQueue.AddTail(datastruct.NewLinkable(var38))
+
+										for x := farthest.MinSceneTileX; x <= farthest.MaxSceneTileX; x++ {
+											for z := farthest.MinSceneTileZ; z <= farthest.MaxSceneTileZ; z++ {
+												occupied := tiles[x][z]
+
+												if occupied.CheckLocSpans != 0 {
+													DrawTileQueue.AddTail(datastruct.NewLinkable(occupied))
+												} else if (x != tileX || z != tileZ) && occupied.Update {
+													DrawTileQueue.AddTail(datastruct.NewLinkable(occupied))
 												}
 											}
 										}
 									}
-									if !var3.ContainsLocs {
+
+									if !tile.ContainsLocs {
 										break
 									}
 								}
 							}
 						}
-						if var4 > EyeTileX || var4 <= MinDrawTileX {
+						if tileX > EyeTileX || tileX <= MinDrawTileX {
 							break
 						}
-						var9 = var8[var4-1][var5]
+						var9 = tiles[tileX-1][tileZ]
 					}
-					if var4 < EyeTileX || var4 >= MaxDrawTileX-1 {
+					if tileX < EyeTileX || tileX >= MaxDrawTileX-1 {
 						break
 					}
-					var9 = var8[var4+1][var5]
+					var9 = tiles[tileX+1][tileZ]
 				}
-				if var5 > EyeTileZ || var5 <= MinDrawTileZ {
+				if tileZ > EyeTileZ || tileZ <= MinDrawTileZ {
 					break
 				}
-				var9 = var8[var4][var5-1]
+				var9 = tiles[tileX][tileZ-1]
 			}
-			if var5 < EyeTileZ || var5 >= MaxDrawTileZ-1 {
+			if tileZ < EyeTileZ || tileZ >= MaxDrawTileZ-1 {
 				break
 			}
-			var9 = var8[var4][var5+1]
+			var9 = tiles[tileX][tileZ+1]
 		}
-		var3.Update = false
+
+		tile.Update = false
 		TilesRemaining--
-		var32 := var3.GroundObj
-		if var32 != nil && var32.Offset != 0 {
-			if var32.BottomObj != nil {
-				var32.BottomObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var32.X-EyeX, var32.Y-EyeY-var32.Offset, var32.Z-EyeZ, var32.BitSet)
+
+		objs := tile.GroundObj
+		if objs != nil && objs.Offset != 0 {
+			if objs.BottomObj != nil {
+				objs.BottomObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY-objs.Offset, objs.Z-EyeZ, objs.BitSet)
 			}
-			if var32.MiddleObj != nil {
-				var32.MiddleObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var32.X-EyeX, var32.Y-EyeY-var32.Offset, var32.Z-EyeZ, var32.BitSet)
+
+			if objs.MiddleObj != nil {
+				objs.MiddleObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY-objs.Offset, objs.Z-EyeZ, objs.BitSet)
 			}
-			if var32.TopObj != nil {
-				var32.TopObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var32.X-EyeX, var32.Y-EyeY-var32.Offset, var32.Z-EyeZ, var32.BitSet)
+
+			if objs.TopObj != nil {
+				objs.TopObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY-objs.Offset, objs.Z-EyeZ, objs.BitSet)
 			}
 		}
-		if var3.BackWallTypes != 0 {
-			var31 := var3.Decor
-			if var31 != nil && !w.Visible(var7, var4, var5, var31.Model.MaxY) {
-				if var31.Type&var3.BackWallTypes != 0 {
-					var31.Model.Draw1(var31.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var31.X-EyeX, var31.Y-EyeY, var31.Z-EyeZ, var31.BitSet)
-				} else if var31.Type&0x300 != 0 {
-					var11 = var31.X - EyeX
-					var26 = var31.Y - EyeY
-					var29 = var31.Z - EyeZ
-					var14 = var31.Angle
-					if var14 == 1 || var14 == 2 {
-						var15 = -var11
+
+		if tile.BackWallTypes != 0 {
+			decor := tile.Decor
+			if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.Model.MaxY) {
+				if decor.Type&tile.BackWallTypes != 0 {
+					decor.Model.Draw1(decor.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, decor.X-EyeX, decor.Y-EyeY, decor.Z-EyeZ, decor.BitSet)
+				} else if decor.Type&0x300 != 0 {
+					x := decor.X - EyeX
+					y := decor.Y - EyeY
+					z := decor.Z - EyeZ
+					angle := decor.Angle
+
+					nearestX := 0
+					if angle == 1 || angle == 2 {
+						nearestX = -x
 					} else {
-						var15 = var11
+						nearestX = x
 					}
-					if var14 == 2 || var14 == 3 {
-						var16 = -var29
+
+					nearestZ := 0
+					if angle == 2 || angle == 3 {
+						nearestZ = -z
 					} else {
-						var16 = var29
+						nearestZ = z
 					}
-					if var31.Type&0x100 != 0 && var16 >= var15 {
-						var17 = var11 + WALL_DECORATION_INSET_X[var14]
-						var18 = var29 + WALL_DECORATION_INSET_Z[var14]
-						var31.Model.Draw1(var14*512+256, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var17, var26, var18, var31.BitSet)
+
+					if decor.Type&0x100 != 0 && nearestZ >= nearestX {
+						drawX := x + WALL_DECORATION_INSET_X[angle]
+						drawZ := z + WALL_DECORATION_INSET_Z[angle]
+						decor.Model.Draw1(angle*512+256, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
 					}
-					if var31.Type&0x200 != 0 && var16 <= var15 {
-						var17 = var11 + WALL_DECORATION_OUTSET_X[var14]
-						var18 = var29 + WALL_DECORATION_OUTSET_Z[var14]
-						var31.Model.Draw1((var14*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var17, var26, var18, var31.BitSet)
+					if decor.Type&0x200 != 0 && nearestZ <= nearestX {
+						drawX := x + WALL_DECORATION_OUTSET_X[angle]
+						drawZ := z + WALL_DECORATION_OUTSET_Z[angle]
+						decor.Model.Draw1((angle*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
 					}
 				}
 			}
-			var25 = var3.Wall
-			if var25 != nil {
-				if var25.TypeB&var3.BackWallTypes != 0 && !w.WallVisible(var7, var4, var5, var25.TypeB) {
-					var25.ModelB.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var25.X-EyeX, var25.Y-EyeY, var25.Z-EyeZ, var25.BitSet)
+
+			wall := tile.Wall
+			if wall != nil {
+				if wall.TypeB&tile.BackWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeB) {
+					wall.ModelB.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
 				}
-				if var25.TypeA&var3.BackWallTypes != 0 && !w.WallVisible(var7, var4, var5, var25.TypeA) {
-					var25.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var25.X-EyeX, var25.Y-EyeY, var25.Z-EyeZ, var25.BitSet)
+
+				if wall.TypeA&tile.BackWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeA) {
+					wall.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
 				}
 			}
 		}
-		var var33 *typ.Ground
-		if var6 < w.MaxLevel-1 {
-			var33 = w.LevelTiles[var6+1][var4][var5]
-			if var33 != nil && var33.Update {
-				DrawTileQueue.AddTail(datastruct.NewLinkable(var33))
+
+		if level < w.MaxLevel-1 {
+			above := w.LevelTiles[level+1][tileX][tileZ]
+			if above != nil && above.Update {
+				DrawTileQueue.AddTail(datastruct.NewLinkable(above))
 			}
 		}
-		if var4 < EyeTileX {
-			var33 = var8[var4+1][var5]
-			if var33 != nil && var33.Update {
-				DrawTileQueue.AddTail(datastruct.NewLinkable(var33))
+
+		if tileX < EyeTileX {
+			adjacent := tiles[tileX+1][tileZ]
+			if adjacent != nil && adjacent.Update {
+				DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
 			}
 		}
-		if var5 < EyeTileZ {
-			var33 = var8[var4][var5+1]
-			if var33 != nil && var33.Update {
-				DrawTileQueue.AddTail(datastruct.NewLinkable(var33))
+
+		if tileZ < EyeTileZ {
+			adjacent := tiles[tileX][tileZ+1]
+			if adjacent != nil && adjacent.Update {
+				DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
 			}
 		}
-		if var4 > EyeTileX {
-			var33 = var8[var4-1][var5]
-			if var33 != nil && var33.Update {
-				DrawTileQueue.AddTail(datastruct.NewLinkable(var33))
+
+		if tileX > EyeTileX {
+			adjacent := tiles[tileX-1][tileZ]
+			if adjacent != nil && adjacent.Update {
+				DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
 			}
 		}
-		if var5 > EyeTileZ {
-			var33 = var8[var4][var5-1]
-			if var33 != nil && var33.Update {
-				DrawTileQueue.AddTail(datastruct.NewLinkable(var33))
+
+		if tileZ > EyeTileZ {
+			adjacent := tiles[tileX][tileZ-1]
+			if adjacent != nil && adjacent.Update {
+				DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
 			}
 		}
 	}

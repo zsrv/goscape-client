@@ -26,15 +26,15 @@ type Ground struct {
 	Bridge               *Ground
 }
 
-func NewGround(arg0, arg1, arg2 int) *Ground {
+func NewGround(level, x, z int) *Ground {
 	var g Ground
 	g.Locs = make([]*Location, 5)
 	g.LocSpan = make([]int, 5)
 
-	g.Level = arg0
+	g.Level = level
 	g.OccludeLevel = g.Level
-	g.X = arg1
-	g.Z = arg2
+	g.X = x
+	g.Z = z
 
 	return &g
 }
