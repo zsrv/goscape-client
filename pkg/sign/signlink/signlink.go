@@ -80,25 +80,25 @@ func Run() {
 			DNSReq = ""
 		} else if LoadReq != "" {
 			LoadBuf = nil
-			if _, err := os.Stat(var1 + LoadReq); err == nil {
-				LoadBuf, err = os.ReadFile(var1 + LoadReq)
+			if _, err := os.Stat(path.Join(var1, LoadReq)); err == nil {
+				LoadBuf, err = os.ReadFile(path.Join(var1, LoadReq))
 				if err != nil {
-					fmt.Printf("failed to read file %s: %v\n", var1+LoadReq, err)
+					fmt.Printf("failed to read file %s: %v\n", path.Join(var1, LoadReq), err)
 				}
 			}
 			LoadReq = ""
 		} else if SaveReq != "" {
 			if SaveBuf != nil {
-				if err := os.WriteFile(var1+SaveReq, SaveBuf[0:SaveLen], 0644); err != nil {
-					fmt.Printf("failed to write file %s: %v\n", var1+SaveReq, err)
+				if err := os.WriteFile(path.Join(var1, SaveReq), SaveBuf[0:SaveLen], 0644); err != nil {
+					fmt.Printf("failed to write file %s: %v\n", path.Join(var1, SaveReq), err)
 				}
 			}
 			if WavePlay {
-				Wave = var1 + SaveReq
+				Wave = path.Join(var1, SaveReq)
 				WavePlay = false
 			}
 			if MidiPlay {
-				Midi = var1 + SaveReq
+				Midi = path.Join(var1, SaveReq)
 				MidiPlay = false
 			}
 			SaveReq = ""
