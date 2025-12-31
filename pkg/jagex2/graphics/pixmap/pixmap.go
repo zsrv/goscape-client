@@ -2,11 +2,17 @@ package pixmap
 
 import (
 	"image"
+	"sync"
 
 	"gioui.org/op"
 	"gioui.org/op/paint"
 
 	"goscape-client/pkg/jagex2/graphics/pix2d"
+)
+
+var (
+	// MINE
+	DrawMu sync.Mutex
 )
 
 // TODO
@@ -15,11 +21,11 @@ import (
 type PixMap struct {
 	//Pixels []byte
 	//Pixels []uint8
-	Pixels []int
-	Width  int
-	Height int
-	Image  *image.RGBA
-	Ready  bool
+	Pixels  []int
+	Width   int
+	Height  int
+	Image   *image.RGBA
+	OpCache *op.Ops
 }
 
 // NewPixMap allocates a width*height pixel buffer.
@@ -37,6 +43,7 @@ func NewPixMap(width, height int) *PixMap {
 	m.Height = height
 	m.Pixels = make([]int, width*height)
 	m.Image = image.NewRGBA(image.Rect(0, 0, width, height)) // TODO: unused
+	m.OpCache = new(op.Ops)                                  // MINE
 	m.Bind()
 	//
 	return &m
@@ -53,7 +60,12 @@ func (p *PixMap) Bind() {
 // Draw adds the necessary operations to render the buffer at (x,y).
 // Must be called between op.Ops{}.Reset() and window.Event().
 // TODO: the source of problems?
+// TODO: problem might be multiple goroutines using draw (and acting on ops.Ops) at the same time, causing bad stacks?
 func (p *PixMap) Draw(ops *op.Ops, x, y int) {
+	// MINE
+	DrawMu.Lock()
+	defer DrawMu.Unlock()
+
 	//if !p.Ready {
 	//	p.Bind()
 	//}
@@ -67,14 +79,29 @@ func (p *PixMap) Draw(ops *op.Ops, x, y int) {
 	// example: offset the red rect 100 pixels to the right:
 	// 	defer op.Offset(image.Pt(100, 0)).Push(ops).Pop()
 
-	// The specified ColorModel object should be used to convert the pixels into their corresponding color and alpha components.
-	defer op.Offset(image.Point{x, y}).Push(ops).Pop()
+	// Save the operations in an independent ops value (the cache)
+	macro := op.Record(p.OpCache)
+	//defer op.Offset(image.Point{x, y}).Push(p.OpCache).Pop()
+	stack := op.Offset(image.Point{x, y}).Push(p.OpCache)
 	//op.TransformOp{}
 	img := convertPixmapPixels(p.Width, p.Height, p.Pixels)
 	imageOp := paint.NewImageOp(img)
 	imageOp.Filter = paint.FilterNearest
-	imageOp.Add(ops)
-	paint.PaintOp{}.Add(ops)
+	imageOp.Add(p.OpCache)
+	paint.PaintOp{}.Add(p.OpCache)
+	stack.Pop()
+	call := macro.Stop()
+	// Draw the operations from the cache
+	call.Add(ops)
+
+	// The specified ColorModel object should be used to convert the pixels into their corresponding color and alpha components.
+	//defer op.Offset(image.Point{x, y}).Push(ops).Pop()
+	////op.TransformOp{}
+	//img := convertPixmapPixels(p.Width, p.Height, p.Pixels)
+	//imageOp := paint.NewImageOp(img)
+	//imageOp.Filter = paint.FilterNearest
+	//imageOp.Add(ops)
+	//paint.PaintOp{}.Add(ops)
 
 }
 

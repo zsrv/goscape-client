@@ -51,25 +51,33 @@ func (c *Client) draw(w *app.Window) error {
 		// detect what type of event
 		switch e := w.Event().(type) {
 
-		case app.FrameEvent:
-			// A request to draw the window state
-
-			//c.Ops.Reset()
-			// This is sent when the application should re-render
-			//gtx := app.NewContext(&c.Ops, e)
-			//gtx := app.NewContext(&ops, e)
-
-			// Draw the state into ops
-			//gtx.Execute(op.InvalidateCmd{})
-
-			// Update the display
-			//e.Frame(gtx.Ops)
-			e.Frame(&c.Ops)
-			w.Invalidate()
-
 		case app.DestroyEvent:
 			// The window was closed
 			return e.Err
+
+		case app.FrameEvent:
+			// A request to draw the window state.
+			// Gio only issues FrameEvents when the window is resized or
+			// the user interacts with the window.
+			//
+			// When the program receives a FrameEvent, it is responsible
+			// for updating the display by calling the e.Frame function with
+			// an operation list representing the new state.
+
+			// This is sent when the application should re-render.
+			// Resets the layout.Context for a new frame.
+			//gtx := app.NewContext(&c.Ops, e)
+			//gtx := app.NewContext(&ops, e)
+
+			// Draw the state into ops based on events in e.Queue.
+			//draw(gtx)
+			//draw(&c.Ops)
+			//gtx.Execute(op.InvalidateCmd{})
+
+			// Update the display - pass the operations list to the window driver
+			//e.Frame(gtx.Ops)
+			e.Frame(&c.Ops)
+			w.Invalidate()
 		}
 	}
 }

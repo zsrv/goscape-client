@@ -33,9 +33,9 @@ func NewPix321(width int, height int) *Pix32 {
 	return &p
 }
 
-func NewPix322(arg0 []byte) *Pix32 {
+func NewPix322(imageData []byte) *Pix32 {
 	// TODO: try/catch
-	img, _, err := image.Decode(bytes.NewReader(arg0))
+	img, _, err := image.Decode(bytes.NewReader(imageData))
 	if err != nil {
 		fmt.Printf("error decoding image: %v\n", err)
 	}
@@ -68,6 +68,8 @@ func NewPix322(arg0 []byte) *Pix32 {
 }
 
 func NewPix323(jag *io.Jagfile, name string, sprite int) *Pix32 {
+	// TODO: white logo
+	//  logo might be the only thing using it on title screen
 	var p Pix32
 
 	dat := io.NewPacket(jag.Read(name+".dat", nil))
@@ -215,6 +217,8 @@ func (p *Pix32) CopyPixels1(arg1 []int, arg2 int, arg3 int, arg4 int, arg5 int, 
 
 // PlotSprite
 func (p *Pix32) Draw(y int, x int) {
+	// TODO: something broken here!!? is it because pixels are int64 and not int32?
+	//  gotta refactor everything for gio anyway
 	x += p.CropX
 	y += p.CropY
 
@@ -262,56 +266,56 @@ func (p *Pix32) Draw(y int, x int) {
 }
 
 // Plot
-func (p *Pix32) CopyPixels2(arg0 []int, arg1 []int, arg3, arg4, arg5, arg6, arg7, arg8 int) {
-	var10 := -(arg5 >> 2)
-	var15 := -(arg5 & 0x3)
-	for i := -arg6; i < 0; i++ {
+func (p *Pix32) CopyPixels2(pix2dData []int, pix32PixelsSrc []int, srcOff, dstOff, w, h, dstStep, srcStep int) {
+	var10 := -(w >> 2)
+	var15 := -(w & 0x3)
+	for i := -h; i < 0; i++ {
 		for j := var10; j < 0; j++ {
-			var14 := arg1[arg3]
-			arg3++
+			var14 := pix32PixelsSrc[srcOff]
+			srcOff++
 			if var14 == 0 {
-				arg4++
+				dstOff++
 			} else {
-				arg0[arg4] = var14
-				arg4++
+				pix2dData[dstOff] = var14
+				dstOff++
 			}
-			var14 = arg1[arg3]
-			arg3++
+			var14 = pix32PixelsSrc[srcOff]
+			srcOff++
 			if var14 == 0 {
-				arg4++
+				dstOff++
 			} else {
-				arg0[arg4] = var14
-				arg4++
+				pix2dData[dstOff] = var14
+				dstOff++
 			}
-			var14 = arg1[arg3]
-			arg3++
+			var14 = pix32PixelsSrc[srcOff]
+			srcOff++
 			if var14 == 0 {
-				arg4++
+				dstOff++
 			} else {
-				arg0[arg4] = var14
-				arg4++
+				pix2dData[dstOff] = var14
+				dstOff++
 			}
-			var14 = arg1[arg3]
-			arg3++
+			var14 = pix32PixelsSrc[srcOff]
+			srcOff++
 			if var14 == 0 {
-				arg4++
+				dstOff++
 			} else {
-				arg0[arg4] = var14
-				arg4++
+				pix2dData[dstOff] = var14
+				dstOff++
 			}
 		}
 		for j := var15; j < 0; j-- {
-			var14 := arg1[arg3]
-			arg3++
+			var14 := pix32PixelsSrc[srcOff]
+			srcOff++
 			if var14 == 0 {
-				arg4++
+				dstOff++
 			} else {
-				arg0[arg4] = var14
-				arg4++
+				pix2dData[dstOff] = var14
+				dstOff++
 			}
 		}
-		arg4 += arg7
-		arg3 += arg8
+		dstOff += dstStep
+		srcOff += srcStep
 	}
 }
 
