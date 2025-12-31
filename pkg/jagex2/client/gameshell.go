@@ -17,7 +17,7 @@ type GameShell struct {
 func (c *Client) InitApplication(screenHeight int, screenWidth int) {
 	c.ScreenWidth = screenWidth
 	c.ScreenHeight = screenHeight
-	//c.Frame
+	//c.Frame // app.Window with gio
 	//c.Graphics
 	c.DrawArea = pixmap.NewPixMap(screenWidth, screenHeight)
 	// TODO: open the window here, before Run()
@@ -41,6 +41,8 @@ func (c *Client) InitApplication(screenHeight int, screenWidth int) {
 }
 
 func (c *Client) draw(w *app.Window) error {
+	// for every frame, clear the screen and redraw the whole layout
+
 	//// ops are the operations from the UI
 	//var ops op.Ops
 
@@ -51,13 +53,19 @@ func (c *Client) draw(w *app.Window) error {
 
 		case app.FrameEvent:
 			// A request to draw the window state
+
+			//c.Ops.Reset()
 			// This is sent when the application should re-render
-			gtx := app.NewContext(&c.Ops, e)
+			//gtx := app.NewContext(&c.Ops, e)
+			//gtx := app.NewContext(&ops, e)
 
 			// Draw the state into ops
+			//gtx.Execute(op.InvalidateCmd{})
 
 			// Update the display
-			e.Frame(gtx.Ops)
+			//e.Frame(gtx.Ops)
+			e.Frame(&c.Ops)
+			w.Invalidate()
 
 		case app.DestroyEvent:
 			// The window was closed

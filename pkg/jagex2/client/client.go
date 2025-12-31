@@ -1614,7 +1614,7 @@ func (c *Client) DrawFlames() {
 		}
 	}
 	for i := range 33920 {
-		c.ImageTitle0.Pixels[i] = byte(c.ImageFlamesLeft.Pixels[i]) // TODO: verify
+		c.ImageTitle0.Pixels[i] = c.ImageFlamesLeft.Pixels[i] // TODO: verify
 	}
 	var4 := 0
 	var5 := 1152
@@ -1641,7 +1641,7 @@ func (c *Client) DrawFlames() {
 				var12 = 256 - var10
 				var10 = c.FlameGradient[var10]
 				var13 = int(c.ImageTitle0.Pixels[var5]) // TODO: verify
-				c.ImageTitle0.Pixels[var5] = byte((((((var10 & 0xFF00FF) * var11) + ((var13 & 0xFF00FF) * var12)) & 0xFF00FF00) + ((((var10 & 0xFF00) * var11) + ((var13 & 0xFF00) * var12)) & 0xFF0000)) >> 8)
+				c.ImageTitle0.Pixels[var5] = (((((var10 & 0xFF00FF) * var11) + ((var13 & 0xFF00FF) * var12)) & 0xFF00FF00) + ((((var10 & 0xFF00) * var11) + ((var13 & 0xFF00) * var12)) & 0xFF0000)) >> 8
 				var5++
 			}
 		}
@@ -1649,7 +1649,7 @@ func (c *Client) DrawFlames() {
 	}
 	c.ImageTitle0.Draw(&c.Ops, 0, 0) // TODO: verify
 	for i := range 33920 {
-		c.ImageTitle1.Pixels[i] = byte(c.ImageFlamesRight.Pixels[i]) // TODO: verify
+		c.ImageTitle1.Pixels[i] = c.ImageFlamesRight.Pixels[i] // TODO: verify
 	}
 	var4 = 0
 	var5 = 1176
@@ -1667,11 +1667,14 @@ func (c *Client) DrawFlames() {
 				var14 := 256 - var12
 				var12 = c.FlameGradient[var12]
 				var15 := int(c.ImageTitle1.Pixels[var5]) // TODO: verify
-				c.ImageTitle1.Pixels[var5] = byte((((((var12 & 0xFF00FF) * var13) + ((var15 & 0xFF00FF) * var14)) & 0xFF00FF00) + ((((var12 & 0xFF00) * var13) + ((var15 & 0xFF00) * var14)) & 0xFF0000)) >> 8)
+				c.ImageTitle1.Pixels[var5] = (((((var12 & 0xFF00FF) * var13) + ((var15 & 0xFF00FF) * var14)) & 0xFF00FF00) + ((((var12 & 0xFF00) * var13) + ((var15 & 0xFF00) * var14)) & 0xFF0000)) >> 8
 				var5++
 			}
 		}
+		var4 += 128 - var10
+		var5 += 128 - var10 - var9
 	}
+	c.ImageTitle1.Draw(&c.Ops, 661, 0)
 }
 
 func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *component.Component, arg5 int, arg6 int) {
@@ -7999,7 +8002,56 @@ func (c *Client) DrawError() {
 }
 
 func (c *Client) LoadTitleBackground() {
-	// TODO: stub - graphics - pix322
+	var2 := c.ArchiveTitle.Read("title.dat", nil)
+	var3 := pix32.NewPix322(var2)
+	c.ImageTitle0.Bind()
+	var3.BlitOpaque(0, 0)
+	c.ImageTitle1.Bind()
+	var3.BlitOpaque(-661, 0)
+	c.ImageTitle2.Bind()
+	var3.BlitOpaque(-128, 0)
+	c.ImageTitle3.Bind()
+	var3.BlitOpaque(-214, -386)
+	c.ImageTitle4.Bind()
+	var3.BlitOpaque(-214, -186)
+	c.ImageTitle5.Bind()
+	var3.BlitOpaque(0, -265)
+	c.ImageTitle6.Bind()
+	var3.BlitOpaque(-574, -265)
+	c.ImageTitle7.Bind()
+	var3.BlitOpaque(-128, -186)
+	c.ImageTitle8.Bind()
+	var3.BlitOpaque(-574, -186)
+	var4 := make([]int, var3.Width)
+	for i := range var3.Height {
+		for j := range var3.Width {
+			var4[j] = var3.Pixels[var3.Width-j-1+var3.Width*i]
+		}
+		for j := range var3.Width {
+			var3.Pixels[j+var3.Width*i] = var4[j]
+		}
+	}
+	c.ImageTitle0.Bind()
+	var3.BlitOpaque(394, 0)
+	c.ImageTitle1.Bind()
+	var3.BlitOpaque(-267, 0)
+	c.ImageTitle2.Bind()
+	var3.BlitOpaque(266, 0)
+	c.ImageTitle3.Bind()
+	var3.BlitOpaque(180, -386)
+	c.ImageTitle4.Bind()
+	var3.BlitOpaque(180, -186)
+	c.ImageTitle5.Bind()
+	var3.BlitOpaque(394, -265)
+	c.ImageTitle6.Bind()
+	var3.BlitOpaque(-180, -265)
+	c.ImageTitle7.Bind()
+	var3.BlitOpaque(212, -186)
+	c.ImageTitle8.Bind()
+	var3.BlitOpaque(-180, -186)
+	var3 = pix32.NewPix323(c.ArchiveTitle, "logo", 0)
+	c.ImageTitle2.Bind()
+	var3.Draw(18, c.ScreenWidth/2-var3.Width/2-128)
 }
 
 func (c *Client) PushLocs() {

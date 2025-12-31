@@ -1,6 +1,9 @@
 package pix32
 
 import (
+	"bytes"
+	"fmt"
+	"image"
 	"math"
 
 	"goscape-client/pkg/jagex2/graphics/pix2d"
@@ -30,7 +33,39 @@ func NewPix321(width int, height int) *Pix32 {
 	return &p
 }
 
-//func NewPix322(arg0 []byte, arg1 Component) *Pix32 {} // TODO: java.awt.Component
+func NewPix322(arg0 []byte) *Pix32 {
+	// TODO: try/catch
+	img, _, err := image.Decode(bytes.NewReader(arg0))
+	if err != nil {
+		fmt.Printf("error decoding image: %v\n", err)
+	}
+
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+
+	p := &Pix32{
+		Pixels: make([]int, width*height), // TODO: int32?
+		CropW:  width,
+		Width:  width,
+		CropH:  height,
+		Height: height,
+		CropY:  0,
+		CropX:  0,
+	}
+
+	// Extract pixel data into int32 array (ARGB format)
+	idx := 0
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, b, a := img.At(x, y).RGBA()
+			// Convert from 16-bit to 8-bit and pack as ARGB
+			p.Pixels[idx] = int(((a >> 8) << 24) | ((r >> 8) << 16) | ((g >> 8) << 8) | (b >> 8)) // TODO: my conversion to int
+			idx++
+		}
+	}
+	return p
+}
 
 func NewPix323(jag *io.Jagfile, name string, sprite int) *Pix32 {
 	var p Pix32
