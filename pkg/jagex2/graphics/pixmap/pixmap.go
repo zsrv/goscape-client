@@ -105,24 +105,17 @@ func (p *PixMap) Draw(ops *op.Ops, x, y int) {
 
 }
 
-// The resulting image.RGBA can be directly used with paint.NewImageOp() for drawing
-func convertPixmapPixels(width, height int, javaPixels []int) *image.RGBA { // changed javaPixels from int32 to int
-	// Create RGBA image (Go's standard format)
-	rgba := image.NewRGBA(image.Rect(0, 0, width, height))
+// convertPixmapPixels converts packed 0x00RRGGBB ints (Java pix2d format) to image.NRGBA.
+// Java's DirectColorModel has no alpha mask, so all pixels are fully opaque.
+// image.NRGBA (straight alpha) is also Gio's preferred optimized format for paint.NewImageOp.
+func convertPixmapPixels(width, height int, javaPixels []int) *image.NRGBA {
+	rgba := image.NewNRGBA(image.Rect(0, 0, width, height))
 
-	// Convert each ARGB pixel to RGBA
 	for i, argb := range javaPixels {
-		// Extract components from packed ARGB
-		a := uint8((argb >> 24) & 0xFF)
-		r := uint8((argb >> 16) & 0xFF)
-		g := uint8((argb >> 8) & 0xFF)
-		b := uint8(argb & 0xFF)
-
-		// Set in RGBA (R,G,B,A order)
-		rgba.Pix[i*4] = r
-		rgba.Pix[i*4+1] = g
-		rgba.Pix[i*4+2] = b
-		rgba.Pix[i*4+3] = a
+		rgba.Pix[i*4] = uint8(argb >> 16)
+		rgba.Pix[i*4+1] = uint8(argb >> 8)
+		rgba.Pix[i*4+2] = uint8(argb)
+		rgba.Pix[i*4+3] = 0xFF // always opaque, matching Java's DirectColorModel (no alpha mask)
 	}
 
 	return rgba
