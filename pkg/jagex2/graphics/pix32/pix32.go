@@ -217,7 +217,7 @@ func (p *Pix32) QuickPlot(arg1 []int, arg2 int, arg3 int, arg4 int, arg5 int, ar
 	}
 }
 
-// was PlotSprite
+// was Draw
 func (p *Pix32) PlotSprite(y int, x int) {
 	// TODO: something broken here!!? is it because pixels are int64 and not int32?
 	//  gotta refactor everything for gio anyway
@@ -306,7 +306,7 @@ func (p *Pix32) Plot(pix2dData []int, pix32PixelsSrc []int, srcOff, dstOff, w, h
 				dstOff++
 			}
 		}
-		for j := var15; j < 0; j-- {
+		for j := var15; j < 0; j++ {
 			var14 := pix32PixelsSrc[srcOff]
 			srcOff++
 			if var14 == 0 {

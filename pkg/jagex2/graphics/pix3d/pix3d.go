@@ -298,9 +298,9 @@ func SetBrightness(arg1 float64) {
 }
 
 func SetGamma(arg0 int, arg1 float64) int {
-	var3 := float64((arg0 >> 16) / 256.0)
-	var5 := float64(((arg0 >> 8) & 0xFF) / 256.0)
-	var7 := float64((arg0 & 0xFF) / 256.0)
+	var3 := float64(arg0>>16) / 256.0
+	var5 := float64((arg0>>8)&0xFF) / 256.0
+	var7 := float64(arg0&0xFF) / 256.0
 	var12 := math.Pow(var3, arg1)
 	var13 := math.Pow(var5, arg1)
 	var14 := math.Pow(var7, arg1)
@@ -1489,7 +1489,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								if arg2 < 0 {
 									return
 								}
-								TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg15>>16, arg14>>16, arg8>>8, arg7>>8, var20, var23, var26, var21, var24, var27)
+								TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg5>>16, arg4>>16, arg8>>8, arg7>>8, var20, var23, var26, var21, var24, var27)
 								arg5 += var33
 								arg4 += var31
 								arg8 += var34
