@@ -30,18 +30,18 @@ func main() {
 	}
 	switch os.Args[3] {
 	case "lowmem":
-		client.SetLowMemory()
+		client.SetLowMem()
 	case "highmem":
-		client.SetHighMemory()
+		client.SetHighMem()
 	default:
 		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members]")
 		os.Exit(1)
 	}
 	switch os.Args[4] {
 	case "free":
-		client.Members = false
+		client.MembersWorld = false
 	case "members":
-		client.Members = true
+		client.MembersWorld = true
 	default:
 		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members]")
 		os.Exit(1)
@@ -58,7 +58,8 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		client.NewClient().InitApplication(532, 789)
+		app := client.NewClient()
+		app.InitApplication(532, 789)
 	}()
 	wg.Wait()
 }

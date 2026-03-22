@@ -1,16 +1,16 @@
 package pix2d
 
 var (
-	Data        []int
-	Width2D     int
-	Height2D    int
-	BoundTop    int
-	BoundBottom int
-	BoundLeft   int
-	BoundRight  int
-	SafeWidth   int
-	CenterW2D   int
-	CenterH2D   int
+	Data      []int
+	Width2D   int
+	Height2D  int
+	Top       int // was BoundTop
+	Bottom    int // was BoundBottom
+	Left      int // was BoundLeft
+	Right     int // was BoundRight
+	SafeWidth int
+	CenterW2D int
+	CenterH2D int
 )
 
 //type Pix2D struct {
@@ -25,12 +25,12 @@ func Bind(width int, data []int, height int) {
 }
 
 func ResetClipping() {
-	BoundLeft = 0
-	BoundTop = 0
-	BoundRight = Width2D
-	BoundBottom = Height2D
-	SafeWidth = BoundRight - 1
-	CenterW2D = BoundRight / 2
+	Left = 0
+	Top = 0
+	Right = Width2D
+	Bottom = Height2D
+	SafeWidth = Right - 1
+	CenterW2D = Right / 2
 }
 
 func SetClipping(bottom int, top int, right int, left int) {
@@ -46,13 +46,13 @@ func SetClipping(bottom int, top int, right int, left int) {
 	if bottom > Height2D {
 		bottom = Height2D
 	}
-	BoundLeft = left
-	BoundTop = top
-	BoundRight = right
-	BoundBottom = bottom
-	SafeWidth = BoundRight - 1
-	CenterW2D = BoundRight / 2
-	CenterH2D = BoundBottom / 2
+	Left = left
+	Top = top
+	Right = right
+	Bottom = bottom
+	SafeWidth = Right - 1
+	CenterW2D = Right / 2
+	CenterH2D = Bottom / 2
 }
 
 func Clear() {
@@ -63,19 +63,19 @@ func Clear() {
 }
 
 func FillRect(y int, x int, colour int, width int, height int) {
-	if x < BoundLeft {
-		width -= BoundLeft - x
-		x = BoundLeft
+	if x < Left {
+		width -= Left - x
+		x = Left
 	}
-	if y < BoundTop {
-		height -= BoundTop - y
-		y = BoundTop
+	if y < Top {
+		height -= Top - y
+		y = Top
 	}
-	if x+width > BoundRight {
-		width = BoundRight - x
+	if x+width > Right {
+		width = Right - x
 	}
-	if y+height > BoundBottom {
-		height = BoundBottom - y
+	if y+height > Bottom {
+		height = Bottom - y
 	}
 	step := Width2D - width
 	offset := x + y*Width2D
@@ -88,23 +88,23 @@ func FillRect(y int, x int, colour int, width int, height int) {
 	}
 }
 
-func DrawRect(x int, colour int, height int, y int, width int) {
-	HLine(colour, y, width, x)
-	HLine(colour, y+height-1, width, x)
-	VLine(colour, y, height, x)
-	VLine(colour, y, height, x+width-1)
+func DrawRect(x int, hexColour int, height int, y int, width int) {
+	HLine(hexColour, y, width, x)
+	HLine(hexColour, y+height-1, width, x)
+	VLine(hexColour, y, height, x)
+	VLine(hexColour, y, height, x+width-1)
 }
 
 func HLine(colour int, y int, width int, x int) {
-	if y < BoundTop || y >= BoundBottom {
+	if y < Top || y >= Bottom {
 		return
 	}
-	if x < BoundLeft {
-		width -= BoundLeft - x
-		x = BoundLeft
+	if x < Left {
+		width -= Left - x
+		x = Left
 	}
-	if x+width > BoundRight {
-		width = BoundRight - x
+	if x+width > Right {
+		width = Right - x
 	}
 	offset := x + y*Width2D
 	for i := range width {
@@ -113,15 +113,15 @@ func HLine(colour int, y int, width int, x int) {
 }
 
 func VLine(colour int, y int, height int, x int) {
-	if x < BoundLeft || x >= BoundRight {
+	if x < Left || x >= Right {
 		return
 	}
-	if y < BoundTop {
-		height -= BoundTop - y
-		y = BoundTop
+	if y < Top {
+		height -= Top - y
+		y = Top
 	}
-	if y+height > BoundBottom {
-		height = BoundBottom - y
+	if y+height > Bottom {
+		height = Bottom - y
 	}
 	offset := x + y*Width2D
 	for i := range height {

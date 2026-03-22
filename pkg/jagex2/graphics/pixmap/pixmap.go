@@ -19,9 +19,9 @@ var (
 
 // PixMap is a CPU-side pixel buffer that can be efficiently uploaded to GPU.
 type PixMap struct {
-	//Pixels []byte
-	//Pixels []uint8
-	Pixels  []int
+	//Data []byte
+	//Data []uint8
+	Data    []int
 	Width   int
 	Height  int
 	Image   *image.RGBA
@@ -32,16 +32,16 @@ type PixMap struct {
 func NewPixMap(width, height int) *PixMap {
 	//pix := image.NewRGBA(image.Rect(0, 0, width, height))
 	//return &PixMap{
-	//	Width:  width,
-	//	Height: height,
-	//	Pixels: pix.Pix,
+	//	Wi:  width,
+	//	Hi: height,
+	//	Data: pix.Pix,
 	//	Image:  pix,
 	//}
 
 	var m PixMap
 	m.Width = width
 	m.Height = height
-	m.Pixels = make([]int, width*height)
+	m.Data = make([]int, width*height)
 	m.Image = image.NewRGBA(image.Rect(0, 0, width, height)) // TODO: unused
 	m.OpCache = new(op.Ops)                                  // MINE
 	m.Bind()
@@ -54,7 +54,7 @@ func NewPixMap(width, height int) *PixMap {
 func (p *PixMap) Bind() {
 	//p.Op = paint.NewImageOp(p.Image)
 	//p.Ready = true
-	pix2d.Bind(p.Width, p.Pixels, p.Height)
+	pix2d.Bind(p.Width, p.Data, p.Height)
 }
 
 // Draw adds the necessary operations to render the buffer at (x,y).
@@ -70,7 +70,7 @@ func (p *PixMap) Draw(ops *op.Ops, x, y int) {
 	//	p.Bind()
 	//}
 	//// Clip to the widget area
-	//clip.Rect{Min: image.Pt(x, y), Max: image.Pt(x+p.Width, y+p.Height)}.Push(ops)
+	//clip.Rect{Min: image.Pt(x, y), Max: image.Pt(x+p.Wi, y+p.Hi)}.Push(ops)
 	//// Paint the image
 	//p.Op.Add(ops)
 	//paint.PaintOp{}.Add(ops)
@@ -84,7 +84,7 @@ func (p *PixMap) Draw(ops *op.Ops, x, y int) {
 	//defer op.Offset(image.Point{x, y}).Push(p.OpCache).Pop()
 	stack := op.Offset(image.Point{x, y}).Push(p.OpCache)
 	//op.TransformOp{}
-	img := convertPixmapPixels(p.Width, p.Height, p.Pixels)
+	img := convertPixmapPixels(p.Width, p.Height, p.Data)
 	imageOp := paint.NewImageOp(img)
 	imageOp.Filter = paint.FilterNearest
 	imageOp.Add(p.OpCache)
@@ -97,7 +97,7 @@ func (p *PixMap) Draw(ops *op.Ops, x, y int) {
 	// The specified ColorModel object should be used to convert the pixels into their corresponding color and alpha components.
 	//defer op.Offset(image.Point{x, y}).Push(ops).Pop()
 	////op.TransformOp{}
-	//img := convertPixmapPixels(p.Width, p.Height, p.Pixels)
+	//img := convertPixmapPixels(p.Wi, p.Hi, p.Data)
 	//imageOp := paint.NewImageOp(img)
 	//imageOp.Filter = paint.FilterNearest
 	//imageOp.Add(ops)

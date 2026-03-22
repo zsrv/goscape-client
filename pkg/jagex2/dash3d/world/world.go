@@ -681,8 +681,8 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 								var40 += RandomLightnessOffset
 								if var40 < 0 {
 									var40 = 0
-								} else if var40 > 255 {
-									var40 = 255
+								} else if var40 > 0xFF {
+									var40 = 0xFF
 								}
 								var37 = w.HSL24To16(var54, var39, var40)
 							}
@@ -714,7 +714,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 								if var42 >= 0 {
 									var44 = pix3d.GetAverageTextureRGB(var42)
 									var43 = -1
-								} else if var41.RGB == 16711935 {
+								} else if var41.RGB == 0xFF00FF {
 									var44 = 0
 									var43 = -2
 									var42 = -1
@@ -926,7 +926,7 @@ func InterpolatedNoise(arg0, arg1, arg2 int) int {
 }
 
 func Interpolate(arg0, arg1, arg2, arg3 int) int {
-	var4 := (65536 - pix3d.CosTable[arg2*1024/arg3]) >> 1
+	var4 := (65536 - pix3d.CosTable[arg2*0x400/arg3]) >> 1
 	return ((arg0 * (65536 - var4)) >> 16) + ((arg1 * var4) >> 16)
 }
 

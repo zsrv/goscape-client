@@ -304,7 +304,7 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 
 func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 	var3 := IconCache.Get(int64(arg0))
-	if var3 != nil && var3.CropH != arg2 && var3.CropH != -1 {
+	if var3 != nil && var3.OHi != arg2 && var3.OHi != -1 {
 		//var3.Unlink() // TODO: Linkable.Unlink - add func to remove an id directly from LruCache?
 		var3 = nil
 	}
@@ -334,10 +334,10 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 	var8 := pix2d.Data
 	var9 := pix2d.Width2D
 	var10 := pix2d.Height2D
-	var11 := pix2d.BoundLeft
-	var12 := pix2d.BoundRight
-	var13 := pix2d.BoundTop
-	var14 := pix2d.BoundBottom
+	var11 := pix2d.Left
+	var12 := pix2d.Right
+	var13 := pix2d.Top
+	var14 := pix2d.Bottom
 	pix3d.Jagged = false
 	pix2d.Bind(32, var3.Pixels, 32)
 	pix2d.FillRect(0, 0, 0, 32, 32)
@@ -370,13 +370,13 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 	}
 	if var4.CertTemplate != -1 {
 		var20 := GetIcon(var4.CertLink, 10)
-		var21 := var20.CropW
-		var22 := var20.CropH
-		var20.CropW = 32
-		var20.CropH = 32
+		var21 := var20.OWi
+		var22 := var20.OHi
+		var20.OWi = 32
+		var20.OHi = 32
 		var20.Crop(22, 5, 22, 5)
-		var20.CropW = var21
-		var20.CropH = var22
+		var20.OWi = var21
+		var20.OHi = var22
 	}
 	IconCache.Put(int64(arg0), var3)
 	pix2d.Bind(var9, var8, var10)
@@ -386,11 +386,11 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 	pix3d.LineOffset = var7
 	pix3d.Jagged = true
 	if var4.Stackable {
-		var3.CropW = 33
+		var3.OWi = 33
 	} else {
-		var3.CropW = 32
+		var3.OWi = 32
 	}
-	var3.CropH = arg2
+	var3.OHi = arg2
 	return var3
 }
 

@@ -75,7 +75,7 @@ func (t *SeqType) Decode(arg1 *io.Packet) {
 			for i := range t.FrameCount {
 				t.Frames[i] = arg1.G2()
 				t.IFrames[i] = arg1.G2()
-				if t.IFrames[i] == 65535 {
+				if t.IFrames[i] == 0xFFFF {
 					t.IFrames[i] = -1
 				}
 				t.Delay[i] = arg1.G2()

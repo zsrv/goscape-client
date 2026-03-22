@@ -76,31 +76,31 @@ func (e *PlayerEntity) Read(arg1 *io.Packet) {
 		e.Colors[i] = var5
 	}
 	e.SeqStandID = arg1.G2()
-	if e.SeqStandID == 65535 {
+	if e.SeqStandID == 0xFFFF {
 		e.SeqStandID = -1
 	}
 	e.SeqTurnID = arg1.G2()
-	if e.SeqTurnID == 65535 {
+	if e.SeqTurnID == 0xFFFF {
 		e.SeqTurnID = -1
 	}
 	e.SeqWalkID = arg1.G2()
-	if e.SeqWalkID == 65535 {
+	if e.SeqWalkID == 0xFFFF {
 		e.SeqWalkID = -1
 	}
 	e.SeqTurnAroundID = arg1.G2()
-	if e.SeqTurnAroundID == 65535 {
+	if e.SeqTurnAroundID == 0xFFFF {
 		e.SeqTurnAroundID = -1
 	}
 	e.SeqTurnLeftID = arg1.G2()
-	if e.SeqTurnLeftID == 65535 {
+	if e.SeqTurnLeftID == 0xFFFF {
 		e.SeqTurnLeftID = -1
 	}
 	e.SeqTurnRightId = arg1.G2()
-	if e.SeqTurnRightId == 65535 {
+	if e.SeqTurnRightId == 0xFFFF {
 		e.SeqTurnRightId = -1
 	}
 	e.SeqRunID = arg1.G2()
-	if e.SeqRunID == 65535 {
+	if e.SeqRunID == 0xFFFF {
 		e.SeqRunID = -1
 	}
 	e.Name = jstring.FormatName(jstring.FromBase37(arg1.G8()))
@@ -163,7 +163,7 @@ func (e *PlayerEntity) Draw() *model.Model {
 				var6.RotateY90()
 				var6.RotateY90()
 				var6.RotateY90()
-			} else if e.DstYaw == 1024 {
+			} else if e.DstYaw == 0x400 {
 				var6.RotateY90()
 				var6.RotateY90()
 			} else if e.DstYaw == 1536 {
@@ -173,7 +173,7 @@ func (e *PlayerEntity) Draw() *model.Model {
 			var2 = model.NewModel3(var8, 2, true)
 			if e.DstYaw == 512 {
 				var6.RotateY90()
-			} else if e.DstYaw == 1024 {
+			} else if e.DstYaw == 0x400 {
 				var6.RotateY90()
 				var6.RotateY90()
 			} else if e.DstYaw == 1536 {

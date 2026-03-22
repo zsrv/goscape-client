@@ -97,7 +97,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 				return
 			}
 			var7 := var4.G2()
-			if var7 == 65535 {
+			if var7 == 0xFFFF {
 				var5 = var4.G2()
 				var7 = var4.G2()
 			}

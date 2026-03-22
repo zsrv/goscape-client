@@ -225,7 +225,7 @@ func Unpack(arg1 *io.Jagfile) {
 		} else {
 			var12.FaceInfosOffset = -1
 		}
-		if var14 == 255 {
+		if var14 == 0xFF {
 			var12.FacePrioritiesOffset = var7
 			var7 += var12.FaceCount
 		} else {
@@ -1126,8 +1126,8 @@ func (m *Model) ApplyTransform2(arg0 int, arg1 []int, arg2 int, arg3 int, arg4 i
 					if m.FaceAlpha[var11] < 0 {
 						m.FaceAlpha[var11] = 0
 					}
-					if m.FaceAlpha[var11] > 255 {
-						m.FaceAlpha[var11] = 255
+					if m.FaceAlpha[var11] > 0xFF {
+						m.FaceAlpha[var11] = 0xFF
 					}
 				}
 			}

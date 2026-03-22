@@ -193,7 +193,7 @@ func (loc *LocType) Decode(arg1 *io.Packet) {
 			loc.Occlude = true
 		case 24:
 			loc.Anim = arg1.G2()
-			if loc.Anim == 65535 {
+			if loc.Anim == 0xFFFF {
 				loc.Anim = -1
 			}
 		case 25:

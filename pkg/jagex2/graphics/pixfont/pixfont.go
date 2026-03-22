@@ -54,11 +54,15 @@ func NewPixFont(arg0 *io.Jagfile, arg1 string) *PixFont {
 
 	var4 := io.NewPacket(arg0.Read(arg1+".dat", nil))
 	var5 := io.NewPacket(arg0.Read("index.dat", nil))
-	var5.Pos = var4.G2() + 4
+
+	var5.Pos = var4.G2() + 4 // skip height and width
+
+	// skip palette
 	var6 := var5.G1()
 	if var6 > 0 {
 		var5.Pos += (var6 - 1) * 3
 	}
+
 	var8 := 0
 	for i := range 94 {
 		p.CharOffsetX[i] = int(var5.G1())
@@ -67,7 +71,7 @@ func NewPixFont(arg0 *io.Jagfile, arg1 string) *PixFont {
 		var8 = p.CharMaskWidth[i]
 		p.CharMaskHeight[i] = int(var5.G2())
 		var9 := p.CharMaskHeight[i]
-		var10 := var5.G1()
+		var10 := var5.G1() // pixel order
 		var11 := var8 * var9
 		p.CharMask[i] = make([]byte, var11)
 		if var10 == 0 {
@@ -109,8 +113,8 @@ func NewPixFont(arg0 *io.Jagfile, arg1 string) *PixFont {
 	return p
 }
 
-func (p *PixFont) DrawStringCenter(arg0 int, arg2 int, arg3 string, arg4 int) {
-	p.DrawString(arg4-p.StringWidth(arg3)/2, arg0, arg2, arg3)
+func (p *PixFont) CentreString(arg0 int, hexColour int, arg3 string, arg4 int) {
+	p.DrawString(arg4-p.StringWidth(arg3)/2, arg0, hexColour, arg3)
 }
 
 func (p *PixFont) DrawStringTaggableCenter(arg0 int, arg1 int, arg2 bool, arg3 int, arg4 string) {
@@ -213,19 +217,19 @@ func (p *PixFont) DrawStringTooltip(arg0 int, arg1 bool, arg3 int, arg4 int, arg
 func (p *PixFont) EvaluateTag(arg1 string) int {
 	switch arg1 {
 	case "red":
-		return 16711680
+		return 0xFF0000
 	case "gre":
-		return 65280
+		return 0xFF00
 	case "blu":
-		return 255
+		return 0xFF
 	case "yel":
-		return 16776960
+		return 0xFFFF00
 	case "cya":
-		return 65535
+		return 0xFFFF
 	case "mag":
-		return 16711935
+		return 0xFF00FF
 	case "whi":
-		return 16777215
+		return 0xFFFFFF
 	case "bla":
 		return 0
 	case "lre":
@@ -257,27 +261,27 @@ func (p *PixFont) DrawChar(arg0 []byte, arg1, arg2, arg3, arg4, arg5 int) {
 	var9 := 0
 	var10 := 0
 	var11 := 0
-	if arg2 < pix2d.BoundTop {
-		var11 = pix2d.BoundTop - arg2
+	if arg2 < pix2d.Top {
+		var11 = pix2d.Top - arg2
 		arg4 -= var11
-		arg2 = pix2d.BoundTop
+		arg2 = pix2d.Top
 		var10 += var11 * arg3
 		var7 += var11 * pix2d.Width2D
 	}
-	if arg2+arg4 >= pix2d.BoundBottom {
-		arg4 -= arg2 + arg4 - pix2d.BoundBottom + 1
+	if arg2+arg4 >= pix2d.Bottom {
+		arg4 -= arg2 + arg4 - pix2d.Bottom + 1
 	}
-	if arg1 < pix2d.BoundLeft {
-		var11 = pix2d.BoundLeft - arg1
+	if arg1 < pix2d.Left {
+		var11 = pix2d.Left - arg1
 		arg3 -= var11
-		arg1 = pix2d.BoundLeft
+		arg1 = pix2d.Left
 		var10 += var11
 		var7 += var11
 		var9 += var11
 		var8 += var11
 	}
-	if arg1+arg3 >= pix2d.BoundRight {
-		var11 = arg1 + arg3 - pix2d.BoundRight + 1
+	if arg1+arg3 >= pix2d.Right {
+		var11 = arg1 + arg3 - pix2d.Right + 1
 		arg3 -= var11
 		var9 += var11
 		var8 += var11
@@ -341,27 +345,27 @@ func (p *PixFont) DrawCharAlpha(arg0 []byte, arg2, arg3, arg4, arg5, arg6, arg7 
 	var11 := 0
 	var12 := 0
 	var13 := 0
-	if arg5 < pix2d.BoundTop {
-		var13 = pix2d.BoundTop - arg5
+	if arg5 < pix2d.Top {
+		var13 = pix2d.Top - arg5
 		arg3 -= var13
-		arg5 = pix2d.BoundTop
+		arg5 = pix2d.Top
 		var12 += var13 * arg7
 		var9 += var13 * pix2d.Width2D
 	}
-	if arg5+arg3 >= pix2d.BoundBottom {
-		arg3 -= arg5 + arg3 - pix2d.BoundBottom + 1
+	if arg5+arg3 >= pix2d.Bottom {
+		arg3 -= arg5 + arg3 - pix2d.Bottom + 1
 	}
-	if arg2 < pix2d.BoundLeft {
-		var13 = pix2d.BoundLeft - arg2
+	if arg2 < pix2d.Left {
+		var13 = pix2d.Left - arg2
 		arg7 -= var13
-		arg2 = pix2d.BoundLeft
+		arg2 = pix2d.Left
 		var12 += var13
 		var9 += var13
 		var11 += var13
 		var10 += var13
 	}
-	if arg2+arg7 >= pix2d.BoundRight {
-		var13 = arg2 + arg7 - pix2d.BoundRight + 1
+	if arg2+arg7 >= pix2d.Right {
+		var13 = arg2 + arg7 - pix2d.Right + 1
 		arg7 -= var13
 		var11 += var13
 		var10 += var13

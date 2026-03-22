@@ -62,7 +62,7 @@ var (
 	CHARSET         string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"£$%^&*()-_=+[{]};:'@#~,<.>/?\\| "
 	LevelExperience []int  = make([]int, 99)
 	NodeID          int    = 10
-	Members         bool   = true
+	MembersWorld    bool   = true
 	RSA_EXPONENT    *big.Int
 	RSA_MODULUS     *big.Int
 	OpLogic5        int
@@ -79,7 +79,7 @@ var (
 	CycleLogic4     int
 	CycleLogic5     int
 	LowMemory       bool
-	Started         bool
+	AlreadyStarted  bool
 )
 
 func init() {
@@ -139,7 +139,7 @@ type Client struct {
 	HintOffsetX                   int
 	HintOffsetZ                   int
 	MinimapOffsetCycle            int
-	RedrawBackground              bool
+	RedrawFrame                   bool
 	LocList                       *datastruct.LinkList[*entity.LocEntity]
 	RandomIn                      *io.Isaac
 	CameraModifierEnabled         []bool
@@ -179,7 +179,7 @@ type Client struct {
 	ActiveMapFunctions            []*pix32.Pix32
 	ChatScrollHeight              int
 	In                            *io.Packet
-	ArchiveChecksum               []int
+	JagChecksum                   []int
 	MidiThreadActive              bool
 	ImageSideIcons                []*pix8.Pix8
 	OrbitCameraPitch              int
@@ -447,7 +447,7 @@ type Client struct {
 	ImageRedstone2hv              *pix8.Pix8
 	ImageScrollbar0               *pix8.Pix8
 	ImageScrollbar1               *pix8.Pix8
-	ImageTitlebox                 *pix8.Pix8
+	ImageTitleBox                 *pix8.Pix8
 	ImageTitleButton              *pix8.Pix8
 	FontPlain11                   *pixfont.PixFont
 	FontPlain12                   *pixfont.PixFont
@@ -479,7 +479,7 @@ type Client struct {
 	AreaMapback                   *pixmap.PixMap
 	AreaViewport                  *pixmap.PixMap
 	AreaChatback                  *pixmap.PixMap
-	ArchiveTitle                  *io.Jagfile
+	JagTitle                      *io.Jagfile
 	//Stream ClientStream // TODO
 	ModalMessage        string
 	ObjSelectedName     string
@@ -501,7 +501,7 @@ type Client struct {
 	ImageRunes          []*pix8.Pix8
 	SceneMapLocData     [][]byte
 	LevelTileFlags      [][][]byte
-	LevelHeightmap      [][][]int
+	LevelHeightMap      [][][]int
 }
 
 func NewClient() *Client {
@@ -535,7 +535,7 @@ func NewClient() *Client {
 		ActiveMapFunctions:        make([]*pix32.Pix32, 1000),
 		ChatScrollHeight:          78,
 		In:                        io.Alloc(1),
-		ArchiveChecksum:           make([]int, 9),
+		JagChecksum:               make([]int, 9),
 		MidiThreadActive:          true,
 		ImageSideIcons:            make([]*pix8.Pix8, 13),
 		OrbitCameraPitch:          128,
@@ -580,7 +580,7 @@ func NewClient() *Client {
 		StickyChatInterfaceID:     -1,
 		CameraModifierCycle:       make([]int, 5),
 		ImageMapscene:             make([]*pix8.Pix8, 50),
-		CHAT_COLORS:               []int{16776960, 16711680, 65280, 65535, 16711935, 16777215},
+		CHAT_COLORS:               []int{0xFFFF00, 0xFF0000, 0xFF00, 0xFFFF, 0xFF00FF, 0xFFFFFF},
 		SCROLLBAR_TRACK:           2301979,
 		Spotanims:                 datastruct.NewLinkList[*entity.SpotAnimEntity](),
 		LastWaveLoops:             -1,
@@ -681,7 +681,7 @@ func (c *Client) Draw2DEntityElements() {
 					if c.ProjectX > -1 {
 						for j := range 8 {
 							if var5.HeadIcons&(0x1<<j) != 0 {
-								c.ImageHeadIcons[j].Draw(c.ProjectY-var4, c.ProjectX-12)
+								c.ImageHeadIcons[j].PlotSprite(c.ProjectY-var4, c.ProjectX-12)
 								var4 -= 25
 							}
 						}
@@ -690,13 +690,13 @@ func (c *Client) Draw2DEntityElements() {
 				if i >= 0 && c.HintType == 10 && c.HintPlayer == c.PlayerIDs[i] {
 					c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
 					if c.ProjectX > -1 {
-						c.ImageHeadIcons[7].Draw(c.ProjectY-var4, c.ProjectX-12)
+						c.ImageHeadIcons[7].PlotSprite(c.ProjectY-var4, c.ProjectX-12)
 					}
 				}
 			} else if c.HintType == 1 && c.HintNPC == c.NPCIDs[i-c.PlayerCount] && clientextras.LoopCycle%20 < 10 {
 				c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
 				if c.ProjectX > -1 {
-					c.ImageHeadIcons[2].Draw(c.ProjectY-28, c.ProjectX-12)
+					c.ImageHeadIcons[2].PlotSprite(c.ProjectY-28, c.ProjectX-12)
 				}
 			}
 			if var5.Chat != "" && (i >= c.PlayerCount || c.PublicChatSetting == 0 || c.PublicChatSetting == 3 || c.PublicChatSetting == 1 && c.IsFriend(var5.Name)) {
@@ -727,16 +727,16 @@ func (c *Client) Draw2DEntityElements() {
 					if var4 > 30 {
 						var4 = 30
 					}
-					pix2d.FillRect(c.ProjectY-3, c.ProjectX-15, 65280, var4, 5)
-					pix2d.FillRect(c.ProjectY-3, c.ProjectX-15+var4, 16711680, 30-var4, 5)
+					pix2d.FillRect(c.ProjectY-3, c.ProjectX-15, 0xFF00, var4, 5)
+					pix2d.FillRect(c.ProjectY-3, c.ProjectX-15+var4, 0xFF0000, 30-var4, 5)
 				}
 			}
 			if var5.CombatCycle > clientextras.LoopCycle+330 {
 				c.ProjectFromGround1(var5.Height/2, &var5.PathingEntity)
 				if c.ProjectX > -1 {
-					c.ImageHitmarks[var5.DamageType].Draw(c.ProjectY-12, c.ProjectX-12)
-					c.FontPlain11.DrawStringCenter(c.ProjectY+4, 0, strconv.Itoa(var5.Damage), c.ProjectX)
-					c.FontPlain11.DrawStringCenter(c.ProjectY+3, 16777215, strconv.Itoa(var5.Damage), c.ProjectX-1)
+					c.ImageHitmarks[var5.DamageType].PlotSprite(c.ProjectY-12, c.ProjectX-12)
+					c.FontPlain11.CentreString(c.ProjectY+4, 0, strconv.Itoa(var5.Damage), c.ProjectX)
+					c.FontPlain11.CentreString(c.ProjectY+3, 0xFFFFFF, strconv.Itoa(var5.Damage), c.ProjectX-1)
 				}
 			}
 		}
@@ -761,22 +761,22 @@ func (c *Client) Draw2DEntityElements() {
 		c.ProjectY = c.ChatY[i]
 		var15 := c.Chats[i]
 		if c.ChatEffects == 0 {
-			var10 := 16776960
+			var10 := 0xFFFF00
 			if c.ChatColors[i] < 6 {
 				var10 = c.CHAT_COLORS[c.ChatColors[i]]
 			}
 			if c.ChatColors[i] == 6 {
 				if c.SceneCycle%20 < 10 {
-					var10 = 16711680
+					var10 = 0xFF0000
 				} else {
-					var10 = 16776960
+					var10 = 0xFFFF00
 				}
 			}
 			if c.ChatColors[i] == 7 {
 				if c.SceneCycle%20 < 10 {
-					var10 = 255
+					var10 = 0xFF
 				} else {
-					var10 = 65535
+					var10 = 0xFFFF
 				}
 			}
 			if c.ChatColors[i] == 8 {
@@ -790,36 +790,36 @@ func (c *Client) Draw2DEntityElements() {
 			if c.ChatColors[i] == 9 {
 				var11 = 150 - c.ChatTimers[i]
 				if var11 < 50 {
-					var10 = var11*1280 + 16711680
+					var10 = var11*1280 + 0xFF0000
 				} else if var11 < 100 {
-					var10 = 16776960 - (var11-50)*327680
+					var10 = 0xFFFF00 - (var11-50)*327680
 				} else if var11 < 150 {
-					var10 = (var11-100)*5 + 65280
+					var10 = (var11-100)*5 + 0xFF00
 				}
 			}
 			if c.ChatColors[i] == 10 {
 				var11 = 150 - c.ChatTimers[i]
 				if var11 < 50 {
-					var10 = var11*5 + 16711680
+					var10 = var11*5 + 0xFF0000
 				} else if var11 < 100 {
-					var10 = 16711935 - (var11-50)*327680
+					var10 = 0xFF00FF - (var11-50)*327680
 				} else if var11 < 150 {
-					var10 = (var11-100)*327680 + 255 - (var11-100)*5
+					var10 = (var11-100)*327680 + 0xFF - (var11-100)*5
 				}
 			}
 			if c.ChatColors[i] == 11 {
 				var11 = 150 - c.ChatTimers[i]
 				if var11 < 50 {
-					var10 = 16777215 - var11*327685
+					var10 = 0xFFFFFF - var11*327685
 				} else if var11 < 100 {
-					var10 = (var11-50)*327685 + 65280
+					var10 = (var11-50)*327685 + 0xFF00
 				} else if var11 < 150 {
-					var10 = 16777215 - (var11-100)*327680
+					var10 = 0xFFFFFF - (var11-100)*327680
 				}
 			}
 			if c.ChatStyles[i] == 0 {
-				c.FontBold12.DrawStringCenter(c.ProjectY+1, 0, var15, c.ProjectX)
-				c.FontBold12.DrawStringCenter(c.ProjectY, var10, var15, c.ProjectX)
+				c.FontBold12.CentreString(c.ProjectY+1, 0, var15, c.ProjectX)
+				c.FontBold12.CentreString(c.ProjectY, var10, var15, c.ProjectX)
 			}
 			if c.ChatStyles[i] == 1 {
 				c.FontBold12.DrawCenteredWave(c.SceneCycle, c.ProjectX, c.ProjectY+1, 0, var15)
@@ -834,8 +834,8 @@ func (c *Client) Draw2DEntityElements() {
 				pix2d.ResetClipping()
 			}
 		} else {
-			c.FontBold12.DrawStringCenter(c.ProjectY+1, 0, var15, c.ProjectX)
-			c.FontBold12.DrawStringCenter(c.ProjectY, 16776960, var15, c.ProjectX)
+			c.FontBold12.CentreString(c.ProjectY+1, 0, var15, c.ProjectX)
+			c.FontBold12.CentreString(c.ProjectY, 0xFFFF00, var15, c.ProjectX)
 		}
 	}
 }
@@ -925,7 +925,7 @@ func (c *Client) DrawPrivateMessages() {
 			if (var5 == 3 || var5 == 7) && (var5 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
 				var6 = 329 - var3*13
 				var2.DrawString(4, var6, 0, "From "+c.MessageSender[i]+": "+c.MessageText[i])
-				var2.DrawString(4, var6-1, 65535, "From "+c.MessageSender[i]+": "+c.MessageText[i])
+				var2.DrawString(4, var6-1, 0xFFFF, "From "+c.MessageSender[i]+": "+c.MessageText[i])
 				var3++
 				if var3 >= 5 {
 					return
@@ -934,7 +934,7 @@ func (c *Client) DrawPrivateMessages() {
 			if var5 == 5 && c.PrivateChatSetting < 2 {
 				var6 = 329 - var3*13
 				var2.DrawString(4, var6, 0, c.MessageText[i])
-				var2.DrawString(4, var6-1, 65535, c.MessageText[i])
+				var2.DrawString(4, var6-1, 0xFFFF, c.MessageText[i])
 				var3++
 				if var3 >= 5 {
 					return
@@ -943,7 +943,7 @@ func (c *Client) DrawPrivateMessages() {
 			if var5 == 6 && c.PrivateChatSetting < 2 {
 				var6 = 329 - var3*13
 				var2.DrawString(4, var6, 0, "To "+c.MessageSender[i]+": "+c.MessageText[i])
-				var2.DrawString(4, var6-1, 65535, "To "+c.MessageSender[i]+": "+c.MessageText[i])
+				var2.DrawString(4, var6-1, 0xFFFF, "To "+c.MessageSender[i]+": "+c.MessageText[i])
 				var3++
 				if var3 >= 5 {
 					return
@@ -961,7 +961,7 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 		var8 := 0
 		if var7&0x2 == 2 {
 			var8 = arg0.G2()
-			if var8 == 65535 {
+			if var8 == 0xFFFF {
 				var8 = -1
 			}
 			if var8 == var6.PrimarySeqID {
@@ -978,7 +978,7 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 		}
 		if var7&0x4 == 4 {
 			var6.TargetID = arg0.G2()
-			if var6.TargetID == 65535 {
+			if var6.TargetID == 0xFFFF {
 				var6.TargetID = -1
 			}
 		}
@@ -1011,7 +1011,7 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 			if var6.SpotanimLastCycle > clientextras.LoopCycle {
 				var6.SpotanimFrame = -1
 			}
-			if var6.SpotanimID == 65535 {
+			if var6.SpotanimID == 0xFFFF {
 				var6.SpotanimID = -1
 			}
 		}
@@ -1271,10 +1271,10 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 						c.MergedLocations.AddTail(datastruct.NewLinkable(var20))
 						var21 := entity.NewLocMergeEntity(c.CurrentLevel, var9, var6, var37+clientextras.LoopCycle, var8, var11, var5, var10)
 						c.MergedLocations.AddTail(datastruct.NewLinkable(var21))
-						var22 := c.LevelHeightmap[c.CurrentLevel][var5][var6]
-						var23 := c.LevelHeightmap[c.CurrentLevel][var5+1][var6]
-						var24 := c.LevelHeightmap[c.CurrentLevel][var5+1][var6+1]
-						var25 := c.LevelHeightmap[c.CurrentLevel][var5][var6+1]
+						var22 := c.LevelHeightMap[c.CurrentLevel][var5][var6]
+						var23 := c.LevelHeightMap[c.CurrentLevel][var5+1][var6]
+						var24 := c.LevelHeightMap[c.CurrentLevel][var5+1][var6+1]
+						var25 := c.LevelHeightMap[c.CurrentLevel][var5][var6+1]
 						var26 := loctype.Get(var11)
 						var19.LocStartCycle = var36 + clientextras.LoopCycle
 						var19.LocStopCycle = var37 + clientextras.LoopCycle
@@ -1579,7 +1579,7 @@ func (c *Client) RunMidi() {
 	}
 }
 
-func SetLowMemory() {
+func SetLowMem() {
 	world3d.LowMemory = true
 	pix3d.LowDetail = true
 	LowMemory = true
@@ -1591,7 +1591,7 @@ func (c *Client) DrawFlames() {
 	if c.FlameGradientCycle0 > 0 {
 		for i := range 256 {
 			if c.FlameGradientCycle0 > 768 {
-				c.FlameGradient[i] = c.Mix(c.FlameGradient0[i], 1024-c.FlameGradientCycle0, c.FlameGradient1[i])
+				c.FlameGradient[i] = c.Mix(c.FlameGradient0[i], 0x400-c.FlameGradientCycle0, c.FlameGradient1[i])
 			} else if c.FlameGradientCycle0 > 256 {
 				c.FlameGradient[i] = c.FlameGradient1[i]
 			} else {
@@ -1601,7 +1601,7 @@ func (c *Client) DrawFlames() {
 	} else if c.FlameGradientCycle1 > 0 {
 		for i := range 256 {
 			if c.FlameGradientCycle1 > 768 {
-				c.FlameGradient[i] = c.Mix(c.FlameGradient0[i], 1024-c.FlameGradientCycle1, c.FlameGradient2[i])
+				c.FlameGradient[i] = c.Mix(c.FlameGradient0[i], 0x400-c.FlameGradientCycle1, c.FlameGradient2[i])
 			} else if c.FlameGradientCycle1 > 256 {
 				c.FlameGradient[i] = c.FlameGradient2[i]
 			} else {
@@ -1614,7 +1614,7 @@ func (c *Client) DrawFlames() {
 		}
 	}
 	for i := range 33920 {
-		c.ImageTitle0.Pixels[i] = c.ImageFlamesLeft.Pixels[i] // TODO: verify
+		c.ImageTitle0.Data[i] = c.ImageFlamesLeft.Pixels[i] // TODO: verify
 	}
 	var4 := 0
 	var5 := 1152
@@ -1640,8 +1640,8 @@ func (c *Client) DrawFlames() {
 				//var11 = var10
 				var12 = 256 - var10
 				var10 = c.FlameGradient[var10]
-				var13 = int(c.ImageTitle0.Pixels[var5]) // TODO: verify
-				c.ImageTitle0.Pixels[var5] = (((((var10 & 0xFF00FF) * var11) + ((var13 & 0xFF00FF) * var12)) & 0xFF00FF00) + ((((var10 & 0xFF00) * var11) + ((var13 & 0xFF00) * var12)) & 0xFF0000)) >> 8
+				var13 = int(c.ImageTitle0.Data[var5]) // TODO: verify
+				c.ImageTitle0.Data[var5] = (((((var10 & 0xFF00FF) * var11) + ((var13 & 0xFF00FF) * var12)) & 0xFF00FF00) + ((((var10 & 0xFF00) * var11) + ((var13 & 0xFF00) * var12)) & 0xFF0000)) >> 8
 				var5++
 			}
 		}
@@ -1649,7 +1649,7 @@ func (c *Client) DrawFlames() {
 	}
 	c.ImageTitle0.Draw(&c.Ops, 0, 0) // TODO: verify
 	for i := range 33920 {
-		c.ImageTitle1.Pixels[i] = c.ImageFlamesRight.Pixels[i] // TODO: verify
+		c.ImageTitle1.Data[i] = c.ImageFlamesRight.Pixels[i] // TODO: verify
 	}
 	var4 = 0
 	var5 = 1176
@@ -1666,8 +1666,8 @@ func (c *Client) DrawFlames() {
 				var13 = var12
 				var14 := 256 - var12
 				var12 = c.FlameGradient[var12]
-				var15 := int(c.ImageTitle1.Pixels[var5]) // TODO: verify
-				c.ImageTitle1.Pixels[var5] = (((((var12 & 0xFF00FF) * var13) + ((var15 & 0xFF00FF) * var14)) & 0xFF00FF00) + ((((var12 & 0xFF00) * var13) + ((var15 & 0xFF00) * var14)) & 0xFF0000)) >> 8
+				var15 := int(c.ImageTitle1.Data[var5]) // TODO: verify
+				c.ImageTitle1.Data[var5] = (((((var12 & 0xFF00FF) * var13) + ((var15 & 0xFF00FF) * var14)) & 0xFF00FF00) + ((((var12 & 0xFF00) * var13) + ((var15 & 0xFF00) * var14)) & 0xFF0000)) >> 8
 				var5++
 			}
 		}
@@ -2038,8 +2038,8 @@ func (c *Client) GetHeightMapY(arg0, arg1, arg3 int) int {
 	}
 	var8 := arg1 & 0x7F
 	var9 := arg3 & 0x7F
-	var10 := (c.LevelHeightmap[var7][var5][var6]*(128-var8) + c.LevelHeightmap[var7][var5+1][var6]*var8) >> 7
-	var11 := (c.LevelHeightmap[var7][var5][var6+1]*(128-var8) + c.LevelHeightmap[var7][var5+1][var6+1]*var8) >> 7
+	var10 := (c.LevelHeightMap[var7][var5][var6]*(128-var8) + c.LevelHeightMap[var7][var5+1][var6]*var8) >> 7
+	var11 := (c.LevelHeightMap[var7][var5][var6+1]*(128-var8) + c.LevelHeightMap[var7][var5+1][var6+1]*var8) >> 7
 	return (var10*(128-var9) + var11*var9) >> 7
 }
 
@@ -2429,74 +2429,90 @@ func (c *Client) UpdateTitle() {
 	}
 }
 
-func (c *Client) LoadArchive(arg0 string, arg1 int, arg2 string, arg3 int) *io.Jagfile {
-	var7 := 5
-	var6 := signlink.CacheLoad(arg2)
-	var8 := 0
+func (c *Client) GetJagFile(displayName string, crc int, name string, progress int) *io.Jagfile {
+	retry := 5
+	data := signlink.CacheLoad(name)
+	checksum := 0
 
 	loadingError := func() {
-		var6 = nil
-		for var8 = var7; var8 > 0; var8-- {
-			c.DrawProgress("Error loading - Will retry in "+strconv.Itoa(var8)+" secs.", arg3)
+		data = nil
+		for checksum = retry; checksum > 0; checksum-- {
+			c.DrawProgress("Error loading - Will retry in "+strconv.Itoa(checksum)+" secs.", progress)
 			time.Sleep(1 * time.Second)
 		}
-		var7 *= 2
-		if var7 > 60 {
-			var7 = 60
+		retry *= 2
+		if retry > 60 {
+			retry = 60
 		}
 	}
 
-	if var6 != nil {
-		var8 = int(crc32.ChecksumIEEE(var6)) // TODO: verify conversion
+	if data != nil {
+		checksum = int(crc32.ChecksumIEEE(data)) // TODO: verify conversion
+		// TODO: anything missing here?
 	}
-	if var6 != nil {
-		return io.NewJagfile(var6)
+
+	if data != nil {
+		return io.NewJagfile(data)
 	}
-	for var6 == nil {
-		c.DrawProgress("Requesting "+arg0, arg3)
+
+	for data == nil {
+		c.DrawProgress("Requesting "+displayName, progress)
 		// TODO: try/except
-		var8 = 0
-		var9, err := c.OpenURL(arg2 + strconv.Itoa(arg1))
+		lastDownloaded := 0
+
+		reader, err := c.OpenURL(name + strconv.Itoa(crc))
 		if err != nil {
-			fmt.Printf("LoadArchive error: %v\n", err)
+			fmt.Printf("GetJagFile error: %v\n", err)
 			loadingError()
 			continue
 		}
-		var10 := make([]byte, 6)
-		_, err = var9.Read(var10)
+
+		header := make([]byte, 6)
+		n, err := reader.Read(header)
 		if err != nil {
-			fmt.Printf("LoadArchive read error: %v\n", err)
+			fmt.Printf("GetJagFile read error: %v\n", err)
 			loadingError()
 			continue
 		}
-		var11 := io.NewPacket(var10)
-		var11.Pos = 3
-		var12 := var11.G3() + 6
-		var13 := 6
-		var6 = make([]byte, var12)
+		if n < 6 {
+			fmt.Printf("GetJagFile read %v bytes, expected 6", n)
+			loadingError()
+			continue
+		}
+
+		buf := io.NewPacket(header)
+		buf.Pos = 3
+		packedSize := buf.G3() + 6
+		pos := 6
+
+		data = make([]byte, packedSize)
 		for i := range 6 {
-			var6[i] = var10[i]
+			data[i] = header[i]
 		}
-		for var13 < var12 {
-			var15 := var12 - var13
-			if var15 > 1000 {
-				var15 = 1000
+
+		for pos < packedSize {
+			chunkSize := packedSize - pos
+			if chunkSize > 1000 {
+				chunkSize = 1000
 			}
-			n, err := var9.Read(var6[var13 : var13+var15])
+
+			n, err := reader.Read(data[pos : pos+chunkSize])
 			if err != nil {
-				fmt.Printf("LoadArchive read error: %v\n", err)
+				fmt.Printf("GetJagFile read error: %v\n", err)
 				return nil
 			}
-			var13 += n
-			var16 := var13 * 100 / var12
-			if var16 != var8 {
-				c.DrawProgress("Loading "+arg0+" - "+strconv.Itoa(var16)+"%", arg3)
+
+			pos += n
+
+			downloaded := pos * 100 / packedSize
+			if downloaded != lastDownloaded {
+				c.DrawProgress("Loading "+displayName+" - "+strconv.Itoa(downloaded)+"%", progress)
 			}
-			var8 = var16
+			lastDownloaded = downloaded
 		}
 	}
-	signlink.CacheSave(arg2, var6)
-	return io.NewJagfile(var6)
+	signlink.CacheSave(name, data)
+	return io.NewJagfile(data)
 }
 
 func (c *Client) UnloadTitle() {
@@ -2505,7 +2521,7 @@ func (c *Client) UnloadTitle() {
 		c.FlameActive = false
 		time.Sleep(50 * time.Millisecond)
 	}
-	c.ImageTitlebox = nil
+	c.ImageTitleBox = nil
 	c.ImageTitleButton = nil
 	c.ImageRunes = nil
 	c.FlameGradient = nil
@@ -2574,8 +2590,8 @@ func (c *Client) UpdateTextures(arg0 int) {
 	var var7 []byte
 	if pix3d.TextureCycle[17] >= arg0 {
 		var3 = pix3d.Textures[17]
-		var4 = var3.Width*var3.Height - 1
-		var5 = var3.Width * c.SceneDelta * 2
+		var4 = var3.Wi*var3.Hi - 1
+		var5 = var3.Wi * c.SceneDelta * 2
 		var6 = var3.Pixels
 		var7 = c.TextureBuffer
 		for i := 0; i <= var4; i++ {
@@ -2589,8 +2605,8 @@ func (c *Client) UpdateTextures(arg0 int) {
 		return
 	}
 	var3 = pix3d.Textures[24]
-	var4 = var3.Width*var3.Height - 1
-	var5 = var3.Width * c.SceneDelta * 2
+	var4 = var3.Wi*var3.Hi - 1
+	var5 = var3.Wi * c.SceneDelta * 2
 	var6 = var3.Pixels
 	var7 = c.TextureBuffer
 	for i := 0; i <= var4; i++ {
@@ -2606,7 +2622,7 @@ func (c *Client) UpdateFlames() {
 	for i := 10; i < 117; i++ {
 		var4 := int(rand.Float64() * 100.0)
 		if var4 < 50 {
-			c.FlameBuffer3[i+((var2-2)<<7)] = 255
+			c.FlameBuffer3[i+((var2-2)<<7)] = 0xFF
 		}
 	}
 	var5 := 0
@@ -2656,10 +2672,10 @@ func (c *Client) UpdateFlames() {
 	}
 	var8 = int(rand.Float64() * 2000.0)
 	if var8 == 0 {
-		c.FlameGradientCycle0 = 1024
+		c.FlameGradientCycle0 = 0x400
 	}
 	if var8 == 1 {
-		c.FlameGradientCycle1 = 1024
+		c.FlameGradientCycle1 = 0x400
 	}
 }
 
@@ -2718,7 +2734,7 @@ func (c *Client) DrawMinimap() {
 		var4 = c.FlagSceneTileZ*4 + 2 - c.LocalPlayer.Z/32
 		c.DrawOnMinimap(var4, c.ImageMapflag, var3)
 	}
-	pix2d.FillRect(82, 93, 16777215, 3, 3)
+	pix2d.FillRect(82, 93, 0xFFFFFF, 3, 3)
 	c.AreaViewport.Bind()
 }
 
@@ -2839,7 +2855,7 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 				if var9 == 0 {
 					var12[var13] = var11
 					var12[var13+512] = var11
-					var12[var13+1024] = var11
+					var12[var13+0x400] = var11
 					var12[var13+1536] = var11
 				} else if var9 == 1 {
 					var12[var13] = var11
@@ -2849,7 +2865,7 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 				} else if var9 == 2 {
 					var12[var13+3] = var11
 					var12[var13+3+512] = var11
-					var12[var13+3+1024] = var11
+					var12[var13+3+0x400] = var11
 					var12[var13+3+1536] = var11
 				} else if var9 == 3 {
 					var12[var13+1536] = var11
@@ -2874,7 +2890,7 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 				case 3:
 					var12[var13] = var11
 					var12[var13+512] = var11
-					var12[var13+1024] = var11
+					var12[var13+0x400] = var11
 					var12[var13+1536] = var11
 				case 0:
 					var12[var13] = var11
@@ -2884,7 +2900,7 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 				case 1:
 					var12[var13+3] = var11
 					var12[var13+3+512] = var11
-					var12[var13+3+1024] = var11
+					var12[var13+3+0x400] = var11
 					var12[var13+3+1536] = var11
 				case 2:
 					var12[var13+1536] = var11
@@ -2896,9 +2912,9 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 		} else {
 			var16 := c.ImageMapscene[var15.MapScene]
 			if var16 != nil {
-				var17 := (var15.Width*4 - var16.Width) / 2
-				var18 := (var15.Length*4 - var16.Height) / 2
-				var16.Draw((104-arg5-var15.Length)*4+48+var18, arg3*4+48+var17)
+				var17 := (var15.Width*4 - var16.Wi) / 2
+				var18 := (var15.Length*4 - var16.Hi) / 2
+				var16.PlotSprite((104-arg5-var15.Length)*4+48+var18, arg3*4+48+var17)
 			}
 		}
 	}
@@ -2913,9 +2929,9 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 		if var22.MapScene != -1 {
 			var24 := c.ImageMapscene[var22.MapScene]
 			if var24 != nil {
-				var14 = (var22.Width*4 - var24.Width) / 2
-				var26 = (var22.Length*4 - var24.Height) / 2
-				var24.Draw((104-arg5-var22.Length)*4+48+var26, arg3*4+48+var14)
+				var14 = (var22.Width*4 - var24.Wi) / 2
+				var26 = (var22.Length*4 - var24.Hi) / 2
+				var24.PlotSprite((104-arg5-var22.Length)*4+48+var26, arg3*4+48+var14)
 			}
 		} else if var10 == 9 {
 			var13 = 15658734
@@ -2926,13 +2942,13 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 			var26 = arg3*4 + 24624 + (103-arg5)*512*4
 			if var9 == 0 || var9 == 2 {
 				var25[var26+1536] = var13
-				var25[var26+1024+1] = var13
+				var25[var26+0x400+1] = var13
 				var25[var26+512+2] = var13
 				var25[var26+3] = var13
 			} else {
 				var25[var26] = var13
 				var25[var26+512+1] = var13
-				var25[var26+1024+2] = var13
+				var25[var26+0x400+2] = var13
 				var25[var26+1536+3] = var13
 			}
 		}
@@ -2948,9 +2964,9 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 	}
 	var21 := c.ImageMapscene[var20.MapScene]
 	if var21 != nil {
-		var11 = (var20.Width*4 - var21.Width) / 2
-		var23 := (var20.Length*4 - var21.Height) / 2
-		var21.Draw((104-arg5-var20.Length)*4+48+var23, arg3*4+48+var11)
+		var11 = (var20.Width*4 - var21.Wi) / 2
+		var23 := (var20.Length*4 - var21.Hi) / 2
+		var21.PlotSprite((104-arg5-var20.Length)*4+48+var23, arg3*4+48+var11)
 	}
 }
 
@@ -2984,70 +3000,76 @@ func (c *Client) GetNpcPos(arg0 *io.Packet, psize int) {
 // TODO: startThread
 
 func (c *Client) LoadTitleImages() {
-	c.ImageTitlebox = pix8.NewPix8(c.ArchiveTitle, "titlebox", 0)
-	c.ImageTitleButton = pix8.NewPix8(c.ArchiveTitle, "titlebutton", 0)
+	c.ImageTitleBox = pix8.NewPix8(c.JagTitle, "titlebox", 0)
+	c.ImageTitleButton = pix8.NewPix8(c.JagTitle, "titlebutton", 0)
 	c.ImageRunes = make([]*pix8.Pix8, 12)
 	for i := range 12 {
-		c.ImageRunes[i] = pix8.NewPix8(c.ArchiveTitle, "runes", i)
+		c.ImageRunes[i] = pix8.NewPix8(c.JagTitle, "runes", i)
 	}
 	c.ImageFlamesLeft = pix32.NewPix321(128, 265)
 	c.ImageFlamesRight = pix32.NewPix321(128, 265)
+
 	for i := range 33920 {
-		c.ImageFlamesLeft.Pixels[i] = int(c.ImageTitle0.Pixels[i]) // TODO: verify
+		c.ImageFlamesLeft.Pixels[i] = c.ImageTitle0.Data[i]
 	}
 	for i := range 33920 {
-		c.ImageFlamesRight.Pixels[i] = int(c.ImageTitle1.Pixels[i]) // TODO: verify
+		c.ImageFlamesRight.Pixels[i] = c.ImageTitle1.Data[i]
 	}
+
 	c.FlameGradient0 = make([]int, 256)
 	for i := range 64 {
-		c.FlameGradient0[i] = i * 262144
+		c.FlameGradient0[i] = i * 0x40000
 	}
 	for i := range 64 {
-		c.FlameGradient0[i+64] = i*1024 + 16711680
+		c.FlameGradient0[i+64] = i*0x400 + 0xFF0000
 	}
 	for i := range 64 {
-		c.FlameGradient0[i+128] = i*4 + 16776960
+		c.FlameGradient0[i+128] = i*0x4 + 0xFFFF00
 	}
 	for i := range 64 {
-		c.FlameGradient0[i+192] = 16777215
+		c.FlameGradient0[i+192] = 0xFFFFFF
 	}
+
 	c.FlameGradient1 = make([]int, 256)
 	for i := range 64 {
-		c.FlameGradient1[i] = i * 1024
+		c.FlameGradient1[i] = i * 0x400
 	}
 	for i := range 64 {
-		c.FlameGradient1[i+64] = i*4 + 65280
+		c.FlameGradient1[i+64] = i*0x4 + 0xFF00
 	}
 	for i := range 64 {
-		c.FlameGradient1[i+128] = i*262144 + 65535
+		c.FlameGradient1[i+128] = i*0x40000 + 0xFFFF
 	}
 	for i := range 64 {
-		c.FlameGradient1[i+192] = 16777215
+		c.FlameGradient1[i+192] = 0xFFFFFF
 	}
+
 	c.FlameGradient2 = make([]int, 256)
 	for i := range 64 {
-		c.FlameGradient2[i] = i * 4
+		c.FlameGradient2[i] = i * 0x4
 	}
 	for i := range 64 {
-		c.FlameGradient2[i+64] = i*262144 + 255
+		c.FlameGradient2[i+64] = i*0x40000 + 0xFF
 	}
 	for i := range 64 {
-		c.FlameGradient2[i+128] = i*1024 + 16711935
+		c.FlameGradient2[i+128] = i*0x400 + 0xFF00FF
 	}
 	for i := range 64 {
-		c.FlameGradient2[i+192] = 16777215
+		c.FlameGradient2[i+192] = 0xFFFFFF
 	}
+
 	c.FlameGradient = make([]int, 256)
 	c.FlameBuffer0 = make([]int, 32768)
 	c.FlameBuffer1 = make([]int, 32768)
 	c.UpdateFlameBuffer(nil)
 	c.FlameBuffer3 = make([]int, 32768)
 	c.FlameBuffer2 = make([]int, 32768)
+
 	c.DrawProgress("Connecting to fileserver", 10)
 	if !c.FlameActive {
 		c.FlamesThread = true
 		c.FlameActive = true
-		go c.Run() // TODO: go?
+		go c.Run() // effectively c.RunFlames()
 	}
 }
 
@@ -3118,8 +3140,8 @@ func (c *Client) GetPlayerOldVis(arg1 *io.Packet) {
 }
 
 func (c *Client) DrawScrollbar(arg1, arg2, arg3, arg4, arg5 int) {
-	c.ImageScrollbar0.Draw(arg2, arg1)
-	c.ImageScrollbar1.Draw(arg2+arg5-16, arg1)
+	c.ImageScrollbar0.PlotSprite(arg2, arg1)
+	c.ImageScrollbar1.PlotSprite(arg2+arg5-16, arg1)
 	pix2d.FillRect(arg2+16, arg1, c.SCROLLBAR_TRACK, 16, arg5-32)
 	var7 := (arg5 - 32) * arg5 / arg4
 	if var7 < 8 {
@@ -3194,7 +3216,7 @@ func (c *Client) SetMidiVolume(arg0 int, arg1 int, arg2 bool) {
 func (c *Client) DrawTitleScreen() {
 	c.LoadTitle()
 	c.ImageTitle4.Bind()
-	c.ImageTitlebox.Draw(0, 0)
+	c.ImageTitleBox.PlotSprite(0, 0)
 	var2 := 360
 	var3 := 200
 	var4 := 0
@@ -3202,67 +3224,67 @@ func (c *Client) DrawTitleScreen() {
 	var6 := 0
 	if c.TitleScreenState == 0 {
 		var4 = var3/2 - 20
-		c.FontBold12.DrawStringTaggableCenter(var2/2, 16776960, true, var4, "Welcome to RuneScape")
+		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4, "Welcome to RuneScape")
 		_ = var4 + 30
 		var5 = var2/2 - 80
 		var6 = var3/2 + 20
-		c.ImageTitleButton.Draw(var6-20, var5-73)
-		c.FontBold12.DrawStringTaggableCenter(var5, 16777215, true, var6+5, "New user")
+		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
+		c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "New user")
 		var8 := var2/2 + 80
-		c.ImageTitleButton.Draw(var6-20, var8-73)
-		c.FontBold12.DrawStringTaggableCenter(var8, 16777215, true, var6+5, "Existing User")
+		c.ImageTitleButton.PlotSprite(var6-20, var8-73)
+		c.FontBold12.DrawStringTaggableCenter(var8, 0xFFFFFF, true, var6+5, "Existing User")
 	}
 	if c.TitleScreenState == 2 {
 		var4 = var3/2 - 40
 		if len(c.LoginMessage0) > 0 {
-			c.FontBold12.DrawStringTaggableCenter(var2/2, 16776960, true, var4-15, c.LoginMessage0)
-			c.FontBold12.DrawStringTaggableCenter(var2/2, 16776960, true, var4, c.LoginMessage1)
+			c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4-15, c.LoginMessage0)
+			c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4, c.LoginMessage1)
 			var4 += 30
 		} else {
-			c.FontBold12.DrawStringTaggableCenter(var2/2, 16776960, true, var4-7, c.LoginMessage1)
+			c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4-7, c.LoginMessage1)
 			var4 += 30
 		}
 		tmp := ""
 		if c.TitleLoginField == 0 && clientextras.LoopCycle%40 < 20 {
 			tmp = "@yel@|"
 		}
-		c.FontBold12.DrawStringTaggable(var2/2-90, var4, "Username: "+c.Username+tmp, true, 16777215)
+		c.FontBold12.DrawStringTaggable(var2/2-90, var4, "Username: "+c.Username+tmp, true, 0xFFFFFF)
 		var4 += 15
 		tmp2 := ""
 		if c.TitleLoginField == 1 && clientextras.LoopCycle%40 < 20 {
 			tmp2 = "@yel@|"
 		}
-		c.FontBold12.DrawStringTaggable(var2/2-88, var4, "Password: "+jstring.ToAsterisks(c.Password)+tmp2, true, 16777215)
+		c.FontBold12.DrawStringTaggable(var2/2-88, var4, "Password: "+jstring.ToAsterisks(c.Password)+tmp2, true, 0xFFFFFF)
 		var4 += 15
 		var5 = var2/2 - 80
 		var6 = var3/2 + 50
-		c.ImageTitleButton.Draw(var6-20, var5-73)
-		c.FontBold12.DrawStringTaggableCenter(var5, 16777215, true, var6+5, "Login")
+		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
+		c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Login")
 		var5 = var2/2 + 80
-		c.ImageTitleButton.Draw(var6-20, var5-73)
-		c.FontBold12.DrawStringTaggableCenter(var5, 16777215, true, var6+5, "Cancel")
+		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
+		c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Cancel")
 	}
 	if c.TitleScreenState == 3 {
-		c.FontBold12.DrawStringTaggableCenter(var2/2, 16776960, true, var3/2-60, "Create a free account")
+		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var3/2-60, "Create a free account")
 		var4 = var3/2 - 35
-		c.FontBold12.DrawStringTaggableCenter(var2/2, 16777215, true, var4, "To create a new account you need to")
+		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "To create a new account you need to")
 		var4 += 15
-		c.FontBold12.DrawStringTaggableCenter(var2/2, 16777215, true, var4, "go back to the main RuneScape webpage")
+		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "go back to the main RuneScape webpage")
 		var4 += 15
-		c.FontBold12.DrawStringTaggableCenter(var2/2, 16777215, true, var4, "and choose the red 'create account'")
+		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "and choose the red 'create account'")
 		var4 += 15
-		c.FontBold12.DrawStringTaggableCenter(var2/2, 16777215, true, var4, "button at the top right of that page.")
+		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "button at the top right of that page.")
 		var4 += 15
 		var5 = var2 / 2
 		var6 = var3/2 + 50
-		c.ImageTitleButton.Draw(var6-20, var5-73)
-		c.FontBold12.DrawStringTaggableCenter(var5, 16777215, true, var6+5, "Cancel")
+		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
+		c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Cancel")
 	}
 	c.ImageTitle4.Draw(&c.Ops, 214, 186) // TODO: verify
-	if !c.RedrawBackground {
+	if !c.RedrawFrame {
 		return
 	}
-	c.RedrawBackground = false
+	c.RedrawFrame = false
 	// TODO: verify
 	c.ImageTitle2.Draw(&c.Ops, 128, 0)
 	c.ImageTitle3.Draw(&c.Ops, 214, 386)
@@ -3290,14 +3312,14 @@ func (c *Client) PrepareGameScreen() {
 	c.AreaChatback = pixmap.NewPixMap(479, 96)
 	c.AreaMapback = pixmap.NewPixMap(168, 160)
 	pix2d.Clear()
-	c.ImageMapback.Draw(0, 0)
+	c.ImageMapback.PlotSprite(0, 0)
 	c.AreaSidebar = pixmap.NewPixMap(190, 261)
 	c.AreaViewport = pixmap.NewPixMap(512, 334)
 	pix2d.Clear()
 	c.AreaBackbase1 = pixmap.NewPixMap(501, 61)
 	c.AreaBackbase2 = pixmap.NewPixMap(288, 40)
 	c.AreaBackhmid1 = pixmap.NewPixMap(269, 66)
-	c.RedrawBackground = true
+	c.RedrawFrame = true
 }
 
 func (c *Client) GetPlayerNewVis(arg1 int, arg2 *io.Packet) {
@@ -3357,10 +3379,10 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 	if arg3.Type != 0 || arg3.ChildID != nil || arg3.Hide && c.ViewportHoveredInterfaceIndex != arg3.Id && c.SidebarHoveredInterfaceIndex != arg3.Id && c.ChatHoveredInterfaceIndex != arg3.Id {
 		return
 	}
-	var6 := pix2d.BoundLeft
-	var7 := pix2d.BoundTop
-	var8 := pix2d.BoundRight
-	var9 := pix2d.BoundBottom
+	var6 := pix2d.Left
+	var7 := pix2d.Top
+	var8 := pix2d.Right
+	var9 := pix2d.Bottom
 	pix2d.SetClipping(arg0+arg3.Height, arg0, arg1+arg3.Width, arg1)
 	var10 := len(arg3.ChildID)
 	for i := range var10 {
@@ -3425,18 +3447,18 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 								} else if c.SelectedArea != 0 && c.SelectedItem == var27 && c.SelectedInterface == var14.Id {
 									var23.DrawAlpha(128, var18, var32)
 								} else {
-									var23.Draw(var32, var18)
+									var23.PlotSprite(var32, var18)
 								}
-								if var23.CropW == 33 || var14.InvSlotObjCount[var27] != 1 {
+								if var23.OWi == 33 || var14.InvSlotObjCount[var27] != 1 {
 									var24 := var14.InvSlotObjCount[var27]
 									c.FontPlain11.DrawString(var18+1+var33, var32+10+var21, 0, FormatObjCount(var24))
-									c.FontPlain11.DrawString(var18+var33, var32+9+var21, 16776960, FormatObjCount(var24))
+									c.FontPlain11.DrawString(var18+var33, var32+9+var21, 0xFFFF00, FormatObjCount(var24))
 								}
 							}
 						} else if var14.InvSlotSprite != nil && var27 < 20 {
 							var36 := var14.InvSlotSprite[var27]
 							if var36 != nil {
-								var36.Draw(var32, var18)
+								var36.PlotSprite(var32, var18)
 							}
 						}
 						var27++
@@ -3521,7 +3543,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 						var28 = var14.Graphic
 					}
 					if var28 != nil {
-						var28.Draw(var26, var25)
+						var28.PlotSprite(var26, var25)
 					}
 				} else if var14.Type == 6 {
 					var27 = pix3d.CenterW3D
@@ -3611,7 +3633,7 @@ func (c *Client) UpdateVarp(arg0 int) {
 			pix3d.SetBrightness(0.6)
 		}
 		objtype.IconCache.Clear()
-		c.RedrawBackground = true
+		c.RedrawFrame = true
 	}
 	if var3 == 3 {
 		var5 := c.MidiActive
@@ -3740,7 +3762,7 @@ func (c *Client) UpdateForceMovement(arg0 *entity.PathingEntity) {
 	arg0.SeqTrigger = 0
 	switch arg0.ForceMoveFaceDirection {
 	case 0:
-		arg0.DstYaw = 1024
+		arg0.DstYaw = 0x400
 	case 1:
 		arg0.DstYaw = 1536
 	case 2:
@@ -3765,7 +3787,7 @@ func (c *Client) StartForceMovement(arg0 *entity.PathingEntity, arg1 int) {
 	arg0.SeqTrigger = 0
 	switch arg0.ForceMoveFaceDirection {
 	case 0:
-		arg0.DstYaw = 1024
+		arg0.DstYaw = 0x400
 	case 1:
 		arg0.DstYaw = 1536
 	case 2:
@@ -3815,12 +3837,12 @@ func (c *Client) UpdateMovement(arg1 *entity.PathingEntity) {
 			arg1.DstYaw = 512
 		}
 	} else if var4 < var6 {
-		arg1.DstYaw = 1024
+		arg1.DstYaw = 0x400
 	} else {
 		arg1.DstYaw = 0
 	}
 	var7 := (arg1.DstYaw - arg1.Yaw) & 0x7FF
-	if var7 > 1024 {
+	if var7 > 0x400 {
 		var7 -= 2048
 	}
 	var8 := arg1.SeqTurnAroundID
@@ -3925,7 +3947,7 @@ func (c *Client) UpdateFacingDirection(arg0 *entity.PathingEntity) {
 	}
 	if var7 < 32 || var7 > 2016 {
 		arg0.Yaw = arg0.DstYaw
-	} else if var7 > 1024 {
+	} else if var7 > 0x400 {
 		arg0.Yaw -= 32
 	} else {
 		arg0.Yaw += 32
@@ -3998,8 +4020,8 @@ func (c *Client) UpdateSequences(arg1 *entity.PathingEntity) {
 }
 
 func (c *Client) DrawGame() {
-	if c.RedrawBackground {
-		c.RedrawBackground = false
+	if c.RedrawFrame {
+		c.RedrawFrame = false
 		c.AreaBackleft1.Draw(&c.Ops, 0, 11)
 		c.AreaBackleft2.Draw(&c.Ops, 0, 375)
 		c.AreaBackright1.Draw(&c.Ops, 729, 5)
@@ -4096,87 +4118,87 @@ func (c *Client) DrawGame() {
 		}
 		c.RedrawSideIcons = false
 		c.AreaBackhmid1.Bind()
-		c.ImageBackhmid1.Draw(0, 0)
+		c.ImageBackhmid1.PlotSprite(0, 0)
 		if c.SidebarInterfaceID == -1 {
 			if c.TabInterfaceID[c.SelectedTab] != -1 {
 				switch c.SelectedTab {
 				case 0:
-					c.ImageRedstone1.Draw(30, 29)
+					c.ImageRedstone1.PlotSprite(30, 29)
 				case 1:
-					c.ImageRedstone2.Draw(29, 59)
+					c.ImageRedstone2.PlotSprite(29, 59)
 				case 2:
-					c.ImageRedstone2.Draw(29, 87)
+					c.ImageRedstone2.PlotSprite(29, 87)
 				case 3:
-					c.ImageRedstone3.Draw(29, 115)
+					c.ImageRedstone3.PlotSprite(29, 115)
 				case 4:
-					c.ImageRedstone2h.Draw(29, 156)
+					c.ImageRedstone2h.PlotSprite(29, 156)
 				case 5:
-					c.ImageRedstone2h.Draw(29, 184)
+					c.ImageRedstone2h.PlotSprite(29, 184)
 				case 6:
-					c.ImageRedstone1h.Draw(30, 212)
+					c.ImageRedstone1h.PlotSprite(30, 212)
 				}
 			}
 			if c.TabInterfaceID[0] != -1 && (c.FlashingTab != 0 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[0].Draw(34, 35)
+				c.ImageSideIcons[0].PlotSprite(34, 35)
 			}
 			if c.TabInterfaceID[1] != -1 && (c.FlashingTab != 1 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[1].Draw(32, 59)
+				c.ImageSideIcons[1].PlotSprite(32, 59)
 			}
 			if c.TabInterfaceID[2] != -1 && (c.FlashingTab != 2 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[2].Draw(32, 86)
+				c.ImageSideIcons[2].PlotSprite(32, 86)
 			}
 			if c.TabInterfaceID[3] != -1 && (c.FlashingTab != 3 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[3].Draw(33, 121)
+				c.ImageSideIcons[3].PlotSprite(33, 121)
 			}
 			if c.TabInterfaceID[4] != -1 && (c.FlashingTab != 4 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[4].Draw(34, 157)
+				c.ImageSideIcons[4].PlotSprite(34, 157)
 			}
 			if c.TabInterfaceID[5] != -1 && (c.FlashingTab != 5 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[5].Draw(32, 185)
+				c.ImageSideIcons[5].PlotSprite(32, 185)
 			}
 			if c.TabInterfaceID[6] != -1 && (c.FlashingTab != 6 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[6].Draw(34, 212)
+				c.ImageSideIcons[6].PlotSprite(34, 212)
 			}
 		}
 		c.AreaBackhmid1.Draw(&c.Ops, 520, 165)
 		c.AreaBackbase2.Bind()
-		c.ImageBackbase2.Draw(0, 0)
+		c.ImageBackbase2.PlotSprite(0, 0)
 		if c.SidebarInterfaceID == -1 {
 			if c.TabInterfaceID[c.SelectedTab] != -1 {
 				switch c.SelectedTab {
 				case 7:
-					c.ImageRedstone1v.Draw(0, 49)
+					c.ImageRedstone1v.PlotSprite(0, 49)
 				case 8:
-					c.ImageRedstone2v.Draw(0, 81)
+					c.ImageRedstone2v.PlotSprite(0, 81)
 				case 9:
-					c.ImageRedstone2v.Draw(0, 108)
+					c.ImageRedstone2v.PlotSprite(0, 108)
 				case 10:
-					c.ImageRedstone3v.Draw(1, 136)
+					c.ImageRedstone3v.PlotSprite(1, 136)
 				case 11:
-					c.ImageRedstone2hv.Draw(0, 178)
+					c.ImageRedstone2hv.PlotSprite(0, 178)
 				case 12:
-					c.ImageRedstone2hv.Draw(0, 205)
+					c.ImageRedstone2hv.PlotSprite(0, 205)
 				case 13:
-					c.ImageRedstone1hv.Draw(0, 233)
+					c.ImageRedstone1hv.PlotSprite(0, 233)
 				}
 			}
 			if c.TabInterfaceID[8] != 1 && (c.FlashingTab != 8 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[7].Draw(2, 80)
+				c.ImageSideIcons[7].PlotSprite(2, 80)
 			}
 			if c.TabInterfaceID[9] != 1 && (c.FlashingTab != 9 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[8].Draw(3, 107)
+				c.ImageSideIcons[8].PlotSprite(3, 107)
 			}
 			if c.TabInterfaceID[10] != 1 && (c.FlashingTab != 10 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[9].Draw(4, 142)
+				c.ImageSideIcons[9].PlotSprite(4, 142)
 			}
 			if c.TabInterfaceID[11] != 1 && (c.FlashingTab != 11 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[10].Draw(2, 179)
+				c.ImageSideIcons[10].PlotSprite(2, 179)
 			}
 			if c.TabInterfaceID[12] != 1 && (c.FlashingTab != 12 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[11].Draw(2, 206)
+				c.ImageSideIcons[11].PlotSprite(2, 206)
 			}
 			if c.TabInterfaceID[13] != 1 && (c.FlashingTab != 13 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[12].Draw(2, 230)
+				c.ImageSideIcons[12].PlotSprite(2, 230)
 			}
 		}
 		c.AreaBackbase2.Draw(&c.Ops, 501, 492)
@@ -4185,37 +4207,37 @@ func (c *Client) DrawGame() {
 	if c.RedrawPrivacySettings {
 		c.RedrawPrivacySettings = false
 		c.AreaBackbase1.Bind()
-		c.ImageBackbase1.Draw(0, 0)
-		c.FontPlain12.DrawStringTaggableCenter(57, 16777215, true, 33, "Public chat")
+		c.ImageBackbase1.PlotSprite(0, 0)
+		c.FontPlain12.DrawStringTaggableCenter(57, 0xFFFFFF, true, 33, "Public chat")
 		switch c.PublicChatSetting {
 		case 0:
-			c.FontPlain12.DrawStringTaggableCenter(57, 65280, true, 46, "On")
+			c.FontPlain12.DrawStringTaggableCenter(57, 0xFF00, true, 46, "On")
 		case 1:
-			c.FontPlain12.DrawStringTaggableCenter(57, 16776960, true, 46, "Friends")
+			c.FontPlain12.DrawStringTaggableCenter(57, 0xFFFF00, true, 46, "Friends")
 		case 2:
-			c.FontPlain12.DrawStringTaggableCenter(57, 16711680, true, 46, "Off")
+			c.FontPlain12.DrawStringTaggableCenter(57, 0xFF0000, true, 46, "Off")
 		case 3:
-			c.FontPlain12.DrawStringTaggableCenter(57, 65535, true, 46, "Hide")
+			c.FontPlain12.DrawStringTaggableCenter(57, 0xFFFF, true, 46, "Hide")
 		}
-		c.FontPlain12.DrawStringTaggableCenter(186, 16777215, true, 33, "Private chat")
+		c.FontPlain12.DrawStringTaggableCenter(186, 0xFFFFFF, true, 33, "Private chat")
 		switch c.PrivateChatSetting {
 		case 0:
-			c.FontPlain12.DrawStringTaggableCenter(186, 65280, true, 46, "On")
+			c.FontPlain12.DrawStringTaggableCenter(186, 0xFF00, true, 46, "On")
 		case 1:
-			c.FontPlain12.DrawStringTaggableCenter(186, 16776960, true, 46, "Friends")
+			c.FontPlain12.DrawStringTaggableCenter(186, 0xFFFF00, true, 46, "Friends")
 		case 2:
-			c.FontPlain12.DrawStringTaggableCenter(186, 16711680, true, 46, "Off")
+			c.FontPlain12.DrawStringTaggableCenter(186, 0xFF0000, true, 46, "Off")
 		}
-		c.FontPlain12.DrawStringTaggableCenter(326, 16777215, true, 33, "Trade/duel")
+		c.FontPlain12.DrawStringTaggableCenter(326, 0xFFFFFF, true, 33, "Trade/duel")
 		switch c.TradeChatSetting {
 		case 0:
-			c.FontPlain12.DrawStringTaggableCenter(326, 65280, true, 46, "On")
+			c.FontPlain12.DrawStringTaggableCenter(326, 0xFF00, true, 46, "On")
 		case 1:
-			c.FontPlain12.DrawStringTaggableCenter(326, 16776960, true, 46, "Friends")
+			c.FontPlain12.DrawStringTaggableCenter(326, 0xFFFF00, true, 46, "Friends")
 		case 2:
-			c.FontPlain12.DrawStringTaggableCenter(326, 16711680, true, 46, "Off")
+			c.FontPlain12.DrawStringTaggableCenter(326, 0xFF0000, true, 46, "Off")
 		}
-		c.FontPlain12.DrawStringTaggableCenter(462, 16777215, true, 38, "Report abuse")
+		c.FontPlain12.DrawStringTaggableCenter(462, 0xFFFFFF, true, 38, "Report abuse")
 		c.AreaBackbase1.Draw(&c.Ops, 0, 471)
 		c.AreaViewport.Bind()
 	}
@@ -4868,9 +4890,9 @@ func (c *Client) DrawMenu() {
 	}
 	for i := range c.MenuSize {
 		var10 := var3 + 31 + (c.MenuSize-1-i)*15
-		var11 := 16777215
+		var11 := 0xFFFFFF
 		if var7 > var2 && var7 < var2+var4 && var8 > var10-13 && var8 < var10+3 {
-			var11 = 16776960
+			var11 = 0xFFFF00
 		}
 		c.FontBold12.DrawStringTaggable(var2+3, var10, c.MenuOption[i], true, var11)
 	}
@@ -5022,10 +5044,10 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 			if !c.Rights {
 				arg1.Text = ""
 			} else if c.ReportAbuseMuteOption {
-				arg1.Colour = 16711680
+				arg1.Colour = 0xFF0000
 				arg1.Text = "Moderator option: Mute player for 48 hours: <ON>"
 			} else {
-				arg1.Colour = 16777215
+				arg1.Colour = 0xFFFFFF
 				arg1.Text = "Moderator option: Mute player for 48 hours: <OFF>"
 			}
 		}
@@ -5047,15 +5069,15 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 		if var3 == 651 {
 			if c.UnreadMessages == 0 {
 				arg1.Text = "0 unread messages"
-				arg1.Colour = 16776960
+				arg1.Colour = 0xFFFF00
 			}
 			if c.UnreadMessages == 1 {
 				arg1.Text = "1 unread message"
-				arg1.Colour = 65280
+				arg1.Colour = 0xFF00
 			}
 			if c.UnreadMessages > 1 {
 				arg1.Text = strconv.Itoa(c.UnreadMessages) + " unread messages"
-				arg1.Colour = 65280
+				arg1.Colour = 0xFF00
 			}
 		}
 		if var3 == 652 {
@@ -5281,6 +5303,7 @@ func (c *Client) Load() {
 	if signlink.SunJava {
 		c.MinDel = 5
 	}
+
 	if !LowMemory {
 		c.StartMidiThread = true
 		c.MidiThreadActive = true
@@ -5288,240 +5311,289 @@ func (c *Client) Load() {
 		go c.Run() // TODO: this.startthread?
 		c.SetMidi(12345678, "scape_main", 40000)
 	}
-	if Started {
+
+	if AlreadyStarted {
 		c.ErrorStarted = true
 		return
 	}
-	Started = true
-	var1 := false
-	var2 := c.GetHost()
-	if strings.HasSuffix(var2, "jagex.com") {
-		var1 = true
+
+	AlreadyStarted = true
+
+	validHost := false
+	host := c.GetHost()
+	if strings.HasSuffix(host, "jagex.com") {
+		validHost = true
 	}
-	if strings.HasSuffix(var2, "runescape.com") {
-		var1 = true
+	if strings.HasSuffix(host, "runescape.com") {
+		validHost = true
 	}
-	if strings.HasSuffix(var2, "192.168.1.2") {
-		var1 = true
+	if strings.HasSuffix(host, "192.168.1.2") {
+		validHost = true
 	}
-	if strings.HasSuffix(var2, "192.168.1.249") {
-		var1 = true
+	if strings.HasSuffix(host, "192.168.1.249") {
+		validHost = true
 	}
-	if strings.HasSuffix(var2, "192.168.1.252") {
-		var1 = true
+	if strings.HasSuffix(host, "192.168.1.252") {
+		validHost = true
 	}
-	if strings.HasSuffix(var2, "192.168.1.253") {
-		var1 = true
+	if strings.HasSuffix(host, "192.168.1.253") {
+		validHost = true
 	}
-	if strings.HasSuffix(var2, "192.168.1.254") {
-		var1 = true
+	if strings.HasSuffix(host, "192.168.1.254") {
+		validHost = true
 	}
-	if strings.HasSuffix(var2, "127.0.0.1") {
-		var1 = true
+	if strings.HasSuffix(host, "127.0.0.1") {
+		validHost = true
 	}
-	if !var1 {
+
+	if !validHost {
 		c.ErrorHost = true
 		return
 	}
+
 	// TODO: try/except - recover panic?
-	var3 := 5 // TODO
+	retry := 5 // TODO
+
 	errorLoading := func() {
-		for i := var3; i > 0; i-- {
+		for i := retry; i > 0; i-- {
 			c.DrawProgress("Error loading - Will retry in "+strconv.Itoa(i)+" secs.", 10)
 			time.Sleep(1 * time.Second)
 		}
-		var3 *= 2
-		if var3 > 60 {
-			var3 = 60
+		retry *= 2
+		if retry > 60 {
+			retry = 60
 		}
 	}
-	c.ArchiveChecksum[8] = 0
-	for c.ArchiveChecksum[8] == 0 {
+
+	c.JagChecksum[8] = 0
+	for c.JagChecksum[8] == 0 {
 		c.DrawProgress("Connecting to fileserver", 10)
-		// TODO: try/except - error loading retry
-		var35, err := c.OpenURL("crc" + strconv.Itoa(int(rand.Float64()*9.9999999e7)))
+		reader, err := c.OpenURL("crc" + strconv.Itoa(int(rand.Float64()*9.9999999e7)))
 		if err != nil {
 			fmt.Printf("Client.Load OpenURL error: %v\n", err)
 			errorLoading()
 			continue
 		}
-		var5 := io.NewPacket(make([]byte, 36))
-		_, err = var35.Read(var5.Data[:36])
+
+		crc := io.NewPacket(make([]byte, 36))
+		_, err = reader.Read(crc.Data[:36])
 		if err != nil {
 			fmt.Printf("Client.Load Read error: %v\n", err)
 			errorLoading()
 			continue
 		}
+
 		for i := range 9 {
-			c.ArchiveChecksum[i] = var5.G4()
+			c.JagChecksum[i] = crc.G4()
 		}
 	}
-	c.ArchiveTitle = c.LoadArchive("title screen", c.ArchiveChecksum[1], "title", 10)
-	c.FontPlain11 = pixfont.NewPixFont(c.ArchiveTitle, "p11")
-	c.FontPlain12 = pixfont.NewPixFont(c.ArchiveTitle, "p12")
-	c.FontBold12 = pixfont.NewPixFont(c.ArchiveTitle, "b12")
-	c.FontQuill8 = pixfont.NewPixFont(c.ArchiveTitle, "q8")
+
+	c.JagTitle = c.GetJagFile("title screen", c.JagChecksum[1], "title", 10)
+	c.FontPlain11 = pixfont.NewPixFont(c.JagTitle, "p11")
+	c.FontPlain12 = pixfont.NewPixFont(c.JagTitle, "p12")
+	c.FontBold12 = pixfont.NewPixFont(c.JagTitle, "b12")
+	c.FontQuill8 = pixfont.NewPixFont(c.JagTitle, "q8")
+
 	c.LoadTitleBackground()
 	c.LoadTitleImages()
-	var36 := c.LoadArchive("config", c.ArchiveChecksum[2], "config", 15)
-	var37 := c.LoadArchive("interface", c.ArchiveChecksum[3], "interface", 20)
-	var38 := c.LoadArchive("2d graphics", c.ArchiveChecksum[4], "media", 30)
-	var7 := c.LoadArchive("3d graphics", c.ArchiveChecksum[5], "models", 40)
-	var8 := c.LoadArchive("textures", c.ArchiveChecksum[6], "textures", 60)
-	var9 := c.LoadArchive("chat system", c.ArchiveChecksum[7], "wordenc", 65)
-	var10 := c.LoadArchive("sound effects", c.ArchiveChecksum[8], "sounds", 70)
+
+	jagConfig := c.GetJagFile("config", c.JagChecksum[2], "config", 15)
+	jagInterface := c.GetJagFile("interface", c.JagChecksum[3], "interface", 20)
+	jagMedia := c.GetJagFile("2d graphics", c.JagChecksum[4], "media", 30)
+	jagModels := c.GetJagFile("3d graphics", c.JagChecksum[5], "models", 40)
+	jagTextures := c.GetJagFile("textures", c.JagChecksum[6], "textures", 60)
+	jagWordEnc := c.GetJagFile("chat system", c.JagChecksum[7], "wordenc", 65)
+	jagSounds := c.GetJagFile("sound effects", c.JagChecksum[8], "sounds", 70)
+
 	c.LevelTileFlags = make([][][]byte, 4)
-	for i := range c.LevelTileFlags {
-		c.LevelTileFlags[i] = make([][]byte, 104)
-		for j := range c.LevelTileFlags[i] {
-			c.LevelTileFlags[i][j] = make([]byte, 104)
+	for level := range c.LevelTileFlags {
+		c.LevelTileFlags[level] = make([][]byte, 104)
+		for x := range c.LevelTileFlags[level] {
+			c.LevelTileFlags[level][x] = make([]byte, 104)
 		}
 	}
-	c.LevelHeightmap = make([][][]int, 4)
-	for i := range c.LevelHeightmap {
-		c.LevelHeightmap[i] = make([][]int, 105)
-		for j := range c.LevelHeightmap[i] {
-			c.LevelHeightmap[i][j] = make([]int, 105)
+
+	c.LevelHeightMap = make([][][]int, 4)
+	for level := range c.LevelHeightMap {
+		c.LevelHeightMap[level] = make([][]int, 105)
+		for x := range c.LevelHeightMap[level] {
+			c.LevelHeightMap[level][x] = make([]int, 105)
 		}
 	}
-	c.Scene = world3d.NewWorld3D(c.LevelHeightmap, 104, 4, 104)
+
+	c.Scene = world3d.NewWorld3D(c.LevelHeightMap, 104, 4, 104)
 	for i := range 4 {
 		c.LevelCollisionMap[i] = dash3d.NewCollisionMap(104, 104)
 	}
+
 	c.ImageMinimap = pix32.NewPix321(512, 512)
+
 	c.DrawProgress("Unpacking media", 75)
-	c.ImageInvback = pix8.NewPix8(var38, "invback", 0)
-	c.ImageChatback = pix8.NewPix8(var38, "chatback", 0)
-	c.ImageMapback = pix8.NewPix8(var38, "mapback", 0)
-	c.ImageBackbase1 = pix8.NewPix8(var38, "backbase1", 0)
-	c.ImageBackbase2 = pix8.NewPix8(var38, "backbase2", 0)
-	c.ImageBackhmid1 = pix8.NewPix8(var38, "backhmid1", 0)
+
+	c.ImageInvback = pix8.NewPix8(jagMedia, "invback", 0)
+	c.ImageChatback = pix8.NewPix8(jagMedia, "chatback", 0)
+	c.ImageMapback = pix8.NewPix8(jagMedia, "mapback", 0)
+
+	c.ImageBackbase1 = pix8.NewPix8(jagMedia, "backbase1", 0)
+	c.ImageBackbase2 = pix8.NewPix8(jagMedia, "backbase2", 0)
+	c.ImageBackhmid1 = pix8.NewPix8(jagMedia, "backhmid1", 0)
+
 	for i := range 13 {
-		c.ImageSideIcons[i] = pix8.NewPix8(var38, "sideicons", i)
+		c.ImageSideIcons[i] = pix8.NewPix8(jagMedia, "sideicons", i)
 	}
-	c.ImageCompass = pix32.NewPix323(var38, "compass", 0)
+
+	c.ImageCompass = pix32.NewPix323(jagMedia, "compass", 0)
+
 	for i := range 50 {
-		c.ImageMapscene[i] = pix8.NewPix8(var38, "mapscene", i)
+		c.ImageMapscene[i] = pix8.NewPix8(jagMedia, "mapscene", i)
 	}
+
 	for i := range 50 {
-		c.ImageMapFunction[i] = pix32.NewPix323(var38, "mapfunction", i)
+		c.ImageMapFunction[i] = pix32.NewPix323(jagMedia, "mapfunction", i)
 	}
+
 	func() {
 		defer RecoverPanic()
 		for i := range 20 {
-			c.ImageHitmarks[i] = pix32.NewPix323(var38, "hitmarks", i)
+			c.ImageHitmarks[i] = pix32.NewPix323(jagMedia, "hitmarks", i)
 		}
 	}()
+
 	func() {
 		defer RecoverPanic()
 		for i := range 20 {
-			c.ImageHeadIcons[i] = pix32.NewPix323(var38, "headicons", i)
+			c.ImageHeadIcons[i] = pix32.NewPix323(jagMedia, "headicons", i)
 		}
 	}()
-	c.ImageMapflag = pix32.NewPix323(var38, "mapflag", 0)
+
+	c.ImageMapflag = pix32.NewPix323(jagMedia, "mapflag", 0)
+
 	for i := range 8 {
-		c.ImageCrosses[i] = pix32.NewPix323(var38, "cross", i)
+		c.ImageCrosses[i] = pix32.NewPix323(jagMedia, "cross", i)
 	}
-	c.ImageMapdot0 = pix32.NewPix323(var38, "mapdots", 0)
-	c.ImageMapdot1 = pix32.NewPix323(var38, "mapdots", 1)
-	c.ImageMapdot2 = pix32.NewPix323(var38, "mapdots", 2)
-	c.ImageMapdot3 = pix32.NewPix323(var38, "mapdots", 3)
-	c.ImageScrollbar0 = pix8.NewPix8(var38, "scrollbar", 0)
-	c.ImageScrollbar1 = pix8.NewPix8(var38, "scrollbar", 1)
-	c.ImageRedstone1 = pix8.NewPix8(var38, "redstone1", 0)
-	c.ImageRedstone2 = pix8.NewPix8(var38, "redstone2", 0)
-	c.ImageRedstone3 = pix8.NewPix8(var38, "redstone3", 0)
-	c.ImageRedstone1h = pix8.NewPix8(var38, "redstone1", 0)
-	c.ImageRedstone1h.FlipHorizontally()
-	c.ImageRedstone2h = pix8.NewPix8(var38, "redstone2", 0)
-	c.ImageRedstone2h.FlipHorizontally()
-	c.ImageRedstone1v = pix8.NewPix8(var38, "redstone1", 0)
-	c.ImageRedstone1v.FlipVertically()
-	c.ImageRedstone2v = pix8.NewPix8(var38, "redstone2", 0)
-	c.ImageRedstone2v.FlipVertically()
-	c.ImageRedstone3v = pix8.NewPix8(var38, "redstone3", 0)
-	c.ImageRedstone3v.FlipVertically()
-	c.ImageRedstone1hv = pix8.NewPix8(var38, "redstone1", 0)
-	c.ImageRedstone1hv.FlipHorizontally()
-	c.ImageRedstone1hv.FlipVertically()
-	c.ImageRedstone2hv = pix8.NewPix8(var38, "redstone2", 0)
-	c.ImageRedstone2hv.FlipHorizontally()
-	c.ImageRedstone2hv.FlipVertically()
-	var14 := pix32.NewPix323(var38, "backleft1", 0)
-	c.AreaBackleft1 = pixmap.NewPixMap(var14.Width, var14.Height)
-	var14.BlitOpaque(0, 0)
-	var39 := pix32.NewPix323(var38, "backleft2", 0)
-	c.AreaBackleft2 = pixmap.NewPixMap(var39.Width, var39.Height)
-	var39.BlitOpaque(0, 0)
-	var40 := pix32.NewPix323(var38, "backright1", 0)
-	c.AreaBackright1 = pixmap.NewPixMap(var40.Width, var40.Height)
-	var40.BlitOpaque(0, 0)
-	var41 := pix32.NewPix323(var38, "backright2", 0)
-	c.AreaBackright2 = pixmap.NewPixMap(var41.Width, var41.Height)
-	var41.BlitOpaque(0, 0)
-	var42 := pix32.NewPix323(var38, "backtop1", 0)
-	c.AreaBacktop1 = pixmap.NewPixMap(var42.Width, var42.Height)
-	var42.BlitOpaque(0, 0)
-	var43 := pix32.NewPix323(var38, "backtop2", 0)
-	c.AreaBacktop2 = pixmap.NewPixMap(var43.Width, var43.Height)
-	var43.BlitOpaque(0, 0)
-	var44 := pix32.NewPix323(var38, "backvmid1", 0)
-	c.AreaBackvmid1 = pixmap.NewPixMap(var44.Width, var44.Height)
-	var44.BlitOpaque(0, 0)
-	var45 := pix32.NewPix323(var38, "backvmid2", 0)
-	c.AreaBackvmid2 = pixmap.NewPixMap(var45.Width, var45.Height)
-	var45.BlitOpaque(0, 0)
-	var46 := pix32.NewPix323(var38, "backvmid3", 0)
-	c.AreaBackvmid3 = pixmap.NewPixMap(var46.Width, var46.Height)
-	var46.BlitOpaque(0, 0)
-	var47 := pix32.NewPix323(var38, "backhmid2", 0)
-	c.AreaBackhmid2 = pixmap.NewPixMap(var47.Width, var47.Height)
-	var47.BlitOpaque(0, 0)
-	var15 := int(rand.Float64()*21.0) - 10
-	var16 := int(rand.Float64()*21.0) - 10
-	var17 := int(rand.Float64()*21.0) - 10
-	var18 := int(rand.Float64()*41.0) - 20
+
+	c.ImageMapdot0 = pix32.NewPix323(jagMedia, "mapdots", 0)
+	c.ImageMapdot1 = pix32.NewPix323(jagMedia, "mapdots", 1)
+	c.ImageMapdot2 = pix32.NewPix323(jagMedia, "mapdots", 2)
+	c.ImageMapdot3 = pix32.NewPix323(jagMedia, "mapdots", 3)
+
+	c.ImageScrollbar0 = pix8.NewPix8(jagMedia, "scrollbar", 0)
+	c.ImageScrollbar1 = pix8.NewPix8(jagMedia, "scrollbar", 1)
+
+	c.ImageRedstone1 = pix8.NewPix8(jagMedia, "redstone1", 0)
+	c.ImageRedstone2 = pix8.NewPix8(jagMedia, "redstone2", 0)
+	c.ImageRedstone3 = pix8.NewPix8(jagMedia, "redstone3", 0)
+
+	c.ImageRedstone1h = pix8.NewPix8(jagMedia, "redstone1", 0)
+	c.ImageRedstone1h.HFlip()
+
+	c.ImageRedstone2h = pix8.NewPix8(jagMedia, "redstone2", 0)
+	c.ImageRedstone2h.HFlip()
+
+	c.ImageRedstone1v = pix8.NewPix8(jagMedia, "redstone1", 0)
+	c.ImageRedstone1v.VFlip()
+
+	c.ImageRedstone2v = pix8.NewPix8(jagMedia, "redstone2", 0)
+	c.ImageRedstone2v.VFlip()
+
+	c.ImageRedstone3v = pix8.NewPix8(jagMedia, "redstone3", 0)
+	c.ImageRedstone3v.VFlip()
+
+	c.ImageRedstone1hv = pix8.NewPix8(jagMedia, "redstone1", 0)
+	c.ImageRedstone1hv.HFlip()
+	c.ImageRedstone1hv.VFlip()
+
+	c.ImageRedstone2hv = pix8.NewPix8(jagMedia, "redstone2", 0)
+	c.ImageRedstone2hv.HFlip()
+	c.ImageRedstone2hv.VFlip()
+
+	backleft1 := pix32.NewPix323(jagMedia, "backleft1", 0)
+	c.AreaBackleft1 = pixmap.NewPixMap(backleft1.Wi, backleft1.Hi)
+	backleft1.QuickPlotSprite(0, 0)
+
+	backleft2 := pix32.NewPix323(jagMedia, "backleft2", 0)
+	c.AreaBackleft2 = pixmap.NewPixMap(backleft2.Wi, backleft2.Hi)
+	backleft2.QuickPlotSprite(0, 0)
+
+	backright1 := pix32.NewPix323(jagMedia, "backright1", 0)
+	c.AreaBackright1 = pixmap.NewPixMap(backright1.Wi, backright1.Hi)
+	backright1.QuickPlotSprite(0, 0)
+
+	backright2 := pix32.NewPix323(jagMedia, "backright2", 0)
+	c.AreaBackright2 = pixmap.NewPixMap(backright2.Wi, backright2.Hi)
+	backright2.QuickPlotSprite(0, 0)
+
+	backtop1 := pix32.NewPix323(jagMedia, "backtop1", 0)
+	c.AreaBacktop1 = pixmap.NewPixMap(backtop1.Wi, backtop1.Hi)
+	backtop1.QuickPlotSprite(0, 0)
+
+	backtop2 := pix32.NewPix323(jagMedia, "backtop2", 0)
+	c.AreaBacktop2 = pixmap.NewPixMap(backtop2.Wi, backtop2.Hi)
+	backtop2.QuickPlotSprite(0, 0)
+
+	backvmid1 := pix32.NewPix323(jagMedia, "backvmid1", 0)
+	c.AreaBackvmid1 = pixmap.NewPixMap(backvmid1.Wi, backvmid1.Hi)
+	backvmid1.QuickPlotSprite(0, 0)
+
+	backvmid2 := pix32.NewPix323(jagMedia, "backvmid2", 0)
+	c.AreaBackvmid2 = pixmap.NewPixMap(backvmid2.Wi, backvmid2.Hi)
+	backvmid2.QuickPlotSprite(0, 0)
+
+	backvmid3 := pix32.NewPix323(jagMedia, "backvmid3", 0)
+	c.AreaBackvmid3 = pixmap.NewPixMap(backvmid3.Wi, backvmid3.Hi)
+	backvmid3.QuickPlotSprite(0, 0)
+
+	backhmid2 := pix32.NewPix323(jagMedia, "backhmid2", 0)
+	c.AreaBackhmid2 = pixmap.NewPixMap(backhmid2.Wi, backhmid2.Hi)
+	backhmid2.QuickPlotSprite(0, 0)
+
+	randomR := int(rand.Float64()*21.0) - 10
+	randomG := int(rand.Float64()*21.0) - 10
+	randomB := int(rand.Float64()*21.0) - 10
+	random := int(rand.Float64()*41.0) - 20
+
 	for i := range 50 {
 		if c.ImageMapFunction[i] != nil {
-			c.ImageMapFunction[i].Translate(var15+var18, var16+var18, var17+var18)
+			c.ImageMapFunction[i].RGBAdjust(randomR+random, randomG+random, randomB+random)
 		}
 		if c.ImageMapscene[i] != nil {
-			c.ImageMapscene[i].Translate(var15+var18, var16+var18, var17+var18)
+			c.ImageMapscene[i].RGBAdjust(randomR+random, randomG+random, randomB+random)
 		}
 	}
+
 	c.DrawProgress("Unpacking textures", 80)
-	pix3d.UnpackTextures(var8)
+	pix3d.UnpackTextures(jagTextures)
 	pix3d.SetBrightness(0.8)
 	pix3d.InitPool(20)
 	c.DrawProgress("Unpacking models", 83)
-	model.Unpack(var7)
-	animbase.Unpack(var7)
-	animframe.Unpack(var7)
+	model.Unpack(jagModels)
+	animbase.Unpack(jagModels)
+	animframe.Unpack(jagModels)
 	c.DrawProgress("Unpacking config", 86)
-	seqtype.Unpack(var36)
-	loctype.Unpack(var36)
-	flotype.Unpack(var36)
-	objtype.Unpack(var36)
-	npctype.Unpack(var36)
-	idktype.Unpack(var36)
-	spotanimtype.Unpack(var36)
-	varptype.Unpack(var36)
-	objtype.MembersWorld = Members
+	seqtype.Unpack(jagConfig)
+	loctype.Unpack(jagConfig)
+	flotype.Unpack(jagConfig)
+	objtype.Unpack(jagConfig)
+	npctype.Unpack(jagConfig)
+	idktype.Unpack(jagConfig)
+	spotanimtype.Unpack(jagConfig)
+	varptype.Unpack(jagConfig)
+	objtype.MembersWorld = MembersWorld
 	if !LowMemory {
 		c.DrawProgress("Unpacking sounds", 90)
-		var20 := var10.Read("sounds.dat", nil)
+		var20 := jagSounds.Read("sounds.dat", nil)
 		var21 := io.NewPacket(var20)
 		wave.Unpack(var21)
 	}
 	c.DrawProgress("Unpacking interfaces", 92)
 	var48 := []*pixfont.PixFont{c.FontPlain11, c.FontPlain12, c.FontBold12, c.FontQuill8}
-	component.Unpack(var38, var48, var37)
+	component.Unpack(jagMedia, var48, jagInterface)
 	c.DrawProgress("Preparing game engine", 97)
 	for i := range 33 {
 		var22 := 999
 		var23 := 0
 		for j := range 35 {
-			if c.ImageMapback.Pixels[j+i*c.ImageMapback.Width] == 0 {
+			if c.ImageMapback.Pixels[j+i*c.ImageMapback.Wi] == 0 {
 				if var22 == 999 {
 					var22 = j
 				}
@@ -5537,7 +5609,7 @@ func (c *Client) Load() {
 		var23 := 999
 		var24 := 0
 		for j := 10; j < 168; j++ {
-			if c.ImageMapback.Pixels[j+i*c.ImageMapback.Width] == 0 && (j > 34 || i > 34) {
+			if c.ImageMapback.Pixels[j+i*c.ImageMapback.Wi] == 0 && (j > 34 || i > 34) {
 				if var23 == 999 {
 					var23 = j
 				}
@@ -5563,7 +5635,7 @@ func (c *Client) Load() {
 		var50[i] = (var26 * var27) >> 16
 	}
 	world3d.Init(var50, 800, 512, 334, 500)
-	wordfilter.Unpack(var9)
+	wordfilter.Unpack(jagWordEnc)
 }
 
 func (c *Client) HandleInput() {
@@ -5649,10 +5721,10 @@ func (c *Client) Draw3DEntityElements() {
 	var2 := 0
 	c.DrawPrivateMessages()
 	if c.CrossMode == 1 {
-		c.ImageCrosses[c.CrossCycle/100].Draw(c.CrossY-8-11, c.CrossX-8-8)
+		c.ImageCrosses[c.CrossCycle/100].PlotSprite(c.CrossY-8-11, c.CrossX-8-8)
 	}
 	if c.CrossMode == 2 {
-		c.ImageCrosses[c.CrossCycle/100+4].Draw(c.CrossY-8-11, c.CrossX-8-8)
+		c.ImageCrosses[c.CrossCycle/100+4].PlotSprite(c.CrossY-8-11, c.CrossX-8-8)
 	}
 	if c.ViewportInterfaceID != -1 {
 		c.UpdateInterfaceAnimation(c.ViewportInterfaceID, c.SceneDelta)
@@ -5667,18 +5739,18 @@ func (c *Client) Draw3DEntityElements() {
 	}
 	if c.InMultizone == 1 {
 		if c.WildernessLevel > 0 || c.WorldLocationState == 1 {
-			c.ImageHeadIcons[1].Draw(258, 472)
+			c.ImageHeadIcons[1].PlotSprite(258, 472)
 		} else {
-			c.ImageHeadIcons[1].Draw(296, 472)
+			c.ImageHeadIcons[1].PlotSprite(296, 472)
 		}
 	}
 	if c.WildernessLevel > 0 {
-		c.ImageHeadIcons[0].Draw(296, 472)
-		c.FontPlain12.DrawStringCenter(329, 16776960, "Level: "+strconv.Itoa(c.WildernessLevel), 484)
+		c.ImageHeadIcons[0].PlotSprite(296, 472)
+		c.FontPlain12.CentreString(329, 0xFFFF00, "Level: "+strconv.Itoa(c.WildernessLevel), 484)
 	}
 	if c.WorldLocationState == 1 {
-		c.ImageHeadIcons[6].Draw(296, 472)
-		c.FontPlain12.DrawStringCenter(329, 16776960, "Arena", 484)
+		c.ImageHeadIcons[6].PlotSprite(296, 472)
+		c.FontPlain12.CentreString(329, 0xFFFF00, "Arena", 484)
 	}
 	if c.SystemUpdateTimer == 0 {
 		return
@@ -5687,9 +5759,9 @@ func (c *Client) Draw3DEntityElements() {
 	var3 := var2 / 60
 	var2 %= 60
 	if var2 < 10 {
-		c.FontPlain12.DrawString(4, 329, 16776960, "System update in: "+strconv.Itoa(var3)+":0"+strconv.Itoa(var2))
+		c.FontPlain12.DrawString(4, 329, 0xFFFF00, "System update in: "+strconv.Itoa(var3)+":0"+strconv.Itoa(var2))
 	} else {
-		c.FontPlain12.DrawString(4, 329, 16776960, "System update in: "+strconv.Itoa(var3)+":"+strconv.Itoa(var2))
+		c.FontPlain12.DrawString(4, 329, 0xFFFF00, "System update in: "+strconv.Itoa(var3)+":"+strconv.Itoa(var2))
 	}
 }
 
@@ -5740,7 +5812,7 @@ func (c *Client) UpdateOrbitCamera(arg0 int) {
 				if var10 < 3 && c.LevelTileFlags[1][i][j]&0x2 == 2 {
 					var10++
 				}
-				var11 := var6 - c.LevelHeightmap[var10][i][j]
+				var11 := var6 - c.LevelHeightMap[var10][i][j]
 				if var11 > var7 {
 					var7 = var11
 				}
@@ -5792,7 +5864,7 @@ func (c *Client) PushProjectiles() {
 }
 
 func (c *Client) RefreshFunc() {
-	c.RedrawBackground = true
+	c.RedrawFrame = true
 }
 
 func (c *Client) DrawOnMinimap(arg0 int, arg2 *pix32.Pix32, arg3 int) {
@@ -5808,9 +5880,9 @@ func (c *Client) DrawOnMinimap(arg0 int, arg2 *pix32.Pix32, arg3 int) {
 	var9 := (arg0*var11 + arg3*var12) >> 16
 	var10 := (arg0*var12 - arg3*var11) >> 16
 	if var6 > 2500 {
-		arg2.DrawMasked(c.ImageMapback, 83-var10-arg2.CropH/2, var9+94-arg2.CropW/2)
+		arg2.DrawMasked(c.ImageMapback, 83-var10-arg2.OHi/2, var9+94-arg2.OWi/2)
 	} else {
-		arg2.Draw(83-var10-arg2.CropH/2, var9+94-arg2.CropW/2)
+		arg2.PlotSprite(83-var10-arg2.OHi/2, var9+94-arg2.OWi/2)
 	}
 }
 
@@ -6017,11 +6089,11 @@ func (c *Client) LoadTitle() {
 	pix2d.Clear()
 	c.ImageTitle8 = pixmap.NewPixMap(87, 79)
 	pix2d.Clear()
-	if c.ArchiveTitle != nil {
+	if c.JagTitle != nil {
 		c.LoadTitleBackground()
 		c.LoadTitleImages()
 	}
-	c.RedrawBackground = true
+	c.RedrawFrame = true
 }
 
 func (c *Client) RunFlames() {
@@ -6131,7 +6203,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.Login.P1(0)
 	}
 	for i := range 9 {
-		c.Login.P4(c.ArchiveChecksum[i])
+		c.Login.P4(c.JagChecksum[i])
 	}
 	c.Login.PData(c.Out.Data, c.Out.Pos, 0)
 	c.Out.Random = io.NewIsaac(var4)
@@ -6384,7 +6456,7 @@ func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
 	if arg7 < 3 && c.LevelTileFlags[1][arg1][arg2]&0x2 == 2 {
 		var13 = arg7 + 1
 	}
-	world.AddLoc(arg1, c.LocList, c.LevelCollisionMap[arg7], arg2, arg0, c.LevelHeightmap, arg7, arg4, arg5, c.Scene, var13)
+	world.AddLoc(arg1, c.LocList, c.LevelCollisionMap[arg7], arg2, arg0, c.LevelHeightMap, arg7, arg4, arg5, c.Scene, var13)
 }
 
 func (c *Client) AddFriend(arg0 int64) {
@@ -6431,7 +6503,7 @@ func (c *Client) Unload() {
 	c.SceneMapIndex = nil
 	c.SceneMapLandData = nil
 	c.SceneMapLocData = nil
-	c.LevelHeightmap = nil
+	c.LevelHeightMap = nil
 	c.LevelTileFlags = nil
 	c.Scene = nil
 	c.LevelCollisionMap = nil
@@ -6881,7 +6953,7 @@ func (c *Client) DrawTooltip() {
 	if c.MenuSize > 2 {
 		var2 = var2 + "@whi@ / " + strconv.Itoa(c.MenuSize-2) + " more options"
 	}
-	c.FontBold12.DrawStringTooltip(clientextras.LoopCycle/1000, true, 15, 16777215, var2, 4)
+	c.FontBold12.DrawStringTooltip(clientextras.LoopCycle/1000, true, 15, 0xFFFFFF, var2, 4)
 }
 
 func (c *Client) PushSpotanims() {
@@ -6905,7 +6977,7 @@ func (c *Client) GetCodeBase() string {
 	return "http://127.0.0.1:" + (strconv.Itoa(clientextras.PortOffset + 8888))
 }
 
-func SetHighMemory() {
+func SetHighMem() {
 	world3d.LowMemory = false
 	pix3d.LowDetail = false
 	LowMemory = false
@@ -7472,10 +7544,10 @@ func (c *Client) ApplyCutscene() {
 		}
 	}
 	var11 := var10 - c.CameraYaw
-	if var11 > 1024 {
+	if var11 > 0x400 {
 		var11 -= 2048
 	}
-	if var11 < -1024 {
+	if var11 < -0x400 {
 		var11 += 2048
 	}
 	if var11 > 0 {
@@ -7487,10 +7559,10 @@ func (c *Client) ApplyCutscene() {
 		c.CameraYaw &= 0x7FF
 	}
 	var12 := var10 - c.CameraYaw
-	if var12 > 1024 {
+	if var12 > 0x400 {
 		var12 -= 2048
 	}
-	if var12 < -1024 {
+	if var12 < -0x400 {
 		var12 += 2048
 	}
 	if var12 < 0 && var11 > 0 || var12 > 0 && var11 < 0 {
@@ -7680,10 +7752,10 @@ func (c *Client) TryReconnect() {
 		return
 	}
 	c.AreaViewport.Bind()
-	c.FontPlain12.DrawStringCenter(144, 0, "Connection lost", 257)
-	c.FontPlain12.DrawStringCenter(143, 16777215, "Connection lost", 256)
-	c.FontPlain12.DrawStringCenter(159, 0, "Please wait - attempting to reestablish", 257)
-	c.FontPlain12.DrawStringCenter(158, 16777215, "Please wait - attempting to reestablish", 256)
+	c.FontPlain12.CentreString(144, 0, "Connection lost", 257)
+	c.FontPlain12.CentreString(143, 0xFFFFFF, "Connection lost", 256)
+	c.FontPlain12.CentreString(159, 0, "Please wait - attempting to reestablish", 257)
+	c.FontPlain12.CentreString(158, 0xFFFFFF, "Please wait - attempting to reestablish", 256)
 	c.AreaViewport.Draw(&c.Ops, 8, 11)
 	c.FlagSceneTileX = 0
 	// TODO: c.stream
@@ -7695,38 +7767,44 @@ func (c *Client) TryReconnect() {
 	// TODO: c.stream.close()
 }
 
-func (c *Client) UpdateFlameBuffer(arg1 *pix8.Pix8) {
-	var3 := 256
+func (c *Client) UpdateFlameBuffer(image *pix8.Pix8) {
+	height := 256
+
 	for i := range len(c.FlameBuffer0) {
 		c.FlameBuffer0[i] = 0
 	}
+
 	for range 5000 {
-		var6 := int(rand.Float64() * 128.0 * float64(var3))
-		c.FlameBuffer0[var6] = int(rand.Float64() * 256.0)
+		random := int(rand.Float64() * 128.0 * float64(height))
+		c.FlameBuffer0[random] = int(rand.Float64() * 256.0)
 	}
+
 	for range 20 {
-		for j := 1; j < var3-1; j++ {
-			for k := 1; k < 127; k++ {
-				var9 := k + (j << 7)
-				c.FlameBuffer1[var9] = (c.FlameBuffer0[var9-1] + c.FlameBuffer0[var9+1] + c.FlameBuffer0[var9-128] + c.FlameBuffer0[var9+128]) / 4
+		for y := 1; y < height-1; y++ {
+			for x := 1; x < 127; x++ {
+				index := x + (y << 7)
+				c.FlameBuffer1[index] = (c.FlameBuffer0[index-1] + c.FlameBuffer0[index+1] + c.FlameBuffer0[index-128] + c.FlameBuffer0[index+128]) / 4
 			}
 		}
-		var13 := c.FlameBuffer0
+
+		last := c.FlameBuffer0
 		c.FlameBuffer0 = c.FlameBuffer1
-		c.FlameBuffer1 = var13
+		c.FlameBuffer1 = last
 	}
-	if arg1 == nil {
-		return
-	}
-	var7 := 0
-	for i := range arg1.Height {
-		for j := range arg1.Width {
-			var7++
-			if arg1.Pixels[var7-1] != 0 {
-				var10 := j + 16 + arg1.CropX
-				var11 := i + 16 + arg1.CropY
-				var12 := var10 + (var11 << 7)
-				c.FlameBuffer0[var12] = 0
+
+	if image != nil {
+		off := 0
+
+		for y := range image.Hi {
+			for x := range image.Wi {
+				off++
+				if image.Pixels[off-1] != 0 {
+					x0 := x + 16 + image.XOf
+					y0 := y + 16 + image.YOf
+					index := x0 + (y0 << 7)
+
+					c.FlameBuffer0[index] = 0
+				}
 			}
 		}
 	}
@@ -7794,7 +7872,7 @@ func (c *Client) BuildScene() {
 	for i := range 4 {
 		c.LevelCollisionMap[i].Reset()
 	}
-	var3 := world.NewWorld(104, c.LevelTileFlags, 104, c.LevelHeightmap)
+	var3 := world.NewWorld(104, c.LevelTileFlags, 104, c.LevelHeightMap)
 	var4 := make([]byte, 100_000)
 	var5 := len(c.SceneMapLandData)
 	world.LowMemory = world3d.LowMemory
@@ -8002,56 +8080,78 @@ func (c *Client) DrawError() {
 }
 
 func (c *Client) LoadTitleBackground() {
-	var2 := c.ArchiveTitle.Read("title.dat", nil)
-	var3 := pix32.NewPix322(var2)
+	src := c.JagTitle.Read("title.dat", nil)
+	background := pix32.NewPix322(src)
+
 	c.ImageTitle0.Bind()
-	var3.BlitOpaque(0, 0)
+	background.QuickPlotSprite(0, 0)
+
 	c.ImageTitle1.Bind()
-	var3.BlitOpaque(-661, 0)
+	background.QuickPlotSprite(-661, 0)
+
 	c.ImageTitle2.Bind()
-	var3.BlitOpaque(-128, 0)
+	background.QuickPlotSprite(-128, 0)
+
 	c.ImageTitle3.Bind()
-	var3.BlitOpaque(-214, -386)
+	background.QuickPlotSprite(-214, -386)
+
 	c.ImageTitle4.Bind()
-	var3.BlitOpaque(-214, -186)
+	background.QuickPlotSprite(-214, -186)
+
 	c.ImageTitle5.Bind()
-	var3.BlitOpaque(0, -265)
+	background.QuickPlotSprite(0, -265)
+
 	c.ImageTitle6.Bind()
-	var3.BlitOpaque(-574, -265)
+	background.QuickPlotSprite(-574, -265)
+
 	c.ImageTitle7.Bind()
-	var3.BlitOpaque(-128, -186)
+	background.QuickPlotSprite(-128, -186)
+
 	c.ImageTitle8.Bind()
-	var3.BlitOpaque(-574, -186)
-	var4 := make([]int, var3.Width)
-	for i := range var3.Height {
-		for j := range var3.Width {
-			var4[j] = var3.Pixels[var3.Width-j-1+var3.Width*i]
+	background.QuickPlotSprite(-574, -186)
+
+	// draw right side (mirror image)
+	pixels := make([]int, background.Wi)
+	for y := range background.Hi {
+		for x := range background.Wi {
+			pixels[x] = background.Pixels[background.Wi-x-1+background.Wi*y]
 		}
-		for j := range var3.Width {
-			var3.Pixels[j+var3.Width*i] = var4[j]
+
+		for x := range background.Wi {
+			background.Pixels[x+background.Wi*y] = pixels[x]
 		}
 	}
+
 	c.ImageTitle0.Bind()
-	var3.BlitOpaque(394, 0)
+	background.QuickPlotSprite(394, 0)
+
 	c.ImageTitle1.Bind()
-	var3.BlitOpaque(-267, 0)
+	background.QuickPlotSprite(-267, 0)
+
 	c.ImageTitle2.Bind()
-	var3.BlitOpaque(266, 0)
+	background.QuickPlotSprite(266, 0)
+
 	c.ImageTitle3.Bind()
-	var3.BlitOpaque(180, -386)
+	background.QuickPlotSprite(180, -386)
+
 	c.ImageTitle4.Bind()
-	var3.BlitOpaque(180, -186)
+	background.QuickPlotSprite(180, -186)
+
 	c.ImageTitle5.Bind()
-	var3.BlitOpaque(394, -265)
+	background.QuickPlotSprite(394, -265)
+
 	c.ImageTitle6.Bind()
-	var3.BlitOpaque(-180, -265)
+	background.QuickPlotSprite(-180, -265)
+
 	c.ImageTitle7.Bind()
-	var3.BlitOpaque(212, -186)
+	background.QuickPlotSprite(212, -186)
+
 	c.ImageTitle8.Bind()
-	var3.BlitOpaque(-180, -186)
-	var3 = pix32.NewPix323(c.ArchiveTitle, "logo", 0)
+	background.QuickPlotSprite(-180, -186)
+
+	logo := pix32.NewPix323(c.JagTitle, "logo", 0)
 	c.ImageTitle2.Bind()
-	var3.Draw(18, c.ScreenWidth/2-var3.Width/2-128)
+	logo.PlotSprite(18, c.ScreenWidth/2-logo.Wi/2-128)
 }
 
 func (c *Client) PushLocs() {
@@ -8095,10 +8195,10 @@ func (c *Client) PushLocs() {
 				var7 = c.Scene.GetGroundDecorationBitSet(var4, var5, var6)
 			}
 			if var7 != 0 && ((var7>>14)&0x7FFF) == v.Index {
-				var8 := c.LevelHeightmap[var4][var5][var6]
-				var9 := c.LevelHeightmap[var4][var5+1][var6]
-				var10 := c.LevelHeightmap[var4][var5+1][var6+1]
-				var11 := c.LevelHeightmap[var4][var5][var6+1]
+				var8 := c.LevelHeightMap[var4][var5][var6]
+				var9 := c.LevelHeightMap[var4][var5+1][var6]
+				var10 := c.LevelHeightMap[var4][var5+1][var6+1]
+				var11 := c.LevelHeightMap[var4][var5][var6+1]
 				var12 := loctype.Get(v.Index)
 				var13 := -1
 				if v.SeqFrame != -1 {
@@ -8370,7 +8470,7 @@ func (c *Client) DrawTileHint() {
 	}
 	c.ProjectFromGround2(((c.HintTileZ-c.SceneBaseTileZ)<<7)+c.HintOffsetZ, ((c.HintTileX-c.SceneBaseTileX)<<7)+c.HintOffsetX, c.HintHeight*2)
 	if c.ProjectX > -1 && clientextras.LoopCycle%20 < 10 {
-		c.ImageHeadIcons[2].Draw(c.ProjectY-28, c.ProjectX-12)
+		c.ImageHeadIcons[2].PlotSprite(c.ProjectY-28, c.ProjectX-12)
 	}
 }
 
@@ -8426,16 +8526,16 @@ func (c *Client) GetPlayerLocal(arg2 *io.Packet) {
 func (c *Client) DrawChatback() {
 	c.AreaChatback.Bind()
 	pix3d.LineOffset = c.AreaChatbackOffsets
-	c.ImageChatback.Draw(0, 0)
+	c.ImageChatback.PlotSprite(0, 0)
 	if c.ShowSocialInput {
-		c.FontBold12.DrawStringCenter(40, 0, c.SocialMessage, 239)
-		c.FontBold12.DrawStringCenter(60, 128, c.SocialInput+"*", 239)
+		c.FontBold12.CentreString(40, 0, c.SocialMessage, 239)
+		c.FontBold12.CentreString(60, 128, c.SocialInput+"*", 239)
 	} else if c.ChatbackInputOpen {
-		c.FontBold12.DrawStringCenter(40, 0, "Enter amount:", 239)
-		c.FontBold12.DrawStringCenter(60, 128, c.ChatbackInput+"*", 239)
+		c.FontBold12.CentreString(40, 0, "Enter amount:", 239)
+		c.FontBold12.CentreString(60, 128, c.ChatbackInput+"*", 239)
 	} else if c.ModalMessage != "" {
-		c.FontBold12.DrawStringCenter(40, 0, c.ModalMessage, 239)
-		c.FontBold12.DrawStringCenter(60, 128, "Click to continue", 239)
+		c.FontBold12.CentreString(40, 0, c.ModalMessage, 239)
+		c.FontBold12.CentreString(60, 128, "Click to continue", 239)
 	} else if c.ChatInterfaceID != -1 {
 		c.DrawInterface(0, 0, component.Instances[c.ChatInterfaceID], 0)
 	} else if c.StickyChatInterfaceID == -1 {
@@ -8454,15 +8554,15 @@ func (c *Client) DrawChatback() {
 				}
 				if var5 == 1 {
 					if var6 > 0 && var6 < 110 {
-						var2.DrawString(4, var6, 16777215, c.MessageSender[i]+":")
-						var2.DrawString(var2.StringWidth(c.MessageSender[i])+12, var6, 255, c.MessageText[i])
+						var2.DrawString(4, var6, 0xFFFFFF, c.MessageSender[i]+":")
+						var2.DrawString(var2.StringWidth(c.MessageSender[i])+12, var6, 0xFF, c.MessageText[i])
 					}
 					var3++
 				}
 				if var5 == 2 && (c.PublicChatSetting == 0 || c.PublicChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
 					if var6 > 0 && var6 < 110 {
 						var2.DrawString(4, var6, 0, c.MessageSender[i]+":")
-						var2.DrawString(var2.StringWidth(c.MessageSender[i])+12, var6, 255, c.MessageText[i])
+						var2.DrawString(var2.StringWidth(c.MessageSender[i])+12, var6, 0xFF, c.MessageText[i])
 					}
 					var3++
 				}
@@ -8507,7 +8607,7 @@ func (c *Client) DrawChatback() {
 		}
 		c.DrawScrollbar(463, 0, c.ChatScrollHeight-c.ChatScrollOffset-77, c.ChatScrollHeight, 77)
 		var2.DrawString(4, 90, 0, jstring.FormatName(c.Username)+":")
-		var2.DrawString(var2.StringWidth(c.Username+": ")+6, 90, 255, c.ChatTyped+"*")
+		var2.DrawString(var2.StringWidth(c.Username+": ")+6, 90, 0xFF, c.ChatTyped+"*")
 		pix2d.HLine(0, 77, 479, 0)
 	} else {
 		c.DrawInterface(0, 0, component.Instances[c.StickyChatInterfaceID], 0)
@@ -8528,7 +8628,7 @@ func (c *Client) Read() bool {
 func (c *Client) DrawSidebar() {
 	c.AreaSidebar.Bind()
 	pix3d.LineOffset = c.AreaSidebarOffsets
-	c.ImageInvback.Draw(0, 0)
+	c.ImageInvback.PlotSprite(0, 0)
 	if c.SidebarInterfaceID != -1 {
 		c.DrawInterface(0, 0, component.Instances[c.SidebarInterfaceID], 0)
 	} else if c.TabInterfaceID[c.SelectedTab] != -1 {
@@ -8572,7 +8672,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 	var15 := 0
 	if arg2&0x2 == 2 {
 		var6 = arg3.G2()
-		if var6 == 65535 {
+		if var6 == 0xFFFF {
 			var6 = -1
 		}
 		if var6 == arg4.PrimarySeqID {
@@ -8589,7 +8689,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 	}
 	if arg2&0x4 == 4 {
 		arg4.TargetID = arg3.G2()
-		if arg4.TargetID == 65535 {
+		if arg4.TargetID == 0xFFFF {
 			arg4.TargetID = -1
 		}
 	}
@@ -8654,7 +8754,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		if arg4.SpotanimLastCycle > clientextras.LoopCycle {
 			arg4.SpotanimFrame = -1
 		}
-		if arg4.SpotanimID == 65535 {
+		if arg4.SpotanimID == 0xFFFF {
 			arg4.SpotanimID = -1
 		}
 	}
@@ -8673,37 +8773,47 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 	arg4.PathTileZ[0] = arg4.ForceMoveEndSceneTileZ
 }
 
-func (c *Client) DrawProgress(arg1 string, arg2 int) {
-	fmt.Printf("DrawProgress %v: %v\n", arg1, arg2) // debug
+func (c *Client) DrawProgress(message string, percent int) {
+	fmt.Printf("DrawProgress %v: %v\n", message, percent) // debug
+
 	c.LoadTitle()
-	if c.ArchiveTitle == nil {
-		c.DrawProgressGameShell(arg1, arg2)
+
+	if c.JagTitle == nil {
+		fmt.Println("DrawProgressGameShell called") // debug
+		c.DrawProgressGameShell(message, percent)
 		return
 	}
+
 	c.ImageTitle4.Bind()
-	var4 := 360
-	var5 := 200
-	var6 := 20
-	c.FontBold12.DrawStringCenter(var5/2-26-var6, 16777215, "RuneScape is loading - please wait...", var4/2)
-	var7 := var5/2 - 18 - var6
-	pix2d.DrawRect(var4/2-152, 9179409, 34, var7, 304)
-	pix2d.DrawRect(var4/2-151, 0, 32, var7+1, 302)
-	pix2d.FillRect(var7+2, var4/2-150, 9179409, arg2*3, 30)
-	pix2d.FillRect(var7+2, var4/2-150+arg2*3, 0, 300-arg2*3, 30)
-	c.FontBold12.DrawStringCenter(var5/2+5-var6, 16777215, arg1, var4/2)
+
+	x := 360
+	y := 200
+
+	offsetY := 20
+	c.FontBold12.CentreString(y/2-26-offsetY, 0xFFFFFF, "RuneScape is loading - please wait...", x/2)
+
+	midY := y/2 - 18 - offsetY
+	pix2d.DrawRect(x/2-152, 0x8C1111, 34, midY, 304)
+	pix2d.DrawRect(x/2-151, 0, 32, midY+1, 302)
+	pix2d.FillRect(midY+2, x/2-150, 0x8C1111, percent*3, 30)
+	pix2d.FillRect(midY+2, x/2-150+percent*3, 0, 300-percent*3, 30)
+	c.FontBold12.CentreString(y/2+5-offsetY, 0xFFFFFF, message, x/2)
+
 	c.ImageTitle4.Draw(&c.Ops, 214, 186)
-	if !c.RedrawBackground {
-		return
+
+	if c.RedrawFrame {
+		c.RedrawFrame = false
+
+		if !c.FlameActive {
+			c.ImageTitle0.Draw(&c.Ops, 0, 0)
+			c.ImageTitle1.Draw(&c.Ops, 661, 0)
+		}
+
+		c.ImageTitle2.Draw(&c.Ops, 128, 0)
+		c.ImageTitle3.Draw(&c.Ops, 214, 386)
+		c.ImageTitle5.Draw(&c.Ops, 0, 265)
+		c.ImageTitle6.Draw(&c.Ops, 574, 265)
+		c.ImageTitle7.Draw(&c.Ops, 128, 186)
+		c.ImageTitle8.Draw(&c.Ops, 574, 186)
 	}
-	c.RedrawBackground = false
-	if !c.FlameActive {
-		c.ImageTitle0.Draw(&c.Ops, 0, 0)
-		c.ImageTitle1.Draw(&c.Ops, 661, 0)
-	}
-	c.ImageTitle2.Draw(&c.Ops, 128, 0)
-	c.ImageTitle3.Draw(&c.Ops, 214, 386)
-	c.ImageTitle5.Draw(&c.Ops, 0, 265)
-	c.ImageTitle6.Draw(&c.Ops, 574, 265)
-	c.ImageTitle7.Draw(&c.Ops, 128, 186)
-	c.ImageTitle8.Draw(&c.Ops, 574, 186)
 }

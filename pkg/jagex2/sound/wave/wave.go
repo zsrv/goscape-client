@@ -32,7 +32,7 @@ func Unpack(buf *io.Packet) {
 
 	for {
 		id := buf.G2()
-		if id == 65535 {
+		if id == 0xFFFF {
 			return
 		}
 		Tracks[id] = NewWave()

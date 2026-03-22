@@ -14,12 +14,12 @@ import (
 type GameShell struct {
 }
 
-func (c *Client) InitApplication(screenHeight int, screenWidth int) {
-	c.ScreenWidth = screenWidth
-	c.ScreenHeight = screenHeight
+func (c *Client) InitApplication(height int, width int) {
+	c.ScreenWidth = width
+	c.ScreenHeight = height
 	//c.Frame // app.Window with gio
 	//c.Graphics
-	c.DrawArea = pixmap.NewPixMap(screenWidth, screenHeight)
+	c.DrawArea = pixmap.NewPixMap(width, height) // TODO: component is linked to this in java.. automatically draws stuff?
 	// TODO: open the window here, before Run()
 	// TODO: start mine
 	go func() {
@@ -37,7 +37,7 @@ func (c *Client) InitApplication(screenHeight int, screenWidth int) {
 	}()
 	go app.Main() // TODO: go?
 	// TODO: end mine
-	go c.Run()
+	c.Run()
 }
 
 func (c *Client) draw(w *app.Window) error {
@@ -69,7 +69,7 @@ func (c *Client) draw(w *app.Window) error {
 			//gtx := app.NewContext(&c.Ops, e)
 			//gtx := app.NewContext(&ops, e)
 
-			// Draw the state into ops based on events in e.Queue.
+			// PlotSprite the state into ops based on events in e.Queue.
 			//draw(gtx)
 			//draw(&c.Ops)
 			//gtx.Execute(op.InvalidateCmd{})
@@ -84,8 +84,10 @@ func (c *Client) draw(w *app.Window) error {
 
 func (c *Client) RunGameShell() {
 	// TODO: listeners
+
 	c.DrawProgress("Loading...", 0)
 	c.Load()
+
 	var3 := 0
 	var4 := 256
 	var5 := 1
@@ -166,6 +168,6 @@ func (c *Client) PollKey() int {
 	return 0 // TODO: stub
 }
 
-func (c *Client) DrawProgressGameShell(arg1 string, arg2 int) {
+func (c *Client) DrawProgressGameShell(message string, percent int) {
 	// TODO: stub
 }

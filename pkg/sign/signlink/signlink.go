@@ -1,3 +1,5 @@
+// Package signlink is used for signed Java applets to be able to use the filesystem etc.
+// Not used in unsigned mode.
 package signlink
 
 import (

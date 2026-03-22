@@ -6,14 +6,16 @@ import (
 )
 
 type Pix8 struct {
-	Pixels  []byte
-	CropW   int
-	CropH   int
-	Palette []int
-	CropX   int
-	CropY   int
-	Width   int
-	Height  int
+	// these short field names are authentic to native
+
+	Pixels []byte
+	OWi    int   // original width - was CropW
+	OHi    int   // original height - was CropH
+	BPal   []int // base palette - was Palette
+	XOf    int   // x offset - was CropX
+	YOf    int   // y offset - was CropY
+	Wi     int   // width - was Width
+	Hi     int   // height - was Height
 }
 
 func NewPix8(jag *io.Jagfile, name string, sprite int) *Pix8 {
@@ -21,173 +23,191 @@ func NewPix8(jag *io.Jagfile, name string, sprite int) *Pix8 {
 
 	dat := io.NewPacket(jag.Read(name+".dat", nil))
 	idx := io.NewPacket(jag.Read("index.dat", nil))
-	idx.Pos = dat.G2()
 
-	p.CropW = int(idx.G2())
-	p.CropH = int(idx.G2())
+	idx.Pos = dat.G2()
+	p.OWi = int(idx.G2())
+	p.OHi = int(idx.G2())
+
 	palCount := idx.G1()
-	p.Palette = make([]int, palCount)
+	p.BPal = make([]int, palCount)
 	for i := range palCount - 1 {
-		p.Palette[i+1] = int(idx.G3())
+		p.BPal[i+1] = int(idx.G3())
 	}
+
 	for range sprite {
 		idx.Pos += 2
 		dat.Pos += idx.G2() * idx.G2()
 		idx.Pos++
 	}
-	p.CropX = int(idx.G1())
-	p.CropY = int(idx.G1())
-	p.Width = int(idx.G2())
-	p.Height = int(idx.G2())
+
+	p.XOf = int(idx.G1())
+	p.YOf = int(idx.G1())
+	p.Wi = int(idx.G2())
+	p.Hi = int(idx.G2())
 	pixelOrder := idx.G1()
-	length := p.Width * p.Height
+
+	length := p.Wi * p.Hi
 	p.Pixels = make([]byte, length)
+
 	if pixelOrder == 0 {
 		for i := range length {
 			p.Pixels[i] = dat.G1B()
 		}
 	} else if pixelOrder == 1 {
-		for i := range p.Width {
-			for j := range p.Height {
-				p.Pixels[i+j*p.Width] = dat.G1B()
+		for x := range p.Wi {
+			for y := range p.Hi {
+				p.Pixels[x+y*p.Wi] = dat.G1B()
 			}
 		}
 	}
 	return p
 }
 
-func (p *Pix8) Shrink() {
-	p.CropW /= 2
-	p.CropH /= 2
-	pixels := make([]byte, p.CropW*p.CropH)
-	var3 := 0
-	for y := range p.Height {
-		for x := range p.Width {
-			pixels[((x+p.CropX)>>1)+((y+p.CropY)>>1)*p.CropW] = p.Pixels[var3]
-			var3++
+// was Shrink
+func (p *Pix8) HalveSize() {
+	p.OWi /= 2
+	p.OHi /= 2
+
+	pixels := make([]byte, p.OWi*p.OHi)
+	i := 0
+	for y := range p.Hi {
+		for x := range p.Wi {
+			pixels[((x+p.XOf)>>1)+((y+p.YOf)>>1)*p.OWi] = p.Pixels[i]
+			i++
 		}
 	}
 	p.Pixels = pixels
-	p.Width = p.CropW
-	p.Height = p.CropH
-	p.CropX = 0
-	p.CropY = 0
+
+	p.Wi = p.OWi
+	p.Hi = p.OHi
+	p.XOf = 0
+	p.YOf = 0
 }
 
-func (p *Pix8) Crop() {
-	if p.Width == p.CropW && p.Height == p.CropH {
+// was Crop
+func (p *Pix8) Trim() {
+	if p.Wi == p.OWi && p.Hi == p.OHi {
 		return
 	}
-	pixels := make([]byte, p.CropW*p.CropH)
+
+	pixels := make([]byte, p.OWi*p.OHi)
 	i := 0
-	for y := range p.Height {
-		for x := range p.Width {
-			pixels[x+p.CropX+(y+p.CropY)*p.CropW] = p.Pixels[i]
+	for y := range p.Hi {
+		for x := range p.Wi {
+			pixels[x+p.XOf+(y+p.YOf)*p.OWi] = p.Pixels[i]
 			i++
 		}
 	}
 	p.Pixels = pixels
-	p.Width = p.CropW
-	p.Height = p.CropH
-	p.CropX = 0
-	p.CropY = 0
+
+	p.Wi = p.OWi
+	p.Hi = p.OHi
+	p.XOf = 0
+	p.YOf = 0
 }
 
-func (p *Pix8) FlipHorizontally() {
-	pixels := make([]byte, p.Width*p.Height)
+// was FlipHorizontally
+func (p *Pix8) HFlip() {
+	pixels := make([]byte, p.Wi*p.Hi)
 	i := 0
-	for y := range p.Height {
-		for x := p.Width - 1; x >= 0; x-- {
-			pixels[i] = p.Pixels[x+y+p.Width]
+	for y := range p.Hi {
+		for x := p.Wi - 1; x >= 0; x-- {
+			pixels[i] = p.Pixels[x+y+p.Wi]
 			i++
 		}
 	}
 	p.Pixels = pixels
-	p.CropX = p.CropW - p.Width - p.CropX
+
+	p.XOf = p.OWi - p.Wi - p.XOf
 }
 
-func (p *Pix8) FlipVertically() {
-	pixels := make([]byte, p.Width*p.Height)
+// was FlipVertically
+func (p *Pix8) VFlip() {
+	pixels := make([]byte, p.Wi*p.Hi)
 	i := 0
-	for y := p.Height - 1; y >= 0; y-- {
-		for x := range p.Width {
-			pixels[i] = p.Pixels[x+y*p.Width]
+	for y := p.Hi - 1; y >= 0; y-- {
+		for x := range p.Wi {
+			pixels[i] = p.Pixels[x+y*p.Wi]
 			i++
 		}
 	}
 	p.Pixels = pixels
-	p.CropY = p.CropH - p.Height - p.CropY
+
+	p.YOf = p.OHi - p.Hi - p.YOf
 }
 
-func (p *Pix8) Translate(arg0 int, arg1 int, arg2 int) {
+// was RGBAdjust
+func (p *Pix8) RGBAdjust(arg0 int, arg1 int, arg2 int) {
 	var6 := 0
-	for i := range len(p.Palette) {
-		var6 = (p.Palette[i] >> 16) & 0xFF
+	for i := range len(p.BPal) {
+		var6 = (p.BPal[i] >> 16) & 0xFF
 		var6 += arg0
 		if var6 < 0 {
 			var6 = 0
-		} else if var6 > 255 {
-			var6 = 255
+		} else if var6 > 0xFF {
+			var6 = 0xFF
 		}
-		var7 := (p.Palette[i] >> 8) & 0xFF
+		var7 := (p.BPal[i] >> 8) & 0xFF
 		var7 += arg1
 		if var7 < 0 {
 			var7 = 0
-		} else if var7 > 255 {
-			var7 = 255
+		} else if var7 > 0xFF {
+			var7 = 0xFF
 		}
-		var8 := p.Palette[i] & 0xFF
+		var8 := p.BPal[i] & 0xFF
 		var8 += arg2
 		if var8 < 0 {
 			var8 = 0
-		} else if var8 > 255 {
-			var8 = 255
+		} else if var8 > 0xFF {
+			var8 = 0xFF
 		}
-		p.Palette[i] = (var6 << 16) + (var7 << 8) + var8
+		p.BPal[i] = (var6 << 16) + (var7 << 8) + var8
 	}
 }
 
-func (p *Pix8) Draw(y int, x int) {
-	x += p.CropX
-	y += p.CropY
+// was Draw
+func (p *Pix8) PlotSprite(y int, x int) {
+	x += p.XOf
+	y += p.YOf
 	var4 := x + y*pix2d.Width2D
 	var5 := 0
-	var6 := p.Height
-	var7 := p.Width
+	var6 := p.Hi
+	var7 := p.Wi
 	var8 := pix2d.Width2D - var7
 	var9 := 0
 	var10 := 0
-	if y < pix2d.BoundTop {
-		var10 = pix2d.BoundTop - y
+	if y < pix2d.Top {
+		var10 = pix2d.Top - y
 		var6 -= var10
-		y = pix2d.BoundTop
+		y = pix2d.Top
 		var5 += var10 * var7
 		var4 += var10 * pix2d.Width2D
 	}
-	if y+var6 > pix2d.BoundBottom {
-		var6 -= y + var6 - pix2d.BoundBottom
+	if y+var6 > pix2d.Bottom {
+		var6 -= y + var6 - pix2d.Bottom
 	}
-	if x < pix2d.BoundLeft {
-		var10 = pix2d.BoundLeft - x
+	if x < pix2d.Left {
+		var10 = pix2d.Left - x
 		var7 -= var10
-		x = pix2d.BoundLeft
+		x = pix2d.Left
 		var5 += var10
 		var4 += var10
 		var9 += var10
 		var8 += var10
 	}
-	if x+var7 > pix2d.BoundRight {
-		var10 = x + var7 - pix2d.BoundRight
+	if x+var7 > pix2d.Right {
+		var10 = x + var7 - pix2d.Right
 		var7 -= var10
 		var9 += var10
 		var8 += var10
 	}
 	if var7 > 0 && var6 > 0 {
-		p.CopyPixels(pix2d.Data, var5, var9, p.Pixels, var6, 0, var7, var4, var8, p.Palette)
+		p.Plot(pix2d.Data, var5, var9, p.Pixels, var6, 0, var7, var4, var8, p.BPal)
 	}
 }
 
-func (p *Pix8) CopyPixels(arg0 []int, arg1 int, arg2 int, arg3 []byte, arg4 int, arg5 int, arg6 int, arg7 int, arg8 int, arg9 []int) {
+// was CopyPixels
+func (p *Pix8) Plot(arg0 []int, arg1 int, arg2 int, arg3 []byte, arg4 int, arg5 int, arg6 int, arg7 int, arg8 int, arg9 []int) {
 	var11 := -(arg6 >> 2)
 	var16 := -(arg6 & 0x3)
 	if arg5 != 0 {

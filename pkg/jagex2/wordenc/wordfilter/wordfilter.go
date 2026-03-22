@@ -1060,7 +1060,7 @@ func FilterFragments(chars []rune) {
 				value = value*10 + int(chars[i]) - 48
 			}
 
-			if value <= 255 && end-index <= 8 {
+			if value <= 0xFF && end-index <= 8 {
 				count++
 			} else {
 				count = 0

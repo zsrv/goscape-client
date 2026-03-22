@@ -11,7 +11,7 @@ func NewLruCache[T any](size int32) *LruCache[T] {
 	l := &LruCache[T]{
 		Capacity:  size,
 		Available: size,
-		HashTable: make(map[int64]T, 1024), // TODO: not limited to 1024
+		HashTable: make(map[int64]T, 0x400), // TODO: not limited to 0x400
 		History:   NewDoublyLinkList[T](),
 	}
 	return l

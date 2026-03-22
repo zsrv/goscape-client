@@ -96,14 +96,14 @@ func (m *CollisionMap) AddWall(arg1 int, arg2 int, arg3 int, arg4 bool, arg5 int
 			m.AddCMap(var8, var7, 65536)
 			m.AddCMap(var8-1, var7, 4096)
 		case 1:
-			m.AddCMap(var8, var7, 1024)
+			m.AddCMap(var8, var7, 0x400)
 			m.AddCMap(var8, var7+1, 16384)
 		case 2:
 			m.AddCMap(var8, var7, 4096)
 			m.AddCMap(var8+1, var7, 65536)
 		case 3:
 			m.AddCMap(var8, var7, 16384)
-			m.AddCMap(var7, var7-1, 1024)
+			m.AddCMap(var7, var7-1, 0x400)
 		}
 	case 1, 3:
 		switch arg1 {
@@ -133,10 +133,10 @@ func (m *CollisionMap) AddWall(arg1 int, arg2 int, arg3 int, arg4 bool, arg5 int
 		case 2:
 			m.AddCMap(var8, var7, 20480)
 			m.AddCMap(var8+1, var7, 65536)
-			m.AddCMap(var8, var7-1, 1024)
+			m.AddCMap(var8, var7-1, 0x400)
 		case 3:
 			m.AddCMap(var8, var7, 81920)
-			m.AddCMap(var8, var7-1, 1024)
+			m.AddCMap(var8, var7-1, 0x400)
 			m.AddCMap(var8-1, var7, 4096)
 		}
 	}
@@ -239,14 +239,14 @@ func (m *CollisionMap) DelWall(arg0 bool, arg1, arg2, arg3, arg5 int) {
 			m.RemCMap(var8, var7, 65536)
 			m.RemCMap(var8, var7-1, 4096)
 		case 1:
-			m.RemCMap(var8, var7, 1024)
+			m.RemCMap(var8, var7, 0x400)
 			m.RemCMap(var8+1, var7, 16384)
 		case 2:
 			m.RemCMap(var8, var7, 4096)
 			m.RemCMap(var8, var7+1, 65536)
 		case 3:
 			m.RemCMap(var8, var7, 16384)
-			m.RemCMap(var8-1, var7, 1024)
+			m.RemCMap(var8-1, var7, 0x400)
 		}
 	case 1, 3:
 		switch arg1 {
@@ -276,10 +276,10 @@ func (m *CollisionMap) DelWall(arg0 bool, arg1, arg2, arg3, arg5 int) {
 		case 2:
 			m.RemCMap(var8, var7, 20480)
 			m.RemCMap(var8, var7+1, 65536)
-			m.RemCMap(var8-1, var7, 1024)
+			m.RemCMap(var8-1, var7, 0x400)
 		case 3:
 			m.RemCMap(var8, var7, 81920)
-			m.RemCMap(var8-1, var7, 1024)
+			m.RemCMap(var8-1, var7, 0x400)
 			m.RemCMap(var8, var7-1, 4096)
 		}
 	}

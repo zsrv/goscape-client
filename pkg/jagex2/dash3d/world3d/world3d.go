@@ -49,7 +49,7 @@ var (
 	LevelOccluders                       [][]*dash3d.Occlude
 	ActiveOccluders                      []*dash3d.Occlude = make([]*dash3d.Occlude, 500)
 	DrawTileQueue                                          = datastruct.NewLinkList[*typ.Ground]()
-	FRONT_WALL_TYPES                                       = []int{19, 55, 38, 155, 255, 110, 137, 205, 76}
+	FRONT_WALL_TYPES                                       = []int{19, 55, 38, 155, 0xFF, 110, 137, 205, 76}
 	DIRECTION_ALLOW_WALL_CORNER_TYPE                       = []int{160, 192, 80, 96, 0, 144, 80, 48, 160}
 	BACK_WALL_TYPES                                        = []int{76, 8, 137, 4, 0, 1, 38, 2, 19}
 	EyeX                                 int

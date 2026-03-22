@@ -115,10 +115,10 @@ func UnpackTextures(jag *io.Jagfile) {
 	TextureCount = 0
 	for i := range 50 {
 		Textures[i] = pix8.NewPix8(jag, strconv.Itoa(i), 0)
-		if LowDetail && Textures[i].CropW == 128 {
-			Textures[i].Shrink()
+		if LowDetail && Textures[i].OWi == 128 {
+			Textures[i].HalveSize()
 		} else {
-			Textures[i].Crop()
+			Textures[i].Trim()
 		}
 		TextureCount++
 	}
@@ -193,7 +193,7 @@ func GetTexels(arg0 int) []int {
 			var1[i+12288] = (var5 - (var5 >> 2) - (var5 >> 3)) & 0xF8F8FF
 		}
 	} else {
-		if var6.Width == 64 {
+		if var6.Wi == 64 {
 			for i := range 128 {
 				for j := range 128 {
 					var1[j+(i<<7)] = var7[var6.Pixels[(j>>1)+((i>>1)<<6)]]
@@ -285,7 +285,7 @@ func SetBrightness(arg1 float64) {
 	}
 	for i := range 50 {
 		if Textures[i] != nil {
-			var6 := Textures[i].Palette
+			var6 := Textures[i].BPal
 			TexturePalette[i] = make([]int, len(var6))
 			for j := range len(var6) {
 				TexturePalette[i][j] = SetGamma(var6[j], var28)
@@ -330,12 +330,12 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 		var14 = ((arg6 - arg8) << 15) / (arg0 - arg2)
 	}
 	if arg0 <= arg1 && arg0 <= arg2 {
-		if arg0 < pix2d.BoundBottom {
-			if arg1 > pix2d.BoundBottom {
-				arg1 = pix2d.BoundBottom
+		if arg0 < pix2d.Bottom {
+			if arg1 > pix2d.Bottom {
+				arg1 = pix2d.Bottom
 			}
-			if arg2 > pix2d.BoundBottom {
-				arg2 = pix2d.BoundBottom
+			if arg2 > pix2d.Bottom {
+				arg2 = pix2d.Bottom
 			}
 			if arg1 < arg2 {
 				arg3 <<= 0x10
@@ -488,12 +488,12 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 			}
 		}
 	} else if arg1 <= arg2 {
-		if arg1 < pix2d.BoundBottom {
-			if arg2 > pix2d.BoundBottom {
-				arg2 = pix2d.BoundBottom
+		if arg1 < pix2d.Bottom {
+			if arg2 > pix2d.Bottom {
+				arg2 = pix2d.Bottom
 			}
-			if arg0 > pix2d.BoundBottom {
-				arg0 = pix2d.BoundBottom
+			if arg0 > pix2d.Bottom {
+				arg0 = pix2d.Bottom
 			}
 			if arg2 < arg0 {
 				arg4 <<= 0x10
@@ -645,12 +645,12 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 				}
 			}
 		}
-	} else if arg2 < pix2d.BoundBottom {
-		if arg0 > pix2d.BoundBottom {
-			arg0 = pix2d.BoundBottom
+	} else if arg2 < pix2d.Bottom {
+		if arg0 > pix2d.Bottom {
+			arg0 = pix2d.Bottom
 		}
-		if arg1 > pix2d.BoundBottom {
-			arg1 = pix2d.BoundBottom
+		if arg1 > pix2d.Bottom {
+			arg1 = pix2d.Bottom
 		}
 		if arg0 < arg1 {
 			arg5 <<= 0x10
@@ -953,12 +953,12 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 		var9 = ((arg3 - arg5) << 16) / (arg0 - arg2)
 	}
 	if arg0 <= arg1 && arg0 <= arg2 {
-		if arg0 < pix2d.BoundBottom {
-			if arg1 > pix2d.BoundBottom {
-				arg1 = pix2d.BoundBottom
+		if arg0 < pix2d.Bottom {
+			if arg1 > pix2d.Bottom {
+				arg1 = pix2d.Bottom
 			}
-			if arg2 > pix2d.BoundBottom {
-				arg2 = pix2d.BoundBottom
+			if arg2 > pix2d.Bottom {
+				arg2 = pix2d.Bottom
 			}
 			if arg1 < arg2 {
 				arg3 <<= 0x10
@@ -1083,12 +1083,12 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 			}
 		}
 	} else if arg1 <= arg2 {
-		if arg1 < pix2d.BoundBottom {
-			if arg2 > pix2d.BoundBottom {
-				arg2 = pix2d.BoundBottom
+		if arg1 < pix2d.Bottom {
+			if arg2 > pix2d.Bottom {
+				arg2 = pix2d.Bottom
 			}
-			if arg0 > pix2d.BoundBottom {
-				arg0 = pix2d.BoundBottom
+			if arg0 > pix2d.Bottom {
+				arg0 = pix2d.Bottom
 			}
 			if arg2 < arg0 {
 				arg4 <<= 0x10
@@ -1212,12 +1212,12 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 				}
 			}
 		}
-	} else if arg2 < pix2d.BoundBottom {
-		if arg0 > pix2d.BoundBottom {
-			arg0 = pix2d.BoundBottom
+	} else if arg2 < pix2d.Bottom {
+		if arg0 > pix2d.Bottom {
+			arg0 = pix2d.Bottom
 		}
-		if arg1 > pix2d.BoundBottom {
-			arg1 = pix2d.BoundBottom
+		if arg1 > pix2d.Bottom {
+			arg1 = pix2d.Bottom
 		}
 		if arg0 < arg1 {
 			arg5 <<= 0x10
@@ -1447,12 +1447,12 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 	}
 	var35 := 0
 	if arg0 <= arg1 && arg0 <= arg2 {
-		if arg0 < pix2d.BoundBottom {
-			if arg1 > pix2d.BoundBottom {
-				arg1 = pix2d.BoundBottom
+		if arg0 < pix2d.Bottom {
+			if arg1 > pix2d.Bottom {
+				arg1 = pix2d.Bottom
 			}
-			if arg2 > pix2d.BoundBottom {
-				arg2 = pix2d.BoundBottom
+			if arg2 > pix2d.Bottom {
+				arg2 = pix2d.Bottom
 			}
 			if arg1 < arg2 {
 				arg3 <<= 0x10
@@ -1637,12 +1637,12 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 			}
 		}
 	} else if arg1 <= arg2 {
-		if arg1 < pix2d.BoundBottom {
-			if arg2 > pix2d.BoundBottom {
-				arg2 = pix2d.BoundBottom
+		if arg1 < pix2d.Bottom {
+			if arg2 > pix2d.Bottom {
+				arg2 = pix2d.Bottom
 			}
-			if arg0 > pix2d.BoundBottom {
-				arg0 = pix2d.BoundBottom
+			if arg0 > pix2d.Bottom {
+				arg0 = pix2d.Bottom
 			}
 			if arg2 < arg0 {
 				arg4 <<= 0x10
@@ -1826,12 +1826,12 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 				}
 			}
 		}
-	} else if arg2 < pix2d.BoundBottom {
-		if arg0 > pix2d.BoundBottom {
-			arg0 = pix2d.BoundBottom
+	} else if arg2 < pix2d.Bottom {
+		if arg0 > pix2d.Bottom {
+			arg0 = pix2d.Bottom
 		}
-		if arg1 > pix2d.BoundBottom {
-			arg1 = pix2d.BoundBottom
+		if arg1 > pix2d.Bottom {
+			arg1 = pix2d.Bottom
 		}
 		if arg0 < arg1 {
 			arg5 <<= 0x10

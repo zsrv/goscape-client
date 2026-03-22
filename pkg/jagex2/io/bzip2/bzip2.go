@@ -348,7 +348,7 @@ func Decompress(s *bzip2state.BZip2State) {
 			groupNo := -1
 			groupPos := byte(0)
 
-			for i := 0; i <= 255; i++ {
+			for i := 0; i <= 0xFF; i++ {
 				s.UnZFTab[i] = 0
 			}
 
