@@ -10,61 +10,45 @@ import (
 	"goscape-client/pkg/jagex2/graphics/pix2d"
 )
 
-var (
-	// MINE
-	DrawMu sync.Mutex
-)
-
-// TODO
+// OpsMu serializes all access to the *op.Ops owned by Client. Both the game
+// goroutine (via PixMap.Draw at ~25 call sites in client.go) and the Gio
+// event goroutine (via event.Op, source.Event(...), and e.Frame inside the
+// FrameEvent handler) touch that op list, so every touch must happen under
+// this mutex. Java had no analogue — AWT's EDT and the game thread were
+// serialized naturally through the repaint queue.
+var OpsMu sync.Mutex
 
 // PixMap is a CPU-side pixel buffer that can be efficiently uploaded to GPU.
 type PixMap struct {
-	//Data []byte
-	//Data []uint8
 	Data    []int
 	Width   int
 	Height  int
-	Image   *image.RGBA
 	OpCache *op.Ops
 }
 
 // NewPixMap allocates a width*height pixel buffer.
 func NewPixMap(width, height int) *PixMap {
-	//pix := image.NewRGBA(image.Rect(0, 0, width, height))
-	//return &PixMap{
-	//	Wi:  width,
-	//	Hi: height,
-	//	Data: pix.Pix,
-	//	Image:  pix,
-	//}
-
 	var m PixMap
 	m.Width = width
 	m.Height = height
 	m.Data = make([]int, width*height)
-	m.Image = image.NewRGBA(image.Rect(0, 0, width, height)) // TODO: unused
-	m.OpCache = new(op.Ops)                                  // MINE
+	m.OpCache = new(op.Ops)
 	m.Bind()
-	//
 	return &m
 }
 
 // Bind uploads the current pixel data to GPU.
 // Call this once per frame before drawing.
 func (p *PixMap) Bind() {
-	//p.Op = paint.NewImageOp(p.Image)
-	//p.Ready = true
 	pix2d.Bind(p.Width, p.Data, p.Height)
 }
 
-// Draw adds the necessary operations to render the buffer at (x,y).
-// Must be called between op.Ops{}.Reset() and window.Event().
-// TODO: the source of problems?
-// TODO: problem might be multiple goroutines using draw (and acting on ops.Ops) at the same time, causing bad stacks?
+// Draw splices a cached macro for this PixMap into the caller's op list.
+// The caller (game goroutine) writes into the shared *op.Ops, so we hold
+// OpsMu to serialize against the Gio goroutine's event.Op/e.Frame calls.
 func (p *PixMap) Draw(ops *op.Ops, x, y int) {
-	// MINE
-	DrawMu.Lock()
-	defer DrawMu.Unlock()
+	OpsMu.Lock()
+	defer OpsMu.Unlock()
 
 	//if !p.Ready {
 	//	p.Bind()

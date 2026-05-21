@@ -66,6 +66,11 @@ func (c *Client) draw(w *app.Window) error {
 			// full window since we push no clip), and e.Source.Event(filters)
 			// returns one queued event per call. Java: AWT pushed events to
 			// listener callbacks; Gio inverts that to a per-frame poll.
+			//
+			// Hold pixmap.OpsMu across the input-op write, the event drain,
+			// and e.Frame so any concurrent PixMap.Draw on the game goroutine
+			// can't race with the Gio compositor consuming c.Ops.
+			pixmap.OpsMu.Lock()
 			event.Op(&c.Ops, c)
 			for {
 				ev, ok := e.Source.Event(c.inputFilters...)
@@ -96,6 +101,7 @@ func (c *Client) draw(w *app.Window) error {
 			// Update the display - pass the operations list to the window driver
 			//e.Frame(gtx.Ops)
 			e.Frame(&c.Ops)
+			pixmap.OpsMu.Unlock()
 			w.Invalidate()
 		}
 	}

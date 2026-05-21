@@ -152,9 +152,9 @@ All blockers in this section depend on §5.1 (ClientStream port) and §5.2
 | `client/gameshell.go:172` | `DrawProgress` | `// TODO: stub` — progress UI during cache load. | 🟡 |
 | ~~`client/inputtracking/inputtracking.go:20`~~ | ~~(package)~~ | ~~`// TODO: all funcs synchronized` — concurrent access from event goroutine and game loop.~~ **Ported 2026-05-21** (Phase 2 step 3 folded into step 1). Package-level `sync.Mutex` wraps every public function; internal helpers (`ensureCapacity`, `setDisabledLocked`) document the non-locking contract. | ~~🟡~~ |
 | `client/viewbox.go:10–14` | `ViewBox` | Whole struct is a stub. | 🟡 |
-| `graphics/pixmap/pixmap.go:18` | (file) | `// TODO` — pipeline orientation comment, may be vestigial. | ⚪ |
-| `graphics/pixmap/pixmap.go:45` | `NewPixMap` | `image.NewRGBA(...) // TODO: unused` — may be dead allocation now that `convertPixmapPixels` uses NRGBA (commit f1eca00). | ⚪ |
-| `graphics/pixmap/pixmap.go:62–63` | `Draw` | Concurrent `ops.Ops` access concern. The `DrawMu` mutex was added later (`CLAUDE.md`) — verify these TODOs are now stale. | 🟡 |
+| ~~`graphics/pixmap/pixmap.go:18`~~ | ~~(file)~~ | ~~`// TODO` — pipeline orientation comment, may be vestigial.~~ **Resolved 2026-05-21** (Phase 2 step 4). Vestigial — deleted. | ~~⚪~~ |
+| ~~`graphics/pixmap/pixmap.go:45`~~ | ~~`NewPixMap`~~ | ~~`image.NewRGBA(...) // TODO: unused` — may be dead allocation now that `convertPixmapPixels` uses NRGBA (commit f1eca00).~~ **Resolved 2026-05-21** (Phase 2 step 4). Confirmed unread anywhere in `pkg/` or `cmd/`; `Image` field and its allocation deleted. | ~~⚪~~ |
+| ~~`graphics/pixmap/pixmap.go:62–63`~~ | ~~`Draw`~~ | ~~Concurrent `ops.Ops` access concern. The `DrawMu` mutex was added later (`CLAUDE.md`) — verify these TODOs are now stale.~~ **Resolved 2026-05-21** (Phase 2 step 4). `DrawMu` renamed `OpsMu` and extended to cover the FrameEvent block (`event.Op` + drain + `e.Frame`), so every `c.Ops` access is serialized. | ~~🟡~~ |
 
 ### 4.5 Lower-priority verification TODOs
 
@@ -316,8 +316,15 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
    `setDisabledLocked`) document their non-locking contract so the
    non-reentrant `sync.Mutex` doesn't deadlock when `Stop` → `setDisabledLocked`
    under the same lock.
-4. Resolve the pixmap concurrency TODOs (`pixmap.go:62–63`) — confirm `DrawMu`
-   coverage and delete stale markers.
+4. ~~Resolve the pixmap concurrency TODOs (`pixmap.go:62–63`) — confirm `DrawMu`
+   coverage and delete stale markers.~~ **Done 2026-05-21.** `DrawMu` renamed to
+   `OpsMu` (it now guards more than `PixMap.Draw`) and its critical section
+   extended in `gameshell.go`'s `FrameEvent` case to cover `event.Op(&c.Ops, c)`,
+   the `e.Source.Event(...)` drain, and `e.Frame(&c.Ops)`. The dead
+   `PixMap.Image *image.RGBA` field and its allocation were also removed.
+   Verification: `go build ./...` clean; `go test ./... -race` passes
+   (no pixmap tests exercise the path; runtime smoke-test of the title
+   screen deferred — sandbox has no display server).
 
    Note: Client-side input fields (`MouseX/Y`, `MouseButton`, `MouseClick*`,
    `ActionKey`, `KeyQueue`, `KeyQueueReadPos/WritePos`, `IdleCycles`) are
