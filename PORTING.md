@@ -83,9 +83,9 @@ Severity legend:
 | Java source | Expected Go location | Severity | Notes |
 |---|---|---|---|
 | ~~`jagex2/io/ClientStream.java` (182 lines)~~ | ~~`pkg/jagex2/io/clientstream/clientstream.go`~~ | ~~🔴~~ | ~~TCP socket wrapper with buffered writer goroutine. Required by login and every in-game packet. See §5.1.~~ **Ported 2026-05-21.** |
-| `jagex2/datastruct/HashTable.java` (47 lines) | `pkg/jagex2/datastruct/hashtable/hashtable.go` | 🟡 | Hash bucket used by several config/entity systems. Currently unported; absence may be masked by callers that haven't been ported either. |
+| ~~`jagex2/datastruct/HashTable.java` (47 lines)~~ | ~~`pkg/jagex2/datastruct/hashtable/hashtable.go`~~ | ~~🟡~~ | ~~Hash bucket used by several config/entity systems. Currently unported; absence may be masked by callers that haven't been ported either.~~ **Ported 2026-05-21** in `e616bf8`. Faithful port + `Linkable` struct + 7 tests. Caller audit: the only Java call site is `LruCache.java:15`; the Go `LruCache` already uses the built-in `map[int64]T`, so the new package is currently unused — kept for completeness and any future literal-port callers. |
 | ~~`sign/signlink.java` `opensocket` (lines 279–291)~~ | ~~`pkg/sign/signlink/signlink.go` (in `Run()` loop + new `OpenSocket` func)~~ | ~~🔴~~ | ~~Function entirely stubbed (line 215 `// TODO: OpenSocket`). See §5.2.~~ **Ported 2026-05-21.** Direct `net.DialTimeout` (skipped the polling pattern); `SocketReq` global and `Run()` branch removed. |
-| `jagex2/client/ViewBox.java` | `pkg/jagex2/client/viewbox.go` (14 lines, empty) | 🟡 | Stub struct only. AWT-derived; may be replaceable by a tiny Gio adapter rather than a literal port. |
+| ~~`jagex2/client/ViewBox.java`~~ | ~~`pkg/jagex2/client/viewbox.go` (14 lines, empty)~~ | ~~🟡~~ | ~~Stub struct only. AWT-derived; may be replaceable by a tiny Gio adapter rather than a literal port.~~ **Decided 2026-05-21** in `4ef21b6`: skip literal port. Java `ViewBox extends java.awt.Frame` exists only for AWT window-chrome plumbing — all three responsibilities (window creation, `(4, 24)` chrome translation, paint forwarding) are already handled inline by Gio's `app.Window` in `gameshell.go`. Stub retained only as a non-nil sentinel for the `Client.Frame != nil` check at `client.go:2235` (gates the `::clientdrop` debug command). Future cleanup TODO documented in-file. |
 
 Note: `deob/client.java` (10,643 lines) and `deob/ObfuscatedName.java` are
 **not missing** — the deobfuscated client moved into `pkg/jagex2/client/client.go`
@@ -193,14 +193,22 @@ that was a false alarm):
 - 🟡 `OpenURL` returns `[]byte` instead of a streaming reader. Acceptable as a
   simplification, but callers in `client.go` may need adjusting if any stream
   the bytes lazily.
-- 🟡 Spin-waits in `CacheLoad`, `CacheSave`, `OpenURL` (`for X != "" { time.Sleep(...) }`)
+- ~~🟡 Spin-waits in `CacheLoad`, `CacheSave`, `OpenURL` (`for X != "" { time.Sleep(...) }`)
   are functionally correct under the single-polling-goroutine model but
   unprotected by any memory-barrier primitive. A small `sync.Mutex` or
   channel-based request/response pattern would be more correct; this is
-  worth doing once but doesn't block any single feature.
-- ⚪ `// TODO: synchronized` markers correspond to Java's `synchronized`
+  worth doing once but doesn't block any single feature.~~ **Done 2026-05-21**
+  in `031341b`. Replaced with `sync.Cond` (line-by-line closer to Java's
+  `synchronized` + `notify` than channels) plus an outer `slotMu` to
+  serialize callers per slot (needed because Go's `sync.Cond.Wait` drops the
+  underlying mutex, unlike Java's monitor which retains it across `wait()`).
+  Concurrent stress test (`signlink_stress_test.go`, 7 goroutines × 100 iters)
+  added in `15d4678`. `go test -race ./...` clean.
+- ~~⚪ `// TODO: synchronized` markers correspond to Java's `synchronized`
   methods. Most are redundant because the polling goroutine is the only
-  writer; document this and remove the markers where applicable.
+  writer; document this and remove the markers where applicable.~~ **No-op
+  2026-05-21**: zero `// TODO: synchronized` markers exist in `signlink.go`
+  (Track 4 agent grepped to verify).
 
 ## 5. Execution Plan
 
@@ -342,27 +350,40 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
 
 ### Phase 4 — Missing utility types
 
-1. Port `jagex2/datastruct/HashTable.java` → `pkg/jagex2/datastruct/hashtable/`.
+1. ~~Port `jagex2/datastruct/HashTable.java` → `pkg/jagex2/datastruct/hashtable/`.
    Audit callers in `client.go` and config types; some may currently use the
-   Go built-in `map` where Java used `HashTable` and need updating.
-2. Decide whether `ViewBox` is worth a literal port or whether it can be
+   Go built-in `map` where Java used `HashTable` and need updating.~~
+   **Done 2026-05-21** in `e616bf8` + `223b68c`. Faithful port + `Linkable`
+   struct + 7 tests. Caller audit: only Java call site is `LruCache.java:15`;
+   Go `LruCache` already uses built-in `map`, so the new package has no
+   production callers yet. Future literal-port callers can import it.
+2. ~~Decide whether `ViewBox` is worth a literal port or whether it can be
    replaced by a Gio-native equivalent (the Java version is AWT-derived).
-   Document the decision inline.
+   Document the decision inline.~~ **Decided 2026-05-21** in `4ef21b6`:
+   Gio-native (skip literal port). Inline rationale documented in
+   `viewbox.go`. Stub retained as a non-nil sentinel for one debug-command
+   gate. **Phase 4 complete.**
 
 ### Phase 5 — Error reporting & cleanup
 
 1. Implement `DrawError` (`client.go:8079`).
 2. Sweep `// TODO: try/catch` markers: convert to idiomatic Go errors at
    boundaries, delete the rest with a one-line comment per Java site.
-3. Strip applet-only TODOs (`signlink.openurl for applets`, `GetParameter`,
+3. ~~Strip applet-only TODOs (`signlink.openurl for applets`, `GetParameter`,
    `signlink.mainapp` checks) and document in code comments why they don't
-   apply.
+   apply.~~ **Done 2026-05-21** in `fbe31bf`. Three sites in `client.go`
+   (OpenURL applet-branch comment, Load goroutine launch, commented-out
+   `GetParameter`). Other applet-only sites (`GetHost`, `OpenSocket`,
+   `GetCodeBase`) already had clean documentation from Phase 1.
 4. Work through §4.5 verification TODOs in batches by package.
 
 ### Phase 6 — Hardening
 
-1. Spin-wait → channel/mutex conversion in `signlink`.
-2. Race-detector run: `go test -race ./...`.
+1. ~~Spin-wait → channel/mutex conversion in `signlink`.~~ **Done 2026-05-21**
+   in `031341b` — `sync.Cond` + `slotMu`. See §4.6 for details.
+2. ~~Race-detector run: `go test -race ./...`.~~ **Done 2026-05-21** — clean
+   across all packages including the new `signlink_stress_test.go` (7
+   goroutines × 100 iters).
 3. Optional: add Java-side cross-check tests for any complex algorithm
    (model rendering, bzip2, ISAAC) that already has TODOs flagged.
 
