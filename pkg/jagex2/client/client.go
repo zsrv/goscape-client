@@ -5325,8 +5325,9 @@ func (c *Client) Load() {
 	if !LowMemory {
 		c.StartMidiThread = true
 		c.MidiThreadActive = true
-		//c.startthread(this, 2) // TODO: this.startthread
-		go c.Run() // TODO: this.startthread?
+		// Java: this.startThread(this, 2) — Thread.start() + setPriority. Go uses
+		// `go c.Run()`; priority hint has no Go equivalent and is dropped.
+		go c.Run()
 		c.SetMidi(12345678, "scape_main", 40000)
 	}
 
@@ -6064,7 +6065,7 @@ func (c *Client) ShowContextMenu() {
 }
 
 func (c *Client) OpenURL(arg0 string) (*bytes.Reader, error) {
-	// TODO: signlink.openurl for applets not included
+	// Go client is standalone; the Java applet branch (signlink.openurl) is intentionally absent.
 	resp, err := http.Get(c.GetCodeBase() + "/" + arg0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open url: %w", err)
@@ -7810,7 +7811,7 @@ func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
 	}
 }
 
-//func (c *Client) GetParameter(arg0 string) string {} // TODO: signlink.mainapp
+// GetParameter (applet HTML <param>) intentionally not ported: Go client takes config from CLI args / clientextras.
 
 func (c *Client) TryReconnect() {
 	if c.IdleTimeout > 0 {
