@@ -3043,7 +3043,28 @@ func (c *Client) GetNpcPos(arg0 *io.Packet, psize int) {
 	}
 }
 
-// TODO: startThread
+// Decision: startThread is NOT being ported as a method. Java's
+// startThread(Runnable, int) (deob/client.java:3611-3618) is a thin
+// dispatcher: when running as an Applet (signlink.mainapp == null) it
+// delegates to Applet.startThread(Runnable, int) — which under the hood
+// calls `new Thread(runnable).start()` plus `setPriority(arg1)` — and
+// when running under the signed-applet bridge it forwards to
+// signlink.startthread which does the same thing inside the signed jar.
+//
+// The Go translation uses goroutines directly at every call site:
+//   - client.go ~3093: `go c.Run()` for the flames thread
+//     (Java: `this.startThread(this, 2)` at deob/client.java:3685)
+//   - client.go ~5338: `go c.Run()` for the MIDI loader thread
+//     (Java: `this.startThread(this, 2)` at deob/client.java:5952)
+//   - pkg/jagex2/io/clientstream NewClientStream: `go cs.readRun()`
+//     (Java: `shell.startThread(this, 2)` from ClientStream's ctor)
+//
+// Go has no thread-priority concept, so the priority argument (always 2
+// in client.java; sometimes other values elsewhere) is silently dropped.
+// The Go scheduler is preemptive and the loops involved are not CPU-bound
+// enough for the dropped priority hint to matter in practice.
+//
+// Java source: deob/client.java:3611-3618.
 
 func (c *Client) LoadTitleImages() {
 	c.ImageTitleBox = pix8.NewPix8(c.JagTitle, "titlebox", 0)
