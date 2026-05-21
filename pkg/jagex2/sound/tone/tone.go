@@ -176,13 +176,9 @@ func (t *Tone) Generate(samples, length int) []int {
 	}
 
 	for sample := range samples {
-		if Buffer[sample] < -32768 {
-			Buffer[sample] = -32768
-		}
+		Buffer[sample] = max(Buffer[sample], -32768)
 
-		if Buffer[sample] > 32767 {
-			Buffer[sample] = 32767
-		}
+		Buffer[sample] = min(Buffer[sample], 32767)
 	}
 
 	return Buffer

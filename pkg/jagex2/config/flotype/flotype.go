@@ -79,16 +79,12 @@ func (f *FloType) SetColour(arg1 int) {
 	if var22 < var3 {
 		var9 = var22
 	}
-	if var7 < var9 {
-		var9 = var7
-	}
+	var9 = min(var7, var9)
 	var11 := var3
 	if var22 > var3 {
 		var11 = var22
 	}
-	if var7 > var11 {
-		var11 = var7
-	}
+	var11 = max(var7, var11)
 	var13 := float64(0.0)
 	var15 := float64(0.0)
 	var17 := float64((var9 + var11) / 2.0)
@@ -126,9 +122,7 @@ func (f *FloType) SetColour(arg1 int) {
 	} else {
 		f.Luminance = int(var17 * var15 * 512.0)
 	}
-	if f.Luminance < 1 {
-		f.Luminance = 1
-	}
+	f.Luminance = max(f.Luminance, 1)
 	f.Chroma = int(var13 * float64(f.Luminance))
 	var19 := f.Hue + int((rand.Float64()*16.0)-8)
 	if var19 < 0 {

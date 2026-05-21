@@ -226,9 +226,7 @@ func (cs *ClientStream) ReadFully(arg0 []byte, arg1, arg2 int) error {
 		} else {
 			chunk = readBufSize - cs.rLen
 		}
-		if chunk > arg2 {
-			chunk = arg2
-		}
+		chunk = min(chunk, arg2)
 		copy(arg0[arg1:arg1+chunk], cs.rbuf[cs.rLen:cs.rLen+chunk])
 		cs.rLen = (cs.rLen + chunk) % readBufSize
 		arg1 += chunk

@@ -338,13 +338,9 @@ func Decompress(s *bzip2state.BZip2State) {
 				minLen := byte(32)
 				maxLen := byte(0)
 				for i := range alphaSize {
-					if s.Len[t][i] > maxLen {
-						maxLen = s.Len[t][i]
-					}
+					maxLen = max(s.Len[t][i], maxLen)
 
-					if s.Len[t][i] < minLen {
-						minLen = s.Len[t][i]
-					}
+					minLen = min(s.Len[t][i], minLen)
 				}
 
 				CreateDecodeTables(s.Limit[t], s.Base[t], s.Perm[t], s.Len[t], int(minLen), int(maxLen), alphaSize)
