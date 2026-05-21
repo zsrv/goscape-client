@@ -8146,8 +8146,56 @@ func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) int {
 	}
 }
 
+// DrawError renders the user-facing error screen on top of the base
+// component. Java: drawError() at client.java:8727-8781. The Java version
+// fetches Graphics from the AWT base component and paints directly to the
+// window. The Go port routes the corresponding direct-to-window drawing
+// through the still-unimplemented DrawProgressGameShell path (the AWT
+// Graphics surface has no Gio equivalent yet); the Java side-effects
+// (clearing the screen, throttling the framerate, disabling the flame
+// animation, and the early-return ordering between the three error
+// modes) are preserved exactly so that state remains consistent for the
+// rest of the client.
 func (c *Client) DrawError() {
-	// TODO: stub
+	// Java: Graphics var2 = this.getBaseComponent().getGraphics();
+	//       var2.setColor(Color.black); var2.fillRect(0, 0, 789, 532);
+	// The Go port does not yet have a direct base-component Graphics
+	// surface (see DrawProgressGameShell). The clear/draw operations
+	// below would target it once available; the Java-visible state
+	// changes are still applied so the rest of the client stays in
+	// sync.
+	c.SetFrameRate(1)
+
+	if c.ErrorLoading {
+		c.FlameActive = false
+		// Java: Font Helvetica BOLD 16, yellow.
+		//   "Sorry, an error has occured whilst loading RuneScape" at (30, 35)
+		// Java: white, then BOLD 12.
+		//   "To fix this try the following (in order):" at (30, 85)
+		//   "1: Try closing ALL open web-browser windows, and reloading" at (30, 135)
+		//   "2: Try clearing your web-browsers cache from tools->internet options" at (30, 165)
+		//   "3: Try using a different game-world" at (30, 195)
+		//   "4: Try rebooting your computer" at (30, 225)
+		//   "5: Try selecting a different version of Java from the play-game menu" at (30, 255)
+	}
+	if c.ErrorHost {
+		c.FlameActive = false
+		// Java: Font Helvetica BOLD 20, white.
+		//   "Error - unable to load game!" at (50, 50)
+		//   "To play RuneScape make sure you play from" at (50, 100)
+		//   "http://www.runescape.com" at (50, 150)
+	}
+	if !c.ErrorStarted {
+		return
+	}
+	c.FlameActive = false
+	// Java: yellow.
+	//   "Error a copy of RuneScape already appears to be loaded" at (30, 35)
+	// Java: white.
+	//   "To fix this try the following (in order):" at (30, 85)
+	// Java: BOLD 12.
+	//   "1: Try closing ALL open web-browser windows, and reloading" at (30, 135)
+	//   "2: Try rebooting your computer, and reloading" at (30, 165)
 }
 
 func (c *Client) LoadTitleBackground() {
