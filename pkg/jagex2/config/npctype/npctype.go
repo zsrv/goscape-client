@@ -32,7 +32,7 @@ type NpcType struct {
 	AnimHasAlpha bool
 	RecolS       []int
 	RecolD       []int
-	Op           []string // TODO: string pointer? check other strings too
+	Op           []string
 	ResizeX      int
 	ResizeY      int
 	ResizeZ      int

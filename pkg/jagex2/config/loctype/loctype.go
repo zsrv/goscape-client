@@ -210,7 +210,7 @@ func (loc *LocType) Decode(arg1 *io.Packet) {
 			}
 			loc.Op[var4-30] = arg1.GJStr()
 			if strings.ToLower(loc.Op[var4-30]) == "hidden" {
-				loc.Op[var4-30] = "" // TODO: use string pointer?
+				loc.Op[var4-30] = ""
 			}
 		case 40:
 			var5 := arg1.G1()

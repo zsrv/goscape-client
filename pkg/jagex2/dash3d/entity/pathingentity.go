@@ -150,7 +150,9 @@ func (e *PathingEntity) MoveAlongRoute(arg0 bool, arg1 int) {
 	e.PathRunning[0] = arg0
 }
 
-// Deprecated: TODO: this is overridden by classes extending PathingEntity.. use an interface for this instead, add to teh structs?
+// IsVisible is the default implementation; NpcEntity and PlayerEntity
+// override it. Callers reach it via the PathableEntity interface, which
+// dispatches to the concrete type's method.
 func (e *PathingEntity) IsVisible() bool {
 	return false
 }

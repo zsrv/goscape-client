@@ -179,7 +179,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 							if err != nil {
 								panic(err)
 							}
-							var8.InvSlotSprite[i] = GetImage(arg0, v, var17[0:var14]) // TODO: check slicing logic
+							var8.InvSlotSprite[i] = GetImage(arg0, v, var17[0:var14])
 						}
 					}
 				}
@@ -221,7 +221,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 					if err != nil {
 						panic(err)
 					}
-					var8.Graphic = GetImage(arg0, v, var16[0:var12]) // TODO: check slicing logic
+					var8.Graphic = GetImage(arg0, v, var16[0:var12])
 				}
 				var16 = var4.GJStr()
 				if arg0 != nil && len(var16) > 0 {
@@ -230,7 +230,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 					if err != nil {
 						panic(err)
 					}
-					var8.ActiveGraphic = GetImage(arg0, v, var16[0:var12]) // TODO: check slicing logic
+					var8.ActiveGraphic = GetImage(arg0, v, var16[0:var12])
 				}
 			}
 			if var8.Type == 6 {
