@@ -491,7 +491,7 @@ func NewModel2(arg1 []*Model, arg2 int) *Model {
 				if var7 && var10.FaceLabel != nil {
 					m.FaceLabel[m.FaceCount] = var10.FaceLabel[j]
 				}
-				m.FaceColourC[m.FaceCount] = var10.FaceColour[j]
+				m.FaceColour[m.FaceCount] = var10.FaceColour[j]
 				m.FaceVertexA[m.FaceCount] = m.AddVertex(var10, var10.FaceVertexA[j])
 				m.FaceVertexB[m.FaceCount] = m.AddVertex(var10, var10.FaceVertexB[j])
 				m.FaceVertexC[m.FaceCount] = m.AddVertex(var10, var10.FaceVertexC[j])
