@@ -1451,7 +1451,7 @@ func (c *Client) DrawScene(arg0 int) {
 		if c.CameraModifierEnabled[4] && c.CameraModifierWobbleScale[4]+128 > var2 {
 			var2 = c.CameraModifierWobbleScale[4] + 128
 		}
-		var3 = c.OrbitCameraYaw + c.CameraAnticheatAngle&0x7FF
+		var3 = (c.OrbitCameraYaw + c.CameraAnticheatAngle) & 0x7FF
 		c.OrbitCamera(c.GetHeightMapY(c.CurrentLevel, c.LocalPlayer.X, c.LocalPlayer.Z)-50, c.OrbitCameraX, var3, var2, c.OrbitCameraZ, var2*3+600)
 		CycleLogic2++
 		if CycleLogic2 > 1802 {
