@@ -2156,7 +2156,7 @@ func (c *Client) HandleInputKey() {
 				var7 := 0
 				if c.ShowSocialInput {
 					if var2 >= 32 && var2 <= 132 && len(c.SocialInput) < 80 {
-						c.SocialInput = c.SocialInput + strconv.Itoa(var2)
+						c.SocialInput = c.SocialInput + string(rune(var2))
 						c.RedrawChatback = true
 					}
 					if var2 == 8 && len(c.SocialInput) > 0 {
@@ -2205,7 +2205,7 @@ func (c *Client) HandleInputKey() {
 					}
 				} else if c.ChatbackInputOpen {
 					if var2 >= 48 && var2 <= 57 && len(c.ChatbackInput) < 10 {
-						c.ChatbackInput = c.ChatbackInput + strconv.Itoa(var2)
+						c.ChatbackInput = c.ChatbackInput + string(rune(var2))
 						c.RedrawChatback = true
 					}
 					if var2 == 8 && len(c.ChatbackInput) > 0 {
@@ -2223,7 +2223,7 @@ func (c *Client) HandleInputKey() {
 					}
 				} else if c.ChatInterfaceID == -1 {
 					if var2 >= 32 && var2 <= 122 && len(c.ChatTyped) < 80 {
-						c.ChatTyped = c.ChatTyped + strconv.Itoa(var2)
+						c.ChatTyped = c.ChatTyped + string(rune(var2))
 						c.RedrawChatback = true
 					}
 					if var2 == 8 && len(c.ChatTyped) > 0 {
@@ -2326,7 +2326,7 @@ func (c *Client) HandleInputKey() {
 			}
 		}
 		if len(c.ReportAbuseInput) < 12 {
-			c.ReportAbuseInput = c.ReportAbuseInput + strconv.Itoa(var2)
+			c.ReportAbuseInput = c.ReportAbuseInput + string(rune(var2))
 		}
 	}
 }
@@ -2406,7 +2406,7 @@ func (c *Client) UpdateTitle() {
 					c.TitleLoginField = 1
 				}
 				if var6 {
-					c.Username = c.Username + strconv.Itoa(var5)
+					c.Username = c.Username + string(rune(var5))
 				}
 				if len(c.Username) > 12 {
 					c.Username = c.Username[:12]
@@ -2419,7 +2419,7 @@ func (c *Client) UpdateTitle() {
 					c.TitleLoginField = 0
 				}
 				if var6 {
-					c.Password = c.Password + strconv.Itoa(var5)
+					c.Password = c.Password + string(rune(var5))
 				}
 				if len(c.Password) > 20 {
 					c.Password = c.Password[:20]
