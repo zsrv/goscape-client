@@ -9381,6 +9381,171 @@ func (c *Client) Read() bool {
 		c.PacketType = -1
 		return true
 	}
+	// Java: opcode 254 — multizone flag (client.java:9880-9884)
+	if c.PacketType == 254 {
+		c.InMultizone = c.In.G1()
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 12 — queue wave sound (client.java:9885-9897)
+	if c.PacketType == 12 {
+		var26 := c.In.G2()
+		var4 := c.In.G1()
+		var5 := c.In.G2()
+		if c.WaveEnabled && !LowMemory && c.WaveCount < 50 {
+			c.WaveIDs[c.WaveCount] = var26
+			c.WaveLoops[c.WaveCount] = var4
+			c.WaveDelay[c.WaveCount] = var5 + wave.Delays[var26]
+			c.WaveCount++
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 204 — component model = npc head (client.java:9898-9904)
+	if c.PacketType == 204 {
+		var26 := c.In.G2()
+		var4 := c.In.G2()
+		var33 := npctype.Get(var4)
+		component.Instances[var26].Model = var33.GetHeadModel()
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 7 — scene base coords (client.java:9906-9910)
+	if c.PacketType == 7 {
+		c.BaseX = c.In.G1()
+		c.BaseZ = c.In.G1()
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 103 — recolor component model (client.java:9913-9923)
+	if c.PacketType == 103 {
+		var26 := c.In.G2()
+		var4 := c.In.G2()
+		var5 := c.In.G2()
+		var34 := component.Instances[var26]
+		var43 := var34.Model
+		if var43 != nil {
+			var43.Recolor(var4, var5)
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 32 — privacy chat settings (client.java:9925-9932)
+	if c.PacketType == 32 {
+		c.PublicChatSetting = c.In.G1()
+		c.PrivateChatSetting = c.In.G1()
+		c.TradeChatSetting = c.In.G1()
+		c.RedrawPrivacySettings = true
+		c.RedrawChatback = true
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 195 — open sidebar interface only (client.java:9934-9951)
+	if c.PacketType == 195 {
+		var26 := c.In.G2()
+		c.ResetInterfaceAnimation(var26)
+		if c.ChatInterfaceID != -1 {
+			c.ChatInterfaceID = -1
+			c.RedrawChatback = true
+		}
+		if c.ChatbackInputOpen {
+			c.ChatbackInputOpen = false
+			c.RedrawChatback = true
+		}
+		c.SidebarInterfaceID = var26
+		c.RedrawSidebar = true
+		c.RedrawSideIcons = true
+		c.ViewportInterfaceID = -1
+		c.PressedContinueOption = false
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 14 — open chat interface only (client.java:9953-9966)
+	if c.PacketType == 14 {
+		var26 := c.In.G2()
+		c.ResetInterfaceAnimation(var26)
+		if c.SidebarInterfaceID != -1 {
+			c.SidebarInterfaceID = -1
+			c.RedrawSidebar = true
+			c.RedrawSideIcons = true
+		}
+		c.ChatInterfaceID = var26
+		c.RedrawChatback = true
+		c.ViewportInterfaceID = -1
+		c.PressedContinueOption = false
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 209 — component x/y position (client.java:9968-9976)
+	if c.PacketType == 209 {
+		var26 := c.In.G2()
+		var4 := c.In.G2B()
+		var5 := c.In.G2B()
+		var34 := component.Instances[var26]
+		var34.X = var4
+		var34.Y = var5
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 3 — cutscene camera init (client.java:9978-9991)
+	if c.PacketType == 3 {
+		c.Cutscene = true
+		c.CutsceneSrcLocalTileX = c.In.G1()
+		c.CutsceneSrcLocalTileZ = c.In.G1()
+		c.CutsceneSrcHeight = c.In.G2()
+		c.CutsceneMoveSpeed = c.In.G1()
+		c.CutsceneMoveAcceleration = c.In.G1()
+		if c.CutsceneMoveAcceleration >= 100 {
+			c.CameraX = c.CutsceneSrcLocalTileX*128 + 64
+			c.CameraZ = c.CutsceneSrcLocalTileZ*128 + 64
+			c.CameraY = c.GetHeightMapY(c.CurrentLevel, c.CutsceneSrcLocalTileX, c.CutsceneSrcLocalTileZ) - c.CutsceneSrcHeight
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 135 — clear obj-stacks + reapply spawned locs in 8x8 region (client.java:9993-10011)
+	if c.PacketType == 135 {
+		c.BaseX = c.In.G1()
+		c.BaseZ = c.In.G1()
+		for var26 := c.BaseX; var26 < c.BaseX+8; var26++ {
+			for var4 := c.BaseZ; var4 < c.BaseZ+8; var4++ {
+				if c.LevelObjStacks[c.CurrentLevel][var26][var4] != nil {
+					c.LevelObjStacks[c.CurrentLevel][var26][var4] = nil
+					c.SortObjStacks(var26, var4)
+				}
+			}
+		}
+		for var36 := c.SpawnedLocations.Head(); var36 != nil; var36 = c.SpawnedLocations.Next() {
+			v := var36.Value
+			if v.X >= c.BaseX && v.X < c.BaseX+8 && v.Z >= c.BaseZ && v.Z < c.BaseZ+8 && v.Plane == c.CurrentLevel {
+				c.AddLoc(v.LastAngle, v.X, v.Z, v.Layer, v.LastLocIndex, v.LastShape, v.Plane)
+				var36.Unlink()
+			}
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 132 — scene map land-data inbound (client.java:10013-10031)
+	if c.PacketType == 132 {
+		var26 := c.In.G1()
+		var4 := c.In.G1()
+		var5 := c.In.G2()
+		var6 := c.In.G2()
+		var7 := -1
+		for var8 := range len(c.SceneMapIndex) {
+			if c.SceneMapIndex[var8] == (var26<<8)+var4 {
+				var7 = var8
+			}
+		}
+		if var7 != -1 {
+			if c.SceneMapLandData[var7] == nil || len(c.SceneMapLandData[var7]) != var6 {
+				c.SceneMapLandData[var7] = make([]byte, var6)
+			}
+			c.In.GData(c.PacketSize-6, var5, c.SceneMapLandData[var7])
+		}
+		c.PacketType = -1
+		return true
+	}
 
 	signlink.ReportErrorFunc(fmt.Sprintf("T1 - %d,%d - %d,%d", c.PacketType, c.PacketSize, c.LastPacketType1, c.LastPacketType2))
 	c.Logout()
