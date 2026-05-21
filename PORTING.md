@@ -278,8 +278,17 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
    (7b — chat/PM), `a8aa26f` (7c — NPC/player updates), `d883e57` (7d — zone
    packet group), `7bbf0ab` (7e — pre-zone span), and 7f-i..7f-iv (post-zone
    span). All Java opcodes in `client.java:8810-10348` now have a Go case.
-8. Replace the `GetHost` stub at client.go:4865 with a config-driven host
-   (CLI arg → `clientextras.Host`, falling back to `127.0.0.1`).
+8. ~~Replace the `GetHost` stub at client.go:4865 with a config-driven host
+   (CLI arg → `clientextras.Host`, falling back to `127.0.0.1`).~~
+   **Done 2026-05-21.** `GetHost()` now returns `strings.ToLower(clientextras.Host)`,
+   matching Java's `.toLowerCase()` in both branches of `getHost()`
+   (client.java:5510, 5512). The companion `GetCodeBase()` was also
+   threaded through `clientextras.Host` so the HTTP cache fetch (via
+   `OpenURL`) hits the same server as the game socket — its prior
+   hardcoded `127.0.0.1` would have diverged from any non-localhost
+   `--host` override. CLI usage extended to an optional 5th arg `host`;
+   omitting it keeps the existing `127.0.0.1` default from
+   `clientextras.go:13`. **Phase 1 (networking transport) complete.**
 
 ### Phase 2 — Input wiring (unblocks playable UI)
 

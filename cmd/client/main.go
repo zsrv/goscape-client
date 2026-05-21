@@ -13,8 +13,8 @@ import (
 
 func main() {
 	fmt.Println("RS2 user client - release #" + strconv.Itoa(225))
-	if len(os.Args) != 5 {
-		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members]")
+	if len(os.Args) < 5 || len(os.Args) > 6 {
+		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members], [host]")
 		os.Exit(1)
 	}
 	var err error
@@ -43,8 +43,11 @@ func main() {
 	case "members":
 		client.MembersWorld = true
 	default:
-		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members]")
+		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members], [host]")
 		os.Exit(1)
+	}
+	if len(os.Args) == 6 {
+		clientextras.Host = os.Args[5]
 	}
 
 	// TODO: if initApplication shuts down, shut the network thread down and exit?

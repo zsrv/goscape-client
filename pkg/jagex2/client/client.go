@@ -4869,7 +4869,11 @@ func GetCombatLevelColorTag(arg0 int, arg2 int) string {
 }
 
 func (c *Client) GetHost() string {
-	return "127.0.0.1" // TODO: stub
+	// Java: getHost() (deob/client.java:5508-5513). The applet branch
+	// (signlink.mainapp != null) and the standalone branch both apply
+	// .toLowerCase(); callers (e.g. ::clientdrop, host validation in
+	// startApplication) compare against lowercase literals.
+	return strings.ToLower(clientextras.Host)
 }
 
 func (c *Client) DrawMenu() {
@@ -7018,8 +7022,11 @@ func (c *Client) PushSpotanims() {
 }
 
 func (c *Client) GetCodeBase() string {
-	// TODO: getcodebase signlink - signlink.mainapp
-	return "http://127.0.0.1:" + (strconv.Itoa(clientextras.PortOffset + 8888))
+	// Java: getCodeBase() (deob/client.java:7618-7628) — applet API; we're
+	// always standalone, so synthesize a URL from clientextras.Host +
+	// PortOffset. Used by OpenURL to fetch cache resources from the same
+	// host the game socket connects to.
+	return "http://" + clientextras.Host + ":" + strconv.Itoa(clientextras.PortOffset+8888)
 }
 
 func SetHighMem() {
