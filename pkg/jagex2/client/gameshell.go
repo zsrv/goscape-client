@@ -12,6 +12,8 @@ import (
 	"gioui.org/unit"
 
 	"goscape-client/pkg/jagex2/client/inputtracking"
+	"goscape-client/pkg/jagex2/graphics/bootfont"
+	"goscape-client/pkg/jagex2/graphics/pix2d"
 	"goscape-client/pkg/jagex2/graphics/pixmap"
 )
 
@@ -239,6 +241,23 @@ func (c *Client) PollKey() int {
 //	font = Helvetica BOLD 13; color = white;
 //	drawString(message, (screenWidth - stringWidth(message))/2, screenHeight/2 - 18 + 22);
 func (c *Client) DrawProgressGameShell(message string, percent int) {
+	c.ensureOverlay()
+	c.OverlayPixMap.Bind()
+
+	if c.Refresh {
+		pix2d.FillRect(0, 0, 0x000000, c.ScreenWidth, c.ScreenHeight)
+		c.Refresh = false
+	}
+
+	pix2d.DrawRect(c.ScreenWidth/2-152, 0x8C1111, 34, c.ScreenHeight/2-18, 304)
+	pix2d.FillRect(c.ScreenHeight/2-16, c.ScreenWidth/2-150, 0x8C1111, percent*3, 30)
+	pix2d.FillRect(c.ScreenHeight/2-16, c.ScreenWidth/2-150+percent*3, 0x000000, 300-percent*3, 30)
+
+	textX := (c.ScreenWidth - bootfont.StringWidth(message)) / 2
+	textY := c.ScreenHeight/2 - 18 + 22
+	bootfont.DrawString(c.OverlayPixMap, textX, textY, 0xFFFFFF, message)
+
+	c.OverlayPixMap.Draw(&c.Ops, 0, 0)
 }
 
 // buildInputFilters constructs the per-Client filter list once. Java declared

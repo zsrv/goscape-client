@@ -10122,7 +10122,6 @@ func (c *Client) DrawProgress(message string, percent int) {
 	c.LoadTitle()
 
 	if c.JagTitle == nil {
-		fmt.Println("DrawProgressGameShell called") // debug
 		c.DrawProgressGameShell(message, percent)
 		return
 	}
