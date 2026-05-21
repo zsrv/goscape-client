@@ -134,7 +134,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 				for i := range var10 {
 					var12 = var4.G2()
 					var8.Scripts[i] = make([]int, var12)
-					for j := 0; j < var12; j++ {
+					for j := range var12 {
 						var8.Scripts[i][j] = var4.G2()
 					}
 				}

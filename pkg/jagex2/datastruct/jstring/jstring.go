@@ -56,7 +56,7 @@ func HashCode(s string) int64 {
 	upper := strings.ToUpper(s)
 
 	hash := int64(0)
-	for i := 0; i < len(upper); i++ {
+	for i := range len(upper) {
 		hash = hash*61 + int64(upper[i]) - 32
 		hash = (hash + (hash >> 56)) & 0xFFFFFFFFFFFFFF
 	}
@@ -75,7 +75,7 @@ func FormatName(username string) string {
 	}
 
 	chars := []rune(username)
-	for i := 0; i < len(chars); i++ {
+	for i := range len(chars) {
 		if chars[i] == '_' {
 			chars[i] = ' '
 			if i+1 < len(chars) && chars[i+1] >= 'a' && chars[i+1] <= 'z' {
@@ -97,7 +97,7 @@ func ToSentenceCase(s string) string {
 	length := len(chars)
 
 	capital := true
-	for i := 0; i < length; i++ {
+	for i := range length {
 		c := chars[i]
 
 		if capital && c >= 'a' && c <= 'z' {

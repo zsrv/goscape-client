@@ -469,7 +469,7 @@ func (w *World3D) RemoveLoc1(arg0 *typ.Location) {
 					}
 				}
 				var5.LocSpans = 0
-				for k := 0; k < var5.LocCount; k++ {
+				for k := range var5.LocCount {
 					var5.LocSpans |= var5.LocSpan[k]
 				}
 			}
@@ -1262,7 +1262,7 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 											if var10 != nil {
 												var10.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var10.X-EyeX, var10.Y-EyeY, var10.Z-EyeZ, var10.BitSet)
 											}
-											for i := 0; i < var9.LocCount; i++ {
+											for i := range var9.LocCount {
 												var12 = var9.Locs[i]
 												if var12 != nil {
 													var13 := var12.Model
@@ -1426,7 +1426,7 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 
 									if tile.CheckLocSpans != 0 {
 										draw := true
-										for i := 0; i < tile.LocCount; i++ {
+										for i := range tile.LocCount {
 											if tile.Locs[i].Cycle != Cycle && tile.LocSpan[i]&tile.CheckLocSpans == tile.BlockLocSpans {
 												draw = false
 												break
@@ -1452,7 +1452,7 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 									tile.ContainsLocs = false
 									locBufferSize := 0
 								iterateLocs:
-									for var11 := 0; var11 < locCount; var11++ {
+									for var11 := range locCount {
 										loc := tile.Locs[var11]
 										if loc.Cycle != Cycle {
 											for x := loc.MinSceneTileX; x <= loc.MaxSceneTileX; x++ {
@@ -1511,7 +1511,7 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 										farthestDistance := -50
 										farthestIndex := -1
 
-										for index := 0; index < locBufferSize; index++ {
+										for index := range locBufferSize {
 											loc := LocBuffer[index]
 
 											if loc.Distance > farthestDistance && loc.Cycle != Cycle {

@@ -43,7 +43,7 @@ func init() {
 	for i := 1; i < 2048; i++ {
 		DivTable2[i] = 65536 / i
 	}
-	for i := 0; i < 2048; i++ {
+	for i := range 2048 {
 		SinTable[i] = int(math.Sin(float64(i)*0.0030679615) * 65536.0)
 		CosTable[i] = int(math.Cos(float64(i)*0.0030679615) * 65536.0)
 	}

@@ -47,7 +47,7 @@ func (jf *Jagfile) Load(src []byte) {
 	jf.FileOffset = make([]int, jf.FileCount)
 
 	pos := data.Pos + jf.FileCount*10
-	for i := 0; i < jf.FileCount; i++ {
+	for i := range jf.FileCount {
 		jf.FileHash[i] = data.G4()
 		jf.FileUnpackedSize[i] = data.G3()
 		jf.FilePackedSize[i] = data.G3()
@@ -59,18 +59,18 @@ func (jf *Jagfile) Load(src []byte) {
 func (jf *Jagfile) Read(name string, dst []byte) []byte {
 	hash := int32(0)
 	upper := strings.ToUpper(name)
-	for i := 0; i < len(upper); i++ {
+	for i := range len(upper) {
 		hash = hash*61 + int32(upper[i]) - 32
 	}
 
-	for i := 0; i < jf.FileCount; i++ {
+	for i := range jf.FileCount {
 		if int32(jf.FileHash[i]) == hash {
 			if dst == nil {
 				dst = make([]byte, jf.FileUnpackedSize[i])
 			}
 
 			if jf.Unpacked {
-				for j := 0; j < jf.FileUnpackedSize[i]; j++ {
+				for j := range jf.FileUnpackedSize[i] {
 					dst[j] = jf.Buffer[jf.FileOffset[i]+j]
 				}
 			} else {

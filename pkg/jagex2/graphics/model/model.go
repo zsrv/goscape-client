@@ -889,7 +889,7 @@ func (m *Model) CreateLabelReferences() {
 			m.LabelVertices[i] = make([]int, var2[i])
 			var2[i] = 0
 		}
-		for i := 0; i < m.VertexCount; i++ {
+		for i := range m.VertexCount {
 			var7 := m.VertexLabel[i]
 			m.LabelVertices[var7][var2[var7]] = i
 			var2[var7]++
@@ -911,7 +911,7 @@ func (m *Model) CreateLabelReferences() {
 		m.LabelFaces[i] = make([]int, var2[i])
 		var2[i] = 0
 	}
-	for var6 := 0; var6 < m.FaceCount; var6++ {
+	for var6 := range m.FaceCount {
 		var7 := m.FaceLabel[var6]
 		m.LabelFaces[var7][var2[var7]] = var6
 		var2[var7]++

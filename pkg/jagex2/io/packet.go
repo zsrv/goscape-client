@@ -29,10 +29,10 @@ var (
 )
 
 func init() {
-	for b := 0; b < 256; b++ {
+	for b := range 256 {
 		remainder := b
 
-		for bit := 0; bit < 8; bit++ {
+		for range 8 {
 			if remainder&0x1 == 1 {
 				remainder = (remainder >> 1) ^ 0xEDB88320
 			} else {
