@@ -8667,8 +8667,78 @@ func (c *Client) DrawChatback() {
 }
 
 func (c *Client) Read() bool {
-	// TODO: stub - c.stream
-	return false
+	if c.Stream == nil {
+		return false
+	}
+	// Java: read() (client.java:9316-10384). Step 7a ports framing + history
+	// shift + catch-all only; per-opcode dispatch lands in subtasks 7b-7f.
+	// Java's catch (IOException) → tryReconnect collapses into a per-call
+	// err check here; Java's catch (Exception) → logout hex-dump path is
+	// deferred until dispatch exists to actually throw.
+	var2, err := c.Stream.Available()
+	if err != nil {
+		c.TryReconnect()
+		return true
+	}
+	if var2 == 0 {
+		return false
+	}
+	if c.PacketType == -1 {
+		if err := c.Stream.ReadFully(c.In.Data, 0, 1); err != nil {
+			c.TryReconnect()
+			return true
+		}
+		c.PacketType = int(c.In.Data[0]) & 0xFF
+		if c.RandomIn != nil {
+			// Parens preserve Java precedence: `a - b & 0xFF` is `(a-b) & 0xFF`
+			// in Java, but `a - (b & 0xFF)` in Go.
+			c.PacketType = (c.PacketType - int(c.RandomIn.TakeNextValue())) & 0xFF
+		}
+		c.PacketSize = io.SERVERPROT_SIZES[c.PacketType]
+		var2--
+	}
+	if c.PacketSize == -1 {
+		if var2 <= 0 {
+			return false
+		}
+		if err := c.Stream.ReadFully(c.In.Data, 0, 1); err != nil {
+			c.TryReconnect()
+			return true
+		}
+		c.PacketSize = int(c.In.Data[0]) & 0xFF
+		var2--
+	}
+	if c.PacketSize == -2 {
+		if var2 <= 1 {
+			return false
+		}
+		if err := c.Stream.ReadFully(c.In.Data, 0, 2); err != nil {
+			c.TryReconnect()
+			return true
+		}
+		c.In.Pos = 0
+		c.PacketSize = c.In.G2()
+		var2 -= 2
+	}
+	if var2 < c.PacketSize {
+		return false
+	}
+	c.In.Pos = 0
+	if err := c.Stream.ReadFully(c.In.Data, 0, c.PacketSize); err != nil {
+		c.TryReconnect()
+		return true
+	}
+	c.IdleNetCycles = 0
+	c.LastPacketType2 = c.LastPacketType1
+	c.LastPacketType1 = c.LastPacketType0
+	c.LastPacketType0 = c.PacketType
+
+	// TODO: opcode dispatch — Java client.java:9363-10370 (subtasks 7b-7f).
+	// Until cases land, every framed packet hits Java's catch-all at
+	// client.java:10371-10372.
+	signlink.ReportErrorFunc(fmt.Sprintf("T1 - %d,%d - %d,%d", c.PacketType, c.PacketSize, c.LastPacketType1, c.LastPacketType2))
+	c.Logout()
+	return true
 }
 
 func (c *Client) DrawSidebar() {
