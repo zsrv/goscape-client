@@ -138,9 +138,7 @@ func (c *Client) RunGameShell() {
 		} else if var1 > c.OTim[var3] {
 			var4 = int(int64(c.DelTime*2560) / (var1 - c.OTim[var3]))
 		}
-		if var4 < 25 {
-			var4 = 25
-		}
+		var4 = max(var4, 25)
 		if var4 > 256 {
 			var4 = 256
 			var5 = int(int64(c.DelTime) - (var1-c.OTim[var3])/10)
@@ -154,9 +152,7 @@ func (c *Client) RunGameShell() {
 				}
 			}
 		}
-		if var5 < c.MinDel {
-			var5 = c.MinDel
-		}
+		var5 = max(var5, c.MinDel)
 		time.Sleep(time.Duration(var5) * time.Millisecond)
 		for var6 < 256 {
 			c.Update()

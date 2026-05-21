@@ -93,9 +93,7 @@ func MousePressed(arg0, arg1, arg2 int) {
 	TrackedCount++
 	var4 := time.Now().UnixMilli()
 	var6 := (var4 - LastTime) / 10
-	if var6 > 250 {
-		var6 = 250
-	}
+	var6 = min(var6, 250)
 	LastTime = var4
 	EnsureCapacity(5)
 	if arg1 == 1 {
@@ -116,9 +114,7 @@ func MouseReleased(arg0 int) {
 	TrackedCount++
 	var2 := time.Now().UnixMilli()
 	var4 := (var2 - LastTime) / 10
-	if var4 > 250 {
-		var4 = 250
-	}
+	var4 = min(var4, 250)
 	LastTime = var2
 	EnsureCapacity(2)
 	if arg0 == 1 {
@@ -142,9 +138,7 @@ func MouseMoved(arg0, arg2 int) {
 	LastMoveTime = var3
 	TrackedCount++
 	var5 := (var3 - LastTime) / 10
-	if var5 > 250 {
-		var5 = 250
-	}
+	var5 = min(var5, 250)
 	LastTime = var3
 	if arg2-LastX < 8 && arg2-LastX >= -8 && arg0-LastY < 8 && arg0-LastY >= -8 {
 		EnsureCapacity(3)
@@ -176,9 +170,7 @@ func KeyPressed(arg0 int) {
 	TrackedCount++
 	var2 := time.Now().UnixMilli()
 	var4 := (var2 - LastTime) / 10
-	if var4 > 250 {
-		var4 = 250
-	}
+	var4 = min(var4, 250)
 	LastTime = var2
 	if arg0 == 1000 {
 		arg0 = 11
@@ -210,9 +202,7 @@ func KeyReleased(arg0 int) {
 	TrackedCount++
 	var2 := time.Now().UnixMilli()
 	var4 := (var2 - LastTime) / 10
-	if var4 > 250 {
-		var4 = 250
-	}
+	var4 = min(var4, 250)
 	LastTime = var2
 	if arg0 == 1000 {
 		arg0 = 11
@@ -244,9 +234,7 @@ func FocusGained() {
 	TrackedCount++
 	var1 := time.Now().UnixMilli()
 	var3 := (var1 - LastTime) / 10
-	if var3 > 250 {
-		var3 = 250
-	}
+	var3 = min(var3, 250)
 	LastTime = var1
 	EnsureCapacity(2)
 	OutBuffer.P1(10)
@@ -262,9 +250,7 @@ func FocusLost() {
 	TrackedCount++
 	var1 := time.Now().UnixMilli()
 	var3 := (var1 - LastTime) / 10
-	if var3 > 250 {
-		var3 = 250
-	}
+	var3 = min(var3, 250)
 	LastTime = var1
 	EnsureCapacity(2)
 	OutBuffer.P1(11)
@@ -280,9 +266,7 @@ func MouseEntered() {
 	TrackedCount++
 	var1 := time.Now().UnixMilli()
 	var3 := (var1 - LastTime) / 10
-	if var3 > 250 {
-		var3 = 250
-	}
+	var3 = min(var3, 250)
 	LastTime = var1
 	EnsureCapacity(2)
 	OutBuffer.P1(12)
@@ -298,9 +282,7 @@ func MouseExited() {
 	TrackedCount++
 	var1 := time.Now().UnixMilli()
 	var3 := (var1 - LastTime) / 10
-	if var3 > 250 {
-		var3 = 250
-	}
+	var3 = min(var3, 250)
 	LastTime = var1
 	EnsureCapacity(2)
 	OutBuffer.P1(13)
