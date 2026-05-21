@@ -8,7 +8,28 @@ import (
 	"goscape-client/pkg/jagex2/io"
 )
 
+// CHAR_LOOKUP maps a Latin-1 codepoint (0..255) to a glyph table index.
+// Index 94 is the "no glyph" sentinel; index 74 is the catch-all/default
+// (the space glyph in the alphabet below). Mirrors Java PixFont.CHAR_LOOKUP
+// (PixFont.java:39, init at :381-390).
+//
+// Java's `arg1.charAt(i)` walks UTF-16 code units, so a char like '£'
+// (U+00A3) is one lookup against this table. The Go port previously
+// byte-indexed CHAR_LOOKUP[s[i]], which only works when `s` is invalid UTF-8
+// (one byte per char, our previous wire-decoded shape). After GJStr now
+// returns valid UTF-8, callers must iterate runes — see GlyphIndex below.
 var CHAR_LOOKUP []int = make([]int, 256)
+
+// GlyphIndex returns CHAR_LOOKUP[r] for code points in 0..255, and the
+// catch-all sentinel (74, same as any other unmapped char in Java) for
+// code points outside Latin-1. Use this everywhere a Java caller wrote
+// `CHAR_LOOKUP[arg1.charAt(i)]`.
+func GlyphIndex(r rune) int {
+	if r >= 0 && r < 256 {
+		return CHAR_LOOKUP[r]
+	}
+	return 74
+}
 
 type PixFont struct {
 	CharMask       [][]byte
@@ -121,31 +142,47 @@ func (p *PixFont) DrawStringTaggableCenter(arg0 int, arg1 int, arg2 bool, arg3 i
 	p.DrawStringTaggable(arg0-p.StringWidth(arg4)/2, arg3, arg4, arg2, arg1)
 }
 
+// StringWidth returns the rendered pixel width of arg1. Java walks code
+// units via `arg1.charAt(var4)` (PixFont.java:115-122), so we walk runes
+// here — byte-indexing a Go (UTF-8) string would mis-handle '£' and any
+// other Latin-1 char produced by GJStr after the wire→UTF-8 transcode.
 func (p *PixFont) StringWidth(arg1 string) int {
 	if arg1 == "" {
 		return 0
 	}
+	runes := []rune(arg1)
 	var3 := 0
 	// `for i := 0; i < N; i++` (not `range len(...)`): the `i += 4` below must
 	// advance the loop counter to skip a `@xxx@` tag; range-over-int rebinds
 	// i each iteration and would silently drop the skip.
-	for i := 0; i < len(arg1); i++ {
-		if arg1[i] == '@' && i+4 < len(arg1) && arg1[i+4] == '@' {
+	for i := 0; i < len(runes); i++ {
+		if runes[i] == '@' && i+4 < len(runes) && runes[i+4] == '@' {
 			i += 4
 		} else {
-			var3 += p.DrawWidth[arg1[i]]
+			// DrawWidth is 256 wide, keyed by Latin-1 codepoint. Map any
+			// out-of-range rune to a safe fallback (same fallback CHAR_LOOKUP
+			// uses for unmapped chars — codepoint 0, which lands on glyph 74,
+			// the catch-all space-ish width).
+			r := runes[i]
+			if r < 0 || r >= 256 {
+				r = 0
+			}
+			var3 += p.DrawWidth[r]
 		}
 	}
 	return var3
 }
 
+// DrawString renders arg4 at (arg0, arg1) in arg3. Java walks code units via
+// `arg4.charAt(var6)` (PixFont.java:131); the Go port walks runes for the
+// same reason as StringWidth.
 func (p *PixFont) DrawString(arg0 int, arg1 int, arg3 int, arg4 string) {
 	if arg4 == "" {
 		return
 	}
 	var8 := arg1 - p.Height
-	for i := range len(arg4) {
-		var7 := CHAR_LOOKUP[arg4[i]]
+	for _, r := range arg4 {
+		var7 := GlyphIndex(r)
 		if var7 != 94 {
 			p.DrawChar(p.CharMask[var7], arg0+p.CharOffsetX[var7], var8+p.CharOffsetY[var7], p.CharMaskWidth[var7], p.CharMaskHeight[var7], arg3)
 		}
@@ -153,33 +190,44 @@ func (p *PixFont) DrawString(arg0 int, arg1 int, arg3 int, arg4 string) {
 	}
 }
 
+// DrawCenteredWave renders arg5 with a sinusoidal vertical offset. The
+// `var7` index in Java (PixFont.java:148) is the char-position into the
+// string; in Go we iterate rune-by-rune and use the rune ordinal so the
+// wave phase matches Java even when the input contains multi-byte chars.
 func (p *PixFont) DrawCenteredWave(arg0 int, arg2 int, arg3 int, arg4 int, arg5 string) {
 	if arg5 == "" {
 		return
 	}
 	arg2 -= p.StringWidth(arg5) / 2
 	var9 := arg3 - p.Height
-	for i := range len(arg5) {
-		var8 := CHAR_LOOKUP[arg5[i]]
+	i := 0
+	for _, r := range arg5 {
+		var8 := GlyphIndex(r)
 		if var8 != 94 {
 			p.DrawChar(p.CharMask[var8], arg2+p.CharOffsetX[var8], var9+p.CharOffsetY[var8]+int(math.Sin(float64(i)/20+float64(arg0)/5.0)*5.0), p.CharMaskWidth[var8], p.CharMaskHeight[var8], arg4)
 		}
 		arg2 += p.CharAdvance[var8]
+		i++
 	}
 }
 
+// DrawStringTaggable renders arg3, interpreting `@xxx@` 3-char tag sequences
+// as color escapes (PixFont.java:158-178). Java walks code units; the Go port
+// walks runes via a []rune so the i+4 lookahead matches Java exactly when
+// the string contains non-ASCII chars like '£'.
 func (p *PixFont) DrawStringTaggable(arg0 int, arg2 int, arg3 string, arg4 bool, arg5 int) {
 	if arg3 == "" {
 		return
 	}
+	runes := []rune(arg3)
 	var9 := arg2 - p.Height
 	// C-style loop required: `i += 4` below must skip a `@xxx@` tag.
-	for i := 0; i < len(arg3); i++ {
-		if arg3[i] == '@' && i+4 < len(arg3) && arg3[i+4] == '@' {
-			arg5 = p.EvaluateTag(arg3[i+1 : i+4])
+	for i := 0; i < len(runes); i++ {
+		if runes[i] == '@' && i+4 < len(runes) && runes[i+4] == '@' {
+			arg5 = p.EvaluateTag(string(runes[i+1 : i+4]))
 			i += 4
 		} else {
-			var8 := CHAR_LOOKUP[arg3[i]]
+			var8 := GlyphIndex(runes[i])
 			if var8 != 94 {
 				if arg4 {
 					p.DrawChar(p.CharMask[var8], arg0+p.CharOffsetX[var8]+1, var9+p.CharOffsetY[var8]+1, p.CharMaskWidth[var8], p.CharMaskHeight[var8], 0)
@@ -191,6 +239,9 @@ func (p *PixFont) DrawStringTaggable(arg0 int, arg2 int, arg3 string, arg4 bool,
 	}
 }
 
+// DrawStringTooltip renders arg5 with jitter for tooltip popups, supporting
+// `@xxx@` color tags (PixFont.java:181-206). Walks runes; see
+// DrawStringTaggable for the rationale.
 func (p *PixFont) DrawStringTooltip(arg0 int, arg1 bool, arg3 int, arg4 int, arg5 string, arg6 int) {
 	if arg5 == "" {
 		return
@@ -198,13 +249,14 @@ func (p *PixFont) DrawStringTooltip(arg0 int, arg1 bool, arg3 int, arg4 int, arg
 	p.Random = rand.New(rand.NewSource(int64(arg0)))
 	var8 := (p.Random.Int() & 0x1F) + 192
 	var11 := arg3 - p.Height
+	runes := []rune(arg5)
 	// C-style loop required: `i += 4` below must skip a `@xxx@` tag.
-	for i := 0; i < len(arg5); i++ {
-		if arg5[i] == '@' && i+4 < len(arg5) && arg5[i+4] == '@' {
-			arg4 = p.EvaluateTag(arg5[i+1 : i+4])
+	for i := 0; i < len(runes); i++ {
+		if runes[i] == '@' && i+4 < len(runes) && runes[i+4] == '@' {
+			arg4 = p.EvaluateTag(string(runes[i+1 : i+4]))
 			i += 4
 		} else {
-			var10 := CHAR_LOOKUP[arg5[i]]
+			var10 := GlyphIndex(runes[i])
 			if var10 != 94 {
 				if arg1 {
 					p.DrawCharAlpha(p.CharMask[var10], arg6+p.CharOffsetX[var10]+1, p.CharMaskHeight[var10], 0, var11+p.CharOffsetY[var10]+1, 192, p.CharMaskWidth[var10])
