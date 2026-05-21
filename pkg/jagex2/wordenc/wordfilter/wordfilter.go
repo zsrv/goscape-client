@@ -133,25 +133,63 @@ func AllowCharacter(c rune) bool {
 	return c >= ' ' && c <= 127 || c == ' ' || c == '\n' || c == '\t' || c == 163 || c == 8364
 }
 
+// indexOfRunesFrom mirrors Java String.indexOf(String, int) for rune slices:
+// it searches haystack for the first occurrence of needle starting at index
+// from, and returns the haystack index where needle starts (or -1).
+func indexOfRunesFrom(haystack, needle []rune, from int) int {
+	if from < 0 {
+		from = 0
+	}
+	if len(needle) == 0 {
+		if from > len(haystack) {
+			return len(haystack)
+		}
+		return from
+	}
+	last := len(haystack) - len(needle)
+	for i := from; i <= last; i++ {
+		match := true
+		for k := range len(needle) {
+			if haystack[i+k] != needle[k] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return i
+		}
+	}
+	return -1
+}
+
 func Filter(input string) string {
 	outputPre := []rune(input)
 	FilterCharacters(outputPre)
 
 	trimmed := strings.TrimSpace(string(outputPre))
 	output := []rune(strings.ToLower(trimmed))
-	lowercase := strings.ToLower(trimmed)
+	// lowercase mirrors output in rune-index space so positions returned by
+	// indexOfRunesFrom can be used directly to write into output.
+	lowercase := append([]rune(nil), output...)
 
 	FilterTLD(output)
 	FilterBad(output)
 	FilterDomains(output)
 	FilterFragments(output)
 
+	// Java: var6.indexOf(ALLOWLIST[i], var8 + 1) — find needle ALLOWLIST[i]
+	// inside haystack var6 (lowercase) starting at var8+1
+	// (WordFilter.java:152-160).
 	for i := range len(ALLOWLIST) {
+		needle := []rune(ALLOWLIST[i])
 		j := -1
-		for j = strings.Index(ALLOWLIST[i], lowercase[j+1:]); j != -1; {
-			var9 := []rune(ALLOWLIST[i])
-			for k := range len(var9) {
-				output[j+k] = var9[k]
+		for {
+			j = indexOfRunesFrom(lowercase, needle, j+1)
+			if j == -1 {
+				break
+			}
+			for k := range len(needle) {
+				output[j+k] = needle[k]
 			}
 		}
 	}
