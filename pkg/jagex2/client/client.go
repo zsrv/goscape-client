@@ -5379,8 +5379,13 @@ func (c *Client) Load() {
 	if !LowMemory {
 		c.StartMidiThread = true
 		c.MidiThreadActive = true
-		// Java: this.startThread(this, 2) — Thread.start() + setPriority. Go uses
-		// `go c.Run()`; priority hint has no Go equivalent and is dropped.
+		// Java: this.startThread(this, 2) (deob/client.java:5952) —
+		// Thread.start() + setPriority(2) on the client Runnable. Because
+		// StartMidiThread is true and FlamesThread is false here, Client.Run
+		// dispatches to RunMidi (which polls MidiSyncMu-guarded fields every
+		// 50ms). Go has no thread priorities so the priority hint is dropped;
+		// MidiSyncMu (RunMidi:1544 / SetMidi callers) preserves the
+		// `synchronized (midiSync)` contract from the Java side.
 		go c.Run()
 		c.SetMidi(12345678, "scape_main", 40000)
 	}
