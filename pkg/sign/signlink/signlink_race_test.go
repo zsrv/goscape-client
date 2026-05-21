@@ -37,19 +37,20 @@ func TestCacheLoadRace(t *testing.T) {
 	go func() {
 		defer close(pollerDone)
 		for !stop.Load() {
-			// Snapshot LoadReq into a local to avoid torn reads of the
-			// 16-byte string under tight polling; production's 50ms sleep
-			// makes this snapshotting incidental, but the test loops
-			// fast.
+			mu.Lock()
 			req := LoadReq
+			mu.Unlock()
 			if req != "" {
 				p := filepath.Join(dir, req)
+				var buf []byte
 				if _, err := os.Stat(p); err == nil {
-					LoadBuf, _ = os.ReadFile(p)
-				} else {
-					LoadBuf = nil
+					buf, _ = os.ReadFile(p)
 				}
+				mu.Lock()
+				LoadBuf = buf
 				LoadReq = ""
+				cond.Broadcast()
+				mu.Unlock()
 			}
 			time.Sleep(100 * time.Microsecond)
 		}

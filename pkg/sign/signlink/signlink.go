@@ -30,7 +30,32 @@ import (
 // `scape_main.mid`.
 // Java: signlink (sign/signlink.java) — all protocol methods are
 // `static synchronized`, sharing the class monitor.
+//
+// mu also acts as the memory barrier for the protocol fields below
+// (LoadReq/LoadBuf, SaveReq/SaveBuf/SaveLen, URLReq/URLStream,
+// DNSReq/DNS, and the Wave/Midi flag fields). The polling goroutine
+// (Run) and request-submitting goroutines both take this lock when
+// reading or writing those fields. Long I/O operations inside Run
+// release the lock and reacquire it before publishing the result.
 var mu sync.Mutex
+
+// cond signals state transitions on the protocol fields protected by mu.
+// Run.Broadcast()s after clearing a request (LoadReq, SaveReq, URLReq,
+// DNSReq); the corresponding caller (CacheLoad, CacheSave, OpenURL)
+// Wait()s on cond instead of spin-sleeping. This replaces the Java
+// `while (loadreq != null) Thread.sleep(1L)` busy-wait
+// (signlink.java:249-254, 262-267, 271-276, 295-300) with a proper
+// condition-variable handoff that carries a memory barrier.
+var cond = sync.NewCond(&mu)
+
+// slotMu serializes callers contending for the same single-slot request
+// fields (LoadReq, SaveReq, URLReq). cond.Wait() drops mu while the
+// polling goroutine works, so without an outer serializing mutex a
+// second caller could steal the slot after Run clears it but before the
+// original caller wakes, causing the wrong LoadBuf/URLStream to be
+// returned. Java doesn't need this because its `synchronized` methods
+// retain the monitor across `Thread.sleep()`; Go's sync.Cond does not.
+var slotMu sync.Mutex
 
 var (
 	DNSReq        string
@@ -67,66 +92,119 @@ type SignLink struct {
 }
 
 func StartPriv() {
+	mu.Lock()
 	DNSReq = ""
 	LoadReq = ""
 	SaveReq = ""
 	URLReq = ""
+	mu.Unlock()
 	Run()
 }
 
+// Run is the polling goroutine. It owns the I/O side of every request
+// slot: it reads requests under mu, performs the I/O without holding mu
+// (so submissions are not blocked on slow disk/network), then reacquires
+// mu to publish results and clear the request, broadcasting cond so any
+// goroutine waiting in CacheLoad/CacheSave/OpenURL wakes up.
+//
+// Java: signlink.run() (sign/signlink.java:107-178).
 func Run() {
 	var1 := FindCacheDir()
-	UID = GetUID(var1)
+	uid := GetUID(var1)
+	mu.Lock()
+	UID = uid
+	mu.Unlock()
+
 	for {
-		if DNSReq != "" {
-			names, err := net.LookupAddr(DNSReq)
+		mu.Lock()
+		dnsReq := DNSReq
+		loadReq := LoadReq
+		saveReq := SaveReq
+		saveBuf := SaveBuf
+		saveLen := SaveLen
+		wavePlay := WavePlay
+		midiPlay := MidiPlay
+		urlReq := URLReq
+		loopRate := LoopRate
+		mu.Unlock()
+
+		switch {
+		case dnsReq != "":
+			names, err := net.LookupAddr(dnsReq)
+			var resolved string
 			if err != nil || len(names) == 0 {
-				DNS = "unknown"
+				resolved = "unknown"
 			} else {
-				DNS = names[0]
+				resolved = names[0]
 			}
+			mu.Lock()
+			DNS = resolved
 			DNSReq = ""
-		} else if LoadReq != "" {
-			LoadBuf = nil
-			if _, err := os.Stat(path.Join(var1, LoadReq)); err == nil {
-				LoadBuf, err = os.ReadFile(path.Join(var1, LoadReq))
+			cond.Broadcast()
+			mu.Unlock()
+		case loadReq != "":
+			var buf []byte
+			p := path.Join(var1, loadReq)
+			if _, err := os.Stat(p); err == nil {
+				b, err := os.ReadFile(p)
 				if err != nil {
-					fmt.Printf("failed to read file %s: %v\n", path.Join(var1, LoadReq), err)
+					fmt.Printf("failed to read file %s: %v\n", p, err)
+				} else {
+					buf = b
 				}
 			}
+			mu.Lock()
+			LoadBuf = buf
 			LoadReq = ""
-		} else if SaveReq != "" {
-			if SaveBuf != nil {
-				if err := os.WriteFile(path.Join(var1, SaveReq), SaveBuf[0:SaveLen], 0644); err != nil {
-					fmt.Printf("failed to write file %s: %v\n", path.Join(var1, SaveReq), err)
+			cond.Broadcast()
+			mu.Unlock()
+		case saveReq != "":
+			if saveBuf != nil {
+				if err := os.WriteFile(path.Join(var1, saveReq), saveBuf[0:saveLen], 0644); err != nil {
+					fmt.Printf("failed to write file %s: %v\n", path.Join(var1, saveReq), err)
 				}
 			}
-			if WavePlay {
-				Wave = path.Join(var1, SaveReq)
+			waveOut := ""
+			midiOut := ""
+			if wavePlay {
+				waveOut = path.Join(var1, saveReq)
+			}
+			if midiPlay {
+				midiOut = path.Join(var1, saveReq)
+			}
+			mu.Lock()
+			if wavePlay {
+				Wave = waveOut
 				WavePlay = false
 			}
-			if MidiPlay {
-				Midi = path.Join(var1, SaveReq)
+			if midiPlay {
+				Midi = midiOut
 				MidiPlay = false
 			}
 			SaveReq = ""
-		} else if URLReq != "" {
+			cond.Broadcast()
+			mu.Unlock()
+		case urlReq != "":
 			// TODO: extracted from client.getCodeBase() - no applet here
-			resp, err := http.Get("http://127.0.0.1:" + strconv.Itoa(clientextras.PortOffset+8888) + "/" + URLReq)
-			if err != nil {
-				URLStream = nil
-				goto End
+			resp, err := http.Get("http://127.0.0.1:" + strconv.Itoa(clientextras.PortOffset+8888) + "/" + urlReq)
+			var body []byte
+			if err == nil {
+				b, readErr := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				if readErr != nil {
+					fmt.Printf("failed to read response body: %v\n", readErr)
+				} else {
+					body = b
+				}
 			}
-			defer resp.Body.Close()
-			b, err := io.ReadAll(resp.Body)
-			if err != nil {
-				fmt.Printf("failed to read response body: %v\n", err)
-				goto End
-			}
-			URLStream = b
+			mu.Lock()
+			URLStream = body
+			URLReq = ""
+			cond.Broadcast()
+			mu.Unlock()
 		}
-	End:
-		time.Sleep(time.Duration(LoopRate) * time.Millisecond)
+
+		time.Sleep(time.Duration(loopRate) * time.Millisecond)
 	}
 }
 
@@ -193,30 +271,46 @@ func GetHash(arg0 string) int64 {
 	return var1
 }
 
+// CacheLoad submits a LoadReq to the polling goroutine and blocks until
+// Run clears it. The mu/cond pair replaces the Java
+// `while (loadreq != null) Thread.sleep(1L)` busy-wait
+// (signlink.java:249-254) with a condition-variable handoff that also
+// supplies the memory barrier the spin loop lacked.
+//
+// slotMu serializes callers so that exactly one CacheLoad is in flight
+// at a time. Without it, cond.Wait() would drop mu and let a second
+// caller steal the LoadReq slot before the first observed LoadBuf,
+// returning the wrong file's bytes.
 func CacheLoad(arg0 string) []byte {
+	slotMu.Lock()
+	defer slotMu.Unlock()
 	mu.Lock()
 	defer mu.Unlock()
 	LoadReq = strconv.FormatInt(GetHash(arg0), 10)
 	for LoadReq != "" {
-		time.Sleep(1 * time.Millisecond)
+		cond.Wait()
 	}
 	return LoadBuf
 }
 
+// CacheSave is the dual of CacheLoad on the SaveReq slot.
+// Java: signlink.java:258-277.
 func CacheSave(arg0 string, arg1 []byte) {
+	slotMu.Lock()
+	defer slotMu.Unlock()
 	mu.Lock()
 	defer mu.Unlock()
 	if len(arg1) > 2000000 {
 		return
 	}
 	for SaveReq != "" {
-		time.Sleep(1 * time.Millisecond)
+		cond.Wait()
 	}
 	SaveLen = len(arg1)
 	SaveBuf = arg1
 	SaveReq = strconv.FormatInt(GetHash(arg0), 10)
 	for SaveReq != "" {
-		time.Sleep(1 * time.Millisecond)
+		cond.Wait()
 	}
 }
 
@@ -236,15 +330,23 @@ func OpenSocket(port int) (net.Conn, error) {
 	return net.DialTimeout("tcp", net.JoinHostPort(clientextras.Host, strconv.Itoa(port)), dialTimeout)
 }
 
+// OpenURL submits a URLReq to the polling goroutine and waits until Run
+// clears it. See CacheLoad for the mu/cond + slotMu pattern.
+// Java: signlink.java:293-305.
 func OpenURL(arg0 string) ([]byte, error) {
+	slotMu.Lock()
+	defer slotMu.Unlock()
+	mu.Lock()
 	URLReq = arg0
 	for URLReq != "" {
-		time.Sleep(50 * time.Millisecond)
+		cond.Wait()
 	}
-	if URLStream == nil {
+	stream := URLStream
+	mu.Unlock()
+	if stream == nil {
 		return nil, errors.New("could not open: " + arg0)
 	}
-	return URLStream, nil
+	return stream, nil
 }
 
 func DNSLookup(arg0 string) {
