@@ -285,6 +285,10 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 					width = loc.Length
 				}
 
+				// Java: World.java:274-285 — addLoc args are (var15=y, arg2=level, null,
+				// var17=typeCode, arg3=z, arg9=x, var20=length, var18=info, var19=mdl,
+				// var22=yaw, var21=width). The shademap is indexed [level][x+i][z+j] and the
+				// outer loop bound is var20 (length); both match here.
 				if scene.AddLoc1(y, level, nil, typeCode, z, x, length, info, mdl, yaw, width) && loc.Shadow {
 					for dx := 0; dx <= length; dx++ {
 						for dz := 0; dz <= width; dz++ {
@@ -585,6 +589,13 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 				var20 = 65536 / var18
 				var21 = (var17 << 8) / var18
 				var22 = var46 + (var9*var19+var10*var20+var11*var21)/var13
+				// Java: World.java:543 — `(var45[k-1][j] >> 2) + ...`. Java `var45` is `byte[][]`
+				// (int8), so `>>` sign-extends through int. Go's LevelShadeMap is `[][]byte`
+				// (uint8); the shifts here are unsigned. Acceptable: every write to the
+				// shademap stores a non-negative small value (0, 50, or `(byte) var25` with
+				// var25 capped at 30 — see lines 281-283 in Java / 294-295 in Go and the
+				// `levelShademap[...] = 50` writes), so the sign bit is never set and the
+				// two semantics produce identical results.
 				var23 = int((var45[k-1][j] >> 2) + (var45[k+1][j] >> 3) + (var45[k][j-1] >> 2) + (var45[k][j+1] >> 3) + (var45[k][j] >> 1))
 				w.LevelLightMap[k][j] = var22 - var23
 			}
