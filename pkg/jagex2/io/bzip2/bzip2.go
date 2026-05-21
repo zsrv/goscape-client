@@ -2,17 +2,25 @@ package bzip2
 
 import (
 	"fmt"
+	"sync"
 
 	"goscape-client/pkg/jagex2/io/bzip2state"
 )
 
 var (
 	State = bzip2state.NewBZip2State()
+	// mu serializes access to State (and bzip2state.TT), mirroring the
+	// `synchronized` on Java BZip2.read. Without it, RunMidi decoding the
+	// title music races Client.Load decoding the title fonts and the bit
+	// reader's NextIn walks off the end of the buffer.
+	// Java: BZip2.read (deob/BZip2.java)
+	mu sync.Mutex
 )
 
 // Decompress
 func Read(decompressed []byte, length int, stream []byte, availIn int, nextIn int) int {
-	// TODO: synchronized
+	mu.Lock()
+	defer mu.Unlock()
 	State.Stream = stream
 	State.NextIn = nextIn
 	State.Decompressed = decompressed
