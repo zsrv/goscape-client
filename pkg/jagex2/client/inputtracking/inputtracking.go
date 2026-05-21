@@ -1,6 +1,7 @@
 package inputtracking
 
 import (
+	"sync"
 	"time"
 
 	"goscape-client/pkg/jagex2/io"
@@ -17,9 +18,19 @@ var (
 	LastY        int
 )
 
-// TODO: all funcs synchronized
+// mu guards every package-level var above. Java made each tracker method
+// `synchronized` (one monitor per InputTracking class) because the AWT event
+// dispatch thread wrote tracker state while the game thread drained it via
+// Flush/Stop. The Go port runs Gio's app.Main() goroutine as the producer and
+// Client.Run() as the consumer, so the same race exists. Stop() calls
+// SetDisabled() while already holding the lock, so SetDisabled has a locked
+// public wrapper plus an unlocked internal body to avoid Go's non-reentrant
+// sync.Mutex deadlocking.
+var mu sync.Mutex
 
 func SetEnabled() {
+	mu.Lock()
+	defer mu.Unlock()
 	OutBuffer = io.Alloc(1)
 	OldBuffer = nil
 	LastTime = time.Now().UnixMilli()
@@ -27,12 +38,22 @@ func SetEnabled() {
 }
 
 func SetDisabled() {
+	mu.Lock()
+	defer mu.Unlock()
+	setDisabledLocked()
+}
+
+// setDisabledLocked is the body of SetDisabled without taking the lock; for
+// internal callers (Stop) that already hold mu.
+func setDisabledLocked() {
 	Enabled = false
 	OutBuffer = nil
 	OldBuffer = nil
 }
 
 func Flush() *io.Packet {
+	mu.Lock()
+	defer mu.Unlock()
 	var var1 *io.Packet
 	if OldBuffer != nil && Enabled {
 		var1 = OldBuffer
@@ -42,14 +63,19 @@ func Flush() *io.Packet {
 }
 
 func Stop() *io.Packet {
+	mu.Lock()
+	defer mu.Unlock()
 	var var1 *io.Packet
 	if OutBuffer != nil && OutBuffer.Pos > 0 && Enabled {
 		var1 = OutBuffer
 	}
-	SetDisabled()
+	setDisabledLocked()
 	return var1
 }
 
+// EnsureCapacity is intended for internal use by the other functions in this
+// package, which call it while already holding mu. External callers must take
+// the lock themselves; the function does not.
 func EnsureCapacity(arg1 int) {
 	if OutBuffer.Pos+arg1 >= 500 {
 		var2 := OutBuffer
@@ -59,6 +85,8 @@ func EnsureCapacity(arg1 int) {
 }
 
 func MousePressed(arg0, arg1, arg2 int) {
+	mu.Lock()
+	defer mu.Unlock()
 	if !Enabled || (arg0 < 0 || arg0 >= 789 || arg2 < 0 || arg2 >= 532) {
 		return
 	}
@@ -80,6 +108,8 @@ func MousePressed(arg0, arg1, arg2 int) {
 }
 
 func MouseReleased(arg0 int) {
+	mu.Lock()
+	defer mu.Unlock()
 	if !Enabled {
 		return
 	}
@@ -100,6 +130,8 @@ func MouseReleased(arg0 int) {
 }
 
 func MouseMoved(arg0, arg2 int) {
+	mu.Lock()
+	defer mu.Unlock()
 	if !Enabled || (arg2 < 0 || arg2 > 789 || arg0 < 0 || arg0 >= 532) {
 		return
 	}
@@ -136,6 +168,8 @@ func MouseMoved(arg0, arg2 int) {
 }
 
 func KeyPressed(arg0 int) {
+	mu.Lock()
+	defer mu.Unlock()
 	if !Enabled {
 		return
 	}
@@ -168,6 +202,8 @@ func KeyPressed(arg0 int) {
 }
 
 func KeyReleased(arg0 int) {
+	mu.Lock()
+	defer mu.Unlock()
 	if !Enabled {
 		return
 	}
@@ -200,6 +236,8 @@ func KeyReleased(arg0 int) {
 }
 
 func FocusGained() {
+	mu.Lock()
+	defer mu.Unlock()
 	if !Enabled {
 		return
 	}
@@ -216,6 +254,8 @@ func FocusGained() {
 }
 
 func FocusLost() {
+	mu.Lock()
+	defer mu.Unlock()
 	if !Enabled {
 		return
 	}
@@ -232,6 +272,8 @@ func FocusLost() {
 }
 
 func MouseEntered() {
+	mu.Lock()
+	defer mu.Unlock()
 	if !Enabled {
 		return
 	}
@@ -248,6 +290,8 @@ func MouseEntered() {
 }
 
 func MouseExited() {
+	mu.Lock()
+	defer mu.Unlock()
 	if !Enabled {
 		return
 	}

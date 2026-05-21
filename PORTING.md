@@ -147,10 +147,10 @@ All blockers in this section depend on §5.1 (ClientStream port) and §5.2
 |---|---|---|---|
 | `client/gameshell.go:22–24` | `InitApplication` | `DrawArea` link to window component; window open timing. | 🟡 |
 | `client/gameshell.go:38` | `InitApplication` | `go app.Main() // TODO: go?` — pattern for the Gio main goroutine. | 🟡 |
-| `client/gameshell.go:86` | (event loop) | `// TODO: listeners` — keyboard/mouse event listeners not attached. | 🔴 |
-| `client/gameshell.go:168` | `PollKey` | `return 0 // TODO: stub` — never returns a real key. | 🔴 |
+| ~~`client/gameshell.go:86`~~ | ~~(event loop)~~ | ~~`// TODO: listeners` — keyboard/mouse event listeners not attached.~~ **Ported 2026-05-21** (Phase 2 step 1). Gio events drained per-frame inside `draw()`'s FrameEvent via `event.Op` + `source.Event(c.inputFilters...)`. | ~~🔴~~ |
+| ~~`client/gameshell.go:168`~~ | ~~`PollKey`~~ | ~~`return 0 // TODO: stub` — never returns a real key.~~ **Ported 2026-05-21**. Ring-buffer pop matching `GameShell.java:459-466`, returning -1 when empty. | ~~🔴~~ |
 | `client/gameshell.go:172` | `DrawProgress` | `// TODO: stub` — progress UI during cache load. | 🟡 |
-| `client/inputtracking/inputtracking.go:20` | (package) | `// TODO: all funcs synchronized` — concurrent access from event goroutine and game loop. | 🟡 |
+| ~~`client/inputtracking/inputtracking.go:20`~~ | ~~(package)~~ | ~~`// TODO: all funcs synchronized` — concurrent access from event goroutine and game loop.~~ **Ported 2026-05-21** (Phase 2 step 3 folded into step 1). Package-level `sync.Mutex` wraps every public function; internal helpers (`ensureCapacity`, `setDisabledLocked`) document the non-locking contract. | ~~🟡~~ |
 | `client/viewbox.go:10–14` | `ViewBox` | Whole struct is a stub. | 🟡 |
 | `graphics/pixmap/pixmap.go:18` | (file) | `// TODO` — pipeline orientation comment, may be vestigial. | ⚪ |
 | `graphics/pixmap/pixmap.go:45` | `NewPixMap` | `image.NewRGBA(...) // TODO: unused` — may be dead allocation now that `convertPixmapPixels` uses NRGBA (commit f1eca00). | ⚪ |
@@ -292,12 +292,39 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
 
 ### Phase 2 — Input wiring (unblocks playable UI)
 
-1. Port `gameshell.go:86` event listeners — Gio key/mouse events → the existing
-   `inputtracking` package.
-2. Implement `PollKey` (`gameshell.go:168`) returning the next queued key.
-3. Add a small `sync.Mutex` to `inputtracking` to remove the `// TODO: synchronized`.
+1. ~~Port `gameshell.go:86` event listeners — Gio key/mouse events → the existing
+   `inputtracking` package.~~ **Done 2026-05-21.** Gio's modern (post-2024-02)
+   pull-per-frame API: `event.Op(&c.Ops, c)` registers the Client pointer as a
+   tag inside the `FrameEvent` case, then a loop drains `e.Source.Event(...)`
+   against `c.inputFilters` (one `pointer.Filter` plus a `key.Filter` per
+   named/letter/digit key, all with `Optional: ModShift|ModCtrl|ModAlt|ModSuper|ModCommand`
+   so events fire regardless of modifier state). Java's separate `mousePressed/
+   mouseReleased/mouseMoved/mouseDragged/mouseEntered/mouseExited/keyPressed/
+   keyReleased` methods collapse into `handlePointer` and `handleKey` switching
+   on `pointer.Kind` / `key.State`. The Java→Go key translation lives in
+   `keyNameToAwt` (Gio `key.Name` → AWT keyCode for the 25 codes Java's
+   override sequence checks) and `keyCharFor` (synthesizes Java's keyChar from
+   `key.Event.Name` + `Modifiers`, since Gio reports only uppercase letter
+   names and a modifier bitset). Java's `mouseMoved(y, x)` argument swap is
+   preserved.
+2. ~~Implement `PollKey` (`gameshell.go:168`) returning the next queued key.~~
+   **Done 2026-05-21.** Ring-buffer pop, `-1` when empty, mirroring
+   `GameShell.java:459-466`.
+3. ~~Add a small `sync.Mutex` to `inputtracking` to remove the `// TODO: synchronized`.~~
+   **Done 2026-05-21.** Folded into step 1 — single package-level `mu sync.Mutex`
+   wraps every public function. Internal helpers (`EnsureCapacity`,
+   `setDisabledLocked`) document their non-locking contract so the
+   non-reentrant `sync.Mutex` doesn't deadlock when `Stop` → `setDisabledLocked`
+   under the same lock.
 4. Resolve the pixmap concurrency TODOs (`pixmap.go:62–63`) — confirm `DrawMu`
    coverage and delete stale markers.
+
+   Note: Client-side input fields (`MouseX/Y`, `MouseButton`, `MouseClick*`,
+   `ActionKey`, `KeyQueue`, `KeyQueueReadPos/WritePos`, `IdleCycles`) are
+   written from the Gio goroutine and read unsynchronized from the game loop —
+   matching Java's AWT-EDT/game-thread split. `go test -race` is clean because
+   no test exercises that code path; runtime smoke-test will need its own pass
+   (sandbox lacks a display server).
 
 ### Phase 3 — Audio handoff
 

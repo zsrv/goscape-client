@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/io/event"
 	"gioui.org/op"
 
 	"goscape-client/pkg/jagex2/client/clientextras"
@@ -134,6 +135,10 @@ type Client struct {
 
 	// MINE
 	Ops op.Ops // Ops are the operations from the UI
+	// inputFilters is the per-frame filter set passed to source.Event() to
+	// drain Gio key/pointer events. Built once by buildInputFilters() at
+	// InitApplication time; no Java analogue (AWT used push listeners).
+	inputFilters []event.Filter
 	// END GameShell
 
 	HintTileZ                     int

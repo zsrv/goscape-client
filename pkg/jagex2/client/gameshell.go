@@ -6,8 +6,12 @@ import (
 	"time"
 
 	"gioui.org/app"
+	"gioui.org/io/event"
+	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 	"gioui.org/unit"
 
+	"goscape-client/pkg/jagex2/client/inputtracking"
 	"goscape-client/pkg/jagex2/graphics/pixmap"
 )
 
@@ -20,6 +24,7 @@ func (c *Client) InitApplication(height int, width int) {
 	//c.Frame // app.Window with gio
 	//c.Graphics
 	c.DrawArea = pixmap.NewPixMap(width, height) // TODO: component is linked to this in java.. automatically draws stuff?
+	c.buildInputFilters()
 	// TODO: open the window here, before Run()
 	// TODO: start mine
 	go func() {
@@ -56,6 +61,20 @@ func (c *Client) draw(w *app.Window) error {
 			return e.Err
 
 		case app.FrameEvent:
+			// Drain pending input events through Gio's pull-per-frame model.
+			// event.Op declares `c` as a tag for the current clip area (the
+			// full window since we push no clip), and e.Source.Event(filters)
+			// returns one queued event per call. Java: AWT pushed events to
+			// listener callbacks; Gio inverts that to a per-frame poll.
+			event.Op(&c.Ops, c)
+			for {
+				ev, ok := e.Source.Event(c.inputFilters...)
+				if !ok {
+					break
+				}
+				c.dispatchInputEvent(ev)
+			}
+
 			// A request to draw the window state.
 			// Gio only issues FrameEvents when the window is resized or
 			// the user interacts with the window.
@@ -83,8 +102,6 @@ func (c *Client) draw(w *app.Window) error {
 }
 
 func (c *Client) RunGameShell() {
-	// TODO: listeners
-
 	c.DrawProgress("Loading...", 0)
 	c.Load()
 
@@ -164,10 +181,302 @@ func (c *Client) SetFrameRate(arg1 int) {
 	c.DelTime = 1000 / arg1
 }
 
+// PollKey pops the next queued key code from the ring buffer, or returns -1
+// when the queue is empty. Java: pollKey() at GameShell.java:459-466.
 func (c *Client) PollKey() int {
-	return 0 // TODO: stub
+	var2 := -1
+	if c.KeyQueueWritePos != c.KeyQueueReadPos {
+		var2 = c.KeyQueue[c.KeyQueueReadPos]
+		c.KeyQueueReadPos = (c.KeyQueueReadPos + 1) & 0x7F
+	}
+	return var2
 }
 
 func (c *Client) DrawProgressGameShell(message string, percent int) {
 	// TODO: stub
+}
+
+// buildInputFilters constructs the per-Client filter list once. Java declared
+// listener interfaces (MouseListener/KeyListener) and registered them via
+// addMouseListener etc.; Gio's modern (post-2024-02) input API replaces that
+// with a set of event.Filter values pulled per frame via source.Event(...).
+func (c *Client) buildInputFilters() {
+	const allMods = key.ModShift | key.ModCtrl | key.ModAlt | key.ModSuper | key.ModCommand
+
+	c.inputFilters = []event.Filter{
+		pointer.Filter{
+			Target: c,
+			Kinds:  pointer.Press | pointer.Release | pointer.Move | pointer.Drag | pointer.Enter | pointer.Leave,
+		},
+	}
+
+	named := []key.Name{
+		key.NameLeftArrow, key.NameRightArrow, key.NameUpArrow, key.NameDownArrow,
+		key.NameReturn, key.NameEnter, key.NameEscape,
+		key.NameHome, key.NameEnd, key.NameDeleteBackward, key.NameDeleteForward,
+		key.NamePageUp, key.NamePageDown,
+		key.NameTab, key.NameSpace,
+		key.NameCtrl, key.NameShift, key.NameAlt, key.NameSuper, key.NameCommand,
+		key.NameF1, key.NameF2, key.NameF3, key.NameF4, key.NameF5, key.NameF6,
+		key.NameF7, key.NameF8, key.NameF9, key.NameF10, key.NameF11, key.NameF12,
+		key.NameBack,
+	}
+	for _, n := range named {
+		c.inputFilters = append(c.inputFilters, key.Filter{Name: n, Optional: allMods})
+	}
+	// Letters A-Z. Gio reports the uppercase letter as Name regardless of
+	// Shift; we synthesize the lowercase keyChar below based on Modifiers.
+	for r := 'A'; r <= 'Z'; r++ {
+		c.inputFilters = append(c.inputFilters, key.Filter{Name: key.Name(string(r)), Optional: allMods})
+	}
+	// Digits 0-9.
+	for r := '0'; r <= '9'; r++ {
+		c.inputFilters = append(c.inputFilters, key.Filter{Name: key.Name(string(r)), Optional: allMods})
+	}
+}
+
+// dispatchInputEvent routes a single Gio event to the matching Java handler.
+// Java: separate listener methods (mousePressed, keyPressed, ...) on
+// GameShell; Go switches on the dynamic event type.
+func (c *Client) dispatchInputEvent(ev event.Event) {
+	switch e := ev.(type) {
+	case pointer.Event:
+		c.handlePointer(e)
+	case key.Event:
+		c.handleKey(e)
+	}
+}
+
+// handlePointer maps a Gio pointer.Event onto the same mouse* fields and
+// InputTracking calls Java's mousePressed/mouseReleased/mouseMoved/
+// mouseDragged/mouseEntered/mouseExited used. Java reference:
+// GameShell.java:263-336.
+func (c *Client) handlePointer(e pointer.Event) {
+	// Gio gives sub-pixel coordinates; the game uses integer pixel coords.
+	x := int(e.Position.X)
+	y := int(e.Position.Y)
+
+	switch e.Kind {
+	case pointer.Press:
+		// Java distinguishes the right ("meta") button via isMetaDown(); in
+		// Gio the pressed button is in e.Buttons. ButtonSecondary maps to
+		// AWT's right-click (mouseButton == 2).
+		c.IdleCycles = 0
+		c.MouseClickX = x
+		c.MouseClickY = y
+		if e.Buttons.Contain(pointer.ButtonSecondary) {
+			c.MouseClickButton = 2
+			c.MouseButton = 2
+			if inputtracking.Enabled {
+				inputtracking.MousePressed(x, 1, y)
+			}
+		} else {
+			c.MouseClickButton = 1
+			c.MouseButton = 1
+			if inputtracking.Enabled {
+				inputtracking.MousePressed(x, 0, y)
+			}
+		}
+	case pointer.Release:
+		c.IdleCycles = 0
+		// Java captures the meta state at release-time too; Gio's e.Buttons
+		// at Release describes the still-pressed buttons (i.e. excludes the
+		// just-released one), so we instead infer from c.MouseButton, the
+		// value latched at Press.
+		releasedRight := c.MouseButton == 2
+		c.MouseButton = 0
+		if inputtracking.Enabled {
+			if releasedRight {
+				inputtracking.MouseReleased(1)
+			} else {
+				inputtracking.MouseReleased(0)
+			}
+		}
+	case pointer.Move, pointer.Drag:
+		// Java's mouseDragged and mouseMoved are identical at this rev
+		// (GameShell.java:308-336): both set mouseX/Y and call
+		// InputTracking.mouseMoved(y, x) — note the (y, x) swap. The Go port
+		// preserves that swap.
+		c.IdleCycles = 0
+		c.MouseX = x
+		c.MouseY = y
+		if inputtracking.Enabled {
+			inputtracking.MouseMoved(y, x)
+		}
+	case pointer.Enter:
+		if inputtracking.Enabled {
+			inputtracking.MouseEntered()
+		}
+	case pointer.Leave:
+		if inputtracking.Enabled {
+			inputtracking.MouseExited()
+		}
+	}
+}
+
+// handleKey ports keyPressed/keyReleased (GameShell.java:338-439). Java's
+// pipeline: getKeyCode (var2) → translate to a Java code (var3) via a series
+// of `if (var2 == N) var3 = ...` overrides; chars below 30 are zeroed; the
+// final var3 drives actionKey, the keyQueue, and InputTracking.
+//
+// Gio doesn't expose AWT keycodes, so we synthesize them via keyNameToAwt,
+// then apply Java's exact override sequence, preserving the bug-for-bug
+// translation principle.
+func (c *Client) handleKey(e key.Event) {
+	c.IdleCycles = 0
+
+	var2 := keyNameToAwt(e.Name) // AWT keyCode (Java: arg0.getKeyCode())
+	var3 := keyCharFor(e)        // initial keyChar (Java: arg0.getKeyChar())
+
+	// Java: `if (var3 < 30) var3 = 0;` strips control characters except the
+	// few it explicitly overrides below.
+	if var3 < 30 {
+		var3 = 0
+	}
+	if var2 == 37 {
+		var3 = 1
+	}
+	if var2 == 39 {
+		var3 = 2
+	}
+	if var2 == 38 {
+		var3 = 3
+	}
+	if var2 == 40 {
+		var3 = 4
+	}
+	if var2 == 17 {
+		var3 = 5
+	}
+	if var2 == 8 {
+		var3 = 8
+	}
+	if var2 == 127 {
+		var3 = 8
+	}
+	if var2 == 9 {
+		var3 = 9
+	}
+	if var2 == 10 {
+		var3 = 10
+	}
+	if var2 >= 112 && var2 <= 123 {
+		var3 = var2 + 1008 - 112
+	}
+	if var2 == 36 {
+		var3 = 1000
+	}
+	if var2 == 35 {
+		var3 = 1001
+	}
+	if var2 == 33 {
+		var3 = 1002
+	}
+	if var2 == 34 {
+		var3 = 1003
+	}
+
+	if e.State == key.Press {
+		if var3 > 0 && var3 < 128 {
+			c.ActionKey[var3] = 1
+		}
+		if var3 > 4 {
+			c.KeyQueue[c.KeyQueueWritePos] = var3
+			c.KeyQueueWritePos = (c.KeyQueueWritePos + 1) & 0x7F
+		}
+		if inputtracking.Enabled {
+			inputtracking.KeyPressed(var3)
+		}
+		return
+	}
+
+	// key.Release
+	if var3 > 0 && var3 < 128 {
+		c.ActionKey[var3] = 0
+	}
+	if inputtracking.Enabled {
+		inputtracking.KeyReleased(var3)
+	}
+}
+
+// keyNameToAwt maps a Gio key.Name back to the AWT keyCode the Java client
+// expected. Returns 0 for any key without a Java override — the call sites
+// only branch on the specific codes listed below, so 0 is a safe sentinel.
+func keyNameToAwt(name key.Name) int {
+	switch name {
+	case key.NameLeftArrow:
+		return 37
+	case key.NameRightArrow:
+		return 39
+	case key.NameUpArrow:
+		return 38
+	case key.NameDownArrow:
+		return 40
+	case key.NameCtrl:
+		return 17
+	case key.NameDeleteBackward:
+		return 8
+	case key.NameDeleteForward:
+		return 127
+	case key.NameTab:
+		return 9
+	case key.NameReturn, key.NameEnter:
+		return 10
+	case key.NameHome:
+		return 36
+	case key.NameEnd:
+		return 35
+	case key.NamePageUp:
+		return 33
+	case key.NamePageDown:
+		return 34
+	case key.NameF1:
+		return 112
+	case key.NameF2:
+		return 113
+	case key.NameF3:
+		return 114
+	case key.NameF4:
+		return 115
+	case key.NameF5:
+		return 116
+	case key.NameF6:
+		return 117
+	case key.NameF7:
+		return 118
+	case key.NameF8:
+		return 119
+	case key.NameF9:
+		return 120
+	case key.NameF10:
+		return 121
+	case key.NameF11:
+		return 122
+	case key.NameF12:
+		return 123
+	}
+	return 0
+}
+
+// keyCharFor synthesizes Java's keyChar from a Gio key.Event. AWT delivers
+// the typed character directly (case-shifted by Shift); Gio reports only the
+// uppercase letter Name plus a Modifiers bitset, so we recreate the shift
+// case-folding here. For non-text keys, returns 0; the override sequence in
+// handleKey then sets var3 to the proper sentinel (1=←, 2=→, 8=BS, …).
+func keyCharFor(e key.Event) int {
+	s := string(e.Name)
+	if len(s) != 1 {
+		return 0
+	}
+	r := rune(s[0])
+	switch {
+	case r >= 'A' && r <= 'Z':
+		if !e.Modifiers.Contain(key.ModShift) {
+			r = r - 'A' + 'a'
+		}
+		return int(r)
+	case r >= '0' && r <= '9':
+		return int(r)
+	}
+	return int(r)
 }
