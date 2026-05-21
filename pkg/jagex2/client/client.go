@@ -7280,9 +7280,13 @@ func (c *Client) UpdateInterfaceAnimation(arg0, arg1 int) bool {
 	for i := 0; i < len(var5.ChildID) && var5.ChildID[i] != -1; i++ {
 		var7 := component.Instances[var5.ChildID[i]]
 		if var7.Type == 1 {
-			var4 = var4 || c.UpdateInterfaceAnimation(var7.Id, arg1) // TODO: verify or
+			// Java `|=` evaluates both sides; Go `||` short-circuits, which
+			// would skip the recursive tick once var4 is true.
+			if c.UpdateInterfaceAnimation(var7.Id, arg1) {
+				var4 = true
+			}
 		}
-		if var7.Type == 6 && var7.Anim != -1 || var7.ActiveAnim != -1 {
+		if var7.Type == 6 && (var7.Anim != -1 || var7.ActiveAnim != -1) {
 			var8 := c.ExecuteInterfaceScript(var7)
 			var9 := 0
 			if var8 {
