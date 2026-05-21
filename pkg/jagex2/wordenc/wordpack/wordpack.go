@@ -56,6 +56,8 @@ func Unpack(buf *io.Packet, length int) string {
 		}
 	}
 
+	// Java: WordPack.java:51 — `new String(charBuffer, 0, var3)`. The (offset,count)
+	// String constructor takes a length, matching the Go slice expression here.
 	return string(CharBuffer[0:pos])
 }
 
