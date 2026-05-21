@@ -1553,7 +1553,7 @@ func (c *Client) RunMidi() {
 			var14 := signlink.CacheLoad(var2 + ".mid")
 			var6 := 0
 			if var14 != nil && var3 != 12345678 {
-				var6 = int(crc32.ChecksumIEEE(var14)) // TODO: verify conversion
+				var6 = int(crc32.ChecksumIEEE(var14))
 				if var6 != var3 {
 					var14 = nil
 				}
@@ -1622,7 +1622,7 @@ func (c *Client) DrawFlames() {
 		}
 	}
 	for i := range 33920 {
-		c.ImageTitle0.Data[i] = c.ImageFlamesLeft.Pixels[i] // TODO: verify
+		c.ImageTitle0.Data[i] = c.ImageFlamesLeft.Pixels[i]
 	}
 	var4 := 0
 	var5 := 1152
@@ -1648,16 +1648,16 @@ func (c *Client) DrawFlames() {
 				//var11 = var10
 				var12 = 256 - var10
 				var10 = c.FlameGradient[var10]
-				var13 = int(c.ImageTitle0.Data[var5]) // TODO: verify
+				var13 = c.ImageTitle0.Data[var5]
 				c.ImageTitle0.Data[var5] = (((((var10 & 0xFF00FF) * var11) + ((var13 & 0xFF00FF) * var12)) & 0xFF00FF00) + ((((var10 & 0xFF00) * var11) + ((var13 & 0xFF00) * var12)) & 0xFF0000)) >> 8
 				var5++
 			}
 		}
 		var5 += var8
 	}
-	c.ImageTitle0.Draw(&c.Ops, 0, 0) // TODO: verify
+	c.ImageTitle0.Draw(&c.Ops, 0, 0)
 	for i := range 33920 {
-		c.ImageTitle1.Data[i] = c.ImageFlamesRight.Pixels[i] // TODO: verify
+		c.ImageTitle1.Data[i] = c.ImageFlamesRight.Pixels[i]
 	}
 	var4 = 0
 	var5 = 1176
@@ -1674,7 +1674,7 @@ func (c *Client) DrawFlames() {
 				var13 = var12
 				var14 := 256 - var12
 				var12 = c.FlameGradient[var12]
-				var15 := int(c.ImageTitle1.Data[var5]) // TODO: verify
+				var15 := c.ImageTitle1.Data[var5]
 				c.ImageTitle1.Data[var5] = (((((var12 & 0xFF00FF) * var13) + ((var15 & 0xFF00FF) * var14)) & 0xFF00FF00) + ((((var12 & 0xFF00) * var13) + ((var15 & 0xFF00) * var14)) & 0xFF0000)) >> 8
 				var5++
 			}
@@ -3290,12 +3290,11 @@ func (c *Client) DrawTitleScreen() {
 		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
 		c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Cancel")
 	}
-	c.ImageTitle4.Draw(&c.Ops, 214, 186) // TODO: verify
+	c.ImageTitle4.Draw(&c.Ops, 214, 186)
 	if !c.RedrawFrame {
 		return
 	}
 	c.RedrawFrame = false
-	// TODO: verify
 	c.ImageTitle2.Draw(&c.Ops, 128, 0)
 	c.ImageTitle3.Draw(&c.Ops, 214, 386)
 	c.ImageTitle5.Draw(&c.Ops, 0, 265)
@@ -8230,7 +8229,7 @@ func (c *Client) PushLocs() {
 		for ok := true; ok; ok = v.SeqFrame >= 0 && v.SeqFrame < v.Seq.FrameCount {
 			for ok2 := true; ok2; ok2 = v.SeqFrame < v.Seq.FrameCount {
 				if v.SeqCycle <= v.Seq.Delay[v.SeqFrame] {
-					goto afterLabel67 // TODO: verify
+					goto afterLabel67
 				}
 				v.SeqCycle -= v.Seq.Delay[v.SeqFrame] + 1
 				v.SeqFrame++
