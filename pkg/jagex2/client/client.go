@@ -2393,8 +2393,11 @@ func (c *Client) UpdateTitle() {
 				return
 			}
 			var6 := false
-			for i := range len(CHARSET) {
-				if var5 == int(CHARSET[i]) {
+			// Java: client.java:3001-3006 — CHARSET.charAt(i) returns a UTF-16
+			// code unit (e.g. '£' = 0x00A3 as a single value). Byte-indexing the
+			// Go string would split multi-byte UTF-8 sequences, so iterate runes.
+			for _, r := range CHARSET {
+				if var5 == int(r) {
 					var6 = true
 					break
 				}
