@@ -106,9 +106,7 @@ func NewPixFont(arg0 *io.Jagfile, arg1 string) *PixFont {
 				}
 			}
 		}
-		if var9 > p.Height {
-			p.Height = var9
-		}
+		p.Height = max(var9, p.Height)
 		p.CharOffsetX[i] = 1
 		p.CharAdvance[i] = var8 + 2
 		var12 := 0

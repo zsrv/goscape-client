@@ -331,12 +331,8 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 	}
 	if arg0 <= arg1 && arg0 <= arg2 {
 		if arg0 < pix2d.Bottom {
-			if arg1 > pix2d.Bottom {
-				arg1 = pix2d.Bottom
-			}
-			if arg2 > pix2d.Bottom {
-				arg2 = pix2d.Bottom
-			}
+			arg1 = min(arg1, pix2d.Bottom)
+			arg2 = min(arg2, pix2d.Bottom)
 			if arg1 < arg2 {
 				arg3 <<= 0x10
 				arg5 = arg3
@@ -489,12 +485,8 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 		}
 	} else if arg1 <= arg2 {
 		if arg1 < pix2d.Bottom {
-			if arg2 > pix2d.Bottom {
-				arg2 = pix2d.Bottom
-			}
-			if arg0 > pix2d.Bottom {
-				arg0 = pix2d.Bottom
-			}
+			arg2 = min(arg2, pix2d.Bottom)
+			arg0 = min(arg0, pix2d.Bottom)
 			if arg2 < arg0 {
 				arg4 <<= 0x10
 				arg3 = arg4
@@ -646,12 +638,8 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 			}
 		}
 	} else if arg2 < pix2d.Bottom {
-		if arg0 > pix2d.Bottom {
-			arg0 = pix2d.Bottom
-		}
-		if arg1 > pix2d.Bottom {
-			arg1 = pix2d.Bottom
-		}
+		arg0 = min(arg0, pix2d.Bottom)
+		arg1 = min(arg1, pix2d.Bottom)
 		if arg0 < arg1 {
 			arg5 <<= 0x10
 			arg4 = arg5
@@ -818,9 +806,7 @@ func GouraudRaster(arg0 []int, arg1, arg4, arg5, arg6, arg7 int) {
 			} else {
 				var8 = 0
 			}
-			if arg5 > pix2d.SafeWidth {
-				arg5 = pix2d.SafeWidth
-			}
+			arg5 = min(arg5, pix2d.SafeWidth)
 			if arg4 < 0 {
 				arg6 -= arg4 * var8
 				arg4 = 0
@@ -904,9 +890,7 @@ func GouraudRaster(arg0 []int, arg1, arg4, arg5, arg6, arg7 int) {
 	} else if arg4 < arg5 {
 		var8 = (arg7 - arg6) / (arg5 - arg4)
 		if HClip {
-			if arg5 > pix2d.SafeWidth {
-				arg5 = pix2d.SafeWidth
-			}
+			arg5 = min(arg5, pix2d.SafeWidth)
 			if arg4 < 0 {
 				arg6 -= arg4 * var8
 				arg4 = 0
@@ -954,12 +938,8 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 	}
 	if arg0 <= arg1 && arg0 <= arg2 {
 		if arg0 < pix2d.Bottom {
-			if arg1 > pix2d.Bottom {
-				arg1 = pix2d.Bottom
-			}
-			if arg2 > pix2d.Bottom {
-				arg2 = pix2d.Bottom
-			}
+			arg1 = min(arg1, pix2d.Bottom)
+			arg2 = min(arg2, pix2d.Bottom)
 			if arg1 < arg2 {
 				arg3 <<= 0x10
 				arg5 = arg3
@@ -1084,12 +1064,8 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 		}
 	} else if arg1 <= arg2 {
 		if arg1 < pix2d.Bottom {
-			if arg2 > pix2d.Bottom {
-				arg2 = pix2d.Bottom
-			}
-			if arg0 > pix2d.Bottom {
-				arg0 = pix2d.Bottom
-			}
+			arg2 = min(arg2, pix2d.Bottom)
+			arg0 = min(arg0, pix2d.Bottom)
 			if arg2 < arg0 {
 				arg4 <<= 0x10
 				arg3 = arg4
@@ -1213,12 +1189,8 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 			}
 		}
 	} else if arg2 < pix2d.Bottom {
-		if arg0 > pix2d.Bottom {
-			arg0 = pix2d.Bottom
-		}
-		if arg1 > pix2d.Bottom {
-			arg1 = pix2d.Bottom
-		}
+		arg0 = min(arg0, pix2d.Bottom)
+		arg1 = min(arg1, pix2d.Bottom)
 		if arg0 < arg1 {
 			arg5 <<= 0x10
 			arg4 = arg5
@@ -1345,12 +1317,8 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 
 func FlatRaster(arg0 []int, arg1, arg2, arg4, arg5 int) {
 	if HClip {
-		if arg5 > pix2d.SafeWidth {
-			arg5 = pix2d.SafeWidth
-		}
-		if arg4 < 0 {
-			arg4 = 0
-		}
+		arg5 = min(arg5, pix2d.SafeWidth)
+		arg4 = max(arg4, 0)
 	}
 	if arg4 >= arg5 {
 		return
@@ -1448,12 +1416,8 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 	var35 := 0
 	if arg0 <= arg1 && arg0 <= arg2 {
 		if arg0 < pix2d.Bottom {
-			if arg1 > pix2d.Bottom {
-				arg1 = pix2d.Bottom
-			}
-			if arg2 > pix2d.Bottom {
-				arg2 = pix2d.Bottom
-			}
+			arg1 = min(arg1, pix2d.Bottom)
+			arg2 = min(arg2, pix2d.Bottom)
 			if arg1 < arg2 {
 				arg3 <<= 0x10
 				arg5 = arg3
@@ -1638,12 +1602,8 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 		}
 	} else if arg1 <= arg2 {
 		if arg1 < pix2d.Bottom {
-			if arg2 > pix2d.Bottom {
-				arg2 = pix2d.Bottom
-			}
-			if arg0 > pix2d.Bottom {
-				arg0 = pix2d.Bottom
-			}
+			arg2 = min(arg2, pix2d.Bottom)
+			arg0 = min(arg0, pix2d.Bottom)
 			if arg2 < arg0 {
 				arg4 <<= 0x10
 				arg3 = arg4
@@ -1827,12 +1787,8 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 			}
 		}
 	} else if arg2 < pix2d.Bottom {
-		if arg0 > pix2d.Bottom {
-			arg0 = pix2d.Bottom
-		}
-		if arg1 > pix2d.Bottom {
-			arg1 = pix2d.Bottom
-		}
+		arg0 = min(arg0, pix2d.Bottom)
+		arg1 = min(arg1, pix2d.Bottom)
 		if arg0 < arg1 {
 			arg5 <<= 0x10
 			arg4 = arg5
@@ -2025,9 +1981,7 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 	var16 := 0
 	if HClip {
 		var15 = (arg8 - arg7) / (arg6 - arg5)
-		if arg6 > pix2d.SafeWidth {
-			arg6 = pix2d.SafeWidth
-		}
+		arg6 = min(arg6, pix2d.SafeWidth)
 		if arg5 < 0 {
 			arg7 -= arg5 * var15
 			arg5 = 0

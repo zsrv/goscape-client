@@ -827,16 +827,10 @@ func (m *Model) CalculateBoundsCylinder() {
 		var3 := m.VertexX[i]
 		var4 := m.VertexY[i]
 		var5 := m.VertexZ[i]
-		if -var4 > m.MaxY {
-			m.MaxY = -var4
-		}
-		if var4 > m.MinY {
-			m.MinY = var4
-		}
+		m.MaxY = max(-var4, m.MaxY)
+		m.MinY = max(var4, m.MinY)
 		var6 := var3*var3 + var5*var5
-		if var6 > m.Radius {
-			m.Radius = var6
-		}
+		m.Radius = max(var6, m.Radius)
 	}
 	m.Radius = int(math.Sqrt(float64(m.Radius)) + 0.99)
 	m.MinDepth = int(math.Sqrt(float64(m.Radius*m.Radius+m.MaxY*m.MaxY)) + 0.99)
@@ -848,12 +842,8 @@ func (m *Model) CalculateBoundsY() {
 	m.MinY = 0
 	for i := range m.VertexCount {
 		var3 := m.VertexY[i]
-		if -var3 > m.MaxY {
-			m.MaxY = -var3
-		}
-		if var3 > m.MinY {
-			m.MinY = var3
-		}
+		m.MaxY = max(-var3, m.MaxY)
+		m.MinY = max(var3, m.MinY)
 	}
 	m.MinDepth = int(math.Sqrt(float64(m.Radius*m.Radius+m.MaxY*m.MaxY)) + 0.99)
 	m.MaxDepth = m.MinDepth + int(math.Sqrt(float64(m.Radius*m.Radius+m.MinY*m.MinY))+0.99)
@@ -871,28 +861,14 @@ func (m *Model) CalculateBoundsAABB() {
 		var3 := m.VertexX[i]
 		var4 := m.VertexY[i]
 		var5 := m.VertexZ[i]
-		if var3 < m.MinX {
-			m.MinX = var3
-		}
-		if var3 > m.MaxX {
-			m.MaxX = var3
-		}
-		if var5 < m.MinZ {
-			m.MinZ = var5
-		}
-		if var5 > m.MaxZ {
-			m.MaxZ = var5
-		}
-		if -var4 > m.MaxY {
-			m.MaxY = -var4
-		}
-		if var4 > m.MinY {
-			m.MinY = var4
-		}
+		m.MinX = min(var3, m.MinX)
+		m.MaxX = max(var3, m.MaxX)
+		m.MinZ = min(var5, m.MinZ)
+		m.MaxZ = max(var5, m.MaxZ)
+		m.MaxY = max(-var4, m.MaxY)
+		m.MinY = max(var4, m.MinY)
 		var6 := var3*var3 + var5*var5
-		if var6 > m.Radius {
-			m.Radius = var6
-		}
+		m.Radius = max(var6, m.Radius)
 	}
 	m.Radius = int(math.Sqrt(float64(m.Radius)))
 	m.MinDepth = int(math.Sqrt(float64(m.Radius*m.Radius + m.MaxY*m.MaxY)))
@@ -906,9 +882,7 @@ func (m *Model) CreateLabelReferences() {
 		for i := range m.VertexCount {
 			var5 := m.VertexLabel[i]
 			var2[var5]++
-			if var5 > var3 {
-				var3 = var5
-			}
+			var3 = max(var5, var3)
 		}
 		m.LabelVertices = make([][]int, var3+1)
 		for i := 0; i <= var3; i++ {
@@ -930,9 +904,7 @@ func (m *Model) CreateLabelReferences() {
 	for i := range m.FaceCount {
 		var5 := m.FaceLabel[i]
 		var2[var5]++
-		if var5 > var3 {
-			var3 = var5
-		}
+		var3 = max(var5, var3)
 	}
 	m.LabelFaces = make([][]int, var3+1)
 	for i := 0; i <= var3; i++ {
@@ -1121,12 +1093,8 @@ func (m *Model) ApplyTransform2(arg0 int, arg1 []int, arg2 int, arg3 int, arg4 i
 				for j := range len(var9) {
 					var11 := var9[j]
 					m.FaceAlpha[var11] += arg2 * 8
-					if m.FaceAlpha[var11] < 0 {
-						m.FaceAlpha[var11] = 0
-					}
-					if m.FaceAlpha[var11] > 0xFF {
-						m.FaceAlpha[var11] = 0xFF
-					}
+					m.FaceAlpha[var11] = max(m.FaceAlpha[var11], 0)
+					m.FaceAlpha[var11] = min(m.FaceAlpha[var11], 0xFF)
 				}
 			}
 		}

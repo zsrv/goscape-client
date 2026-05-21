@@ -34,18 +34,10 @@ func ResetClipping() {
 }
 
 func SetClipping(bottom int, top int, right int, left int) {
-	if left < 0 {
-		left = 0
-	}
-	if top < 0 {
-		top = 0
-	}
-	if right > Width2D {
-		right = Width2D
-	}
-	if bottom > Height2D {
-		bottom = Height2D
-	}
+	left = max(left, 0)
+	top = max(top, 0)
+	right = min(right, Width2D)
+	bottom = min(bottom, Height2D)
 	Left = left
 	Top = top
 	Right = right
