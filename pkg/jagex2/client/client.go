@@ -2759,7 +2759,32 @@ func (c *Client) DrawMinimap() {
 	c.AreaViewport.Bind()
 }
 
-// TODO: GetBaseComponent()
+// Decision: getBaseComponent is NOT being ported. See viewbox.go for the
+// architectural precedent (another AWT-shaped helper kept as an intentional
+// non-port).
+//
+// Java getBaseComponent() (deob/client.java:3343-3350) returns the AWT
+// Component the game should draw on top of — either super.frame (the AWT
+// Frame opened by ViewBox), `this` (the Applet itself), or signlink.mainapp
+// when running under the signed-applet bridge. Every caller in the Java
+// source uses the result for one of two things:
+//
+//   1. As the first argument to `new PixMap(Component, w, h)` (~25 call
+//      sites in Java client.java) — the AWT PixMap constructor needs a
+//      Component to create a peer-backed Image. The Go pixmap package
+//      (pkg/jagex2/graphics/pixmap) just allocates a width*height slice
+//      directly via NewPixMap(width, height) — there is no Component
+//      analogue and none is required.
+//   2. drawError() and drawProgress() route AWT Graphics through it for
+//      direct screen blits. Go renders everything through the central
+//      pixmap.PixMap which is uploaded to the GPU once per frame by
+//      gameshell.go, so the "draw to a component" path doesn't exist.
+//
+// In every case the Go translation already does the right thing without a
+// Component reference, so exposing a `GetBaseComponent` method would just
+// be a misleading stub that returns nil or *PixMap to no benefit.
+//
+// Java source: deob/client.java:3343-3350.
 
 func (c *Client) UpdateMergeLocs() {
 	if c.SceneState != 2 {
