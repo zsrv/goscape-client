@@ -9191,6 +9191,196 @@ func (c *Client) Read() bool {
 		c.PacketType = -1
 		return true
 	}
+	// Java: opcode 28 — open viewport+sidebar interface (client.java:9702-9720)
+	if c.PacketType == 28 {
+		var26 := c.In.G2()
+		var4 := c.In.G2()
+		if c.ChatInterfaceID != -1 {
+			c.ChatInterfaceID = -1
+			c.RedrawChatback = true
+		}
+		if c.ChatbackInputOpen {
+			c.ChatbackInputOpen = false
+			c.RedrawChatback = true
+		}
+		c.ViewportInterfaceID = var26
+		c.SidebarInterfaceID = var4
+		c.RedrawSidebar = true
+		c.RedrawSideIcons = true
+		c.PressedContinueOption = false
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 175 — varp set (g4) (client.java:9721-9735)
+	if c.PacketType == 175 {
+		var26 := c.In.G2()
+		var4 := c.In.G4()
+		c.VarCache[var26] = var4
+		if c.Varps[var26] != var4 {
+			c.Varps[var26] = var4
+			c.UpdateVarp(var26)
+			c.RedrawSidebar = true
+			if c.StickyChatInterfaceID != -1 {
+				c.RedrawChatback = true
+			}
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 146 — component anim (client.java:9736-9742)
+	if c.PacketType == 146 {
+		var26 := c.In.G2()
+		var4 := c.In.G2()
+		component.Instances[var26].Anim = var4
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 167 — tab interface assign (client.java:9743-9754)
+	if c.PacketType == 167 {
+		var26 := c.In.G2()
+		var4 := c.In.G1()
+		if var26 == 65535 {
+			var26 = -1
+		}
+		c.TabInterfaceID[var4] = var26
+		c.RedrawSidebar = true
+		c.RedrawSideIcons = true
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 220 — scene map loc-data inbound (client.java:9755-9774)
+	if c.PacketType == 220 {
+		var26 := c.In.G1()
+		var4 := c.In.G1()
+		var5 := c.In.G2()
+		var6 := c.In.G2()
+		var7 := -1
+		for var8 := range len(c.SceneMapIndex) {
+			if c.SceneMapIndex[var8] == (var26<<8)+var4 {
+				var7 = var8
+			}
+		}
+		if var7 != -1 {
+			if c.SceneMapLocData[var7] == nil || len(c.SceneMapLocData[var7]) != var6 {
+				c.SceneMapLocData[var7] = make([]byte, var6)
+			}
+			c.In.GData(c.PacketSize-6, var5, c.SceneMapLocData[var7])
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 133 — InputTracking.stop → outbound packet 81 (client.java:9775-9785)
+	if c.PacketType == 133 {
+		var51 := inputtracking.Stop()
+		if var51 != nil {
+			c.Out.P1Isaac(81)
+			c.Out.P2(var51.Pos)
+			c.Out.PData(var51.Data, var51.Pos, 0)
+			var51.Release()
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 98 — inventory slot full update (client.java:9787-9806)
+	if c.PacketType == 98 {
+		c.RedrawSidebar = true
+		var26 := c.In.G2()
+		var27 := component.Instances[var26]
+		var5 := c.In.G1()
+		for var6 := range var5 {
+			var27.InvSlotObjId[var6] = c.In.G2()
+			var7 := c.In.G1()
+			if var7 == 255 {
+				var7 = c.In.G4()
+			}
+			var27.InvSlotObjCount[var6] = var7
+		}
+		for var7 := var5; var7 < len(var27.InvSlotObjId); var7++ {
+			var27.InvSlotObjId[var7] = 0
+			var27.InvSlotObjCount[var7] = 0
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 226 — InputTracking.setEnabled (client.java:9807-9811)
+	if c.PacketType == 226 {
+		inputtracking.SetEnabled()
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 243 — open chatback input prompt (client.java:9812-9819)
+	if c.PacketType == 243 {
+		c.ShowSocialInput = false
+		c.ChatbackInputOpen = true
+		c.ChatbackInput = ""
+		c.RedrawChatback = true
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 15 — clear inventory component (client.java:9820-9829)
+	if c.PacketType == 15 {
+		var26 := c.In.G2()
+		var27 := component.Instances[var26]
+		for var5 := range len(var27.InvSlotObjId) {
+			var27.InvSlotObjId[var5] = -1
+			var27.InvSlotObjId[var5] = 0
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 140 — last-login info (client.java:9830-9853)
+	if c.PacketType == 140 {
+		c.LastAddress = c.In.G4()
+		c.DaysSinceLastLogin = c.In.G2()
+		c.DaysSinceRecoveriesChanged = c.In.G1()
+		c.UnreadMessages = c.In.G2()
+		if c.LastAddress != 0 && c.ViewportInterfaceID == -1 {
+			signlink.DNSLookup(jstring.FormatIPv4(int32(c.LastAddress)))
+			c.CloseInterfaces()
+			var47 := 650 // Java: short var47
+			if c.DaysSinceRecoveriesChanged != 201 {
+				var47 = 655
+			}
+			c.ReportAbuseInput = ""
+			c.ReportAbuseMuteOption = false
+			for var4 := range len(component.Instances) {
+				if component.Instances[var4] != nil && component.Instances[var4].ClientCode == var47 {
+					c.ViewportInterfaceID = component.Instances[var4].Layer
+					break
+				}
+			}
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 126 — flashing tab (client.java:9854-9866)
+	if c.PacketType == 126 {
+		c.FlashingTab = c.In.G1()
+		if c.FlashingTab == c.SelectedTab {
+			if c.FlashingTab == 3 {
+				c.SelectedTab = 1
+			} else {
+				c.SelectedTab = 3
+			}
+			c.RedrawSidebar = true
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 212 — MIDI music push (bzip2) (client.java:9867-9878)
+	if c.PacketType == 212 {
+		if c.MidiActive && !LowMemory {
+			var26 := c.In.G2()
+			var4 := c.In.G4()
+			var5 := c.PacketSize - 6
+			var35 := make([]byte, var4)
+			bzip2.Read(var35, var4, c.In.Data, var5, c.In.Pos)
+			c.SaveMidi(var35, var4, false)
+			c.NextMusicDelay = var26
+		}
+		c.PacketType = -1
+		return true
+	}
 
 	signlink.ReportErrorFunc(fmt.Sprintf("T1 - %d,%d - %d,%d", c.PacketType, c.PacketSize, c.LastPacketType1, c.LastPacketType2))
 	c.Logout()
