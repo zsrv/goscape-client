@@ -289,9 +289,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 					for dx := 0; dx <= length; dx++ {
 						for dz := 0; dz <= width; dz++ {
 							shade := mdl.Radius / 4
-							if shade > 30 {
-								shade = 30
-							}
+							shade = min(shade, 30)
 
 							if shade > int(w.LevelShadeMap[level][x+dx][z+dz]) {
 								w.LevelShadeMap[level][x+dx][z+dz] = byte(shade)
@@ -552,19 +550,11 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 		}
 	}
 	RandomHueOffset += int(rand.Float64()*5.0) - 2
-	if RandomHueOffset < -8 {
-		RandomHueOffset = -8
-	}
-	if RandomHueOffset > 8 {
-		RandomHueOffset = 8
-	}
+	RandomHueOffset = max(RandomHueOffset, -8)
+	RandomHueOffset = min(RandomHueOffset, 8)
 	RandomLightnessOffset += int(rand.Float64()*5.0) - 2
-	if RandomLightnessOffset < -16 {
-		RandomLightnessOffset = -16
-	}
-	if RandomLightnessOffset > 16 {
-		RandomLightnessOffset = 16
-	}
+	RandomLightnessOffset = max(RandomLightnessOffset, -16)
+	RandomLightnessOffset = min(RandomLightnessOffset, 16)
 	var12 := 0
 	var13 := 0
 	var14 := 0

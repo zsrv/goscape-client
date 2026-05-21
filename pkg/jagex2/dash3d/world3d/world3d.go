@@ -268,9 +268,7 @@ func (w *World3D) AddObjStack(arg0, arg1 *model.Model, arg2, arg3, arg4, arg5, a
 	if var12 != nil {
 		for i := range var12.LocCount {
 			var14 := var12.Locs[i].Model.ObjRaise
-			if var14 > var11 {
-				var11 = var14
-			}
+			var11 = max(var14, var11)
 		}
 	}
 	var10.Offset = var11
@@ -1042,21 +1040,13 @@ func (w *World3D) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 	EyeTileZ = arg5 / 128
 	TopLevel = arg2
 	MinDrawTileX = EyeTileX - 25
-	if MinDrawTileX < 0 {
-		MinDrawTileX = 0
-	}
+	MinDrawTileX = max(MinDrawTileX, 0)
 	MinDrawTileZ = EyeTileZ - 25
-	if MinDrawTileZ < 0 {
-		MinDrawTileZ = 0
-	}
+	MinDrawTileZ = max(MinDrawTileZ, 0)
 	MaxDrawTileX = EyeTileX + 25
-	if MaxDrawTileX > w.MaxTileX {
-		MaxDrawTileX = w.MaxTileX
-	}
+	MaxDrawTileX = min(MaxDrawTileX, w.MaxTileX)
 	MaxDrawTileZ = EyeTileZ + 25
-	if MaxDrawTileZ > w.MaxTileZ {
-		MaxDrawTileZ = w.MaxTileZ
-	}
+	MaxDrawTileZ = min(MaxDrawTileZ, w.MaxTileZ)
 	w.UpdateActiveOccluders()
 	TilesRemaining = 0
 	for i := w.Minlevel; i < w.MaxLevel; i++ {
@@ -1505,9 +1495,7 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 
 											minTileDistanceX := EyeTileX - loc.MinSceneTileX
 											maxTileDistanceX := loc.MaxSceneTileX - EyeTileX
-											if maxTileDistanceX > minTileDistanceX {
-												minTileDistanceX = maxTileDistanceX
-											}
+											minTileDistanceX = max(maxTileDistanceX, minTileDistanceX)
 
 											minTileDistanceZ := EyeTileZ - loc.MinSceneTileZ
 											maxTileDistanceZ := loc.MaxSceneTileZ - EyeTileZ
@@ -1899,13 +1887,9 @@ func (w *World3D) UpdateActiveOccluders() {
 			var6 = var5.MinTileX - EyeTileX + 25
 			if var6 >= 0 && var6 <= 50 {
 				var7 = var5.MinTileZ - EyeTileZ + 25
-				if var7 < 0 {
-					var7 = 0
-				}
+				var7 = max(var7, 0)
 				var8 = var5.MaxTileZ - EyeTileZ + 25
-				if var8 > 50 {
-					var8 = 50
-				}
+				var8 = min(var8, 50)
 				var14 = false
 				for var7 <= var8 {
 					var7++
@@ -1937,13 +1921,9 @@ func (w *World3D) UpdateActiveOccluders() {
 			var6 = var5.MinTileZ - EyeTileZ + 25
 			if var6 >= 0 && var6 <= 50 {
 				var7 = var5.MinTileX - EyeTileX + 25
-				if var7 < 0 {
-					var7 = 0
-				}
+				var7 = max(var7, 0)
 				var8 = var5.MaxTileX - EyeTileX + 25
-				if var8 > 50 {
-					var8 = 50
-				}
+				var8 = min(var8, 50)
 				var14 = false
 				for var7 <= var8 {
 					var7++
@@ -1975,22 +1955,14 @@ func (w *World3D) UpdateActiveOccluders() {
 			var6 = var5.MinY - EyeY
 			if var6 > 128 {
 				var7 = var5.MinTileZ - EyeTileZ + 25
-				if var7 < 0 {
-					var7 = 0
-				}
+				var7 = max(var7, 0)
 				var8 = var5.MaxTileZ - EyeTileZ + 25
-				if var8 > 50 {
-					var8 = 50
-				}
+				var8 = min(var8, 50)
 				if var7 <= var8 {
 					var9 := var5.MinTileX - EyeTileX + 25
-					if var9 < 0 {
-						var9 = 0
-					}
+					var9 = max(var9, 0)
 					var10 = var5.MaxTileX - EyeTileX + 25
-					if var10 > 50 {
-						var10 = 50
-					}
+					var10 = min(var10, 50)
 					var11 := false
 				label146:
 					for j := var9; j <= var10; j++ {

@@ -226,18 +226,10 @@ func NewTileOverlay(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, 
 	if arg3 > arg3 {
 		var37 = arg3
 	}
-	if arg13 < var36 {
-		var36 = arg13
-	}
-	if arg13 > var37 {
-		var37 = arg13
-	}
-	if arg7 < var36 {
-		var36 = arg7
-	}
-	if arg7 > var37 {
-		var37 = arg7
-	}
+	var36 = min(arg13, var36)
+	var37 = max(arg13, var37)
+	var36 = min(arg7, var36)
+	var37 = max(arg7, var37)
 	var36 /= 14
 	var37 /= 14
 
