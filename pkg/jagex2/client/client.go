@@ -2470,7 +2470,9 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 
 	for data == nil {
 		c.DrawProgress("Requesting "+displayName, progress)
-		// TODO: try/except
+		// Java: catch (IOException) — handled inline by loadingError() above on
+		// each I/O step (open, read, chunked read). Java retries with exponential
+		// backoff (5, 10, 20, 40, 60s).
 		lastDownloaded := 0
 
 		reader, err := c.OpenURL(name + strconv.Itoa(crc))
@@ -2503,6 +2505,7 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 			data[i] = header[i]
 		}
 
+		readFailed := false
 		for pos < packedSize {
 			chunkSize := packedSize - pos
 			if chunkSize > 1000 {
@@ -2512,7 +2515,9 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 			n, err := reader.Read(data[pos : pos+chunkSize])
 			if err != nil {
 				fmt.Printf("GetJagFile read error: %v\n", err)
-				return nil
+				loadingError()
+				readFailed = true
+				break
 			}
 
 			pos += n
@@ -2522,6 +2527,9 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 				c.DrawProgress("Loading "+displayName+" - "+strconv.Itoa(downloaded)+"%", progress)
 			}
 			lastDownloaded = downloaded
+		}
+		if readFailed {
+			continue
 		}
 	}
 	signlink.CacheSave(name, data)
