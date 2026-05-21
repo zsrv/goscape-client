@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"gioui.org/io/event"
@@ -281,7 +282,7 @@ type Client struct {
 	BFSDirection                  [][]int
 	ImageCrosses                  []*pix32.Pix32
 	FlameThread                   bool
-	MidiSync                      any
+	MidiSyncMu                    sync.Mutex // Java: midiSync (deob/client.java:491) — dedicated lock for the MidiSyncName/CRC/Len handoff between SetMidi and RunMidi
 	WaveIDs                       []int
 	CameraOffsetXModifier         int
 	FriendName                    []string
@@ -602,7 +603,6 @@ func NewClient() *Client {
 		LOC_SHAPE_TO_LAYER:        []int{0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3},
 		CompassMaskLineLengths:    make([]int, 33),
 		ImageCrosses:              make([]*pix32.Pix32, 8),
-		//MidiSync: // TODO
 		WaveIDs:                   make([]int, 50),
 		CameraOffsetXModifier:     2,
 		FriendName:                make([]string, 100),
@@ -663,11 +663,11 @@ func (c *Client) SetMidi(crc int, name string, length int) {
 	if name == "" {
 		return
 	}
-	// TODO: synchronized
+	c.MidiSyncMu.Lock()
+	defer c.MidiSyncMu.Unlock()
 	c.MidiSyncName = name
 	c.MidiSyncCRC = crc
 	c.MidiSyncLen = length
-	// END synchronized
 }
 
 func (c *Client) Draw2DEntityElements() {
@@ -1540,13 +1540,14 @@ func (c *Client) RunMidi() {
 		var2 := ""
 		var3 := 0
 		var4 := 0
-		// TODO: synchronized
+		c.MidiSyncMu.Lock()
 		var2 = c.MidiSyncName
 		var3 = c.MidiSyncCRC
 		var4 = c.MidiSyncLen
 		c.MidiSyncName = ""
 		c.MidiSyncCRC = 0
 		c.MidiSyncLen = 0
+		c.MidiSyncMu.Unlock()
 		if var2 != "" {
 			var14 := signlink.CacheLoad(var2 + ".mid")
 			var6 := 0
