@@ -101,9 +101,9 @@ All blockers in this section depend on §5.1 (ClientStream port) and §5.2
 |---|---|---|---|
 | ~~483~~ | ~~`Client` struct~~ | ~~`//Stream ClientStream // TODO` — field commented out.~~ **Ported 2026-05-21.** | ~~🔴~~ |
 | 4865 | `GetHost` | Returns hardcoded `"127.0.0.1"`. Should resolve from codebase / args. | 🔴 |
-| 6178 | `LoginFunc` | `// TODO: clientstream` — `c.stream = new ClientStream(...)` not wired. | 🔴 |
-| 6214 | `LoginFunc` | `// TODO: stream.write` — login handshake bytes never sent. | 🔴 |
-| 6215 | `LoginFunc` | `var7 := 0 // TODO: placeholder - var7 stream.read` — login response not read. | 🔴 |
+| ~~6178~~ | ~~`LoginFunc`~~ | ~~`// TODO: clientstream` — `c.stream = new ClientStream(...)` not wired.~~ **Ported 2026-05-21.** | ~~🔴~~ |
+| ~~6214~~ | ~~`LoginFunc`~~ | ~~`// TODO: stream.write` — login handshake bytes never sent.~~ **Ported 2026-05-21.** | ~~🔴~~ |
+| ~~6215~~ | ~~`LoginFunc`~~ | ~~`var7 := 0 // TODO: placeholder - var7 stream.read` — login response not read.~~ **Ported 2026-05-21.** | ~~🔴~~ |
 | 6497 | `Unload` | `// TODO: stream.close` — leaks the socket on shutdown. | 🟡 |
 | ~~6615~~ | ~~(commented)~~ | ~~`//func (c *Client) OpenSocket(arg0 int)` — function not written.~~ **Ported 2026-05-21.** | ~~🔴~~ |
 | 6938 | (heartbeat write) | `// TODO: stream write` — periodic write not connected. | 🔴 |
@@ -132,7 +132,7 @@ All blockers in this section depend on §5.1 (ClientStream port) and §5.2
 | 5354–5355 | `Load` | `// TODO: try/except - recover panic?` and `retry := 5 // TODO`. | 🟡 |
 | 6049 | `OpenURL` | `// TODO: signlink.openurl for applets not included` — Go isn't an applet; remove the TODO. | ⚪ |
 | 6101 | `RunFlames` | `// TODO: try/catch` — flame anim error handling. | ⚪ |
-| 6172 | `LoginFunc` | `// TODO: try/catch` — wrap login in a recover/log. | 🟡 |
+| ~~6172~~ | ~~`LoginFunc`~~ | ~~`// TODO: try/catch` — wrap login in a recover/log.~~ **Ported 2026-05-21** — handled inline at each I/O site (4 checks → `"Error connecting to server."`), matching Java's single outer `catch (IOException)` semantics. | ~~🟡~~ |
 | 6976 | `GetCodeBase` | `// TODO: getcodebase signlink - signlink.mainapp` — replace with config-driven host. | 🟡 |
 | 7224 | `UpdateInterfaceAnimation` | `// TODO: verify or` — operator precedence check. | ⚪ |
 | 7747 | (commented) | `//func (c *Client) GetParameter(...)` — applet HTML parameters; not applicable to Go. Delete with a one-line comment. | ⚪ |
@@ -245,9 +245,18 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
    Field declared as `Stream *clientstream.ClientStream` (pointer — type
    carries goroutine + `sync.Cond`, must not be copied). `NewClient`
    unchanged; nil-pointer zero value matches Java's default-null reference.
-5. Wire `LoginFunc` (client.go:6170+) end-to-end: create the stream, write
+5. ~~Wire `LoginFunc` (client.go:6170+) end-to-end: create the stream, write
    login bytes, read the response byte, dispatch the switch. Drop the
-   placeholder `var7 := 0`.
+   placeholder `var7 := 0`.~~ **Done 2026-05-21.** Verified byte order on the
+   wire matches Java `client.java:6786-6820` exactly: openSocket → new
+   ClientStream → ReadFully(in.Data, 0, 8) → unpack serverSeed → build out +
+   login buffers → Stream.Write(login.Data, login.Pos, 0) → Stream.Read()
+   into `var7`. Java rev 225 does *not* send a leading username-hash byte
+   (the resume prompt's caveat doesn't apply to this rev). Errors at any of
+   the four I/O sites set `LoginMessage0=""` / `LoginMessage1="Error
+   connecting to server."` and return, matching Java's outer
+   `catch (IOException)`. The `// TODO: try/catch` marker at 6172 collapses
+   into that inline handling and is gone.
 6. Wire `Logout`, `Unload`, `TryReconnect`, and the heartbeat write
    (client.go:6938) to actually call `c.Stream.Write` / `Close`.
 7. Port the inbound packet dispatcher in `Read()` (client.go:8623). This is

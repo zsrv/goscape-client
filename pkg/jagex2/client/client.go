@@ -6171,13 +6171,23 @@ func (c *Client) HandleScrollInput(arg0, arg1, arg2, arg3, arg4 int, arg5 bool, 
 
 func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 	signlink.ErrorName = arg0
-	// TODO: try/catch
 	if !arg2 {
 		c.LoginMessage0 = ""
 		c.LoginMessage1 = "Connecting to server..."
 		c.DrawTitleScreen()
 	}
-	// TODO: clientstream
+	conn, err := c.OpenSocket(clientextras.PortOffset + 43594)
+	if err != nil {
+		c.LoginMessage0 = ""
+		c.LoginMessage1 = "Error connecting to server."
+		return
+	}
+	c.Stream = clientstream.NewClientStream(conn)
+	if err := c.Stream.ReadFully(c.In.Data, 0, 8); err != nil {
+		c.LoginMessage0 = ""
+		c.LoginMessage1 = "Error connecting to server."
+		return
+	}
 	c.In.Pos = 0
 	c.ServerSeed = c.In.G8()
 	var4 := [4]int{int(rand.Float64() * 9.9999999e7), int(rand.Float64() * 9.9999999e7), int(c.ServerSeed >> 32), int(c.ServerSeed)}
@@ -6213,8 +6223,17 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		var4[i] += 50
 	}
 	c.RandomIn = io.NewIsaac(var4)
-	// TODO: stream.write
-	var7 := 0 // TODO: placeholder - var7 stream.read
+	if err := c.Stream.Write(c.Login.Data, c.Login.Pos, 0); err != nil {
+		c.LoginMessage0 = ""
+		c.LoginMessage1 = "Error connecting to server."
+		return
+	}
+	var7, err := c.Stream.Read()
+	if err != nil {
+		c.LoginMessage0 = ""
+		c.LoginMessage1 = "Error connecting to server."
+		return
+	}
 	if var7 == 1 {
 		time.Sleep(2000 * time.Millisecond)
 		c.LoginFunc(arg0, arg1, arg2)
