@@ -135,7 +135,7 @@ func (w *Wave) Generate(loopCount int) int {
 
 	totalSampleCount := sampleCount + (loopStop-loopStart)*(loopCount-1)
 	for sample := 44; sample < totalSampleCount+44; sample++ {
-		WaveBytes[sample] = -128 & 0xFF // TODO: AND is mine, verify behavior
+		WaveBytes[sample] = 0x80 // Java: waveBytes[i] = -128 (signed byte); 0x80 is the unsigned equivalent
 	}
 
 	for tn := range 10 {
