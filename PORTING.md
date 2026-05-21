@@ -104,13 +104,13 @@ All blockers in this section depend on §5.1 (ClientStream port) and §5.2
 | ~~6178~~ | ~~`LoginFunc`~~ | ~~`// TODO: clientstream` — `c.stream = new ClientStream(...)` not wired.~~ **Ported 2026-05-21.** | ~~🔴~~ |
 | ~~6214~~ | ~~`LoginFunc`~~ | ~~`// TODO: stream.write` — login handshake bytes never sent.~~ **Ported 2026-05-21.** | ~~🔴~~ |
 | ~~6215~~ | ~~`LoginFunc`~~ | ~~`var7 := 0 // TODO: placeholder - var7 stream.read` — login response not read.~~ **Ported 2026-05-21.** | ~~🔴~~ |
-| 6497 | `Unload` | `// TODO: stream.close` — leaks the socket on shutdown. | 🟡 |
+| ~~6497~~ | ~~`Unload`~~ | ~~`// TODO: stream.close` — leaks the socket on shutdown.~~ **Ported 2026-05-21.** | ~~🟡~~ |
 | ~~6615~~ | ~~(commented)~~ | ~~`//func (c *Client) OpenSocket(arg0 int)` — function not written.~~ **Ported 2026-05-21.** | ~~🔴~~ |
-| 6938 | (heartbeat write) | `// TODO: stream write` — periodic write not connected. | 🔴 |
-| 7761 | `TryReconnect` | `// TODO: c.stream` — local `var2 = this.stream` save before reconnect. | 🟡 |
-| 7767 | `TryReconnect` | `// TODO: c.stream.close()` — close pre-existing stream before retry. | 🟡 |
+| ~~6938~~ | ~~(heartbeat write)~~ | ~~`// TODO: stream write` — periodic write not connected.~~ **Ported 2026-05-21.** | ~~🔴~~ |
+| ~~7761~~ | ~~`TryReconnect`~~ | ~~`// TODO: c.stream` — local `var2 = this.stream` save before reconnect.~~ **Ported 2026-05-21.** | ~~🟡~~ |
+| ~~7767~~ | ~~`TryReconnect`~~ | ~~`// TODO: c.stream.close()` — close pre-existing stream before retry.~~ **Ported 2026-05-21.** | ~~🟡~~ |
 | 8623 | `Read` | Entire function is `return false // TODO: stub - c.stream`. This is the main inbound packet dispatcher (~100 lines in Java). | 🔴 |
-| 3362–3363 | `Logout` | `// TODO: c.Stream.Close()`, `// TODO: c.Stream = nil`. | 🟡 |
+| ~~3362–3363~~ | ~~`Logout`~~ | ~~`// TODO: c.Stream.Close()`, `// TODO: c.Stream = nil`.~~ **Ported 2026-05-21.** | ~~🟡~~ |
 
 ### 4.3 Other client.go gaps
 
@@ -257,8 +257,20 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
    connecting to server."` and return, matching Java's outer
    `catch (IOException)`. The `// TODO: try/catch` marker at 6172 collapses
    into that inline handling and is gone.
-6. Wire `Logout`, `Unload`, `TryReconnect`, and the heartbeat write
-   (client.go:6938) to actually call `c.Stream.Write` / `Close`.
+6. ~~Wire `Logout`, `Unload`, `TryReconnect`, and the heartbeat write
+   (client.go:6938) to actually call `c.Stream.Write` / `Close`.~~
+   **Done 2026-05-21.** All four sites ported faithfully from Java
+   `client.java`: `logout()` 3955-3977 (close + nil), `unload()` 7114-7122
+   (close + nil — Java does nil it, contra the resume prompt's note),
+   heartbeat block 7566-7580 (`p1isaac(108)` separate from the
+   conditional `stream != null && out.pos > 0` write; success path resets
+   `out.pos`/`heartbeatTimer`, error path calls `TryReconnect`), and
+   `tryReconnect()` 8409-8431 (`var2 := c.Stream` snapshot, then close
+   after `LoginFunc`; Go must nil-check `var2` since `var2.Close()` on a
+   nil pointer panics, whereas Java's catch swallows the NPE). Java's
+   two-branch catch (`IOException → tryReconnect`, `Exception → logout`)
+   collapses in Go because `ClientStream.Write` returns a single untyped
+   error.
 7. Port the inbound packet dispatcher in `Read()` (client.go:8623). This is
    the largest single function still stubbed (~100 lines in Java); break it
    into one PR per opcode group if it gets unwieldy.

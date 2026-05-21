@@ -3361,8 +3361,10 @@ func (c *Client) GetPlayerNewVis(arg1 int, arg2 *io.Packet) {
 }
 
 func (c *Client) Logout() {
-	// TODO: c.Stream.Close()
-	// TODO: c.Stream = nil
+	if c.Stream != nil {
+		c.Stream.Close()
+	}
+	c.Stream = nil
 	c.TitleScreenState = 0
 	c.Username = ""
 	c.Password = ""
@@ -6515,7 +6517,10 @@ func (c *Client) AddFriend(arg0 int64) {
 
 func (c *Client) Unload() {
 	signlink.ReportError = false
-	//TODO: stream.close
+	if c.Stream != nil {
+		c.Stream.Close()
+	}
+	c.Stream = nil
 	c.StopMidi()
 	c.MidiThreadActive = false
 	c.Out = nil
@@ -6962,8 +6967,17 @@ func (c *Client) UpdateGame() {
 	if c.HeartbeatTimer > 50 {
 		c.Out.P1Isaac(108)
 	}
-	// TODO: try/catch reconnect logout
-	// TODO: stream write
+	if c.Stream != nil && c.Out.Pos > 0 {
+		// Java distinguishes IOException -> tryReconnect from generic
+		// Exception -> logout; ClientStream.Write returns a single
+		// untyped error, so both branches collapse here.
+		if err := c.Stream.Write(c.Out.Data, c.Out.Pos, 0); err != nil {
+			c.TryReconnect()
+		} else {
+			c.Out.Pos = 0
+			c.HeartbeatTimer = 0
+		}
+	}
 }
 
 func (c *Client) DrawTooltip() {
@@ -7786,13 +7800,17 @@ func (c *Client) TryReconnect() {
 	c.FontPlain12.CentreString(158, 0xFFFFFF, "Please wait - attempting to reestablish", 256)
 	c.AreaViewport.Draw(&c.Ops, 8, 11)
 	c.FlagSceneTileX = 0
-	// TODO: c.stream
+	var2 := c.Stream
 	c.InGame = false
 	c.LoginFunc(c.Username, c.Password, true)
 	if !c.InGame {
 		c.Logout()
 	}
-	// TODO: c.stream.close()
+	if var2 != nil {
+		// Java's `try { var2.close(); } catch (Exception) {}` swallows a
+		// possible NPE on null stream; Go must nil-check to avoid panic.
+		var2.Close()
+	}
 }
 
 func (c *Client) UpdateFlameBuffer(image *pix8.Pix8) {
