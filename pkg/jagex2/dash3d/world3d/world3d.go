@@ -1199,10 +1199,16 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 									var var12 *typ.Location
 									for {
 										for ok7 := true; ok7; ok7 = !tile.Update {
-											tile = DrawTileQueue.RemoveHead().Value
-											if tile == nil {
+											// Java: `Ground extends Linkable`, so `removeHead()`
+											// returns a Ground (or null on empty queue). In Go the
+											// Linkable wraps the Ground, so the nil check belongs on
+											// the *Linkable — `.Value` on a nil Linkable would panic
+											// before the existing tile-nil check below could fire.
+											linkable := DrawTileQueue.RemoveHead()
+											if linkable == nil {
 												return
 											}
+											tile = linkable.Value
 										}
 
 										tileX = tile.X
