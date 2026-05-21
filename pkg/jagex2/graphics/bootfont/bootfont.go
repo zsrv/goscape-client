@@ -2,6 +2,12 @@
 // (and thus the RuneScape pixel fonts in pixfont) has been loaded. It
 // wraps golang.org/x/image/font/basicfont.Face7x13, a monospace 7x13
 // font shipped in x/image. Used exclusively by DrawProgressGameShell.
+//
+// Unlike pixfont — which writes through pix2d's package globals set by
+// a prior Bind() call — bootfont.DrawString takes an explicit *PixMap
+// and writes directly to its int-packed buffer. The two APIs are
+// intentionally divergent because boot-phase code cannot rely on the
+// usual pix2d binding lifecycle being set up.
 package bootfont
 
 import (

@@ -8230,16 +8230,21 @@ func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) (resu
 	}
 }
 
-// DrawError renders the user-facing error screen on top of the base
-// component. Java: drawError() at client.java:8727-8781. The Java version
-// fetches Graphics from the AWT base component and paints directly to the
-// window. The Go port routes the corresponding direct-to-window drawing
-// through the still-unimplemented DrawProgressGameShell path (the AWT
-// Graphics surface has no Gio equivalent yet); the Java side-effects
-// (clearing the screen, throttling the framerate, disabling the flame
-// animation, and the early-return ordering between the three error
-// modes) are preserved exactly so that state remains consistent for the
-// rest of the client.
+// DrawError renders the user-facing error screen for the three error
+// modes (ErrorLoading, ErrorHost, ErrorStarted). Java: drawError() at
+// client.java:8727-8781.
+//
+// Java painted directly to the AWT base component's Graphics; the Go
+// port clears a shared overlay PixMap (via ensureOverlay), uses pixfont
+// (FontBold12) for all text, then composites via OverlayPixMap.Draw.
+// FontBold12 substitutes for Java's Helvetica BOLD 16/20 — same
+// divergence as elsewhere in the port. The branch ordering, frame-rate
+// throttle, and FlameActive=false side effects mirror Java exactly so
+// the rest of the client stays in sync. The early return on
+// !ErrorStarted composites first (so any ErrorLoading/ErrorHost draws
+// already in the overlay are flushed before returning) — this differs
+// from Java only because Java drew directly to the window, where each
+// drawString was immediately visible.
 func (c *Client) DrawError() {
 	c.ensureOverlay()
 	c.OverlayPixMap.Bind()

@@ -213,33 +213,17 @@ func (c *Client) PollKey() int {
 	return var2
 }
 
-// DrawProgressGameShell renders the boot-time loading bar that Client.LoadTitle
-// has not yet wired (i.e. when c.JagTitle is still nil and Client.DrawProgress
-// falls through to here). Java: GameShell.drawProgress(String, int) at
-// GameShell.java:529-560.
+// DrawProgressGameShell renders the boot-time loading bar used before
+// c.JagTitle has been downloaded (i.e. when Client.DrawProgress falls
+// through to here because no title archive yet). Java:
+// GameShell.drawProgress(String, int) at GameShell.java:529-560.
 //
-// The Java version paints directly to the AWT base component's Graphics — it
-// busy-waits until getBaseComponent().getGraphics() returns non-null, then
-// draws a black background fill (when refresh is set), a 304x34 red border
-// rectangle, a percent*3 wide red fill, the black remainder, and a centered
-// white Helvetica BOLD 13pt message above it. None of that has a Gio
-// equivalent yet (see Client.DrawError, which is similarly documented and
-// awaits the same canvas decision); when a direct PixMap-overlay or Gio-op
-// drawing surface lands for boot-time text/shapes, this is where the
-// graphics calls below should be reproduced.
-//
-// There are no Java-visible state mutations to preserve (drawProgress only
-// touches the local Graphics surface and clears this.refresh on the first
-// fill); the Go port leaves the function empty until the canvas decision.
-//
-// Java drawing sequence, for reference once a surface is available:
-//
-//	if (refresh) { fillRect(0, 0, screenWidth, screenHeight) in Color.black; refresh = false; }
-//	color = (140, 17, 17); drawRect(screenWidth/2 - 152, screenHeight/2 - 18, 304, 34);
-//	fillRect(screenWidth/2 - 150, screenHeight/2 - 16, percent*3, 30);
-//	color = black; fillRect(screenWidth/2 - 150 + percent*3, screenHeight/2 - 16, 300 - percent*3, 30);
-//	font = Helvetica BOLD 13; color = white;
-//	drawString(message, (screenWidth - stringWidth(message))/2, screenHeight/2 - 18 + 22);
+// Java painted directly to the AWT base component's Graphics; the Go
+// port paints into a shared overlay PixMap (via ensureOverlay) using
+// pix2d for rectangles and bootfont (basicfont.Face7x13) for the
+// message text, then composites via OverlayPixMap.Draw. The Helvetica
+// BOLD 13 in the Java source is substituted with bootfont's monospace
+// 7x13 — pixfont's RuneScape font isn't available at this phase.
 func (c *Client) DrawProgressGameShell(message string, percent int) {
 	c.ensureOverlay()
 	c.OverlayPixMap.Bind()
