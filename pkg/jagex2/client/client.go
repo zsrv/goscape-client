@@ -9546,6 +9546,114 @@ func (c *Client) Read() bool {
 		c.PacketType = -1
 		return true
 	}
+	// Java: opcode 193 — flush varCache→varps (client.java:10071-10080)
+	if c.PacketType == 193 {
+		for var26 := range len(c.Varps) {
+			if c.Varps[var26] != c.VarCache[var26] {
+				c.Varps[var26] = c.VarCache[var26]
+				c.UpdateVarp(var26)
+				c.RedrawSidebar = true
+			}
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 87 — component model = new Model(id) (client.java:10082-10087)
+	if c.PacketType == 87 {
+		var26 := c.In.G2()
+		var4 := c.In.G2()
+		component.Instances[var26].Model = model.NewModel1(var4)
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 185 — sticky chat interface (client.java:10089-10094)
+	if c.PacketType == 185 {
+		var26 := c.In.G2B()
+		c.StickyChatInterfaceID = var26
+		c.RedrawChatback = true
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 68 — energy update (client.java:10096-10102)
+	if c.PacketType == 68 {
+		if c.SelectedTab == 12 {
+			c.RedrawSidebar = true
+		}
+		c.Energy = c.In.G1()
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 74 — cutscene camera-target init (client.java:10104-10129)
+	if c.PacketType == 74 {
+		c.Cutscene = true
+		c.CutsceneDstLocalTileX = c.In.G1()
+		c.CutsceneDstLocalTileZ = c.In.G1()
+		c.CutsceneDstHeight = c.In.G2()
+		c.CutsceneRotateSpeed = c.In.G1()
+		c.CutsceneRotateAcceleration = c.In.G1()
+		if c.CutsceneRotateAcceleration >= 100 {
+			var26 := c.CutsceneDstLocalTileX*128 + 64
+			var4 := c.CutsceneDstLocalTileZ*128 + 64
+			var5 := c.GetHeightMapY(c.CurrentLevel, c.CutsceneDstLocalTileX, c.CutsceneDstLocalTileZ) - c.CutsceneDstHeight
+			var6 := var26 - c.CameraX
+			var7 := var5 - c.CameraY
+			var8 := var4 - c.CameraZ
+			var9 := int(math.Sqrt(float64(var6*var6 + var8*var8)))
+			c.CameraPitch = int(math.Atan2(float64(var7), float64(var9))*325.949) & 0x7FF
+			c.CameraYaw = int(math.Atan2(float64(var6), float64(var8))*-325.949) & 0x7FF
+			if c.CameraPitch < 128 {
+				c.CameraPitch = 128
+			}
+			if c.CameraPitch > 383 {
+				c.CameraPitch = 383
+			}
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 84 — selected sidebar tab (client.java:10131-10136)
+	if c.PacketType == 84 {
+		c.SelectedTab = c.In.G1()
+		c.RedrawSidebar = true
+		c.RedrawSideIcons = true
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 46 — component obj-icon model (client.java:10174-10184)
+	if c.PacketType == 46 {
+		var26 := c.In.G2()
+		var4 := c.In.G2()
+		var5 := c.In.G2()
+		var31 := objtype.Get(var4)
+		component.Instances[var26].Model = var31.GetInterfaceModel(50)
+		component.Instances[var26].Xan = var31.Xan2D
+		component.Instances[var26].Yan = var31.Yan2D
+		component.Instances[var26].Zoom = var31.Zoom2D * 100 / var5
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 168 — open viewport interface only (client.java:10186-10205)
+	if c.PacketType == 168 {
+		var26 := c.In.G2()
+		c.ResetInterfaceAnimation(var26)
+		if c.SidebarInterfaceID != -1 {
+			c.SidebarInterfaceID = -1
+			c.RedrawSidebar = true
+			c.RedrawSideIcons = true
+		}
+		if c.ChatInterfaceID != -1 {
+			c.ChatInterfaceID = -1
+			c.RedrawChatback = true
+		}
+		if c.ChatbackInputOpen {
+			c.ChatbackInputOpen = false
+			c.RedrawChatback = true
+		}
+		c.ViewportInterfaceID = var26
+		c.PressedContinueOption = false
+		c.PacketType = -1
+		return true
+	}
 
 	signlink.ReportErrorFunc(fmt.Sprintf("T1 - %d,%d - %d,%d", c.PacketType, c.PacketSize, c.LastPacketType1, c.LastPacketType2))
 	c.Logout()
