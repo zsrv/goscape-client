@@ -8849,6 +8849,13 @@ func (c *Client) Read() bool {
 		c.PacketType = -1
 		return true
 	}
+	// Java: zone-packet opcode group (client.java:9697-9700) — ten opcodes,
+	// each a thin pass-through to readZonePacket which dispatches internally.
+	if c.PacketType == 151 || c.PacketType == 23 || c.PacketType == 50 || c.PacketType == 191 || c.PacketType == 69 || c.PacketType == 49 || c.PacketType == 223 || c.PacketType == 42 || c.PacketType == 76 || c.PacketType == 59 {
+		c.ReadZonePacket(c.In, c.PacketType)
+		c.PacketType = -1
+		return true
+	}
 
 	signlink.ReportErrorFunc(fmt.Sprintf("T1 - %d,%d - %d,%d", c.PacketType, c.PacketSize, c.LastPacketType1, c.LastPacketType2))
 	c.Logout()
