@@ -1565,13 +1565,9 @@ func (c *Client) RunMidi() {
 				var14 = make([]byte, var4)
 				var8 := 0
 				for i := 0; i < var4; i += var8 {
-					var8, err = var15.ReadAt(var14[i:var4-i], 0) // TODO: verify
+					var8, err = var15.Read(var14[i:var4])
 					if err != nil {
-						var9 := make([]byte, i)
-						for j := range i {
-							var9[j] = var14[j]
-						}
-						var14 = var9
+						var14 = var14[:i]
 						var4 = i
 						break
 					}
@@ -6068,6 +6064,9 @@ func (c *Client) OpenURL(arg0 string) (*bytes.Reader, error) {
 		return nil, fmt.Errorf("failed to open url: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("openurl %s: HTTP %d", arg0, resp.StatusCode)
+	}
 	b, err := io2.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
