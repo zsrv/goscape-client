@@ -62,7 +62,7 @@ func NewHashTable(bucketCount int32) *HashTable {
 		BucketCount: bucketCount,
 		Buckets:     make([]*Linkable, bucketCount),
 	}
-	for i := int32(0); i < bucketCount; i++ {
+	for i := range bucketCount {
 		sentinel := &Linkable{}
 		sentinel.Next = sentinel
 		sentinel.Prev = sentinel
