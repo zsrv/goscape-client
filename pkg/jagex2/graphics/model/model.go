@@ -255,17 +255,15 @@ func Unpack(arg1 *io.Jagfile) {
 }
 
 func NewModel1(arg1 int) *Model {
+	var m Model
 	if Metadata == nil {
-		// TODO: or return a Model?
-		return nil
+		return &m
 	}
 	var3 := Metadata[arg1]
 	if var3 == nil {
-		// TODO: or return a Model?
 		fmt.Println("Error model", arg1, "not found!")
-		return nil
+		return &m
 	}
-	var m Model
 	m.VertexCount = var3.VertexCount
 	m.FaceCount = var3.FaceCount
 	m.TexturedFaceCount = var3.TexturedFaceCount
