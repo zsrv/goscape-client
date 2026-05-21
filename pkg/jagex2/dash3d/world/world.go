@@ -278,15 +278,15 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				width := 0
 				length := 0
 				if angle == 1 || angle == 3 {
-					width = loc.Length
-					length = loc.Width
-				} else {
-					width = loc.Width
 					length = loc.Length
+					width = loc.Width
+				} else {
+					length = loc.Width
+					width = loc.Length
 				}
 
 				if scene.AddLoc1(y, level, nil, typeCode, z, x, length, info, mdl, yaw, width) && loc.Shadow {
-					for dx := 0; dx <= length; dx++ { // TODO: length/width swapped?
+					for dx := 0; dx <= length; dx++ {
 						for dz := 0; dz <= width; dz++ {
 							shade := mdl.Radius / 4
 							if shade > 30 {
@@ -595,7 +595,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 				var20 = 65536 / var18
 				var21 = (var17 << 8) / var18
 				var22 = var46 + (var9*var19+var10*var20+var11*var21)/var13
-				var23 = int((var45[k-1][j] >> 2) + (var45[k+1][j] >> 3) + (var45[k][j-1] >> 2) + (var45[k][j+1] >> 3) + (var45[k][j] >> 1)) // TODO: questionable conversion
+				var23 = int((var45[k-1][j] >> 2) + (var45[k+1][j] >> 3) + (var45[k][j-1] >> 2) + (var45[k][j+1] >> 3) + (var45[k][j] >> 1))
 				w.LevelLightMap[k][j] = var22 - var23
 			}
 		}
