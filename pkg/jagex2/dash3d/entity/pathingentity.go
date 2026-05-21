@@ -155,8 +155,18 @@ func (e *PathingEntity) IsVisible() bool {
 	return false
 }
 
+// Pathing exposes the embedded *PathingEntity through the PathableEntity
+// interface. Both NpcEntity and PlayerEntity embed PathingEntity by value,
+// so Go's method promotion makes (*NpcEntity).Pathing() and
+// (*PlayerEntity).Pathing() return a pointer to their embedded base — the
+// Go equivalent of Java treating the reference as its PathingEntity parent.
+func (e *PathingEntity) Pathing() *PathingEntity {
+	return e
+}
+
 type PathableEntity interface {
 	Teleport(bool, int, int)
 	MoveAlongRoute(bool, int)
 	IsVisible() bool
+	Pathing() *PathingEntity
 }

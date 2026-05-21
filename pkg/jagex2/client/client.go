@@ -683,11 +683,12 @@ func (c *Client) Draw2DEntityElements() {
 			var3 = c.NPCs[c.NPCIDs[i-c.PlayerCount]]
 		}
 		if var3 != nil && var3.IsVisible() {
-			var5 := var3.(*playerentity.PlayerEntity) // mine - moved here from below
+			pe := var3.Pathing()
 			if i < c.PlayerCount {
+				var5 := var3.(*playerentity.PlayerEntity)
 				var4 = 30
 				if var5.HeadIcons != 0 {
-					c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
+					c.ProjectFromGround1(pe.Height+15, pe)
 					if c.ProjectX > -1 {
 						for j := range 8 {
 							if var5.HeadIcons&(0x1<<j) != 0 {
@@ -698,42 +699,42 @@ func (c *Client) Draw2DEntityElements() {
 					}
 				}
 				if i >= 0 && c.HintType == 10 && c.HintPlayer == c.PlayerIDs[i] {
-					c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
+					c.ProjectFromGround1(pe.Height+15, pe)
 					if c.ProjectX > -1 {
 						c.ImageHeadIcons[7].PlotSprite(c.ProjectY-var4, c.ProjectX-12)
 					}
 				}
 			} else if c.HintType == 1 && c.HintNPC == c.NPCIDs[i-c.PlayerCount] && clientextras.LoopCycle%20 < 10 {
-				c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
+				c.ProjectFromGround1(pe.Height+15, pe)
 				if c.ProjectX > -1 {
 					c.ImageHeadIcons[2].PlotSprite(c.ProjectY-28, c.ProjectX-12)
 				}
 			}
-			if var5.Chat != "" && (i >= c.PlayerCount || c.PublicChatSetting == 0 || c.PublicChatSetting == 3 || c.PublicChatSetting == 1 && c.IsFriend(var5.Name)) {
-				c.ProjectFromGround1(var5.Height, &var5.PathingEntity)
+			if pe.Chat != "" && (i >= c.PlayerCount || c.PublicChatSetting == 0 || c.PublicChatSetting == 3 || c.PublicChatSetting == 1 && c.IsFriend(var3.(*playerentity.PlayerEntity).Name)) {
+				c.ProjectFromGround1(pe.Height, pe)
 				if c.ProjectX > -1 && c.ChatCount < c.MAX_CHATS {
-					c.ChatWidth[c.ChatCount] = c.FontBold12.StringWidth(var5.Chat) / 2
+					c.ChatWidth[c.ChatCount] = c.FontBold12.StringWidth(pe.Chat) / 2
 					c.ChatHeight[c.ChatCount] = c.FontBold12.Height
 					c.ChatX[c.ChatCount] = c.ProjectX
 					c.ChatY[c.ChatCount] = c.ProjectY
-					c.ChatColors[c.ChatCount] = var5.ChatColor
-					c.ChatStyles[c.ChatCount] = var5.ChatStyle
-					c.ChatTimers[c.ChatCount] = var5.ChatTimer
-					c.Chats[c.ChatCount] = var5.Chat
+					c.ChatColors[c.ChatCount] = pe.ChatColor
+					c.ChatStyles[c.ChatCount] = pe.ChatStyle
+					c.ChatTimers[c.ChatCount] = pe.ChatTimer
+					c.Chats[c.ChatCount] = pe.Chat
 					c.ChatCount++
-					if c.ChatEffects == 0 && var5.ChatStyle == 1 {
+					if c.ChatEffects == 0 && pe.ChatStyle == 1 {
 						c.ChatHeight[c.ChatCount] += 10
 						c.ChatY[c.ChatCount] += 5
 					}
-					if c.ChatEffects == 0 && var5.ChatStyle == 2 {
+					if c.ChatEffects == 0 && pe.ChatStyle == 2 {
 						c.ChatWidth[c.ChatCount] = 60
 					}
 				}
 			}
-			if var5.CombatCycle > clientextras.LoopCycle+100 {
-				c.ProjectFromGround1(var5.Height+15, &var5.PathingEntity)
+			if pe.CombatCycle > clientextras.LoopCycle+100 {
+				c.ProjectFromGround1(pe.Height+15, pe)
 				if c.ProjectX > -1 {
-					var4 = var5.Health * 30 / var5.TotalHealth
+					var4 = pe.Health * 30 / pe.TotalHealth
 					if var4 > 30 {
 						var4 = 30
 					}
@@ -741,12 +742,12 @@ func (c *Client) Draw2DEntityElements() {
 					pix2d.FillRect(c.ProjectY-3, c.ProjectX-15+var4, 0xFF0000, 30-var4, 5)
 				}
 			}
-			if var5.CombatCycle > clientextras.LoopCycle+330 {
-				c.ProjectFromGround1(var5.Height/2, &var5.PathingEntity)
+			if pe.CombatCycle > clientextras.LoopCycle+330 {
+				c.ProjectFromGround1(pe.Height/2, pe)
 				if c.ProjectX > -1 {
-					c.ImageHitmarks[var5.DamageType].PlotSprite(c.ProjectY-12, c.ProjectX-12)
-					c.FontPlain11.CentreString(c.ProjectY+4, 0, strconv.Itoa(var5.Damage), c.ProjectX)
-					c.FontPlain11.CentreString(c.ProjectY+3, 0xFFFFFF, strconv.Itoa(var5.Damage), c.ProjectX-1)
+					c.ImageHitmarks[pe.DamageType].PlotSprite(c.ProjectY-12, c.ProjectX-12)
+					c.FontPlain11.CentreString(c.ProjectY+4, 0, strconv.Itoa(pe.Damage), c.ProjectX)
+					c.FontPlain11.CentreString(c.ProjectY+3, 0xFFFFFF, strconv.Itoa(pe.Damage), c.ProjectX-1)
 				}
 			}
 		}
