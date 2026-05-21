@@ -46,4 +46,12 @@ func TestDrawStringWritesPixels(t *testing.T) {
 	if written == 0 {
 		t.Fatalf("DrawString wrote no white pixels in glyph bounding box; expected at least one")
 	}
+	// Sanity check the upper bound too: a bug that flood-filled the
+	// bounding box with hexColor would also satisfy written > 0. A real
+	// "A" glyph from basicfont.Face7x13 fills a small fraction of the
+	// 6x14 scan area.
+	const boxArea = (15 - 10 + 1) * (22 - 9 + 1)
+	if written >= boxArea {
+		t.Fatalf("DrawString wrote all %d pixels in glyph bounding box; expected a partial glyph, not a fill", written)
+	}
 }

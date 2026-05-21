@@ -77,7 +77,11 @@ func DrawString(p *pixmap.PixMap, x, y, hexColor int, s string) {
 				continue
 			}
 			off := (srcY*width + srcX) * 4
-			if src.Pix[off+3] == 0 {
+			// basicfont.Face7x13 has a 1-bit mask, so every rasterized
+			// pixel is either alpha 0 (skip) or alpha 255 (write). Treat
+			// "below half" as transparent in case a future face is wired
+			// through with antialiased glyphs.
+			if src.Pix[off+3] < 128 {
 				continue
 			}
 			p.Data[dstY*p.Width+dstX] = hexColor
