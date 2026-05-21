@@ -45,6 +45,7 @@ import (
 	"goscape-client/pkg/jagex2/graphics/pixmap"
 	"goscape-client/pkg/jagex2/io"
 	"goscape-client/pkg/jagex2/io/bzip2"
+	"goscape-client/pkg/jagex2/io/clientstream"
 	"goscape-client/pkg/jagex2/sound/wave"
 	"goscape-client/pkg/jagex2/wordenc/wordfilter"
 	"goscape-client/pkg/jagex2/wordenc/wordpack"
@@ -481,7 +482,7 @@ type Client struct {
 	AreaViewport                  *pixmap.PixMap
 	AreaChatback                  *pixmap.PixMap
 	JagTitle                      *io.Jagfile
-	//Stream ClientStream // TODO
+	Stream *clientstream.ClientStream
 	ModalMessage        string
 	ObjSelectedName     string
 	SpellCaption        string

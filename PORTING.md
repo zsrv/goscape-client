@@ -99,7 +99,7 @@ All blockers in this section depend on §5.1 (ClientStream port) and §5.2
 
 | Line | Function | Gap | Severity |
 |---|---|---|---|
-| 483 | `Client` struct | `//Stream ClientStream // TODO` — field commented out. | 🔴 |
+| ~~483~~ | ~~`Client` struct~~ | ~~`//Stream ClientStream // TODO` — field commented out.~~ **Ported 2026-05-21.** | ~~🔴~~ |
 | 4865 | `GetHost` | Returns hardcoded `"127.0.0.1"`. Should resolve from codebase / args. | 🔴 |
 | 6178 | `LoginFunc` | `// TODO: clientstream` — `c.stream = new ClientStream(...)` not wired. | 🔴 |
 | 6214 | `LoginFunc` | `// TODO: stream.write` — login handshake bytes never sent. | 🔴 |
@@ -240,8 +240,11 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
      Java `signlink.mainapp == null` ternary collapses since Go is always
      standalone. No current Go callers (all `// TODO: clientstream` in
      `LoginFunc`/`TryReconnect`); wiring deferred to steps 4-7.
-4. Add `Stream *clientstream.ClientStream` field to `Client`. Uncomment
-   `//Stream ClientStream // TODO` at `client.go:483`.
+4. ~~Add `Stream *clientstream.ClientStream` field to `Client`. Uncomment
+   `//Stream ClientStream // TODO` at `client.go:483`.~~ **Done 2026-05-21.**
+   Field declared as `Stream *clientstream.ClientStream` (pointer — type
+   carries goroutine + `sync.Cond`, must not be copied). `NewClient`
+   unchanged; nil-pointer zero value matches Java's default-null reference.
 5. Wire `LoginFunc` (client.go:6170+) end-to-end: create the stream, write
    login bytes, read the response byte, dispatch the switch. Drop the
    placeholder `var7 := 0`.
