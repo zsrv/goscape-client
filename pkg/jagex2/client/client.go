@@ -9654,6 +9654,149 @@ func (c *Client) Read() bool {
 		c.PacketType = -1
 		return true
 	}
+	// Java: opcode 2 — component RGB15→RGB24 colour (client.java:10207-10215)
+	if c.PacketType == 2 {
+		var26 := c.In.G2()
+		var4 := c.In.G2()
+		var5 := var4 >> 10 & 0x1F
+		var6 := var4 >> 5 & 0x1F
+		var7 := var4 & 0x1F
+		component.Instances[var26].Colour = (var5 << 19) + (var6 << 11) + (var7 << 3)
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 136 — clear all primarySeqIds (client.java:10217-10229)
+	if c.PacketType == 136 {
+		for var26 := range len(c.Players) {
+			if c.Players[var26] != nil {
+				c.Players[var26].PrimarySeqID = -1
+			}
+		}
+		for var4 := range len(c.NPCs) {
+			if c.NPCs[var4] != nil {
+				c.NPCs[var4].PrimarySeqID = -1
+			}
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 26 — component hide flag (client.java:10231-10236)
+	if c.PacketType == 26 {
+		var26 := c.In.G2()
+		var29 := c.In.G1() == 1
+		component.Instances[var26].Hide = var29
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 21 — ignore list bulk update (client.java:10238-10244)
+	if c.PacketType == 21 {
+		c.IgnoreCount = c.PacketSize / 8
+		for var26 := range c.IgnoreCount {
+			c.IgnoreName37[var26] = c.In.G8()
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 239 — cutscene end / clear camera modifiers (client.java:10246-10252)
+	if c.PacketType == 239 {
+		c.Cutscene = false
+		for var26 := range 5 {
+			c.CameraModifierEnabled[var26] = false
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 129 — close all interfaces (client.java:10254-10271)
+	if c.PacketType == 129 {
+		if c.SidebarInterfaceID != -1 {
+			c.SidebarInterfaceID = -1
+			c.RedrawSidebar = true
+			c.RedrawSideIcons = true
+		}
+		if c.ChatInterfaceID != -1 {
+			c.ChatInterfaceID = -1
+			c.RedrawChatback = true
+		}
+		if c.ChatbackInputOpen {
+			c.ChatbackInputOpen = false
+			c.RedrawChatback = true
+		}
+		c.ViewportInterfaceID = -1
+		c.PressedContinueOption = false
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 201 — component text (client.java:10273-10281)
+	if c.PacketType == 201 {
+		var26 := c.In.G2()
+		var28 := c.In.GJStr()
+		component.Instances[var26].Text = var28
+		if component.Instances[var26].Layer == c.TabInterfaceID[c.SelectedTab] {
+			c.RedrawSidebar = true
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 44 — skill XP/level update (client.java:10283-10297)
+	if c.PacketType == 44 {
+		c.RedrawSidebar = true
+		var26 := c.In.G1()
+		var4 := c.In.G4()
+		var5 := c.In.G1()
+		c.SkillExperience[var26] = var4
+		c.SkillLevel[var26] = var5
+		c.SkillBaseLevel[var26] = 1
+		for var6 := range 98 {
+			if var4 >= LevelExperience[var6] {
+				c.SkillBaseLevel[var26] = var6 + 2
+			}
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 22 — weight carried (client.java:10309-10315)
+	if c.PacketType == 22 {
+		if c.SelectedTab == 12 {
+			c.RedrawSidebar = true
+		}
+		c.WeightCarried = c.In.G2B()
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 13 — camera shake/wobble modifier (client.java:10317-10328)
+	if c.PacketType == 13 {
+		var26 := c.In.G1()
+		var4 := c.In.G1()
+		var5 := c.In.G1()
+		var6 := c.In.G1()
+		c.CameraModifierEnabled[var26] = true
+		c.CameraModifierJitter[var26] = var4
+		c.CameraModifierWobbleScale[var26] = var5
+		c.CameraModifierWobbleSpeed[var26] = var6
+		c.CameraModifierCycle[var26] = 0
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 213 — inventory slot partial update (client.java:10330-10347)
+	if c.PacketType == 213 {
+		c.RedrawSidebar = true
+		var26 := c.In.G2()
+		var27 := component.Instances[var26]
+		for c.In.Pos < c.PacketSize {
+			var5 := c.In.G1()
+			var6 := c.In.G2()
+			var7 := c.In.G1()
+			if var7 == 255 {
+				var7 = c.In.G4()
+			}
+			if var5 >= 0 && var5 < len(var27.InvSlotObjId) {
+				var27.InvSlotObjId[var5] = var6
+				var27.InvSlotObjCount[var5] = var7
+			}
+		}
+		c.PacketType = -1
+		return true
+	}
 
 	signlink.ReportErrorFunc(fmt.Sprintf("T1 - %d,%d - %d,%d", c.PacketType, c.PacketSize, c.LastPacketType1, c.LastPacketType2))
 	c.Logout()
