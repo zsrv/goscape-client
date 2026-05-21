@@ -34,11 +34,16 @@ func NewPix321(width int, height int) *Pix32 {
 }
 
 func NewPix322(imageData []byte) *Pix32 {
-	// TODO: MediaTracker stuff? PixelGrabber?
-	// TODO: try/catch
+	// Java uses Toolkit.createImage + MediaTracker.waitForAll + PixelGrabber to load
+	// a JPEG and grab raw ARGB pixels; those are applet-only AWT APIs. Go's stdlib
+	// image.Decode is a direct replacement and is already synchronous, so no
+	// MediaTracker wait is needed.
 	img, _, err := image.Decode(bytes.NewReader(imageData))
 	if err != nil {
-		fmt.Printf("error decoding image: %v\n", err)
+		// Java catches the exception, prints "Error converting jpg" and returns a
+		// zero-initialised Pix32; mirror that here (don't panic on a nil img).
+		fmt.Println("Error converting jpg")
+		return &Pix32{}
 	}
 
 	bounds := img.Bounds()
@@ -46,7 +51,7 @@ func NewPix322(imageData []byte) *Pix32 {
 	height := bounds.Dy()
 
 	p := &Pix32{
-		Pixels: make([]int, width*height), // TODO: int32?
+		Pixels: make([]int, width*height),
 		OWi:    width,
 		Wi:     width,
 		OHi:    height,
@@ -55,13 +60,17 @@ func NewPix322(imageData []byte) *Pix32 {
 		XOf:    0,
 	}
 
-	// Extract pixel data into int32 array (ARGB format)
+	// Pack ARGB into pixels[] in the same layout Java's PixelGrabber produces.
+	// Java's int is 32-bit signed and Go's int is 64-bit, but the field is []int
+	// throughout this package and downstream consumers are bitwise-only, so the
+	// width difference is invisible to callers.
 	idx := 0
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			r, g, b, a := img.At(x, y).RGBA()
-			// Convert from 16-bit to 8-bit and pack as ARGB
-			p.Pixels[idx] = int(((a >> 8) << 24) | ((r >> 8) << 16) | ((g >> 8) << 8) | (b >> 8)) // TODO: my conversion to int
+			// Convert from 16-bit channels to 8-bit and pack as ARGB.
+			// Java: (a << 24) | (r << 16) | (g << 8) | b
+			p.Pixels[idx] = int(((a >> 8) << 24) | ((r >> 8) << 16) | ((g >> 8) << 8) | (b >> 8))
 			idx++
 		}
 	}
@@ -69,8 +78,6 @@ func NewPix322(imageData []byte) *Pix32 {
 }
 
 func NewPix323(jag *io.Jagfile, name string, sprite int) *Pix32 {
-	// TODO: white logo
-	//  logo might be the only thing using it on title screen
 	var p Pix32
 
 	dat := io.NewPacket(jag.Read(name+".dat", nil))
