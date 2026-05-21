@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/big"
 	"math/rand"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -6612,9 +6613,16 @@ func (c *Client) Unload() {
 	animframe.Instances = nil
 }
 
-//func (c *Client) OpenSocket(arg0 int) {
-//	// TODO
-//}
+// OpenSocket dials the game server on the given port.
+//
+// Java: openSocket (deob/client.java:7243-7245). The Java version branches on
+// signlink.mainapp: standalone clients dial directly via Socket, applet
+// clients delegate to the privileged signlink.opensocket polling path. Go is
+// always standalone (signlink.mainapp is always nil), so both branches
+// collapse to a single delegation to signlink.OpenSocket.
+func (c *Client) OpenSocket(port int) (net.Conn, error) {
+	return signlink.OpenSocket(port)
+}
 
 func (c *Client) AddPlayerOptions(arg1 int, arg2 int, arg3 *playerentity.PlayerEntity, arg4 int) {
 	if arg3 == c.LocalPlayer || c.MenuSize >= 400 {

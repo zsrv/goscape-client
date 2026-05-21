@@ -105,7 +105,7 @@ All blockers in this section depend on §5.1 (ClientStream port) and §5.2
 | 6214 | `LoginFunc` | `// TODO: stream.write` — login handshake bytes never sent. | 🔴 |
 | 6215 | `LoginFunc` | `var7 := 0 // TODO: placeholder - var7 stream.read` — login response not read. | 🔴 |
 | 6497 | `Unload` | `// TODO: stream.close` — leaks the socket on shutdown. | 🟡 |
-| 6615 | (commented) | `//func (c *Client) OpenSocket(arg0 int)` — function not written. | 🔴 |
+| ~~6615~~ | ~~(commented)~~ | ~~`//func (c *Client) OpenSocket(arg0 int)` — function not written.~~ **Ported 2026-05-21.** | ~~🔴~~ |
 | 6938 | (heartbeat write) | `// TODO: stream write` — periodic write not connected. | 🔴 |
 | 7761 | `TryReconnect` | `// TODO: c.stream` — local `var2 = this.stream` save before reconnect. | 🟡 |
 | 7767 | `TryReconnect` | `// TODO: c.stream.close()` — close pre-existing stream before retry. | 🟡 |
@@ -233,9 +233,13 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
      `clientextras.Host` (new field, defaults `"127.0.0.1"`). Removed
      `SocketReq` global, the `if SocketReq != 0` branch in `Run()`, and the
      `//Socket // TODO` placeholder. Tests cover round-trip + connect-refused.
-3. Add `Client.OpenSocket(port int) (net.Conn, error)` matching Java's
+3. ~~Add `Client.OpenSocket(port int) (net.Conn, error)` matching Java's
    `client.openSocket(int)` — currently always uses the signlink path since
-   `signlink.mainapp` is always nil in Go.
+   `signlink.mainapp` is always nil in Go.~~
+   - **Done 2026-05-21.** Body delegates to `signlink.OpenSocket(port)`; the
+     Java `signlink.mainapp == null` ternary collapses since Go is always
+     standalone. No current Go callers (all `// TODO: clientstream` in
+     `LoginFunc`/`TryReconnect`); wiring deferred to steps 4-7.
 4. Add `Stream *clientstream.ClientStream` field to `Client`. Uncomment
    `//Stream ClientStream // TODO` at `client.go:483`.
 5. Wire `LoginFunc` (client.go:6170+) end-to-end: create the stream, write
