@@ -198,6 +198,113 @@ func TestMultipleWritesDrain(t *testing.T) {
 	}
 }
 
+// loopbackPair returns a connected TCP pair on 127.0.0.1, giving us a real
+// kernel send/recv buffer. net.Pipe is synchronous (Write blocks until the
+// peer Reads), so it can't model "data queued at the OS but not yet pulled
+// into bufio" — exactly the case Available() must handle.
+func loopbackPair(t *testing.T) (net.Conn, net.Conn) {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer ln.Close()
+	type res struct {
+		c   net.Conn
+		err error
+	}
+	accepted := make(chan res, 1)
+	go func() {
+		c, err := ln.Accept()
+		accepted <- res{c, err}
+	}()
+	dialed, err := net.Dial("tcp", ln.Addr().String())
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	r := <-accepted
+	if r.err != nil {
+		t.Fatalf("accept: %v", r.err)
+	}
+	return dialed, r.c
+}
+
+// Regression for the lazy-bufio.Reader bug: Available() must reflect data
+// the peer wrote even when no prior Read/ReadFully has happened. The Java
+// dispatcher uses Available()>0 as a non-blocking "is data ready" gate at
+// the top of read(), so if it returns 0 here the dispatcher never advances
+// and IdleNetCycles times out into "Connection lost".
+func TestAvailableSeesUnreadKernelData(t *testing.T) {
+	a, b := loopbackPair(t)
+	cs := NewClientStream(a)
+	defer cs.Close()
+	defer b.Close()
+
+	if _, err := b.Write([]byte{1, 2, 3, 4, 5}); err != nil {
+		t.Fatalf("peer Write: %v", err)
+	}
+
+	// Give the kernel a moment to deliver the bytes to a's recv buffer.
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		n, err := cs.Available()
+		if err != nil {
+			t.Fatalf("Available: %v", err)
+		}
+		if n > 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("Available stayed at 0 even though peer wrote 5 bytes")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+
+	// After Available() reports data, ReadFully must succeed normally —
+	// the deadline probe inside Available() must not poison bufio's error
+	// state.
+	buf := make([]byte, 5)
+	if err := cs.ReadFully(buf, 0, 5); err != nil {
+		t.Fatalf("ReadFully after Available probe: %v", err)
+	}
+	if string(buf) != string([]byte{1, 2, 3, 4, 5}) {
+		t.Fatalf("ReadFully got %v, want [1 2 3 4 5]", buf)
+	}
+}
+
+// Available() must not poison subsequent blocking reads when it probes an
+// empty conn (timeout). The probe clears bufio's cached err; if it didn't,
+// the next ReadFully would surface a spurious ErrDeadlineExceeded.
+func TestAvailableProbeDoesNotPoisonReadFully(t *testing.T) {
+	a, b := loopbackPair(t)
+	cs := NewClientStream(a)
+	defer cs.Close()
+	defer b.Close()
+
+	// Probe an empty conn — must return 0 without error.
+	n, err := cs.Available()
+	if err != nil {
+		t.Fatalf("Available on empty: %v", err)
+	}
+	if n != 0 {
+		t.Fatalf("Available on empty got %d, want 0", n)
+	}
+
+	// Now write from the peer after the probe.
+	go func() {
+		time.Sleep(20 * time.Millisecond)
+		_, _ = b.Write([]byte{0xAB, 0xCD})
+	}()
+
+	buf := make([]byte, 2)
+	if err := cs.ReadFully(buf, 0, 2); err != nil {
+		t.Fatalf("ReadFully after empty probe: %v", err)
+	}
+	if buf[0] != 0xAB || buf[1] != 0xCD {
+		t.Fatalf("ReadFully got %v, want [0xAB 0xCD]", buf)
+	}
+}
+
 func TestAvailableReportsBuffered(t *testing.T) {
 	a, b := net.Pipe()
 	cs := NewClientStream(a)
