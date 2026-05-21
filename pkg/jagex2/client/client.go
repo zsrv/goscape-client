@@ -334,6 +334,7 @@ type Client struct {
 	ObjGrabX                      int
 	ObjGrabY                      int
 	PrivateMessageCount           int
+	MessageIds                    []int
 	ChatHoveredInterfaceIndex     int
 	BaseX                         int
 	BaseZ                         int
@@ -522,6 +523,7 @@ func NewClient() *Client {
 		CameraModifierEnabled:     make([]bool, 5),
 		MergedLocations:           datastruct.NewLinkList[*entity.LocMergeEntity](),
 		IgnoreName37:              make([]int64, 100),
+		MessageIds:                make([]int, 100),
 		Out:                       io.Alloc(1),
 		SkillLevel:                make([]int, 50),
 		ChatInterface:             component.NewComponent(),
@@ -8733,9 +8735,80 @@ func (c *Client) Read() bool {
 	c.LastPacketType1 = c.LastPacketType0
 	c.LastPacketType0 = c.PacketType
 
+	// Java: opcode 4 — general chat / trade-req / duel-req (client.java:10139-10173)
+	if c.PacketType == 4 {
+		var3 := c.In.GJStr()
+		if strings.HasSuffix(var3, ":tradereq:") {
+			var28 := var3[:strings.Index(var3, ":")]
+			var30 := jstring.ToBase37(var28)
+			var32 := false
+			for i := range c.IgnoreCount {
+				if c.IgnoreName37[i] == var30 {
+					var32 = true
+					break
+				}
+			}
+			if !var32 && c.OverrideChat == 0 {
+				c.AddMessage(4, "wishes to trade with you.", var28)
+			}
+		} else if strings.HasSuffix(var3, ":duelreq:") {
+			var28 := var3[:strings.Index(var3, ":")]
+			var30 := jstring.ToBase37(var28)
+			var32 := false
+			for i := range c.IgnoreCount {
+				if c.IgnoreName37[i] == var30 {
+					var32 = true
+					break
+				}
+			}
+			if !var32 && c.OverrideChat == 0 {
+				c.AddMessage(8, "wishes to duel with you.", var28)
+			}
+		} else {
+			c.AddMessage(0, var3, "")
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 41 — private message inbound (client.java:10034-10069)
+	if c.PacketType == 41 {
+		var39 := c.In.G8()
+		var5 := c.In.G4()
+		var6 := c.In.G1()
+		var32 := false
+		for i := range 100 {
+			if c.MessageIds[i] == var5 {
+				var32 = true
+				break
+			}
+		}
+		if var6 <= 1 {
+			for i := range c.IgnoreCount {
+				if c.IgnoreName37[i] == var39 {
+					var32 = true
+					break
+				}
+			}
+		}
+		if !var32 && c.OverrideChat == 0 {
+			// TODO: try/catch (signlink.reporterror("cde1"))
+			c.MessageIds[c.PrivateMessageCount] = var5
+			c.PrivateMessageCount = (c.PrivateMessageCount + 1) % 100
+			var37 := wordpack.Unpack(c.In, c.PacketSize-13)
+			var38 := wordfilter.Filter(var37)
+			if var6 > 1 {
+				c.AddMessage(7, var38, jstring.FormatName(jstring.FromBase37(var39)))
+			} else {
+				c.AddMessage(3, var38, jstring.FormatName(jstring.FromBase37(var39)))
+			}
+		}
+		c.PacketType = -1
+		return true
+	}
+
 	// TODO: opcode dispatch — Java client.java:9363-10370 (subtasks 7b-7f).
-	// Until cases land, every framed packet hits Java's catch-all at
-	// client.java:10371-10372.
+	// Until remaining cases land, unhandled framed packets hit Java's catch-all
+	// at client.java:10371-10372.
 	signlink.ReportErrorFunc(fmt.Sprintf("T1 - %d,%d - %d,%d", c.PacketType, c.PacketSize, c.LastPacketType1, c.LastPacketType2))
 	c.Logout()
 	return true
