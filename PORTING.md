@@ -124,22 +124,22 @@ All blockers in this section depend on §5.1 (ClientStream port) and §5.2
 | 1617, 1643, 1650, 1652, 1669 | `DrawFlames` | Pixel buffer copy/draw operations marked `// TODO: verify`. Visible flicker is the symptom if wrong. | 🟡 |
 | 2450 | `GetJagFile` | CRC32 conversion `// TODO: verify`. | ⚪ |
 | 2451 | `GetJagFile` | `// TODO: anything missing here?` — sanity check vs. Java needed. | 🟡 |
-| 2460 | `GetJagFile` | `// TODO: try/except` — IO error from HTTP download. | 🟡 |
+| ~~2460~~ | ~~`GetJagFile`~~ | ~~`// TODO: try/except` — IO error from HTTP download.~~ **Ported 2026-05-21** in `66260c1`. Chunk-read error path now calls `loadingError()` (which sets `c.LoadError = true` and retries with exponential backoff: 5/10/20/40/60s), matching Java's outer `IOException` retry loop. Prior code returned `nil` and silently dropped the retry semantics. | ~~🟡~~ |
 | 2741 | (minimap related) | `// TODO: GetBaseComponent()` — helper unported. | 🟡 |
 | 3000 | (background loader) | `// TODO: startThread` — single goroutine spawn, low risk. | 🟡 |
 | 3283, 3288 | `DrawTitleScreen` | `// TODO: verify` — title rendering parity. | ⚪ |
 | 5310–5311 | `Load` | `//c.startthread(this, 2)` / `go c.Run()` — MIDI run-loop thread launch idiom. | ⚪ |
-| 5354–5355 | `Load` | `// TODO: try/except - recover panic?` and `retry := 5 // TODO`. | 🟡 |
+| ~~5354–5355~~ | ~~`Load`~~ | ~~`// TODO: try/except - recover panic?` and `retry := 5 // TODO`.~~ **Ported 2026-05-21** in `7292254`. Java's outer `catch (Exception) { errorLoading = true; }` ported as a deferred `recover()` that sets `c.ErrorLoading = true`. | ~~🟡~~ |
 | 6049 | `OpenURL` | `// TODO: signlink.openurl for applets not included` — Go isn't an applet; remove the TODO. | ⚪ |
-| 6101 | `RunFlames` | `// TODO: try/catch` — flame anim error handling. | ⚪ |
+| ~~6101~~ | ~~`RunFlames`~~ | ~~`// TODO: try/catch` — flame anim error handling.~~ **Ported 2026-05-21** in `a237414`. Java's empty `catch (Exception) {}` deleted; Go panics propagate (the right idiom for "unrecoverable", not a swallowing log). One-line `// Java:` comment retained for archaeology. | ~~⚪~~ |
 | ~~6172~~ | ~~`LoginFunc`~~ | ~~`// TODO: try/catch` — wrap login in a recover/log.~~ **Ported 2026-05-21** — handled inline at each I/O site (4 checks → `"Error connecting to server."`), matching Java's single outer `catch (IOException)` semantics. | ~~🟡~~ |
 | 6976 | `GetCodeBase` | `// TODO: getcodebase signlink - signlink.mainapp` — replace with config-driven host. | 🟡 |
 | 7224 | `UpdateInterfaceAnimation` | `// TODO: verify or` — operator precedence check. | ⚪ |
 | 7747 | (commented) | `//func (c *Client) GetParameter(...)` — applet HTML parameters; not applicable to Go. Delete with a one-line comment. | ⚪ |
-| 7863 | `BuildScene` | `// TODO: try/catch` — IO error from cache read. | ⚪ |
-| 7986 | `ExecuteClientscript1` | `// TODO: try/catch`. | ⚪ |
-| 8079 | `DrawError` | Entire function is `// TODO: stub`. Needed if connection/login fails visibly. | 🟡 |
-| 8731 | `GetPlayerExtended2` | `// TODO: try/catch`. | ⚪ |
+| ~~7863~~ | ~~`BuildScene`~~ | ~~`// TODO: try/catch` — IO error from cache read.~~ **Ported 2026-05-21** in `a237414`. Java's empty `catch (Exception) {}` deleted; tail cleanup runs unconditionally as in Java's `finally`-equivalent control flow. | ~~⚪~~ |
+| ~~7986~~ | ~~`ExecuteClientscript1`~~ | ~~`// TODO: try/catch`.~~ **Ported 2026-05-21** in `7292254`. Java's `catch (Exception) { return -1; }` ported as named return `result int` + deferred `recover()` setting `result = -1`. | ~~⚪~~ |
+| ~~8079~~ | ~~`DrawError`~~ | ~~Entire function is `// TODO: stub`. Needed if connection/login fails visibly.~~ **Ported 2026-05-21** in `978e471`. State-changing parts (`SetFrameRate(1)`, three `FlameActive = false` assignments) and the early-return ordering across `ErrorLoading`/`ErrorHost`/`ErrorStarted` match Java exactly. Text rasterization left as inline `// Java:` comments because Go has no `getBaseComponent().getGraphics()` equivalent yet (same gap as `DrawProgressGameShell`); follow-up when that helper is ported. | ~~🟡~~ |
+| ~~8731~~ | ~~`GetPlayerExtended2`~~ | ~~`// TODO: try/catch`.~~ **Ported 2026-05-21** in `a237414`. Java's `catch (Exception) { signlink.reporterror("cde2"); }` applet-diagnostic deleted; Go panics propagate. Also bonus-deleted the parallel marker in `Read`'s opcode-4 case (`signlink.reporterror("cde1")`). | ~~⚪~~ |
 
 ### 4.4 GameShell / input / pixmap gaps
 
@@ -158,22 +158,23 @@ All blockers in this section depend on §5.1 (ClientStream port) and §5.2
 
 ### 4.5 Lower-priority verification TODOs
 
-These are all `// TODO: verify`-style markers from the original translation
-pass. None are blockers; each is a small, isolated correctness check against
-the Java source. Tracked here so the list isn't lost.
+**All items resolved 2026-05-21.** Sweep across prior commits
+(`4888742`, `d027e39`, `3a64d06`) plus this session's parallel-track audit
+(`3853e8c`, `9cb798f`, `979ed72`, `0a84002`). Per-item verdicts retained for
+posterity.
 
-- `pkg/jagex2/datastruct/lrucache.go:14` — `HashTable: make(map[int64]T, 0x400) // TODO: not limited to 0x400`
-- `pkg/jagex2/datastruct/jstring/jstring.go:51` — return of fixed-size builder slice
-- `pkg/jagex2/io/bzip2/bzip2.go` lines 15, 141, 384, 418, 515, 549, 578 — several `byte ↔ int` conversion markers
-- `pkg/jagex2/graphics/pix32/pix32.go:37–72` — five markers, mostly applet `MediaTracker` / `PixelGrabber` and pixel type
-- `pkg/jagex2/graphics/pix3d/pix3d.go:280` — color packing arithmetic
-- `pkg/jagex2/graphics/model/model.go:259,264` — possibly-nil return where Java would return an empty Model
-- `pkg/jagex2/wordenc/wordpack/wordpack.go:59,64` — slice bounds and `80` truncation
-- `pkg/jagex2/config/component/component.go:182,224,233` — string parsing in `Unpack`
-- `pkg/jagex2/dash3d/world/world.go:289,598` — coord swap and bit shift conversion
-- `pkg/jagex2/dash3d/entity/pathingentity.go:153` — virtual-dispatch pattern (interface vs. embedded method)
-- `pkg/jagex2/sound/wave/wave.go:138` — signed-byte bitwise AND
-- `pkg/jagex2/config/loctype/loctype.go:213`, `pkg/jagex2/config/npctype/npctype.go:35` — `*string` vs `string` for optional ops
+- ~~`pkg/jagex2/datastruct/lrucache.go:14` — `HashTable: make(map[int64]T, 0x400) // TODO: not limited to 0x400`~~ **Verified** in `d027e39`. Go's `make` size is a hint and the map grows freely — exactly matches Java's chained-bucket `HashTable(1024)` semantics. Marker replaced with `// Java: HashTable(1024) bucket count — Go map auto-grows beyond hint`.
+- ~~`pkg/jagex2/datastruct/jstring/jstring.go:51` — return of fixed-size builder slice~~ **Verified** in `d027e39`. Fixed size 12 is correct: `toBase37` caps at 12 chars. `Builder[12-length:12-length+length]` is byte-equivalent to Java's `new String(builder, 12-var3, var3)`.
+- ~~`pkg/jagex2/io/bzip2/bzip2.go` lines 15, 141, 384, 418, 515, 549, 578 — several `byte ↔ int` conversion markers~~ **Verified** in `4888742`; round-trip tests added in `3853e8c` (`bzip2_test.go` with hello-world and repeated-runs payloads to exercise BZ_GET_FAST_C). Re-audit confirmed every site: gPos stays in [0..50] so sign-extension cannot fire on shifts; tPos byte storage convention is internally consistent; redundant `& 0xFF` on `byte` (Go's `uint8`) is harmless.
+- ~~`pkg/jagex2/graphics/pix32/pix32.go:37–72` — five markers, mostly applet `MediaTracker` / `PixelGrabber` and pixel type~~ **Fixed + verified** in `9cb798f`. One real bug: nil-deref on JPEG decode error — now returns `&Pix32{}` matching Java's zero-fields-on-exception. Four others (`MediaTracker`/`PixelGrabber` applet APIs replaced by `image.Decode`, `[]int` pixel type, ARGB packing) verified deviation-acceptable and annotated.
+- ~~`pkg/jagex2/graphics/pix3d/pix3d.go:280` — color packing arithmetic~~ **Verified**. No marker present in file; Java had explicit parens around each shifted term and Go matches structurally.
+- ~~`pkg/jagex2/graphics/model/model.go:259,264` — possibly-nil return where Java would return an empty Model~~ **Verified**. Java's `Model(int)` constructor returns the partially-constructed object on null inputs; Go's `return &m` matches. All callers cache the pointer without nil-checking, so an empty Model is correct.
+- ~~`pkg/jagex2/wordenc/wordpack/wordpack.go:59,64` — slice bounds and `80` truncation~~ **Verified** + tested in `0a84002`. `TestPackTruncatesAt80` exercises 80-char and 100-char paths; rune-based truncation matches Java's UTF-16-code-unit `substring(0, 80)` for the ASCII chat inputs the encoder accepts.
+- ~~`pkg/jagex2/config/component/component.go:182,224,233` — string parsing in `Unpack`~~ **Verified** in `3a64d06`. Parsed strings are ASCII sprite filenames (`"name,index"`); Java UTF-16 indexing and Go byte indexing are identical here.
+- ~~`pkg/jagex2/dash3d/world/world.go:289,598` — coord swap and bit shift conversion~~ **Verified** + annotated in `979ed72`. Line 289: `addLoc` arg/index mapping cross-checked against `World.java:274-285`. Line 598: shademap `>>` on `[][]byte` is unsigned in Go but Java stores non-negative values ≤ 50, so observationally identical.
+- ~~`pkg/jagex2/dash3d/entity/pathingentity.go:153` — virtual-dispatch pattern (interface vs. embedded method)~~ **Verified**. Existing `PathableEntity` interface + embedded base implements the polymorphism correctly (`NpcEntity.isVisible` and `PlayerEntity.isVisible` overrides preserved).
+- ~~`pkg/jagex2/sound/wave/wave.go:138` — signed-byte bitwise AND~~ **Verified**. Java's signed `-128` and Go's unsigned `0x80` are the same byte; existing comment already explains.
+- ~~`pkg/jagex2/config/loctype/loctype.go:213`, `pkg/jagex2/config/npctype/npctype.go:35` — `*string` vs `string` for optional ops~~ **Verified** in `3a64d06`. Go uses `Op[i] = ""` as the hidden-op sentinel; all readers check `!= ""`, semantically equivalent to Java's `null`. No `*string` migration needed.
 
 ### 4.6 Signlink-specific notes
 
@@ -366,16 +367,29 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
 
 ### Phase 5 — Error reporting & cleanup
 
-1. Implement `DrawError` (`client.go:8079`).
-2. Sweep `// TODO: try/catch` markers: convert to idiomatic Go errors at
-   boundaries, delete the rest with a one-line comment per Java site.
+1. ~~Implement `DrawError` (`client.go:8079`).~~ **Done 2026-05-21** in
+   `978e471`. State-changing parts ported; text rasterization deferred until
+   `GetBaseComponent` is ported (same gap as `DrawProgressGameShell`). See
+   §4.3 entry for details.
+2. ~~Sweep `// TODO: try/catch` markers: convert to idiomatic Go errors at
+   boundaries, delete the rest with a one-line comment per Java site.~~
+   **Done 2026-05-21** across `66260c1` (`GetJagFile` retry semantics fix),
+   `7292254` (`Load` recover + `ExecuteClientscript1` named-return), and
+   `a237414` (vestigial deletes at `RunFlames`, `BuildScene`,
+   `GetPlayerExtended2`, and `Read` opcode 4). All `// TODO: try/catch` and
+   `// TODO: try/except` markers in `client.go` are gone.
 3. ~~Strip applet-only TODOs (`signlink.openurl for applets`, `GetParameter`,
    `signlink.mainapp` checks) and document in code comments why they don't
    apply.~~ **Done 2026-05-21** in `fbe31bf`. Three sites in `client.go`
    (OpenURL applet-branch comment, Load goroutine launch, commented-out
    `GetParameter`). Other applet-only sites (`GetHost`, `OpenSocket`,
    `GetCodeBase`) already had clean documentation from Phase 1.
-4. Work through §4.5 verification TODOs in batches by package.
+4. ~~Work through §4.5 verification TODOs in batches by package.~~ **Done
+   2026-05-21**. See §4.5 — all 12 items resolved across prior commits
+   (`4888742`, `d027e39`, `3a64d06`) and this session's parallel-track audit
+   (`3853e8c`, `9cb798f`, `979ed72`, `0a84002`). One real bug fixed
+   (`pix32.go` nil-deref on JPEG decode error); rest verified-correct with
+   inline Java reference annotations.
 
 ### Phase 6 — Hardening
 
@@ -384,8 +398,12 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
 2. ~~Race-detector run: `go test -race ./...`.~~ **Done 2026-05-21** — clean
    across all packages including the new `signlink_stress_test.go` (7
    goroutines × 100 iters).
-3. Optional: add Java-side cross-check tests for any complex algorithm
-   (model rendering, bzip2, ISAAC) that already has TODOs flagged.
+3. ~~Optional: add Java-side cross-check tests for any complex algorithm
+   (model rendering, bzip2, ISAAC) that already has TODOs flagged.~~
+   **Partially done 2026-05-21** — `bzip2_test.go` (`3853e8c`) covers
+   round-trip decompression of two real bzip2 payloads including the
+   BZ_GET_FAST_C run-length path. Model rendering and ISAAC cross-checks
+   not done; both can be added on demand. **Phase 6 complete.**
 
 ## 6. Conventions for Updating This File
 
