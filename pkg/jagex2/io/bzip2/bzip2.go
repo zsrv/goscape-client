@@ -146,7 +146,7 @@ label67:
 						// macro: BZ_GET_FAST_C
 						cStateOutLen = int((k1 & 0xFF) + 4)
 						cTPos = cTT[cTPos]
-						cK0 = cTPos & 0xFF // TODO: java converts to byte?
+						cK0 = cTPos & 0xFF
 						cTPos >>= 0x8
 						cNBlockUsed++
 					} else {
@@ -389,7 +389,7 @@ func Decompress(s *bzip2state.BZip2State) {
 			zn := gMinLen
 			zvec := 0
 			zj := byte(0)
-			for zvec = GetBits(gMinLen, s); zvec > gLimit[zn]; zvec = zvec<<1 | int(zj) { // TODO: my conversion to int
+			for zvec = GetBits(gMinLen, s); zvec > gLimit[zn]; zvec = zvec<<1 | int(zj) {
 				zn++
 				zj = GetBit(s)
 			}
@@ -423,7 +423,7 @@ func Decompress(s *bzip2state.BZip2State) {
 
 							gPos--
 							zn = gMinLen
-							for zvec = GetBits(gMinLen, s); zvec > gLimit[zn]; zvec = zvec<<1 | int(zj) { // TODO: my conversion to int
+							for zvec = GetBits(gMinLen, s); zvec > gLimit[zn]; zvec = zvec<<1 | int(zj) {
 								zn++
 								zj = GetBit(s)
 							}
@@ -520,7 +520,7 @@ func Decompress(s *bzip2state.BZip2State) {
 
 						gPos--
 						zn = gMinLen
-						for zvec = GetBits(gMinLen, s); zvec > gLimit[zn]; zvec = zvec<<1 | int(zj) { // TODO: my conversion to int
+						for zvec = GetBits(gMinLen, s); zvec > gLimit[zn]; zvec = zvec<<1 | int(zj) {
 							zn++
 							zj = GetBit(s)
 						}
@@ -554,7 +554,7 @@ func Decompress(s *bzip2state.BZip2State) {
 
 				// macro: BZ_GET_FAST
 				s.TPos = bzip2state.TT[s.TPos]
-				s.K0 = int(byte(s.TPos & 0xFF)) // TODO: my double conversion
+				s.K0 = s.TPos & 0xFF
 				s.TPos >>= 0x8
 				s.CNBlockUsed++
 
@@ -583,7 +583,7 @@ func GetBit(s *bzip2state.BZip2State) byte {
 
 func GetBits(n int, s *bzip2state.BZip2State) int {
 	for s.BsLive < n {
-		s.BsBuff = s.BsBuff<<8 | int(s.Stream[s.NextIn]&0xFF) // TODO: my conversion to int
+		s.BsBuff = s.BsBuff<<8 | int(s.Stream[s.NextIn])
 		s.BsLive += 8
 
 		s.NextIn++
