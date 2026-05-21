@@ -344,10 +344,19 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
 
 ### Phase 3 — Audio handoff
 
-1. Replace MIDI-sync TODOs (`client.go:656`, `client.go:1533`, and field at
+1. ~~Replace MIDI-sync TODOs (`client.go:656`, `client.go:1533`, and field at
    `client.go:595`) with a single-element buffered channel between the
    loader and the playback goroutine. Document this as the Go equivalent of
-   the Java `synchronized` / `wait` / `notify` pattern.
+   the Java `synchronized` / `wait` / `notify` pattern.~~ **Done 2026-05-21**
+   — see the three struck-through §4.3 entries at lines 595, 656, 1533.
+   Implementation diverged from the plan: a `sync.Mutex` (`MidiSyncMu`) was
+   chosen over a buffered channel because Java's `synchronized (midiSync)`
+   holds the monitor across the assignment of *three* fields
+   (name/CRC/length) — a channel would have coupled producer/consumer too
+   tightly for that triplet handoff, while a mutex preserves Java's
+   "atomic read-and-clear of the triplet" semantics line-for-line. Slow
+   work (`CacheLoad`/`OpenURL`/`bzip2`) is intentionally outside the lock
+   per Java. **Phase 3 complete.**
 
 ### Phase 4 — Missing utility types
 
