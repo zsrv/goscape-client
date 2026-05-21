@@ -126,7 +126,10 @@ func (p *PixFont) StringWidth(arg1 string) int {
 		return 0
 	}
 	var3 := 0
-	for i := range len(arg1) {
+	// `for i := 0; i < N; i++` (not `range len(...)`): the `i += 4` below must
+	// advance the loop counter to skip a `@xxx@` tag; range-over-int rebinds
+	// i each iteration and would silently drop the skip.
+	for i := 0; i < len(arg1); i++ {
 		if arg1[i] == '@' && i+4 < len(arg1) && arg1[i+4] == '@' {
 			i += 4
 		} else {
@@ -170,7 +173,8 @@ func (p *PixFont) DrawStringTaggable(arg0 int, arg2 int, arg3 string, arg4 bool,
 		return
 	}
 	var9 := arg2 - p.Height
-	for i := range len(arg3) {
+	// C-style loop required: `i += 4` below must skip a `@xxx@` tag.
+	for i := 0; i < len(arg3); i++ {
 		if arg3[i] == '@' && i+4 < len(arg3) && arg3[i+4] == '@' {
 			arg5 = p.EvaluateTag(arg3[i+1 : i+4])
 			i += 4
@@ -194,7 +198,8 @@ func (p *PixFont) DrawStringTooltip(arg0 int, arg1 bool, arg3 int, arg4 int, arg
 	p.Random = rand.New(rand.NewSource(int64(arg0)))
 	var8 := (p.Random.Int() & 0x1F) + 192
 	var11 := arg3 - p.Height
-	for i := range len(arg5) {
+	// C-style loop required: `i += 4` below must skip a `@xxx@` tag.
+	for i := 0; i < len(arg5); i++ {
 		if arg5[i] == '@' && i+4 < len(arg5) && arg5[i+4] == '@' {
 			arg4 = p.EvaluateTag(arg5[i+1 : i+4])
 			i += 4
