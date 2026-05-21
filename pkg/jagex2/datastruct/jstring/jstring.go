@@ -48,7 +48,7 @@ func FromBase37(username int64) string {
 			length++
 		}
 
-		return string(Builder[12-length : 12-length+length]) // TODO: test this
+		return string(Builder[12-length : 12-length+length])
 	}
 }
 

@@ -219,8 +219,6 @@ func (p *Pix32) QuickPlot(arg1 []int, arg2 int, arg3 int, arg4 int, arg5 int, ar
 
 // was Draw
 func (p *Pix32) PlotSprite(y int, x int) {
-	// TODO: something broken here!!? is it because pixels are int64 and not int32?
-	//  gotta refactor everything for gio anyway
 	x += p.XOf
 	y += p.YOf
 

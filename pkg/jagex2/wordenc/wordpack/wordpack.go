@@ -56,12 +56,12 @@ func Unpack(buf *io.Packet, length int) string {
 		}
 	}
 
-	return string(CharBuffer[0:pos]) // TODO: pos or pos-1?
+	return string(CharBuffer[0:pos])
 }
 
 func Pack(buf *io.Packet, str string) {
 	if len(str) > 80 {
-		str = str[0:80] // TODO: verify 80
+		str = str[0:80]
 	}
 	str = strings.ToLower(str)
 

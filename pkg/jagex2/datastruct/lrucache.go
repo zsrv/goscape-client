@@ -11,7 +11,7 @@ func NewLruCache[T any](size int32) *LruCache[T] {
 	l := &LruCache[T]{
 		Capacity:  size,
 		Available: size,
-		HashTable: make(map[int64]T, 0x400), // TODO: not limited to 0x400
+		HashTable: make(map[int64]T, 0x400), // Java: HashTable(1024) bucket count — Go map auto-grows beyond hint
 		History:   NewDoublyLinkList[T](),
 	}
 	return l

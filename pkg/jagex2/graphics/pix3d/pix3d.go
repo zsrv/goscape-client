@@ -277,7 +277,7 @@ func SetBrightness(arg1 float64) {
 			var32 := var12 * 256.0
 			var19 := var14 * 256.0
 			var33 := var16 * 256.0
-			var21 := (int(var32) << 16) + (int(var19) << 8) + int(var33) // TODO: verify
+			var21 := (int(var32) << 16) + (int(var19) << 8) + int(var33)
 			var34 := SetGamma(var21, var28)
 			ColourTable[var3] = var34
 			var3++
