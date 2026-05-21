@@ -5,17 +5,25 @@ import (
 	"sync"
 )
 
+// Packet buffer sizes selected by Alloc's typ argument; mirror Java's
+// Packet.alloc(int): typ 0 → 100, typ 1 → 5000, typ 2 → 30000.
+const (
+	minPacketSize = 100
+	midPacketSize = 5_000
+	maxPacketSize = 30_000
+)
+
 var (
 	CRCTable []int = make([]int, 256)
 	Bitmask  []int = []int{0, 1, 3, 7, 15, 31, 63, 127, 0xFF, 511, 1023, 2047, 4095, 8191, 16383, 32767, 0xFFFF, 131071, 262143, 524287, 1048575, 2097151, 4194303, 8388607, 0xFFFFFF, 33554431, 67108863, 134217727, 268435455, 536870911, 1073741823, 2147483647, -1}
 	CacheMin       = sync.Pool{
-		New: func() any { return NewPacket(make([]byte, 0, 100)) },
+		New: func() any { return NewPacket(make([]byte, minPacketSize)) },
 	}
 	CacheMid = sync.Pool{
-		New: func() any { return NewPacket(make([]byte, 0, 5_000)) },
+		New: func() any { return NewPacket(make([]byte, midPacketSize)) },
 	}
 	CacheMax = sync.Pool{
-		New: func() any { return NewPacket(make([]byte, 0, 30_000)) },
+		New: func() any { return NewPacket(make([]byte, maxPacketSize)) },
 	}
 )
 
@@ -63,21 +71,24 @@ func packetPool(typ int) *sync.Pool {
 }
 
 func Alloc(typ int) *Packet {
-	pool := packetPool(int(typ))
+	pool := packetPool(typ)
 	if pool != nil {
-		if v := pool.Get(); v != nil {
-			p := v.(*Packet)
-			p.Pos = 0
-			return p
-		}
+		p := pool.Get().(*Packet)
+		p.Pos = 0
+		return p
 	}
-	return NewPacket(make([]byte, 0, typ))
+	return nil
 }
 
 func (p *Packet) Release() {
 	p.Pos = 0
-	if pool := packetPool(len(p.Data)); pool != nil {
-		pool.Put(p)
+	switch len(p.Data) {
+	case minPacketSize:
+		CacheMin.Put(p)
+	case midPacketSize:
+		CacheMid.Put(p)
+	case maxPacketSize:
+		CacheMax.Put(p)
 	}
 }
 
