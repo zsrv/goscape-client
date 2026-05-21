@@ -1,6 +1,72 @@
 package io
 
-import "testing"
+import (
+	"testing"
+	"unicode/utf8"
+)
+
+// TestGJStrLatin1ToUTF8 — Java's `gjstr` decodes the wire bytes with the JVM
+// default charset, which on the client is effectively Latin-1: byte 0xA3 →
+// U+00A3 ('£'). The Go port previously sliced the raw bytes into a string,
+// producing invalid UTF-8 for any byte >= 0x80. Downstream pixfont
+// byte-indexing happened to "work" against that invalid UTF-8, but the same
+// font code applied to a Go literal like "£" (valid UTF-8 0xC2 0xA3) saw
+// different bytes and failed. The fix transcodes Latin-1 → UTF-8 on read so
+// all callers see a valid UTF-8 string.
+func TestGJStrLatin1ToUTF8(t *testing.T) {
+	// Wire bytes: "5gp £" then 0x0A terminator.
+	wire := []byte{'5', 'g', 'p', ' ', 0xA3, 0x0A, 0x00}
+	p := NewPacket(wire)
+	got := p.GJStr()
+	want := "5gp £"
+	if got != want {
+		t.Fatalf("GJStr = %q (%x), want %q (%x)", got, []byte(got), want, []byte(want))
+	}
+	if !utf8.ValidString(got) {
+		t.Fatalf("GJStr returned invalid UTF-8: %x", []byte(got))
+	}
+	if p.Pos != 6 {
+		t.Fatalf("Pos = %d, want 6 (consumed bytes up to and including \\n)", p.Pos)
+	}
+}
+
+// TestPJStrUTF8ToLatin1 — Java's `pjstr` calls getBytes(0, length, dst, pos)
+// which writes the low byte of each UTF-16 code unit. We iterate runes and
+// truncate each to a byte: rune '£' (U+00A3) → 0xA3. Pure ASCII passes through
+// unchanged.
+func TestPJStrUTF8ToLatin1(t *testing.T) {
+	buf := make([]byte, 32)
+	p := NewPacket(buf)
+	p.PJStr("5gp £")
+	wantBytes := []byte{'5', 'g', 'p', ' ', 0xA3, 0x0A}
+	got := buf[:p.Pos]
+	if len(got) != len(wantBytes) {
+		t.Fatalf("PJStr wrote %d bytes, want %d (%x)", len(got), len(wantBytes), got)
+	}
+	for i, b := range wantBytes {
+		if got[i] != b {
+			t.Fatalf("PJStr byte %d = 0x%02X, want 0x%02X (full: %x)", i, got[i], b, got)
+		}
+	}
+}
+
+// TestPacketRoundTripLatin1 — encode + decode through PJStr/GJStr returns the
+// original Go string for any Latin-1-bounded input.
+func TestPacketRoundTripLatin1(t *testing.T) {
+	cases := []string{"", "hello", "5gp £", "£££", "Foo Bar 123"}
+	for _, want := range cases {
+		t.Run(want, func(t *testing.T) {
+			buf := make([]byte, 128)
+			out := NewPacket(buf)
+			out.PJStr(want)
+			in := NewPacket(buf)
+			got := in.GJStr()
+			if got != want {
+				t.Fatalf("round-trip %q → %q", want, got)
+			}
+		})
+	}
+}
 
 // TestGBitOperatorPrecedence — regression for a Java→Go translation gap in
 // the bit reader. The Java reference is:

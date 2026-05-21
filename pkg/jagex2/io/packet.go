@@ -2,6 +2,7 @@ package io
 
 import (
 	"math/big"
+	"strings"
 	"sync"
 )
 
@@ -166,6 +167,14 @@ func (p *Packet) P8(n int64) {
 	p.Pos++
 }
 
+// PJStr writes a Latin-1 (CP-1252-ish) encoded null-line-terminated string on
+// the wire. Java's `arg0.getBytes(0, arg0.length(), this.data, this.pos)`
+// (Packet.java:171) copies the low byte of each Java `char` (UTF-16 code unit)
+// into the byte array — i.e. Latin-1 encoding for any character < 256.
+//
+// In this port, Go strings hold UTF-8. We iterate runes and write a single
+// byte per rune (the low byte of the code point). Game strings are bounded to
+// Latin-1 in practice (only known non-ASCII glyph is '£' = U+00A3, which fits).
 func (p *Packet) PJStr(s string) {
 	for _, r := range s {
 		p.Data[p.Pos] = byte(r)
@@ -228,17 +237,28 @@ func (p *Packet) G8() int64 {
 	return (high << 32) + low
 }
 
+// GJStr reads a null-line-terminated (\n) Latin-1 encoded string from the wire
+// and returns it as a Go (UTF-8) string. Java's `new String(this.data, var1,
+// this.pos - var1 - 1)` (Packet.java:239) uses the default platform charset to
+// decode bytes, but on the client this is effectively Latin-1: every byte
+// 0x00-0xFF maps 1:1 to the matching Unicode code point. We must transcode the
+// raw byte slice from Latin-1 → UTF-8 so the resulting Go string is valid UTF-8
+// and `for _, r := range s` recovers the original chars (e.g. byte 0xA3 → '£').
 func (p *Packet) GJStr() string {
 	start := p.Pos
 	for p.Data[p.Pos] != 10 {
 		p.Pos++
 	}
 	p.Pos++
-	length := p.Pos - start - 1
-	return string(p.Data[start : start+length])
+	return latin1ToUTF8(p.Data[start : p.Pos-1])
 }
 
-// GJStrRaw
+// GStrByte reads a null-line-terminated (\n) byte sequence verbatim — Java
+// returns the raw bytes here (Packet.java:243-252, `gstrbyte`). Description
+// strings on objtype/loctype/npctype are stored byte-for-byte and later
+// decoded by the caller via `new String(bytes)`. We preserve the raw byte
+// semantics; consumers that need a Go string must call `latin1ToUTF8` or
+// otherwise transcode.
 func (p *Packet) GStrByte() []byte {
 	start := p.Pos
 	for p.Data[p.Pos] != 10 {
@@ -250,6 +270,29 @@ func (p *Packet) GStrByte() []byte {
 		data[i-start] = p.Data[i]
 	}
 	return data
+}
+
+// latin1ToUTF8 transcodes a Latin-1 byte slice to a valid UTF-8 Go string.
+// Each input byte is treated as a Unicode code point in 0x00..0xFF and
+// re-encoded as 1 or 2 UTF-8 bytes. Pure ASCII slices round-trip unchanged.
+func latin1ToUTF8(b []byte) string {
+	// Fast path: all ASCII.
+	ascii := true
+	for _, x := range b {
+		if x >= 0x80 {
+			ascii = false
+			break
+		}
+	}
+	if ascii {
+		return string(b)
+	}
+	var sb strings.Builder
+	sb.Grow(len(b) + len(b)/4)
+	for _, x := range b {
+		sb.WriteRune(rune(x))
+	}
+	return sb.String()
 }
 
 func (p *Packet) GData(len int, off int, dst []byte) {
