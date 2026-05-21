@@ -21,12 +21,18 @@ type GameShell struct {
 func (c *Client) InitApplication(height int, width int) {
 	c.ScreenWidth = width
 	c.ScreenHeight = height
-	//c.Frame // app.Window with gio
-	//c.Graphics
-	c.DrawArea = pixmap.NewPixMap(width, height) // TODO: component is linked to this in java.. automatically draws stuff?
+	// Java: the AWT base component owned both a Frame and a Graphics field
+	// (this.frame / this.graphics) that AWT painted automatically when the
+	// component was added to the window. The Gio port replaces both with a
+	// CPU-side PixMap (DrawArea) that we explicitly upload to the GPU each
+	// FrameEvent in draw(); see viewbox.go for the same architectural
+	// deviation. There is no equivalent of AWT's auto-paint loop.
+	c.DrawArea = pixmap.NewPixMap(width, height)
 	c.buildInputFilters()
-	// TODO: open the window here, before Run()
-	// TODO: start mine
+
+	// The window/event-loop goroutine below opens the Gio window before
+	// Run() takes control of the calling goroutine, matching Java's
+	// "open frame, then start game thread" ordering.
 	go func() {
 		// Create new window
 		w := new(app.Window)
@@ -40,8 +46,19 @@ func (c *Client) InitApplication(height int, width int) {
 		}
 		os.Exit(0)
 	}()
-	go app.Main() // TODO: go?
-	// TODO: end mine
+	// Gio's documented pattern (https://gioui.org/app) is to run the
+	// window event loop in a goroutine and call app.Main() last from the
+	// process's main function so it owns the OS main thread — required
+	// on macOS, looser on Linux/X11. InitApplication is itself launched
+	// from a goroutine in cmd/client/main.go, so app.Main() is already
+	// off the OS main thread; running it in a further goroutine here is
+	// only safe on platforms where the main-thread constraint does not
+	// apply (currently Linux/X11, where development happens). Promoting
+	// app.Main() to the process main goroutine for macOS portability is
+	// tracked separately and requires reshaping the cmd/client/main.go
+	// launch sequence, so we keep the `go` here for now to preserve
+	// existing behavior on Linux.
+	go app.Main()
 	c.Run()
 }
 
@@ -194,8 +211,34 @@ func (c *Client) PollKey() int {
 	return var2
 }
 
+// DrawProgressGameShell renders the boot-time loading bar that Client.LoadTitle
+// has not yet wired (i.e. when c.JagTitle is still nil and Client.DrawProgress
+// falls through to here). Java: GameShell.drawProgress(String, int) at
+// GameShell.java:529-560.
+//
+// The Java version paints directly to the AWT base component's Graphics — it
+// busy-waits until getBaseComponent().getGraphics() returns non-null, then
+// draws a black background fill (when refresh is set), a 304x34 red border
+// rectangle, a percent*3 wide red fill, the black remainder, and a centered
+// white Helvetica BOLD 13pt message above it. None of that has a Gio
+// equivalent yet (see Client.DrawError, which is similarly documented and
+// awaits the same canvas decision); when a direct PixMap-overlay or Gio-op
+// drawing surface lands for boot-time text/shapes, this is where the
+// graphics calls below should be reproduced.
+//
+// There are no Java-visible state mutations to preserve (drawProgress only
+// touches the local Graphics surface and clears this.refresh on the first
+// fill); the Go port leaves the function empty until the canvas decision.
+//
+// Java drawing sequence, for reference once a surface is available:
+//
+//	if (refresh) { fillRect(0, 0, screenWidth, screenHeight) in Color.black; refresh = false; }
+//	color = (140, 17, 17); drawRect(screenWidth/2 - 152, screenHeight/2 - 18, 304, 34);
+//	fillRect(screenWidth/2 - 150, screenHeight/2 - 16, percent*3, 30);
+//	color = black; fillRect(screenWidth/2 - 150 + percent*3, screenHeight/2 - 16, 300 - percent*3, 30);
+//	font = Helvetica BOLD 13; color = white;
+//	drawString(message, (screenWidth - stringWidth(message))/2, screenHeight/2 - 18 + 22);
 func (c *Client) DrawProgressGameShell(message string, percent int) {
-	// TODO: stub
 }
 
 // buildInputFilters constructs the per-Client filter list once. Java declared
