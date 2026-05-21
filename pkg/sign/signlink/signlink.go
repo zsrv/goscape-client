@@ -20,7 +20,6 @@ import (
 )
 
 var (
-	//Socket // TODO
 	DNSReq        string
 	DNS           string
 	LoadReq       string
@@ -40,7 +39,6 @@ var (
 	MidiPos       int
 	MidiVol       int
 	SaveLen       int
-	SocketReq     int
 	//ThreadLiveID  int // not needed in go
 	UID     int
 	WavePos int
@@ -56,7 +54,6 @@ type SignLink struct {
 }
 
 func StartPriv() {
-	SocketReq = 0
 	DNSReq = ""
 	LoadReq = ""
 	SaveReq = ""
@@ -68,11 +65,7 @@ func Run() {
 	var1 := FindCacheDir()
 	UID = GetUID(var1)
 	for {
-		if SocketReq != 0 {
-			// TODO: try/catch
-			// TODO: make a net.conn or something here and set it to Socket?
-			SocketReq = 0
-		} else if DNSReq != "" {
+		if DNSReq != "" {
 			names, err := net.LookupAddr(DNSReq)
 			if err != nil || len(names) == 0 {
 				DNS = "unknown"
@@ -212,7 +205,21 @@ func CacheSave(arg0 string, arg1 []byte) {
 	}
 }
 
-// TODO: OpenSocket
+// OpenSocket dials clientextras.Host on the given port and returns the
+// connected net.Conn.
+//
+// Java: opensocket (sign/signlink.java:279-291). The Java version sets a
+// socketreq field and busy-waits while a privileged polling thread performs
+// the dial — required because the signed applet's network stack is gated by
+// AccessController. Go has no such sandbox; we dial directly. The Java
+// caller's IOException maps onto Go's returned error.
+//
+// Deviation: a 10s connect timeout is applied (Java has none) so a stuck DNS
+// or unreachable host doesn't hang the caller indefinitely.
+func OpenSocket(port int) (net.Conn, error) {
+	const dialTimeout = 10 * time.Second
+	return net.DialTimeout("tcp", net.JoinHostPort(clientextras.Host, strconv.Itoa(port)), dialTimeout)
+}
 
 func OpenURL(arg0 string) ([]byte, error) {
 	URLReq = arg0

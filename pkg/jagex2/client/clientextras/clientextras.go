@@ -8,3 +8,6 @@ var Field1438 []int = []int{9104, 10275, 7595, 3610, 7975, 8526, 918, 38802, 244
 var LoopCycle int
 
 var PortOffset int
+
+// Java: signlink.mainapp.getCodeBase().getHost() (deob/client.java:4865)
+var Host = "127.0.0.1"
