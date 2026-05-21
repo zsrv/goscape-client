@@ -8241,45 +8241,52 @@ func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) (resu
 // modes) are preserved exactly so that state remains consistent for the
 // rest of the client.
 func (c *Client) DrawError() {
-	// Java: Graphics var2 = this.getBaseComponent().getGraphics();
-	//       var2.setColor(Color.black); var2.fillRect(0, 0, 789, 532);
-	// The Go port does not yet have a direct base-component Graphics
-	// surface (see DrawProgressGameShell). The clear/draw operations
-	// below would target it once available; the Java-visible state
-	// changes are still applied so the rest of the client stays in
-	// sync.
+	c.ensureOverlay()
+	c.OverlayPixMap.Bind()
+	pix2d.FillRect(0, 0, 0x000000, c.ScreenWidth, c.ScreenHeight)
+
 	c.SetFrameRate(1)
 
 	if c.ErrorLoading {
 		c.FlameActive = false
-		// Java: Font Helvetica BOLD 16, yellow.
-		//   "Sorry, an error has occured whilst loading RuneScape" at (30, 35)
-		// Java: white, then BOLD 12.
-		//   "To fix this try the following (in order):" at (30, 85)
-		//   "1: Try closing ALL open web-browser windows, and reloading" at (30, 135)
-		//   "2: Try clearing your web-browsers cache from tools->internet options" at (30, 165)
-		//   "3: Try using a different game-world" at (30, 195)
-		//   "4: Try rebooting your computer" at (30, 225)
-		//   "5: Try selecting a different version of Java from the play-game menu" at (30, 255)
+		// Java: Font Helvetica BOLD 16, yellow header; BOLD 12 white body.
+		// Go: FontBold12 throughout — same divergence as elsewhere.
+		c.FontBold12.DrawString(30, 35, 0xFFFF00,
+			"Sorry, an error has occured whilst loading RuneScape")
+		c.FontBold12.DrawString(30, 85, 0xFFFFFF,
+			"To fix this try the following (in order):")
+		c.FontBold12.DrawString(30, 135, 0xFFFFFF,
+			"1: Try closing ALL open web-browser windows, and reloading")
+		c.FontBold12.DrawString(30, 165, 0xFFFFFF,
+			"2: Try clearing your web-browsers cache from tools->internet options")
+		c.FontBold12.DrawString(30, 195, 0xFFFFFF,
+			"3: Try using a different game-world")
+		c.FontBold12.DrawString(30, 225, 0xFFFFFF,
+			"4: Try rebooting your computer")
+		c.FontBold12.DrawString(30, 255, 0xFFFFFF,
+			"5: Try selecting a different version of Java from the play-game menu")
 	}
 	if c.ErrorHost {
 		c.FlameActive = false
-		// Java: Font Helvetica BOLD 20, white.
-		//   "Error - unable to load game!" at (50, 50)
-		//   "To play RuneScape make sure you play from" at (50, 100)
-		//   "http://www.runescape.com" at (50, 150)
+		// Java: Font Helvetica BOLD 20, white. Go: FontBold12.
+		c.FontBold12.DrawString(50, 50, 0xFFFFFF, "Error - unable to load game!")
+		c.FontBold12.DrawString(50, 100, 0xFFFFFF, "To play RuneScape make sure you play from")
+		c.FontBold12.DrawString(50, 150, 0xFFFFFF, "http://www.runescape.com")
 	}
 	if !c.ErrorStarted {
+		c.OverlayPixMap.Draw(&c.Ops, 0, 0)
 		return
 	}
 	c.FlameActive = false
-	// Java: yellow.
-	//   "Error a copy of RuneScape already appears to be loaded" at (30, 35)
-	// Java: white.
-	//   "To fix this try the following (in order):" at (30, 85)
-	// Java: BOLD 12.
-	//   "1: Try closing ALL open web-browser windows, and reloading" at (30, 135)
-	//   "2: Try rebooting your computer, and reloading" at (30, 165)
+	c.FontBold12.DrawString(30, 35, 0xFFFF00,
+		"Error a copy of RuneScape already appears to be loaded")
+	c.FontBold12.DrawString(30, 85, 0xFFFFFF,
+		"To fix this try the following (in order):")
+	c.FontBold12.DrawString(30, 135, 0xFFFFFF,
+		"1: Try closing ALL open web-browser windows, and reloading")
+	c.FontBold12.DrawString(30, 165, 0xFFFFFF,
+		"2: Try rebooting your computer, and reloading")
+	c.OverlayPixMap.Draw(&c.Ops, 0, 0)
 }
 
 func (c *Client) LoadTitleBackground() {
