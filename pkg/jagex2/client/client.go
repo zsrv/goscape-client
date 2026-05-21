@@ -6138,7 +6138,9 @@ func (c *Client) LoadTitle() {
 
 func (c *Client) RunFlames() {
 	c.FlameThread = true
-	// TODO: try/catch
+	// Java: try { ... } catch (Exception) {} — empty swallow around the flame
+	// animation loop. In Go we let any panic propagate naturally; no equivalent
+	// handler is needed.
 	var2 := time.Now().UnixMilli()
 	var4 := 0
 	var5 := 20
@@ -7949,7 +7951,11 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 }
 
 func (c *Client) BuildScene() {
-	// TODO: try/catch
+	// Java: try { ... } catch (Exception) {} — empty swallow around the entire
+	// build-scene body (BZip2 decode + scene/landscape assembly). The Java
+	// finally-equivalent (LocType.modelCacheStatic.clear() + Pix3D.initPool(20)
+	// at the tail) is preserved unconditionally below. Any panic in Go
+	// propagates naturally.
 	c.MinimapLevel = -1
 	c.MergedLocations.Clear()
 	c.LocList.Clear()
@@ -8888,7 +8894,9 @@ func (c *Client) Read() bool {
 			}
 		}
 		if !var32 && c.OverrideChat == 0 {
-			// TODO: try/catch (signlink.reporterror("cde1"))
+			// Java: catch (Exception) { signlink.reporterror("cde1"); } —
+			// applet-era diagnostic that swallowed exceptions and posted a
+			// host-side error log. No Go equivalent; let any panic propagate.
 			c.MessageIds[c.PrivateMessageCount] = var5
 			c.PrivateMessageCount = (c.PrivateMessageCount + 1) % 100
 			var37 := wordpack.Unpack(c.In, c.PacketSize-13)
@@ -10002,7 +10010,9 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 				}
 			}
 			if !var12 && c.OverrideChat == 0 {
-				// TODO: try/catch
+				// Java: catch (Exception) { signlink.reporterror("cde2"); } —
+				// applet-era diagnostic that swallowed exceptions and posted a
+				// host-side error log. No Go equivalent; let any panic propagate.
 				var17 := wordpack.Unpack(arg3, var16)
 				var18 := wordfilter.Filter(var17)
 				arg4.Chat = var18
