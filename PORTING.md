@@ -120,7 +120,7 @@ All blockers in this section depend on §5.1 (ClientStream port) and §5.2
 | 656 | `SetMidi` | `// TODO: synchronized` — likely needs a small `sync.Mutex` for the MIDI-loader handoff (single producer / consumer, so a channel may be cleaner). | 🟡 |
 | 1533 | (MIDI run loop) | `// TODO: synchronized` — same handoff. | 🟡 |
 | 1544 | (MIDI download) | `int(crc32.ChecksumIEEE(...)) // TODO: verify conversion` — verify against Java `CRC32.getValue()`. | ⚪ |
-| 1558 | (MIDI download) | `var15.ReadAt(...)` semantics differ from Java `RandomAccessFile.read`; verify. | 🟡 |
+| ~~1558~~ | ~~(MIDI download)~~ | ~~`var15.ReadAt(...)` semantics differ from Java `RandomAccessFile.read`; verify.~~ **Ported 2026-05-21** in `dd305fa`: switched to `var15.Read(var14[i:var4])`, matching Java `DataInputStream.read(buf, off, len)`. Title music download + decompress verified end-to-end. | ~~🟡~~ |
 | 1617, 1643, 1650, 1652, 1669 | `DrawFlames` | Pixel buffer copy/draw operations marked `// TODO: verify`. Visible flicker is the symptom if wrong. | 🟡 |
 | 2450 | `GetJagFile` | CRC32 conversion `// TODO: verify`. | ⚪ |
 | 2451 | `GetJagFile` | `// TODO: anything missing here?` — sanity check vs. Java needed. | 🟡 |
