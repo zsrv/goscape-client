@@ -1,6 +1,10 @@
 package bootfont
 
-import "testing"
+import (
+	"testing"
+
+	"goscape-client/pkg/jagex2/graphics/pixmap"
+)
 
 func TestHeight(t *testing.T) {
 	if got := Height(); got != 13 {
@@ -18,5 +22,28 @@ func TestStringWidthASCII(t *testing.T) {
 	// basicfont.Face7x13 advances 7 pixels per glyph.
 	if got := StringWidth("hello"); got != 35 {
 		t.Fatalf("StringWidth(\"hello\") = %d, want 35", got)
+	}
+}
+
+func TestDrawStringWritesPixels(t *testing.T) {
+	p := pixmap.NewPixMap(200, 50)
+	// Pre-fill with sentinel so we can detect any writes from DrawString.
+	for i := range p.Data {
+		p.Data[i] = 0x0000FF // blue
+	}
+	DrawString(p, 10, 20, 0xFFFFFF, "A")
+	// Scan the bounding box for the "A" glyph. With Face7x13:
+	// Advance=7, Width=6, Height=13, Ascent=11.
+	// At dot=(10,20), glyph occupies x in [10..15], y in [20-11..20+2]=[9..22].
+	written := 0
+	for y := 9; y <= 22; y++ {
+		for x := 10; x <= 15; x++ {
+			if p.Data[y*p.Width+x] == 0xFFFFFF {
+				written++
+			}
+		}
+	}
+	if written == 0 {
+		t.Fatalf("DrawString wrote no white pixels in glyph bounding box; expected at least one")
 	}
 }
