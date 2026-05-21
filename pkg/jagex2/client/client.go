@@ -8806,9 +8806,50 @@ func (c *Client) Read() bool {
 		return true
 	}
 
-	// TODO: opcode dispatch — Java client.java:9363-10370 (subtasks 7b-7f).
+	// TODO: opcode dispatch — Java client.java:9363-10370 (subtasks 7d-7f).
 	// Until remaining cases land, unhandled framed packets hit Java's catch-all
 	// at client.java:10371-10372.
+	// Java: opcode 1 — NPC info (client.java:9454-9458)
+	if c.PacketType == 1 {
+		c.GetNpcPos(c.In, c.PacketSize)
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 162 — player info: base coords + appended zone packets (client.java:10299-10307)
+	if c.PacketType == 162 {
+		c.BaseX = c.In.G1()
+		c.BaseZ = c.In.G1()
+		for c.In.Pos < c.PacketSize {
+			var26 := c.In.G1()
+			c.ReadZonePacket(c.In, var26)
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 184 — player info + scene build (client.java:10349-10369)
+	if c.PacketType == 184 {
+		c.GetPlayer(c.In, c.PacketSize)
+		if c.SceneState == 1 {
+			c.SceneState = 2
+			world.LevelBuilt = c.CurrentLevel
+			c.BuildScene()
+		}
+		if LowMemory && c.SceneState == 2 && world.LevelBuilt != c.CurrentLevel {
+			c.AreaViewport.Bind()
+			c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
+			c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
+			c.AreaViewport.Draw(&c.Ops, 8, 11)
+			world.LevelBuilt = c.CurrentLevel
+			c.BuildScene()
+		}
+		if c.CurrentLevel != c.MinimapLevel && c.SceneState == 2 {
+			c.MinimapLevel = c.CurrentLevel
+			c.CreateMinimap(c.CurrentLevel)
+		}
+		c.PacketType = -1
+		return true
+	}
+
 	signlink.ReportErrorFunc(fmt.Sprintf("T1 - %d,%d - %d,%d", c.PacketType, c.PacketSize, c.LastPacketType1, c.LastPacketType2))
 	c.Logout()
 	return true
