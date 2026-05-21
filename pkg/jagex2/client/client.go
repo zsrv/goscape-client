@@ -5378,7 +5378,17 @@ func (c *Client) Load() {
 		return
 	}
 
-	// TODO: try/except - recover panic?
+	// Java: try { ... } catch (Exception) { this.errorLoading = true; } —
+	// wraps the entire archive-load / scene-init body below (client.java
+	// 5990-6222). Recovering from a panic mirrors Java's swallow-and-flag
+	// behavior so GameShell.Update can paint the error screen instead of
+	// crashing.
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Client.Load panic: %v\n", r)
+			c.ErrorLoading = true
+		}
+	}()
 	retry := 5 // TODO
 
 	errorLoading := func() {
@@ -8058,11 +8068,19 @@ func (c *Client) UpdateEntityChats() {
 	}
 }
 
-func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) int {
+func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) (result int) {
 	if arg0.Scripts == nil || arg2 >= len(arg0.Scripts) {
 		return -2
 	}
-	// TODO: try/catch
+	// Java: catch (Exception) { return -1; } — primarily guards against
+	// malformed scripts that walk off the end of the int[] (Java's
+	// ArrayIndexOutOfBoundsException). Mirror with a deferred recover that
+	// converts any panic (e.g. Go slice-bounds) into the same -1 sentinel.
+	defer func() {
+		if r := recover(); r != nil {
+			result = -1
+		}
+	}()
 	var4 := arg0.Scripts[arg2]
 	var5 := 0
 	var6 := 0
