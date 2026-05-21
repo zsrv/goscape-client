@@ -109,7 +109,7 @@ All blockers in this section depend on §5.1 (ClientStream port) and §5.2
 | ~~6938~~ | ~~(heartbeat write)~~ | ~~`// TODO: stream write` — periodic write not connected.~~ **Ported 2026-05-21.** | ~~🔴~~ |
 | ~~7761~~ | ~~`TryReconnect`~~ | ~~`// TODO: c.stream` — local `var2 = this.stream` save before reconnect.~~ **Ported 2026-05-21.** | ~~🟡~~ |
 | ~~7767~~ | ~~`TryReconnect`~~ | ~~`// TODO: c.stream.close()` — close pre-existing stream before retry.~~ **Ported 2026-05-21.** | ~~🟡~~ |
-| 8623 | `Read` | Entire function is `return false // TODO: stub - c.stream`. This is the main inbound packet dispatcher (~100 lines in Java). | 🔴 |
+| ~~8623~~ | ~~`Read`~~ | ~~Entire function is `return false // TODO: stub - c.stream`. This is the main inbound packet dispatcher (~100 lines in Java).~~ **Ported 2026-05-21** in steps 7a-7f. | ~~🔴~~ |
 | ~~3362–3363~~ | ~~`Logout`~~ | ~~`// TODO: c.Stream.Close()`, `// TODO: c.Stream = nil`.~~ **Ported 2026-05-21.** | ~~🟡~~ |
 
 ### 4.3 Other client.go gaps
@@ -271,9 +271,13 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
    two-branch catch (`IOException → tryReconnect`, `Exception → logout`)
    collapses in Go because `ClientStream.Write` returns a single untyped
    error.
-7. Port the inbound packet dispatcher in `Read()` (client.go:8623). This is
+7. ~~Port the inbound packet dispatcher in `Read()` (client.go:8623). This is
    the largest single function still stubbed (~100 lines in Java); break it
-   into one PR per opcode group if it gets unwieldy.
+   into one PR per opcode group if it gets unwieldy.~~ **Done 2026-05-21**
+   across commits `e6b9dff` (7a — framing + dispatcher skeleton), `304edd7`
+   (7b — chat/PM), `a8aa26f` (7c — NPC/player updates), `d883e57` (7d — zone
+   packet group), `7bbf0ab` (7e — pre-zone span), and 7f-i..7f-iv (post-zone
+   span). All Java opcodes in `client.java:8810-10348` now have a Go case.
 8. Replace the `GetHost` stub at client.go:4865 with a config-driven host
    (CLI arg → `clientextras.Host`, falling back to `127.0.0.1`).
 
