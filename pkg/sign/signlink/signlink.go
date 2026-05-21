@@ -14,10 +14,23 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"goscape-client/pkg/jagex2/client/clientextras"
 )
+
+// mu serializes the signlink polling protocol's request setup, mirroring
+// the `synchronized` modifier on the Java methods. The polling loop
+// (Run) dispatches one request slot per cycle (DNSReq, LoadReq, SaveReq,
+// URLReq); without this mutex, two goroutines calling CacheLoad
+// concurrently overwrite each other's LoadReq and both readers receive
+// the bytes of whichever file the polling loop happened to process.
+// Symptom: RunMidi receives the `config` jagfile when it asks for
+// `scape_main.mid`.
+// Java: signlink (sign/signlink.java) — all protocol methods are
+// `static synchronized`, sharing the class monitor.
+var mu sync.Mutex
 
 var (
 	DNSReq        string
@@ -181,7 +194,8 @@ func GetHash(arg0 string) int64 {
 }
 
 func CacheLoad(arg0 string) []byte {
-	// TODO: synchronized
+	mu.Lock()
+	defer mu.Unlock()
 	LoadReq = strconv.FormatInt(GetHash(arg0), 10)
 	for LoadReq != "" {
 		time.Sleep(1 * time.Millisecond)
@@ -190,7 +204,8 @@ func CacheLoad(arg0 string) []byte {
 }
 
 func CacheSave(arg0 string, arg1 []byte) {
-	// TODO: synchronized
+	mu.Lock()
+	defer mu.Unlock()
 	if len(arg1) > 2000000 {
 		return
 	}
@@ -233,11 +248,15 @@ func OpenURL(arg0 string) ([]byte, error) {
 }
 
 func DNSLookup(arg0 string) {
+	mu.Lock()
+	defer mu.Unlock()
 	DNS = arg0
 	DNSReq = arg0
 }
 
 func WaveSave(arg0 []byte, arg1 int) bool {
+	mu.Lock()
+	defer mu.Unlock()
 	if arg1 > 2_000_000 {
 		return false
 	}
@@ -253,6 +272,8 @@ func WaveSave(arg0 []byte, arg1 int) bool {
 }
 
 func WaveReplay() bool {
+	mu.Lock()
+	defer mu.Unlock()
 	if SaveReq == "" {
 		SaveBuf = nil
 		WavePlay = true
@@ -263,6 +284,8 @@ func WaveReplay() bool {
 }
 
 func MidiSave(saveBuf []byte, saveLen int) {
+	mu.Lock()
+	defer mu.Unlock()
 	if saveLen > 2_000_000 || SaveReq != "" {
 		return
 	}
