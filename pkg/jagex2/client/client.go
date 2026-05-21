@@ -421,6 +421,7 @@ type Client struct {
 	ServerSeed                    int64
 	Scene                         *world3d.World3D
 	LocalPlayer                   *playerentity.PlayerEntity
+	LocalPid                      int
 	GenderButtonImage0            *pix32.Pix32
 	GenderButtonImage1            *pix32.Pix32
 	ImageFlamesLeft               *pix32.Pix32
@@ -8806,7 +8807,7 @@ func (c *Client) Read() bool {
 		return true
 	}
 
-	// TODO: opcode dispatch — Java client.java:9363-10370 (subtasks 7d-7f).
+	// TODO: opcode dispatch — Java client.java:9702-10370 (post-zone span, subtask 7f).
 	// Until remaining cases land, unhandled framed packets hit Java's catch-all
 	// at client.java:10371-10372.
 	// Java: opcode 1 — NPC info (client.java:9454-9458)
@@ -8853,6 +8854,340 @@ func (c *Client) Read() bool {
 	// each a thin pass-through to readZonePacket which dispatches internally.
 	if c.PacketType == 151 || c.PacketType == 23 || c.PacketType == 50 || c.PacketType == 191 || c.PacketType == 69 || c.PacketType == 49 || c.PacketType == 223 || c.PacketType == 42 || c.PacketType == 76 || c.PacketType == 59 {
 		c.ReadZonePacket(c.In, c.PacketType)
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 150 — varp set (byte) (client.java:9363-9377)
+	if c.PacketType == 150 {
+		var26 := c.In.G2()
+		var52 := c.In.G1B()
+		c.VarCache[var26] = int(var52)
+		if c.Varps[var26] != int(var52) {
+			c.Varps[var26] = int(var52)
+			c.UpdateVarp(var26)
+			c.RedrawSidebar = true
+			if c.StickyChatInterfaceID != -1 {
+				c.RedrawChatback = true
+			}
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 152 — friend list add/update + bubble-sort (client.java:9383-9431)
+	if c.PacketType == 152 {
+		var39 := c.In.G8()
+		var5 := c.In.G1()
+		var44 := jstring.FormatName(jstring.FromBase37(var39))
+		matched := false
+		for var7 := range c.FriendCount {
+			if var39 == c.FriendName37[var7] {
+				if c.FriendWorld[var7] != var5 {
+					c.FriendWorld[var7] = var5
+					c.RedrawSidebar = true
+					if var5 > 0 {
+						c.AddMessage(5, var44+" has logged in.", "")
+					}
+					if var5 == 0 {
+						c.AddMessage(5, var44+" has logged out.", "")
+					}
+				}
+				matched = true
+				break
+			}
+		}
+		if !matched && c.FriendCount < 100 {
+			c.FriendName37[c.FriendCount] = var39
+			c.FriendName[c.FriendCount] = var44
+			c.FriendWorld[c.FriendCount] = var5
+			c.FriendCount++
+			c.RedrawSidebar = true
+		}
+		var41 := false
+		for !var41 {
+			var41 = true
+			for var9 := range c.FriendCount - 1 {
+				if (c.FriendWorld[var9] != NodeID && c.FriendWorld[var9+1] == NodeID) || (c.FriendWorld[var9] == 0 && c.FriendWorld[var9+1] != 0) {
+					var10 := c.FriendWorld[var9]
+					c.FriendWorld[var9] = c.FriendWorld[var9+1]
+					c.FriendWorld[var9+1] = var10
+					var42 := c.FriendName[var9]
+					c.FriendName[var9] = c.FriendName[var9+1]
+					c.FriendName[var9+1] = var42
+					var50 := c.FriendName37[var9]
+					c.FriendName37[var9] = c.FriendName37[var9+1]
+					c.FriendName37[var9+1] = var50
+					c.RedrawSidebar = true
+					var41 = false
+				}
+			}
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 43 — system update timer (client.java:9432-9436)
+	if c.PacketType == 43 {
+		c.SystemUpdateTimer = c.In.G2() * 30
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 80 — scene map land cache save (client.java:9438-9452)
+	if c.PacketType == 80 {
+		var26 := c.In.G1()
+		var4 := c.In.G1()
+		var5 := -1
+		for var6 := range len(c.SceneMapIndex) {
+			if c.SceneMapIndex[var6] == (var26<<8)+var4 {
+				var5 = var6
+			}
+		}
+		if var5 != -1 {
+			signlink.CacheSave(fmt.Sprintf("m%d_%d", var26, var4), c.SceneMapLandData[var5])
+			c.SceneState = 1
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 237 — scene rebuild request + delta-shift entities (client.java:9460-9607)
+	if c.PacketType == 237 {
+		var26 := c.In.G2()
+		var4 := c.In.G2()
+		if c.SceneCenterZoneX == var26 && c.SceneCenterZoneZ == var4 && c.SceneState != 0 {
+			c.PacketType = -1
+			return true
+		}
+		c.SceneCenterZoneX = var26
+		c.SceneCenterZoneZ = var4
+		c.SceneBaseTileX = (c.SceneCenterZoneX - 6) * 8
+		c.SceneBaseTileZ = (c.SceneCenterZoneZ - 6) * 8
+		c.SceneState = 1
+		c.AreaViewport.Bind()
+		c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
+		c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
+		c.AreaViewport.Draw(&c.Ops, 8, 11)
+		signlink.LoopRate = 5
+		var5 := (c.PacketSize - 2) / 10
+		c.SceneMapLandData = make([][]byte, var5)
+		c.SceneMapLocData = make([][]byte, var5)
+		c.SceneMapIndex = make([]int, var5)
+		c.Out.P1Isaac(150)
+		c.Out.P1(0)
+		var6 := 0
+		for var7 := range var5 {
+			var8 := c.In.G1()
+			var9 := c.In.G1()
+			var10 := c.In.G4()
+			var11 := c.In.G4()
+			c.SceneMapIndex[var7] = (var8 << 8) + var9
+			var var12 []byte
+			if var10 != 0 {
+				var12 = signlink.CacheLoad(fmt.Sprintf("m%d_%d", var8, var9))
+				if var12 != nil {
+					if int(crc32.ChecksumIEEE(var12)) != var10 {
+						var12 = nil
+					}
+				}
+				if var12 == nil {
+					c.SceneState = 0
+					c.Out.P1(0)
+					c.Out.P1(var8)
+					c.Out.P1(var9)
+					var6 += 3
+				} else {
+					c.SceneMapLandData[var7] = var12
+				}
+			}
+			if var11 != 0 {
+				var12 = signlink.CacheLoad(fmt.Sprintf("l%d_%d", var8, var9))
+				if var12 != nil {
+					if int(crc32.ChecksumIEEE(var12)) != var11 {
+						var12 = nil
+					}
+				}
+				if var12 == nil {
+					c.SceneState = 0
+					c.Out.P1(1)
+					c.Out.P1(var8)
+					c.Out.P1(var9)
+					var6 += 3
+				} else {
+					c.SceneMapLocData[var7] = var12
+				}
+			}
+		}
+		c.Out.PSize1(var6)
+		signlink.LoopRate = 50
+		c.AreaViewport.Bind()
+		if c.SceneState == 0 {
+			c.FontPlain12.CentreString(166, 0, "Map area updated since last visit, so load will take longer this time only", 257)
+			c.FontPlain12.CentreString(165, 0xFFFFFF, "Map area updated since last visit, so load will take longer this time only", 256)
+		}
+		c.AreaViewport.Draw(&c.Ops, 8, 11)
+		var8 := c.SceneBaseTileX - c.MapLastBaseX
+		var9 := c.SceneBaseTileZ - c.MapLastBaseZ
+		c.MapLastBaseX = c.SceneBaseTileX
+		c.MapLastBaseZ = c.SceneBaseTileZ
+		for var10 := range 8192 {
+			var40 := c.NPCs[var10]
+			if var40 != nil {
+				for var46 := range 10 {
+					var40.PathTileX[var46] -= var8
+					var40.PathTileZ[var46] -= var9
+				}
+				var40.X -= var8 * 128
+				var40.Z -= var9 * 128
+			}
+		}
+		for var11 := range c.MAX_PLAYER_COUNT {
+			var48 := c.Players[var11]
+			if var48 != nil {
+				for var13 := range 10 {
+					var48.PathTileX[var13] -= var8
+					var48.PathTileZ[var13] -= var9
+				}
+				var48.X -= var8 * 128
+				var48.Z -= var9 * 128
+			}
+		}
+		// Java: byte var49/var45/var14 and var15/var16/var17 — step direction and bounds
+		// for the four-layer object-stack shift. Stored as bytes in Java for compactness;
+		// values are used as int loop control so we widen to int up front in Go.
+		var49 := 0
+		var45 := 104
+		var14 := 1
+		if var8 < 0 {
+			var49 = 103
+			var45 = -1
+			var14 = -1
+		}
+		var15 := 0
+		var16 := 104
+		var17 := 1
+		if var9 < 0 {
+			var15 = 103
+			var16 = -1
+			var17 = -1
+		}
+		for var18 := var49; var18 != var45; var18 += var14 {
+			for var19 := var15; var19 != var16; var19 += var17 {
+				var20 := var18 + var8
+				var21 := var19 + var9
+				for var22 := range 4 {
+					if var20 >= 0 && var21 >= 0 && var20 < 104 && var21 < 104 {
+						c.LevelObjStacks[var22][var18][var19] = c.LevelObjStacks[var22][var20][var21]
+					} else {
+						c.LevelObjStacks[var22][var18][var19] = nil
+					}
+				}
+			}
+		}
+		for var53 := c.SpawnedLocations.Head(); var53 != nil; var53 = c.SpawnedLocations.Next() {
+			v := var53.Value
+			v.X -= var8
+			v.Z -= var9
+			if v.X < 0 || v.Z < 0 || v.X >= 104 || v.Z >= 104 {
+				var53.Unlink()
+			}
+		}
+		if c.FlagSceneTileX != 0 {
+			c.FlagSceneTileX -= var8
+			c.FlagSceneTileZ -= var9
+		}
+		c.Cutscene = false
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 197 — set component model to local player head (client.java:9609-9613)
+	if c.PacketType == 197 {
+		var26 := c.In.G2()
+		component.Instances[var26].Model = c.LocalPlayer.GetHeadModel()
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 25 — hint arrow / minimap marker (client.java:9615-9650)
+	if c.PacketType == 25 {
+		c.HintType = c.In.G1()
+		if c.HintType == 1 {
+			c.HintNPC = c.In.G2()
+		}
+		if c.HintType >= 2 && c.HintType <= 6 {
+			if c.HintType == 2 {
+				c.HintOffsetX = 64
+				c.HintOffsetZ = 64
+			}
+			if c.HintType == 3 {
+				c.HintOffsetX = 0
+				c.HintOffsetZ = 64
+			}
+			if c.HintType == 4 {
+				c.HintOffsetX = 128
+				c.HintOffsetZ = 64
+			}
+			if c.HintType == 5 {
+				c.HintOffsetX = 64
+				c.HintOffsetZ = 0
+			}
+			if c.HintType == 6 {
+				c.HintOffsetX = 64
+				c.HintOffsetZ = 128
+			}
+			c.HintType = 2
+			c.HintTileX = c.In.G2()
+			c.HintTileZ = c.In.G2()
+			c.HintHeight = c.In.G1()
+		}
+		if c.HintType == 10 {
+			c.HintPlayer = c.In.G2()
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 54 — MIDI music change (client.java:9652-9664)
+	if c.PacketType == 54 {
+		var3 := c.In.GJStr()
+		var4 := c.In.G4()
+		var5 := c.In.G4()
+		if var3 != c.CurrentMidi && c.MidiActive && !LowMemory {
+			c.SetMidi(var4, var3, var5)
+		}
+		c.CurrentMidi = var3
+		c.MidiCRC = var4
+		c.MidiSize = var5
+		c.NextMusicDelay = 0
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 142 — server-initiated logout (client.java:9666-9670)
+	if c.PacketType == 142 {
+		c.Logout()
+		c.PacketType = -1
+		return false
+	}
+	// Java: opcode 20 — scene map loc cache save (client.java:9671-9685)
+	if c.PacketType == 20 {
+		var26 := c.In.G1()
+		var4 := c.In.G1()
+		var5 := -1
+		for var6 := range len(c.SceneMapIndex) {
+			if c.SceneMapIndex[var6] == (var26<<8)+var4 {
+				var5 = var6
+			}
+		}
+		if var5 != -1 {
+			signlink.CacheSave(fmt.Sprintf("l%d_%d", var26, var4), c.SceneMapLocData[var5])
+			c.SceneState = 1
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 19 — clear move-flag tile (client.java:9687-9690)
+	if c.PacketType == 19 {
+		c.FlagSceneTileX = 0
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 139 — local player id (client.java:9692-9695)
+	if c.PacketType == 139 {
+		c.LocalPid = c.In.G2()
 		c.PacketType = -1
 		return true
 	}
