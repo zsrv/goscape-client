@@ -120,6 +120,7 @@ type Client struct {
 	ScreenHeight int
 	//Graphics
 	DrawArea         *pixmap.PixMap
+	OverlayPixMap    *pixmap.PixMap
 	Frame            *ViewBox
 	Refresh          bool
 	IdleCycles       int
@@ -10150,5 +10151,18 @@ func (c *Client) DrawProgress(message string, percent int) {
 		c.ImageTitle6.Draw(&c.Ops, 574, 265)
 		c.ImageTitle7.Draw(&c.Ops, 128, 186)
 		c.ImageTitle8.Draw(&c.Ops, 574, 186)
+	}
+}
+
+// ensureOverlay lazily allocates the fullscreen overlay PixMap used by
+// DrawError and DrawProgressGameShell. Lazy because ScreenWidth/Height
+// are set by GameShell.SetCanvasSize during InitApplication, which runs
+// after NewClient. If the screen size changed since the last allocation
+// (currently unreachable but cheap to guard), reallocate.
+func (c *Client) ensureOverlay() {
+	if c.OverlayPixMap == nil ||
+		c.OverlayPixMap.Width != c.ScreenWidth ||
+		c.OverlayPixMap.Height != c.ScreenHeight {
+		c.OverlayPixMap = pixmap.NewPixMap(c.ScreenWidth, c.ScreenHeight)
 	}
 }
