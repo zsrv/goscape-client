@@ -60,15 +60,17 @@ func Unpack(buf *io.Packet, length int) string {
 }
 
 func Pack(buf *io.Packet, str string) {
-	if len(str) > 80 {
-		str = str[0:80]
+	// Java: arg2.length() / arg2.charAt(i) walk UTF-16 code units, not bytes.
+	// TABLE contains BMP-only chars (incl. '£' U+00A3), so []rune matches charAt
+	// exactly for this input. See WordPack.java:56-62.
+	runes := []rune(str)
+	if len(runes) > 80 {
+		runes = runes[:80]
 	}
-	str = strings.ToLower(str)
+	runes = []rune(strings.ToLower(string(runes)))
 
 	carry := -1
-	for i := range len(str) {
-		c := rune(str[i])
-
+	for _, c := range runes {
 		index := 0
 		for j := range len(TABLE) {
 			if c == TABLE[j] {
