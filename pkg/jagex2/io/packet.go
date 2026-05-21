@@ -281,7 +281,14 @@ func (p *Packet) GBit(n int) int {
 	if n == remainingBits {
 		value += int(p.Data[bytePos]) & Bitmask[remainingBits]
 	} else {
-		value += int(p.Data[bytePos]) >> ((remainingBits - n) & Bitmask[n])
+		// Java: `data[var3] >> var4 - arg1 & BITMASK[arg1]` — shift has
+		// higher precedence than `&`, so the mask is applied to the
+		// shifted value. Without these outer parens, the bare Go
+		// expression evaluates the same way (>>` and `&` are both
+		// multiplicative-level, left-to-right); a previous port wrapped
+		// the wrong subexpression in parens, applying the mask to the
+		// SHIFT COUNT instead and silently losing the high-bit cap.
+		value += (int(p.Data[bytePos]) >> (remainingBits - n)) & Bitmask[n]
 	}
 
 	return int(value)
