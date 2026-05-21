@@ -113,13 +113,16 @@ func ToSentenceCase(s string) string {
 	return string(chars)
 }
 
-// Censor
+// ToAsterisks returns a string of `*` characters with the same character
+// count as s. Java: JString.toAsterisks (JString.java:108-114) iterates
+// `arg1.length()`, which is the UTF-16 code-unit count — one star per char,
+// not per UTF-8 byte. Go's `len(s)` is byte-based: for any non-ASCII char
+// (e.g. '£' = 2 bytes) it would produce too many stars. Censored chat can
+// include '£', so this matters in practice.
 func ToAsterisks(s string) string {
 	var sb strings.Builder
-
-	for i := 0; i < len(s); i++ {
+	for range s {
 		sb.WriteString("*")
 	}
-
 	return sb.String()
 }
