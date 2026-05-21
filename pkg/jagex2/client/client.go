@@ -2453,8 +2453,10 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 	}
 
 	if data != nil {
-		checksum = int(crc32.ChecksumIEEE(data)) // TODO: verify conversion
-		// TODO: anything missing here?
+		checksum = int(crc32.ChecksumIEEE(data))
+		if checksum != crc {
+			data = nil
+		}
 	}
 
 	if data != nil {
