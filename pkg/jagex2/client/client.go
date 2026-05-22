@@ -428,7 +428,6 @@ type Client struct {
 	ServerSeed                    int64
 	Scene                         *world3d.World3D
 	LocalPlayer                   *playerentity.PlayerEntity
-	LocalPid                      int
 	GenderButtonImage0            *pix32.Pix32
 	GenderButtonImage1            *pix32.Pix32
 	ImageFlamesLeft               *pix32.Pix32
@@ -1426,7 +1425,10 @@ func (c *Client) GetTopLevel() int {
 func (c *Client) GetTopLevelCutscene(arg0 int) int {
 	var2 := c.GetHeightMapY(c.CurrentLevel, c.CameraX, c.CameraZ)
 	c.PacketSize += arg0
-	if var2-c.CameraYaw >= 800 || c.LevelTileFlags[c.CurrentLevel][c.CameraX>>7][c.CameraZ>>7]&0x4 == 0 {
+	// Java: deob/client.java:2014 — `var2 - this.cameraY >= 800` (height
+	// of ground above the camera position). The prior Go port substituted
+	// CameraYaw (rotation 0..2047), making the threshold meaningless.
+	if var2-c.CameraY >= 800 || c.LevelTileFlags[c.CurrentLevel][c.CameraX>>7][c.CameraZ>>7]&0x4 == 0 {
 		return 3
 	}
 	return c.CurrentLevel
@@ -2151,7 +2153,12 @@ func (c *Client) HandleInputKey() {
 				}
 				var7 := 0
 				if c.ShowSocialInput {
-					if var2 >= 32 && var2 <= 132 && len(c.SocialInput) < 80 {
+					// Java: deob/client.java:2758 — `var2 <= 122` (lowercase 'z'
+					// upper bound). The prior `<= 132` was a digit-transposition
+					// typo and wrongly accepted chars 123-132 ({ | } ~ etc.) into
+					// social-input strings that downstream base37 packing then
+					// silently drops or corrupts.
+					if var2 >= 32 && var2 <= 122 && len(c.SocialInput) < 80 {
 						c.SocialInput = c.SocialInput + string(rune(var2))
 						c.RedrawChatback = true
 					}
@@ -4254,22 +4261,28 @@ func (c *Client) DrawGame() {
 					c.ImageRedstone1hv.PlotSprite(0, 233)
 				}
 			}
-			if c.TabInterfaceID[8] != 1 && (c.FlashingTab != 8 || clientextras.LoopCycle%20 < 10) {
+			// Java: deob/client.java:4828-4845 — `!= -1` (TabInterfaceID
+			// defaults to -1 meaning "no interface assigned"). The prior
+			// port dropped the minus on six consecutive sibling branches,
+			// so the bottom-row side icons (Friends / Ignore / Logout
+			// etc., tabs 8-13) rendered even when no interface was set.
+			// Same defect-class as the `%1` typo just fixed at line 3553.
+			if c.TabInterfaceID[8] != -1 && (c.FlashingTab != 8 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[7].PlotSprite(2, 80)
 			}
-			if c.TabInterfaceID[9] != 1 && (c.FlashingTab != 9 || clientextras.LoopCycle%20 < 10) {
+			if c.TabInterfaceID[9] != -1 && (c.FlashingTab != 9 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[8].PlotSprite(3, 107)
 			}
-			if c.TabInterfaceID[10] != 1 && (c.FlashingTab != 10 || clientextras.LoopCycle%20 < 10) {
+			if c.TabInterfaceID[10] != -1 && (c.FlashingTab != 10 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[9].PlotSprite(4, 142)
 			}
-			if c.TabInterfaceID[11] != 1 && (c.FlashingTab != 11 || clientextras.LoopCycle%20 < 10) {
+			if c.TabInterfaceID[11] != -1 && (c.FlashingTab != 11 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[10].PlotSprite(2, 179)
 			}
-			if c.TabInterfaceID[12] != 1 && (c.FlashingTab != 12 || clientextras.LoopCycle%20 < 10) {
+			if c.TabInterfaceID[12] != -1 && (c.FlashingTab != 12 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[11].PlotSprite(2, 206)
 			}
-			if c.TabInterfaceID[13] != 1 && (c.FlashingTab != 13 || clientextras.LoopCycle%20 < 10) {
+			if c.TabInterfaceID[13] != -1 && (c.FlashingTab != 13 || clientextras.LoopCycle%20 < 10) {
 				c.ImageSideIcons[12].PlotSprite(2, 230)
 			}
 		}
@@ -9371,7 +9384,12 @@ func (c *Client) Read() bool {
 	}
 	// Java: opcode 139 — local player id (client.java:9692-9695)
 	if c.PacketType == 139 {
-		c.LocalPid = c.In.G2()
+		// Java: deob/client.java:9693 — `this.localPid = this.in.g2();`.
+		// The prior Go port had a duplicate field `LocalPid` (lowercase
+		// d) that this opcode wrote to, while every reader checked
+		// `LocalPID` — so local-player identity never updated and every
+		// "is this packet about me?" comparison silently failed.
+		c.LocalPID = c.In.G2()
 		c.PacketType = -1
 		return true
 	}
