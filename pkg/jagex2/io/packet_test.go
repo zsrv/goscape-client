@@ -1,6 +1,7 @@
 package io
 
 import (
+	"math/big"
 	"testing"
 	"unicode/utf8"
 )
@@ -129,4 +130,183 @@ func TestGBitAdvancesBitPos(t *testing.T) {
 	if p.BitPos != want {
 		t.Fatalf("BitPos = %d, want %d", p.BitPos, want)
 	}
+}
+
+// TestJavaBytesFromBigInt_MSBSetPositive verifies that the emit helper
+// prepends a 0x00 sign byte when a positive integer's magnitude byte 0 has
+// the high bit set, mirroring java.math.BigInteger.toByteArray(). Without
+// the sign byte, the Java server's `new BigInteger(byte[])` would re-parse
+// the value as negative (two's complement). This was the C12 / 1fb2791 bug.
+func TestJavaBytesFromBigInt_MSBSetPositive(t *testing.T) {
+	cases := []struct {
+		name string
+		// value in hex; magnitude byte 0 has the high bit set when expected.
+		hex     string
+		want    []byte
+	}{
+		{"0x80", "80", []byte{0x00, 0x80}},
+		{"0xFF", "FF", []byte{0x00, 0xFF}},
+		{"0xC0FE", "C0FE", []byte{0x00, 0xC0, 0xFE}},
+		// Magnitude byte 0 clear → no sign byte.
+		{"0x7F", "7F", []byte{0x7F}},
+		{"0x01", "01", []byte{0x01}},
+		// Zero is a special case — Java returns [0x00].
+		{"zero", "00", []byte{0x00}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			n, ok := new(big.Int).SetString(tc.hex, 16)
+			if !ok {
+				t.Fatalf("bad hex %q", tc.hex)
+			}
+			got := javaBytesFromBigInt(n)
+			if !equalBytes(got, tc.want) {
+				t.Errorf("javaBytesFromBigInt(0x%s) = %#x, want %#x", tc.hex, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestJavaBigIntFromBytes_TwosComplement verifies that the parse helper
+// treats byte 0's high bit as a two's-complement sign, matching
+// `new java.math.BigInteger(byte[])`. Go's big.Int.SetBytes is unsigned.
+func TestJavaBigIntFromBytes_TwosComplement(t *testing.T) {
+	cases := []struct {
+		name string
+		b    []byte
+		want string // hex; "-" prefix for negative
+	}{
+		// Positive (byte 0 < 0x80): same as SetBytes.
+		{"0x7F", []byte{0x7F}, "7F"},
+		// Negative (byte 0 >= 0x80): two's-complement of magnitude.
+		// 0xFF as a single byte is -1.
+		{"0xFF=-1", []byte{0xFF}, "-1"},
+		// 0x80 as a single byte is -128.
+		{"0x80=-128", []byte{0x80}, "-80"},
+		// 0xFF 0xFE = -2.
+		{"0xFFFE=-2", []byte{0xFF, 0xFE}, "-2"},
+		// 0x00 0xFF — leading zero forces positive parse.
+		{"0x00FF=+255", []byte{0x00, 0xFF}, "FF"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := javaBigIntFromBytes(tc.b)
+			want, ok := new(big.Int).SetString(tc.want, 16)
+			if !ok {
+				t.Fatalf("bad hex %q", tc.want)
+			}
+			if got.Cmp(want) != 0 {
+				t.Errorf("javaBigIntFromBytes(%#x) = %s, want %s",
+					tc.b, got.Text(16), tc.want)
+			}
+		})
+	}
+}
+
+// TestJavaBigIntRoundTrip_Positive verifies parse-then-emit for the
+// positive-integer encoding produced by Java BigInteger.toByteArray().
+// The negative-side roundtrip is documented as unreachable through RSAEnc
+// (modPow output is always non-negative) so we don't exercise it here.
+func TestJavaBigIntRoundTrip_Positive(t *testing.T) {
+	cases := [][]byte{
+		{0x00},                   // zero
+		{0x01},                   // positive small
+		{0x7F},                   // largest positive single byte (no sign byte)
+		{0x00, 0x80},             // smallest two-byte positive with sign byte
+		{0x00, 0xFF},             // 255 with sign byte
+		{0x00, 0xFF, 0xFE, 0xFD}, // larger positive with sign byte
+		{0x01, 0x02, 0x03, 0x04}, // positive without sign byte
+	}
+	for _, b := range cases {
+		t.Run(string(b), func(t *testing.T) {
+			n := javaBigIntFromBytes(b)
+			got := javaBytesFromBigInt(n)
+			if !equalBytes(got, b) {
+				t.Errorf("round trip: in=%#x out=%#x", b, got)
+			}
+		})
+	}
+}
+
+// TestRSAEncCiphertextPayload exercises the full RSAEnc emit path: pack
+// plaintext via P-ops, call RSAEnc with a known modulus/exponent, and
+// verify the emitted length byte + payload mirror Java's
+// `out.p1(b.length); out.pdata(b, 0, b.length)` for a ciphertext whose
+// magnitude byte 0 has the high bit set.
+//
+// This was the 1fb2791 bug: Go's big.Int.Bytes() omits the leading 0x00
+// sign byte that Java BigInteger.toByteArray() inserts on MSB-set values,
+// so the Java server would re-parse the unsigned form as a different
+// (sign-extended-negative) BigInteger when decrypting.
+func TestRSAEncCiphertextPayload(t *testing.T) {
+	// Trivial RSA: mod = 2^256, exp = 1. modPow(x, 1, 2^256) returns the
+	// plaintext untouched (so we control the ciphertext byte 0 directly
+	// without doing real crypto), letting us drive the emit path under
+	// known conditions. The bug under test is the wire format, not the math.
+	mod := new(big.Int).Lsh(big.NewInt(1), 256)
+	exp := big.NewInt(1)
+
+	// Plaintext bytes [0x00, 0x80, 0x01, 0x02, 0x03, 0x04, 0x05]. Java's
+	// `new BigInteger(byte[])` parses this as positive (leading 0x00 forces
+	// positive sign), then modPow(.,1,2^256) returns the same magnitude.
+	// The magnitude's first nonzero byte is 0x80, so Java's toByteArray()
+	// prepends a 0x00 sign byte → wire len = 7.
+	plaintextBytes := []byte{0x00, 0x80, 0x01, 0x02, 0x03, 0x04, 0x05}
+
+	p := NewPacket(make([]byte, 128))
+	for _, b := range plaintextBytes {
+		p.P1(int(b))
+	}
+	p.RSAEnc(mod, exp)
+
+	// Wire format: [len:1][data:len]. Expect 7-byte payload: sign byte
+	// then the 6 magnitude bytes [0x80, 0x01, ... 0x05].
+	if p.Data[0] != 7 {
+		t.Errorf("length byte = %d, want 7 (sign byte + 6 magnitude bytes)", p.Data[0])
+	}
+	if p.Data[1] != 0x00 {
+		t.Errorf("data[0] = %#x, want 0x00 (Java sign byte)", p.Data[1])
+	}
+	wantMag := []byte{0x80, 0x01, 0x02, 0x03, 0x04, 0x05}
+	for i, want := range wantMag {
+		if got := p.Data[2+i]; got != want {
+			t.Errorf("data[%d] = %#x, want %#x", 1+i+1, got, want)
+		}
+	}
+}
+
+// TestRSAEncCiphertextPayload_MSBClear is the negative case: no sign byte
+// is added when the magnitude's byte 0 already has the high bit clear.
+func TestRSAEncCiphertextPayload_MSBClear(t *testing.T) {
+	mod := new(big.Int).Lsh(big.NewInt(1), 256)
+	exp := big.NewInt(1)
+
+	// Positive plaintext (byte 0 < 0x80) — parses positive, modPow gives
+	// itself back, magnitude byte 0 = 0x7F so no sign byte needed.
+	plaintextBytes := []byte{0x7F, 0x01, 0x02}
+
+	p := NewPacket(make([]byte, 128))
+	for _, b := range plaintextBytes {
+		p.P1(int(b))
+	}
+	p.RSAEnc(mod, exp)
+
+	if p.Data[0] != 3 {
+		t.Errorf("length byte = %d, want 3 (no sign byte needed)", p.Data[0])
+	}
+	if p.Data[1] != 0x7F {
+		t.Errorf("data[0] = %#x, want 0x7F", p.Data[1])
+	}
+}
+
+func equalBytes(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
