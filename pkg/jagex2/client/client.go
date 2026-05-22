@@ -1608,6 +1608,19 @@ func SetLowMem() {
 }
 
 func (c *Client) DrawFlames() {
+	// DrawFlames runs from the RunFlames goroutine, independent of
+	// c.Draw. It updates the ImageTitle0 / ImageTitle1 pixel buffers
+	// with the next animation step. The GPU upload of those buffers
+	// now happens in DrawTitleScreen / DrawGame each frame, so we no
+	// longer touch c.Ops here.
+	//
+	// Hold OpsMu while writing the pixel buffers: the frame goroutine
+	// reads them via PixMap.Draw → convertPixmapPixels, which races
+	// with our writes without the lock. OpsMu is the project-wide
+	// per-frame lock; reusing it serializes DrawFlames against c.Draw.
+	pixmap.OpsMu.Lock()
+	defer pixmap.OpsMu.Unlock()
+
 	var2 := 256
 	if c.FlameGradientCycle0 > 0 {
 		for i := range 256 {
@@ -1666,7 +1679,9 @@ func (c *Client) DrawFlames() {
 		}
 		var5 += var8
 	}
-	c.ImageTitle0.Draw(&c.Ops, 0, 0)
+	// Right-side flame buffer update (left-side ImageTitle0.Data was
+	// updated above). GPU upload of both happens in DrawTitleScreen /
+	// DrawGame each frame, not here.
 	for i := range 33920 {
 		c.ImageTitle1.Data[i] = c.ImageFlamesRight.Pixels[i]
 	}
@@ -1693,7 +1708,6 @@ func (c *Client) DrawFlames() {
 		var4 += 128 - var10
 		var5 += 128 - var10 - var9
 	}
-	c.ImageTitle1.Draw(&c.Ops, 661, 0)
 }
 
 func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *component.Component, arg5 int, arg6 int) {
@@ -3380,10 +3394,17 @@ func (c *Client) DrawTitleScreen() {
 		c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Cancel")
 	}
 	c.ImageTitle4.Draw(&c.Ops, 214, 186)
-	if !c.RedrawFrame {
-		return
-	}
+	// Pre-Gio (Java/AWT), the back buffer retained pixels across frames,
+	// so the static background tiles only needed re-uploading on a full
+	// "dirty" redraw (c.RedrawFrame). Gio's op.Ops is immediate-mode and
+	// Reset every frame — the upload-op must re-issue each frame even
+	// when the pixel content is unchanged. Hoist the Draw calls out of
+	// the dirty-flag guard so they always run. The flame tiles 0 and 1
+	// are uploaded here too (DrawFlames now only updates their pixel
+	// buffers; this entry point owns the GPU upload).
 	c.RedrawFrame = false
+	c.ImageTitle0.Draw(&c.Ops, 0, 0)
+	c.ImageTitle1.Draw(&c.Ops, 661, 0)
 	c.ImageTitle2.Draw(&c.Ops, 128, 0)
 	c.ImageTitle3.Draw(&c.Ops, 214, 386)
 	c.ImageTitle5.Draw(&c.Ops, 0, 265)
@@ -4134,26 +4155,39 @@ func (c *Client) UpdateSequences(arg1 *entity.PathingEntity) {
 }
 
 func (c *Client) DrawGame() {
+	// Always upload the static frame-chrome tiles. Pre-Gio (Java/AWT)
+	// these were gated by c.RedrawFrame because AWT retained the back
+	// buffer; Gio's op.Ops is immediate-mode and Reset every frame.
+	// Flames tiles (ImageTitle0/1) too — DrawFlames now only updates
+	// their pixel buffers, this entry point uploads.
+	if c.FlameActive {
+		c.ImageTitle0.Draw(&c.Ops, 0, 0)
+		c.ImageTitle1.Draw(&c.Ops, 661, 0)
+	}
+	c.AreaBackleft1.Draw(&c.Ops, 0, 11)
+	c.AreaBackleft2.Draw(&c.Ops, 0, 375)
+	c.AreaBackright1.Draw(&c.Ops, 729, 5)
+	c.AreaBackright2.Draw(&c.Ops, 752, 231)
+	c.AreaBacktop1.Draw(&c.Ops, 0, 0)
+	c.AreaBacktop2.Draw(&c.Ops, 561, 0)
+	c.AreaBackvmid1.Draw(&c.Ops, 520, 11)
+	c.AreaBackvmid2.Draw(&c.Ops, 520, 231)
+	c.AreaBackvmid3.Draw(&c.Ops, 501, 375)
+	c.AreaBackhmid2.Draw(&c.Ops, 0, 345)
+	if c.SceneState != 2 {
+		c.AreaViewport.Draw(&c.Ops, 8, 11)
+		c.AreaMapback.Draw(&c.Ops, 561, 5)
+	}
 	if c.RedrawFrame {
 		c.RedrawFrame = false
-		c.AreaBackleft1.Draw(&c.Ops, 0, 11)
-		c.AreaBackleft2.Draw(&c.Ops, 0, 375)
-		c.AreaBackright1.Draw(&c.Ops, 729, 5)
-		c.AreaBackright2.Draw(&c.Ops, 752, 231)
-		c.AreaBacktop1.Draw(&c.Ops, 0, 0)
-		c.AreaBacktop2.Draw(&c.Ops, 561, 0)
-		c.AreaBackvmid1.Draw(&c.Ops, 520, 11)
-		c.AreaBackvmid2.Draw(&c.Ops, 520, 231)
-		c.AreaBackvmid3.Draw(&c.Ops, 501, 375)
-		c.AreaBackhmid2.Draw(&c.Ops, 0, 345)
+		// Java set redrawSidebar/Chatback/SideIcons/PrivacySettings
+		// here to force a content rebuild on full-frame dirty. Retained
+		// because the inner repaints in those sub-draws are still
+		// expensive enough to gate.
 		c.RedrawSidebar = true
 		c.RedrawChatback = true
 		c.RedrawSideIcons = true
 		c.RedrawPrivacySettings = true
-		if c.SceneState != 2 {
-			c.AreaViewport.Draw(&c.Ops, 8, 11)
-			c.AreaMapback.Draw(&c.Ops, 561, 5)
-		}
 	}
 	if c.SceneState == 2 {
 		c.DrawScene(0)
@@ -4174,10 +4208,11 @@ func (c *Client) DrawGame() {
 	if c.ObjDragArea == 2 {
 		c.RedrawSidebar = true
 	}
-	if c.RedrawSidebar {
-		c.DrawSidebar()
-		c.RedrawSidebar = false
-	}
+	// DrawSidebar always runs in Gio's immediate-mode model — it
+	// internally gates the expensive pixel repaint on c.RedrawSidebar
+	// but unconditionally uploads the AreaSidebar pixmap so the GPU
+	// always sees the current state.
+	c.DrawSidebar()
 	if c.ChatInterfaceID == -1 {
 		c.ChatInterface.ScrollPosition = c.ChatScrollHeight - c.ChatScrollOffset - 77
 		if c.MouseX > 453 && c.MouseX < 565 && c.MouseY > 350 {
@@ -4209,10 +4244,8 @@ func (c *Client) DrawGame() {
 	if c.MenuVisible && c.MenuArea == 2 {
 		c.RedrawChatback = true
 	}
-	if c.RedrawChatback {
-		c.DrawChatback()
-		c.RedrawChatback = false
-	}
+	// DrawChatback always runs (same rationale as DrawSidebar above).
+	c.DrawChatback()
 	if c.SceneState == 2 {
 		c.DrawMinimap()
 		c.AreaMapback.Draw(&c.Ops, 561, 5)
@@ -4270,7 +4303,6 @@ func (c *Client) DrawGame() {
 				c.ImageSideIcons[6].PlotSprite(34, 212)
 			}
 		}
-		c.AreaBackhmid1.Draw(&c.Ops, 520, 165)
 		c.AreaBackbase2.Bind()
 		c.ImageBackbase2.PlotSprite(0, 0)
 		if c.SidebarInterfaceID == -1 {
@@ -4317,9 +4349,13 @@ func (c *Client) DrawGame() {
 				c.ImageSideIcons[12].PlotSprite(2, 230)
 			}
 		}
-		c.AreaBackbase2.Draw(&c.Ops, 501, 492)
 		c.AreaViewport.Bind()
 	}
+	// Always upload the two SideIcons pixmaps. Pixel content edits
+	// above were gated by RedrawSideIcons; the GPU upload runs every
+	// frame so they don't go white between dirty cycles.
+	c.AreaBackhmid1.Draw(&c.Ops, 520, 165)
+	c.AreaBackbase2.Draw(&c.Ops, 501, 492)
 	if c.RedrawPrivacySettings {
 		c.RedrawPrivacySettings = false
 		c.AreaBackbase1.Bind()
@@ -4354,9 +4390,11 @@ func (c *Client) DrawGame() {
 			c.FontPlain12.DrawStringTaggableCenter(326, 0xFF0000, true, 46, "Off")
 		}
 		c.FontPlain12.DrawStringTaggableCenter(462, 0xFFFFFF, true, 38, "Report abuse")
-		c.AreaBackbase1.Draw(&c.Ops, 0, 471)
 		c.AreaViewport.Bind()
 	}
+	// Always upload the PrivacySettings pixmap. Pixel content edits
+	// above were gated by RedrawPrivacySettings.
+	c.AreaBackbase1.Draw(&c.Ops, 0, 471)
 	c.SceneDelta = 0
 }
 
@@ -8803,6 +8841,16 @@ func (c *Client) GetPlayerLocal(arg2 *io.Packet) {
 }
 
 func (c *Client) DrawChatback() {
+	// Pixel repaint is gated on RedrawChatback (expensive: 100-message
+	// scrollback walk + interface tree + font rendering). GPU upload
+	// always runs — pre-fix, the whole function was wrapped in
+	// `if RedrawChatback` at the call site, relying on Java/AWT's
+	// retained back buffer.
+	if !c.RedrawChatback {
+		c.AreaChatback.Draw(&c.Ops, 22, 375)
+		return
+	}
+	c.RedrawChatback = false
 	c.AreaChatback.Bind()
 	pix3d.LineOffset = c.AreaChatbackOffsets
 	c.ImageChatback.PlotSprite(0, 0)
@@ -8892,9 +8940,9 @@ func (c *Client) DrawChatback() {
 	if c.MenuVisible && c.MenuArea == 2 {
 		c.DrawMenu()
 	}
-	c.AreaChatback.Draw(&c.Ops, 22, 375)
 	c.AreaViewport.Bind()
 	pix3d.LineOffset = c.AreaViewportOffsets
+	c.AreaChatback.Draw(&c.Ops, 22, 375)
 }
 
 func (c *Client) Read() bool {
@@ -10042,20 +10090,29 @@ func (c *Client) Read() bool {
 }
 
 func (c *Client) DrawSidebar() {
-	c.AreaSidebar.Bind()
-	pix3d.LineOffset = c.AreaSidebarOffsets
-	c.ImageInvback.PlotSprite(0, 0)
-	if c.SidebarInterfaceID != -1 {
-		c.DrawInterface(0, 0, component.Instances[c.SidebarInterfaceID], 0)
-	} else if c.TabInterfaceID[c.SelectedTab] != -1 {
-		c.DrawInterface(0, 0, component.Instances[c.TabInterfaceID[c.SelectedTab]], 0)
-	}
-	if c.MenuVisible && c.MenuArea == 1 {
-		c.DrawMenu()
+	// Pixel repaint is gated on RedrawSidebar (expensive: interface
+	// tree walk + pix3d/pix2d operations). GPU upload always runs.
+	// Pre-fix this whole function was wrapped in `if RedrawSidebar`
+	// at the call site, relying on Java/AWT's retained back buffer
+	// for the no-redraw frames; Gio's op.Ops requires the upload-op
+	// each frame.
+	if c.RedrawSidebar {
+		c.RedrawSidebar = false
+		c.AreaSidebar.Bind()
+		pix3d.LineOffset = c.AreaSidebarOffsets
+		c.ImageInvback.PlotSprite(0, 0)
+		if c.SidebarInterfaceID != -1 {
+			c.DrawInterface(0, 0, component.Instances[c.SidebarInterfaceID], 0)
+		} else if c.TabInterfaceID[c.SelectedTab] != -1 {
+			c.DrawInterface(0, 0, component.Instances[c.TabInterfaceID[c.SelectedTab]], 0)
+		}
+		if c.MenuVisible && c.MenuArea == 1 {
+			c.DrawMenu()
+		}
+		c.AreaViewport.Bind()
+		pix3d.LineOffset = c.AreaViewportOffsets
 	}
 	c.AreaSidebar.Draw(&c.Ops, 562, 231)
-	c.AreaViewport.Bind()
-	pix3d.LineOffset = c.AreaViewportOffsets
 }
 
 func (c *Client) IsFriend(arg1 string) bool {
@@ -10225,22 +10282,21 @@ func (c *Client) DrawProgress(message string, percent int) {
 	c.FontBold12.CentreString(y/2+5-offsetY, 0xFFFFFF, message, x/2)
 
 	c.ImageTitle4.Draw(&c.Ops, 214, 186)
-
-	if c.RedrawFrame {
-		c.RedrawFrame = false
-
-		if !c.FlameActive {
-			c.ImageTitle0.Draw(&c.Ops, 0, 0)
-			c.ImageTitle1.Draw(&c.Ops, 661, 0)
-		}
-
-		c.ImageTitle2.Draw(&c.Ops, 128, 0)
-		c.ImageTitle3.Draw(&c.Ops, 214, 386)
-		c.ImageTitle5.Draw(&c.Ops, 0, 265)
-		c.ImageTitle6.Draw(&c.Ops, 574, 265)
-		c.ImageTitle7.Draw(&c.Ops, 128, 186)
-		c.ImageTitle8.Draw(&c.Ops, 574, 186)
+	// Always upload the static title tiles + flame tiles. Pre-fix
+	// this was gated by c.RedrawFrame relying on Java/AWT's retained
+	// back buffer; Gio's op.Ops is immediate-mode and Reset every
+	// frame.
+	c.RedrawFrame = false
+	if !c.FlameActive {
+		c.ImageTitle0.Draw(&c.Ops, 0, 0)
+		c.ImageTitle1.Draw(&c.Ops, 661, 0)
 	}
+	c.ImageTitle2.Draw(&c.Ops, 128, 0)
+	c.ImageTitle3.Draw(&c.Ops, 214, 386)
+	c.ImageTitle5.Draw(&c.Ops, 0, 265)
+	c.ImageTitle6.Draw(&c.Ops, 574, 265)
+	c.ImageTitle7.Draw(&c.Ops, 128, 186)
+	c.ImageTitle8.Draw(&c.Ops, 574, 186)
 }
 
 // ensureOverlay lazily allocates the fullscreen overlay PixMap used by
