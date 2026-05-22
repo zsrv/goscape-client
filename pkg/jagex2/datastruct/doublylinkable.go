@@ -3,6 +3,12 @@ package datastruct
 type DoublyLinkable[T any] struct {
 	*Linkable[T]
 
+	// Key mirrors Java's Linkable.key (a long stored on the linkable itself
+	// so HashTable can look it up by bucket-AND mask). Go's LruCache uses
+	// it to find the right map entry when an LRU eviction pops a node off
+	// the history list.
+	Key int64
+
 	next2 *DoublyLinkable[T]
 	prev2 *DoublyLinkable[T]
 }

@@ -305,7 +305,10 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 	var3 := IconCache.Get(int64(arg0))
 	if var3 != nil && var3.OHi != arg2 && var3.OHi != -1 {
-		//var3.Unlink() // TODO: Linkable.Unlink - add func to remove an id directly from LruCache?
+		// Java: var3.unlink() — DoublyLinkable's unlink() removes the node
+		// from both the hashtable bucket and the history list. The Go port
+		// of LruCache exposes Delete(key) for the same effect.
+		IconCache.Delete(int64(arg0))
 		var3 = nil
 	}
 	if var3 != nil {
