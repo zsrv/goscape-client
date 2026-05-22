@@ -736,9 +736,7 @@ func (c *Client) Draw2DEntityElements() {
 				c.ProjectFromGround1(pe.Height+15, pe)
 				if c.ProjectX > -1 {
 					var4 = pe.Health * 30 / pe.TotalHealth
-					if var4 > 30 {
-						var4 = 30
-					}
+					var4 = min(var4, 30)
 					pix2d.FillRect(c.ProjectY-3, c.ProjectX-15, 0xFF00, var4, 5)
 					pix2d.FillRect(c.ProjectY-3, c.ProjectX-15+var4, 0xFF0000, 30-var4, 5)
 				}
@@ -1447,9 +1445,7 @@ func (c *Client) DrawScene(arg0 int) {
 	var4 := 0
 	if !c.Cutscene {
 		var2 = c.OrbitCameraPitch
-		if c.CameraPitchClamp/256 > var2 {
-			var2 = c.CameraPitchClamp / 256
-		}
+		var2 = max(var2, c.CameraPitchClamp/256)
 		if c.CameraModifierEnabled[4] && c.CameraModifierWobbleScale[4]+128 > var2 {
 			var2 = c.CameraModifierWobbleScale[4] + 128
 		}
@@ -1636,9 +1632,7 @@ func (c *Client) DrawFlames() {
 	for i := 1; i < var2-1; i++ {
 		var7 = c.FlameLineOffset[i] * (var2 - i) / var2
 		var8 = var7 + 22
-		if var8 < 0 {
-			var8 = 0
-		}
+		var8 = max(var8, 0)
 		var4 += var8
 		for j := var8; j < 128; j++ {
 			var10 = c.FlameBuffer3[var4]
@@ -2510,9 +2504,7 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 		readFailed := false
 		for pos < packedSize {
 			chunkSize := packedSize - pos
-			if chunkSize > 1000 {
-				chunkSize = 1000
-			}
+			chunkSize = min(chunkSize, 1000)
 
 			n, err := reader.Read(data[pos : pos+chunkSize])
 			if err != nil {
@@ -2674,9 +2666,7 @@ func (c *Client) UpdateFlames() {
 		for j := 1; j < 127; j++ {
 			var8 = j + (i << 7)
 			var9 := c.FlameBuffer2[var8+128] - c.FlameBuffer0[(var8+c.FlameCycle0)&(len(c.FlameBuffer0)-1)]/5
-			if var9 < 0 {
-				var9 = 0
-			}
+			var9 = max(var9, 0)
 			c.FlameBuffer3[var8] = var9
 		}
 	}
@@ -3216,9 +3206,7 @@ func (c *Client) DrawScrollbar(arg1, arg2, arg3, arg4, arg5 int) {
 	c.ImageScrollbar1.PlotSprite(arg2+arg5-16, arg1)
 	pix2d.FillRect(arg2+16, arg1, c.SCROLLBAR_TRACK, 16, arg5-32)
 	var7 := (arg5 - 32) * arg5 / arg4
-	if var7 < 8 {
-		var7 = 8
-	}
+	var7 = max(var7, 8)
 	var8 := (arg5 - 32 - var7) * arg3 / (arg4 - arg5)
 	pix2d.FillRect(arg2+16+var8, arg1, c.SCROLLBAR_GRIP_FOREGROUND, 16, var7)
 	pix2d.VLine(c.SCROLLBAR_GRIP_HIGHLIGHT, arg2+16+var8, var7, arg1)
@@ -4143,12 +4131,8 @@ func (c *Client) DrawGame() {
 			c.HandleScrollInput(c.MouseX-22, 0, c.MouseY-375, c.ChatScrollHeight, 77, false, 463, 0, c.ChatInterface)
 		}
 		var3 := c.ChatScrollHeight - 77 - c.ChatInterface.ScrollPosition
-		if var3 < 0 {
-			var3 = 0
-		}
-		if var3 > c.ChatScrollHeight-77 {
-			var3 = c.ChatScrollHeight - 77
-		}
+		var3 = max(var3, 0)
+		var3 = min(var3, c.ChatScrollHeight-77)
 		if c.ChatScrollOffset != var3 {
 			c.ChatScrollOffset = var3
 			c.RedrawChatback = true
@@ -5188,11 +5172,12 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 			}
 		}
 		if var3 == 654 {
-			if c.DaysSinceRecoveriesChanged == 201 {
+			switch c.DaysSinceRecoveriesChanged {
+			case 201:
 				arg1.Text = ""
-			} else if c.DaysSinceRecoveriesChanged == 200 {
+			case 200:
 				arg1.Text = "Do this from the 'account management' area on our front webpage"
-			} else {
+			default:
 				arg1.Text = "Do this from the 'account management' area on our front webpage"
 			}
 		}
@@ -5918,12 +5903,8 @@ func (c *Client) UpdateOrbitCamera(arg0 int) {
 		}
 	}
 	var8 := var7 * 192
-	if var8 > 98048 {
-		var8 = 98048
-	}
-	if var8 < 32768 {
-		var8 = 32768
-	}
+	var8 = min(var8, 98048)
+	var8 = max(var8, 32768)
 	if var8 > c.CameraPitchClamp {
 		c.CameraPitchClamp += (var8 - c.CameraPitchClamp) / 24
 	} else if var8 < c.CameraPitchClamp {
@@ -6214,9 +6195,7 @@ func (c *Client) RunFlames() {
 			var6 := time.Now().UnixMilli()
 			var8 := int(var6-var2)/10 - var5
 			var5 = 40 - var8
-			if var5 < 5 {
-				var5 = 5
-			}
+			var5 = max(var5, 5)
 			var4 = 0
 			var2 = var6
 		}
@@ -6257,9 +6236,7 @@ func (c *Client) HandleScrollInput(arg0, arg1, arg2, arg3, arg4 int, arg5 bool, 
 		}
 	} else if arg0 >= arg6-c.ScrollInputPadding && arg0 < arg6+16+c.ScrollInputPadding && arg2 >= arg7+16 && arg2 < arg7+arg4-16 && c.DragCycles > 0 {
 		var10 := (arg4 - 32) * arg4 / arg3
-		if var10 < 8 {
-			var10 = 8
-		}
+		var10 = max(var10, 8)
 		var11 := arg2 - arg7 - 16 - var10/2
 		var12 := arg4 - 32 - var10
 		arg8.ScrollPosition = (arg3 - arg4) * var11 / var12
@@ -7281,10 +7258,7 @@ func (c *Client) TryMove(arg0, arg1 int, arg2 bool, arg3, arg4, arg6, arg7, arg8
 		var23 = c.BFSDirection[var16][var17]
 	}
 	if var19 > 0 {
-		var21 = var19
-		if var19 > 25 {
-			var21 = 25
-		}
+		var21 = min(var19, 25)
 		var19--
 		var25 := c.BFSStepX[var19]
 		var26 := c.BFSStepZ[var19]
@@ -7859,7 +7833,8 @@ func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
 			} else {
 				var10 := 0
 				var11 := 0
-				if var9 == 1 {
+				switch var9 {
+				case 1:
 					c.NPCIDs[c.NPCCount] = var6
 					c.NPCCount++
 					var7.Cycle = clientextras.LoopCycle
@@ -7870,7 +7845,7 @@ func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
 						c.EntityUpdateIDs[c.EntityUpdateCount] = var6
 						c.EntityUpdateCount++
 					}
-				} else if var9 == 2 {
+				case 2:
 					c.NPCIDs[c.NPCCount] = var6
 					c.NPCCount++
 					var7.Cycle = clientextras.LoopCycle
@@ -7883,7 +7858,7 @@ func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
 						c.EntityUpdateIDs[c.EntityUpdateCount] = var6
 						c.EntityUpdateCount++
 					}
-				} else if var9 == 3 {
+				case 3:
 					c.EntityRemovalIDs[c.EntityRemovalCount] = var6
 					c.EntityRemovalCount++
 				}
@@ -8432,7 +8407,8 @@ func (c *Client) PushLocs() {
 				var15 := 0
 				var16 := 0
 				var var17 *model.Model
-				if v.Type == 2 {
+				switch v.Type {
+				case 2:
 					var14 = c.Scene.GetInfo(var4, var5, var6, var7)
 					var15 = var14 & 0x1F
 					var16 = var14 >> 6
@@ -8441,10 +8417,10 @@ func (c *Client) PushLocs() {
 					}
 					var17 = var12.GetModel(var15, var16, var8, var9, var10, var11, var13)
 					c.Scene.SetLocModel(var5, var17, var4, var6)
-				} else if v.Type == 1 {
+				case 1:
 					var21 := var12.GetModel(4, 0, var8, var9, var10, var11, var13)
 					c.Scene.SetWallDecorationModel(var6, var5, var21, var4)
-				} else if v.Type == 0 {
+				case 0:
 					var14 = c.Scene.GetInfo(var4, var5, var6, var7)
 					var15 = var14 & 0x1F
 					var16 = var14 >> 6
@@ -8457,7 +8433,7 @@ func (c *Client) PushLocs() {
 						var17 = var12.GetModel(var15, var16, var8, var9, var10, var11, var13)
 						c.Scene.SetWallModel(var17, var6, var5, var4)
 					}
-				} else if v.Type == 3 {
+				case 3:
 					var14 = c.Scene.GetInfo(var4, var5, var6, var7)
 					var15 = var14 >> 6
 					var22 := var12.GetModel(22, var15, var8, var9, var10, var11, var13)
@@ -8723,7 +8699,8 @@ func (c *Client) GetPlayerLocal(arg2 *io.Packet) {
 		return
 	}
 	var8 := 0
-	if var5 == 2 {
+	switch var5 {
+	case 2:
 		var6 = arg2.GBit(3)
 		c.LocalPlayer.MoveAlongRoute(true, var6)
 		var7 = arg2.GBit(3)
@@ -8733,7 +8710,7 @@ func (c *Client) GetPlayerLocal(arg2 *io.Packet) {
 			c.EntityUpdateIDs[c.EntityUpdateCount] = c.LOCAL_PLAYER_INDEX
 			c.EntityUpdateCount++
 		}
-	} else if var5 == 3 {
+	case 3:
 		c.CurrentLevel = arg2.GBit(2)
 		var6 = arg2.GBit(7)
 		var7 = arg2.GBit(7)
@@ -8826,9 +8803,7 @@ func (c *Client) DrawChatback() {
 		}
 		pix2d.ResetClipping()
 		c.ChatScrollHeight = var3*14 + 7
-		if c.ChatScrollHeight < 78 {
-			c.ChatScrollHeight = 78
-		}
+		c.ChatScrollHeight = max(c.ChatScrollHeight, 78)
 		c.DrawScrollbar(463, 0, c.ChatScrollHeight-c.ChatScrollOffset-77, c.ChatScrollHeight, 77)
 		var2.DrawString(4, 90, 0, jstring.FormatName(c.Username)+":")
 		var2.DrawString(var2.StringWidth(c.Username+": ")+6, 90, 0xFF, c.ChatTyped+"*")

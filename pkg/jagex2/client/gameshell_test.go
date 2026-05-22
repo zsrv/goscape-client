@@ -1,6 +1,7 @@
 package client
 
 import (
+	"slices"
 	"testing"
 
 	"goscape-client/pkg/jagex2/graphics/pix2d"
@@ -28,14 +29,7 @@ func TestDrawProgressGameShell_ClearsRefreshAndPopulatesOverlay(t *testing.T) {
 	}
 	// Verify at least one red pixel from the bar fill exists somewhere
 	// in the overlay buffer (indicating draw calls actually fired).
-	foundRed := false
-	for _, px := range c.OverlayPixMap.Data {
-		if px == 0x8C1111 {
-			foundRed = true
-			break
-		}
-	}
-	if !foundRed {
+	if !slices.Contains(c.OverlayPixMap.Data, 0x8C1111) {
 		t.Errorf("no 0x8C1111 (bar red) pixels found in overlay; draw did not fire")
 	}
 }
