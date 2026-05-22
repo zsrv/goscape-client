@@ -3418,21 +3418,17 @@ func (c *Client) PrepareGameScreen() {
 		return
 	}
 	c.UnloadTitle()
-	c.ImageTitle2 = nil
-	c.ImageTitle3 = nil
-	c.ImageTitle4 = nil
-	// Java: deob/client.java:3900-3901 also nils imageTitle0 / imageTitle1
-	// here. Go keeps them alive because Gio's op.Ops is immediate-mode
-	// and re-uploads the pixmap each frame from PixMap.Data; without
-	// the buffer we'd render white at the top-left (0,0) and top-right
-	// (661,0) corners in-game. Java got the visual for free via AWT's
-	// retained back buffer (last flame-animation frame stayed in the
-	// back buffer indefinitely); Go has to keep the CPU buffer to
-	// achieve the same effect. ~270 KB total — negligible.
-	c.ImageTitle5 = nil
-	c.ImageTitle6 = nil
-	c.ImageTitle7 = nil
-	c.ImageTitle8 = nil
+	// Java: deob/client.java:3897-3902 nils imageTitle0..8 here for memory.
+	// Go keeps all nine alive because:
+	//   1. ImageTitle0/1 are uploaded every frame in DrawGame (the top-
+	//      corner flame regions) — Gio's op.Ops re-uploads from PixMap.Data
+	//      each frame without AWT's retained back buffer to fall back on.
+	//   2. ImageTitle2..8 stay alive so c.DrawTitleScreen → c.LoadTitle's
+	//      early-return at line 6256 fires on Logout transition. Otherwise
+	//      LoadTitle would re-run from inside c.Draw (under OpsMu), which
+	//      transitively calls DrawProgress, which tries to acquire OpsMu
+	//      again — non-reentrant deadlock that froze the client on Logout.
+	// Combined memory cost ~1.7 MB — negligible.
 	c.AreaChatback = pixmap.NewPixMap(479, 96)
 	c.AreaMapback = pixmap.NewPixMap(168, 160)
 	pix2d.Clear()
