@@ -515,20 +515,48 @@ func keyNameToAwt(name key.Name) int {
 // uppercase letter Name plus a Modifiers bitset, so we recreate the shift
 // case-folding here. For non-text keys, returns 0; the override sequence in
 // handleKey then sets var3 to the proper sentinel (1=←, 2=→, 8=BS, …).
+// shiftedChar maps US-keyboard physical-key characters to their
+// Shift-modified equivalents. AWT's KeyEvent.getKeyChar() (which
+// the Java client consumes) reports the typed character directly;
+// Gio's key.Event reports only the physical key plus the modifier
+// bitmask, so the application has to resolve Shift itself. Keys not
+// in this table (letters, the function keys, arrows, etc.) are
+// handled separately by keyCharFor. Layout-dependent — covers US
+// QWERTY only; other layouts (UK, AZERTY, Dvorak) would map keys
+// differently and need their own table or an IME path.
+var shiftedChar = map[rune]rune{
+	'1': '!', '2': '@', '3': '#', '4': '$', '5': '%',
+	'6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
+	'-': '_', '=': '+', '[': '{', ']': '}', '\\': '|',
+	';': ':', '\'': '"', ',': '<', '.': '>', '/': '?',
+	'`': '~',
+}
+
 func keyCharFor(e key.Event) int {
 	s := string(e.Name)
 	if len(s) != 1 {
 		return 0
 	}
 	r := rune(s[0])
+	shift := e.Modifiers.Contain(key.ModShift)
 	switch {
 	case r >= 'A' && r <= 'Z':
-		if !e.Modifiers.Contain(key.ModShift) {
+		if !shift {
 			r = r - 'A' + 'a'
 		}
 		return int(r)
 	case r >= '0' && r <= '9':
+		if shift {
+			if mapped, ok := shiftedChar[r]; ok {
+				return int(mapped)
+			}
+		}
 		return int(r)
+	}
+	if shift {
+		if mapped, ok := shiftedChar[r]; ok {
+			return int(mapped)
+		}
 	}
 	return int(r)
 }
