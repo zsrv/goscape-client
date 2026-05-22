@@ -2403,7 +2403,8 @@ func (c *Client) UpdateTitle() {
 					break
 				}
 			}
-			if c.TitleLoginField == 0 {
+			switch c.TitleLoginField {
+			case 0:
 				if var5 == 8 && len(c.Username) > 0 {
 					c.Username = c.Username[0 : len(c.Username)-1]
 				}
@@ -2416,7 +2417,7 @@ func (c *Client) UpdateTitle() {
 				if len(c.Username) > 12 {
 					c.Username = c.Username[:12]
 				}
-			} else if c.TitleLoginField == 1 {
+			case 1:
 				if var5 == 8 && len(c.Password) > 0 {
 					c.Password = c.Password[0 : len(c.Password)-1]
 				}
@@ -2899,22 +2900,23 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 		var15 := loctype.Get(var14)
 		if var15.MapScene == -1 {
 			if var10 == 0 || var10 == 2 {
-				if var9 == 0 {
+				switch var9 {
+				case 0:
 					var12[var13] = var11
 					var12[var13+512] = var11
 					var12[var13+0x400] = var11
 					var12[var13+1536] = var11
-				} else if var9 == 1 {
+				case 1:
 					var12[var13] = var11
 					var12[var13+1] = var11
 					var12[var13+2] = var11
 					var12[var13+3] = var11
-				} else if var9 == 2 {
+				case 2:
 					var12[var13+3] = var11
 					var12[var13+3+512] = var11
 					var12[var13+3+0x400] = var11
 					var12[var13+3+1536] = var11
-				} else if var9 == 3 {
+				case 3:
 					var12[var13+1536] = var11
 					var12[var13+1536+1] = var11
 					var12[var13+1536+2] = var11
@@ -2922,13 +2924,14 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 				}
 			}
 			if var10 == 3 {
-				if var9 == 0 {
+				switch var9 {
+				case 0:
 					var12[var13] = var11
-				} else if var9 == 1 {
+				case 1:
 					var12[var13+3] = var11
-				} else if var9 == 2 {
+				case 2:
 					var12[var13+3+1536] = var11
-				} else if var9 == 3 {
+				case 3:
 					var12[var13+1536] = var11
 				}
 			}
@@ -3174,7 +3177,8 @@ func (c *Client) GetPlayerOldVis(arg1 *io.Packet) {
 			} else {
 				var10 := 0
 				var11 := 0
-				if var9 == 1 {
+				switch var9 {
+				case 1:
 					c.PlayerIDs[c.PlayerCount] = var6
 					c.PlayerCount++
 					var7.Cycle = clientextras.LoopCycle
@@ -3185,7 +3189,7 @@ func (c *Client) GetPlayerOldVis(arg1 *io.Packet) {
 						c.EntityUpdateIDs[c.EntityUpdateCount] = var6
 						c.EntityUpdateCount++
 					}
-				} else if var9 == 2 {
+				case 2:
 					c.PlayerIDs[c.PlayerCount] = var6
 					c.PlayerCount++
 					var7.Cycle = clientextras.LoopCycle
@@ -3198,7 +3202,7 @@ func (c *Client) GetPlayerOldVis(arg1 *io.Packet) {
 						c.EntityUpdateIDs[c.EntityUpdateCount] = var6
 						c.EntityUpdateCount++
 					}
-				} else if var9 == 3 {
+				case 3:
 					c.EntityRemovalIDs[c.EntityRemovalCount] = var6
 					c.EntityRemovalCount++
 				}
@@ -5029,11 +5033,12 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 			arg1.Text = ""
 			arg1.ButtonType = 0
 		} else {
-			if c.FriendWorld[var3] == 0 {
+			switch c.FriendWorld[var3] {
+			case 0:
 				arg1.Text = "@red@Offline"
-			} else if c.FriendWorld[var3] == NodeID {
+			case NodeID:
 				arg1.Text = "@gre@World-" + strconv.Itoa(c.FriendWorld[var3]-9)
-			} else {
+			default:
 				arg1.Text = "@yel@World-" + strconv.Itoa(c.FriendWorld[var3]-9)
 			}
 			arg1.ButtonType = 1
@@ -5129,11 +5134,12 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 			if c.LastAddress == 0 {
 				arg1.Text = ""
 			} else {
-				if c.DaysSinceLastLogin == 0 {
+				switch c.DaysSinceLastLogin {
+				case 0:
 					var4 = "earlier today"
-				} else if c.DaysSinceLastLogin == 1 {
+				case 1:
 					var4 = "yesterday"
-				} else {
+				default:
 					var4 = strconv.Itoa(c.DaysSinceLastLogin) + " days ago"
 				}
 				arg1.Text = "You last logged in " + var4 + " from: " + signlink.DNS
@@ -5154,27 +5160,30 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 			}
 		}
 		if var3 == 652 {
-			if c.DaysSinceRecoveriesChanged == 201 {
+			switch c.DaysSinceRecoveriesChanged {
+			case 201:
 				arg1.Text = ""
-			} else if c.DaysSinceRecoveriesChanged == 200 {
+			case 200:
 				arg1.Text = "You have not yet set any password recovery questions."
-			} else {
-				if c.DaysSinceRecoveriesChanged == 0 {
+			default:
+				switch c.DaysSinceRecoveriesChanged {
+				case 0:
 					var4 = "Earlier today"
-				} else if c.DaysSinceRecoveriesChanged == 1 {
+				case 1:
 					var4 = "Yesterday"
-				} else {
+				default:
 					var4 = strconv.Itoa(c.DaysSinceRecoveriesChanged) + " days ago"
 				}
 				arg1.Text = var4 + " you changed your recovery questions"
 			}
 		}
 		if var3 == 653 {
-			if c.DaysSinceRecoveriesChanged == 201 {
+			switch c.DaysSinceRecoveriesChanged {
+			case 201:
 				arg1.Text = ""
-			} else if c.DaysSinceRecoveriesChanged == 200 {
+			case 200:
 				arg1.Text = "We strongly recommend you do so now to secure your account."
-			} else {
+			default:
 				arg1.Text = "If you do not remember making this change then cancel it immediately"
 			}
 		}

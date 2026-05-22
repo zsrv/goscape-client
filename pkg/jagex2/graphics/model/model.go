@@ -1437,10 +1437,7 @@ func (m *Model) Draw1(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) 
 	var26 := 0
 	var27 := 0
 	if arg8 > 0 && CheckHover {
-		var25 = var11 - var12
-		if var25 <= 50 {
-			var25 = 50
-		}
+		var25 = max(var11-var12, 50)
 		if var14 > 0 {
 			var15 /= var13
 			var16 /= var25
@@ -1700,28 +1697,23 @@ func (m *Model) DrawFace(arg0 int) {
 	} else {
 		var5 = m.FaceInfo[arg0] & 0x3
 	}
-	if var5 == 0 {
+	switch var5 {
+	case 0:
 		pix3d.GouraudTriangle(VertexScreenY[var2], VertexScreenY[var3], VertexScreenY[var4], VertexScreenX[var2], VertexScreenX[var3], VertexScreenX[var4], m.FaceColourA[arg0], m.FaceColourB[arg0], m.FaceColourC[arg0])
-	} else if var5 == 1 {
+	case 1:
 		pix3d.FlatTriangle(VertexScreenY[var2], VertexScreenY[var3], VertexScreenY[var4], VertexScreenX[var2], VertexScreenX[var3], VertexScreenX[var4], Palette[m.FaceColourA[arg0]])
-	} else {
-		var6 := 0
-		var7 := 0
-		var8 := 0
-		var9 := 0
-		if var5 == 2 {
-			var6 = m.FaceInfo[arg0] >> 2
-			var7 = m.TexturedVertexA[var6]
-			var8 = m.TexturedVertexB[var6]
-			var9 = m.TexturedVertexC[var6]
-			pix3d.TextureTriangle(VertexScreenY[var2], VertexScreenY[var3], VertexScreenY[var4], VertexScreenX[var2], VertexScreenX[var3], VertexScreenX[var4], m.FaceColourA[arg0], m.FaceColourB[arg0], m.FaceColourC[arg0], VertexViewSpaceX[var7], VertexViewSpaceX[var8], VertexViewSpaceX[var9], VertexViewSpaceY[var7], VertexViewSpaceY[var8], VertexViewSpaceY[var9], VertexViewSpaceZ[var7], VertexViewSpaceZ[var8], VertexViewSpaceZ[var9], m.FaceColour[arg0])
-		} else if var5 == 3 {
-			var6 = m.FaceInfo[arg0] >> 2
-			var7 = m.TexturedVertexA[var6]
-			var8 = m.TexturedVertexB[var6]
-			var9 = m.TexturedVertexC[var6]
-			pix3d.TextureTriangle(VertexScreenY[var2], VertexScreenY[var3], VertexScreenY[var4], VertexScreenX[var2], VertexScreenX[var3], VertexScreenX[var4], m.FaceColourA[arg0], m.FaceColourA[arg0], m.FaceColourA[arg0], VertexViewSpaceX[var7], VertexViewSpaceX[var8], VertexViewSpaceX[var9], VertexViewSpaceY[var7], VertexViewSpaceY[var8], VertexViewSpaceY[var9], VertexViewSpaceZ[var7], VertexViewSpaceZ[var8], VertexViewSpaceZ[var9], m.FaceColour[arg0])
-		}
+	case 2:
+		var6 := m.FaceInfo[arg0] >> 2
+		var7 := m.TexturedVertexA[var6]
+		var8 := m.TexturedVertexB[var6]
+		var9 := m.TexturedVertexC[var6]
+		pix3d.TextureTriangle(VertexScreenY[var2], VertexScreenY[var3], VertexScreenY[var4], VertexScreenX[var2], VertexScreenX[var3], VertexScreenX[var4], m.FaceColourA[arg0], m.FaceColourB[arg0], m.FaceColourC[arg0], VertexViewSpaceX[var7], VertexViewSpaceX[var8], VertexViewSpaceX[var9], VertexViewSpaceY[var7], VertexViewSpaceY[var8], VertexViewSpaceY[var9], VertexViewSpaceZ[var7], VertexViewSpaceZ[var8], VertexViewSpaceZ[var9], m.FaceColour[arg0])
+	case 3:
+		var6 := m.FaceInfo[arg0] >> 2
+		var7 := m.TexturedVertexA[var6]
+		var8 := m.TexturedVertexB[var6]
+		var9 := m.TexturedVertexC[var6]
+		pix3d.TextureTriangle(VertexScreenY[var2], VertexScreenY[var3], VertexScreenY[var4], VertexScreenX[var2], VertexScreenX[var3], VertexScreenX[var4], m.FaceColourA[arg0], m.FaceColourA[arg0], m.FaceColourA[arg0], VertexViewSpaceX[var7], VertexViewSpaceX[var8], VertexViewSpaceX[var9], VertexViewSpaceY[var7], VertexViewSpaceY[var8], VertexViewSpaceY[var9], VertexViewSpaceZ[var7], VertexViewSpaceZ[var8], VertexViewSpaceZ[var9], m.FaceColour[arg0])
 	}
 }
 
@@ -1835,17 +1827,18 @@ func (m *Model) DrawNearClippedFace(arg0 int) {
 		} else {
 			var17 = m.FaceInfo[arg0] & 0x3
 		}
-		if var17 == 0 {
+		switch var17 {
+		case 0:
 			pix3d.GouraudTriangle(var14, var15, var16, var11, var12, var13, ClippedColour[0], ClippedColour[1], ClippedColour[2])
-		} else if var17 == 1 {
+		case 1:
 			pix3d.FlatTriangle(var14, var15, var16, var11, var12, var13, Palette[m.FaceColourA[arg0]])
-		} else if var17 == 2 {
+		case 2:
 			var18 = m.FaceInfo[arg0] >> 2
 			var19 = m.TexturedVertexA[var18]
 			var20 = m.TexturedVertexB[var18]
 			var21 = m.TexturedVertexC[var18]
 			pix3d.TextureTriangle(var14, var15, var16, var11, var12, var13, ClippedColour[0], ClippedColour[1], ClippedColour[2], VertexViewSpaceX[var19], VertexViewSpaceX[var20], VertexViewSpaceX[var21], VertexViewSpaceY[var19], VertexViewSpaceY[var20], VertexViewSpaceY[var21], VertexViewSpaceZ[var19], VertexViewSpaceZ[var20], VertexViewSpaceZ[var21], m.FaceColour[arg0])
-		} else if var17 == 3 {
+		case 3:
 			var18 = m.FaceInfo[arg0] >> 2
 			var19 = m.TexturedVertexA[var18]
 			var20 = m.TexturedVertexB[var18]
