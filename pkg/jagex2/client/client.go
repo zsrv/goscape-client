@@ -3184,7 +3184,8 @@ func (c *Client) LoadTitleImages() {
 	if !c.FlameActive {
 		c.FlamesThread = true
 		c.FlameActive = true
-		go c.Run() // effectively c.RunFlames()
+		// Direct call — see Load:5491 for the dispatch-race rationale.
+		go c.RunFlames()
 	}
 }
 
@@ -5482,13 +5483,14 @@ func (c *Client) Load() {
 		c.StartMidiThread = true
 		c.MidiThreadActive = true
 		// Java: this.startThread(this, 2) (deob/client.java:5952) —
-		// Thread.start() + setPriority(2) on the client Runnable. Because
-		// StartMidiThread is true and FlamesThread is false here, Client.Run
-		// dispatches to RunMidi (which polls MidiSyncMu-guarded fields every
-		// 50ms). Go has no thread priorities so the priority hint is dropped;
-		// MidiSyncMu (RunMidi:1544 / SetMidi callers) preserves the
-		// `synchronized (midiSync)` contract from the Java side.
-		go c.Run()
+		// Thread.start() + setPriority(2) on the client Runnable. The
+		// Java Runnable's run() dispatched based on flags. Go's
+		// goroutine scheduler is asynchronous, so the dispatch in
+		// c.Run is racy: between `go c.Run()` and the goroutine
+		// actually executing, c.FlamesThread can be set by some other
+		// path, causing this MIDI-intent goroutine to mis-dispatch to
+		// RunFlames. Call RunMidi directly to make intent explicit.
+		go c.RunMidi()
 		c.SetMidi(12345678, "scape_main", 40000)
 	}
 
@@ -6259,7 +6261,8 @@ func (c *Client) LoadTitle() {
 		if !c.FlameActive {
 			c.FlamesThread = true
 			c.FlameActive = true
-			go c.Run() // RunFlames
+			// Direct call — see Load:5491 for the dispatch-race rationale.
+			go c.RunFlames()
 		}
 		return
 	}
