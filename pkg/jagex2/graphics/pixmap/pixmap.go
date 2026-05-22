@@ -10,11 +10,23 @@ import (
 	"goscape-client/pkg/jagex2/graphics/pix2d"
 )
 
-// OpsMu serializes all access to the *op.Ops owned by Client. Both the game
-// goroutine (via PixMap.Draw at ~25 call sites in client.go) and the Gio
-// event goroutine (via event.Op, source.Event(...), and e.Frame inside the
-// FrameEvent handler) touch that op list, so every touch must happen under
-// this mutex. Java had no analogue — AWT's EDT and the game thread were
+// OpsMu serializes all access to the *op.Ops owned by Client. Both the
+// game goroutine (transitively from c.Draw → PixMap.Draw at ~44 call
+// sites in client.go) and the Gio event goroutine (via event.Op,
+// source.Event(...), and e.Frame inside the FrameEvent handler) touch
+// that op list, so every touch must happen under this mutex.
+//
+// Contract: callers of PixMap.Draw MUST already hold OpsMu. The lock
+// is held at frame-granularity by c.Draw (which Resets the op list
+// then issues all per-frame appends atomically) and by the FrameEvent
+// handler (which appends event.Op + drains inputs + presents via
+// e.Frame). This ensures the Gio goroutine never observes a partial
+// frame — without that guarantee, partial PixMap.Draws would render
+// as white-flashing artifacts on static elements (title screen,
+// game frame chrome), since e.Frame replays whatever ops are
+// currently in the buffer including a freshly-Reset empty list.
+//
+// Java had no analogue — AWT's EDT and the game thread were
 // serialized naturally through the repaint queue.
 var OpsMu sync.Mutex
 
@@ -43,13 +55,12 @@ func (p *PixMap) Bind() {
 	pix2d.Bind(p.Width, p.Data, p.Height)
 }
 
-// Draw splices a cached macro for this PixMap into the caller's op list.
-// The caller (game goroutine) writes into the shared *op.Ops, so we hold
-// OpsMu to serialize against the Gio goroutine's event.Op/e.Frame calls.
+// Draw splices a cached macro for this PixMap into the caller's op
+// list. Caller must hold OpsMu (see the OpsMu comment above). The lock
+// is held at frame granularity by the c.Draw entry point, so all
+// transitive PixMap.Draw calls within one frame run under the same
+// critical section.
 func (p *PixMap) Draw(ops *op.Ops, x, y int) {
-	OpsMu.Lock()
-	defer OpsMu.Unlock()
-
 	//if !p.Ready {
 	//	p.Bind()
 	//}

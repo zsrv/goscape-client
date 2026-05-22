@@ -2349,20 +2349,23 @@ func (c *Client) HandleInputKey() {
 }
 
 func (c *Client) Draw() {
-	// Reset the op list at the start of every frame. Gio's op.Ops is
-	// an immediate-mode operation log, NOT a frame buffer — callers
-	// are expected to Reset between frames. Without this every
-	// event.Op, PixMap.Draw, and pix2d operation accumulates across
-	// the program's entire run, and e.Frame replays the whole history
-	// on each present. Symptom (reported live): memory grows
-	// unbounded and GPU usage rises steadily as the op buffer fills.
+	// Hold OpsMu for the entire frame build so the FrameEvent
+	// goroutine can never observe a partial op list. Gio's op.Ops
+	// is an immediate-mode operation log (not a frame buffer), so
+	// we Reset it at the start of every frame and rebuild from
+	// scratch; without the whole-frame lock, FrameEvent could grab
+	// the mutex between Reset and the first PixMap.Draw and call
+	// e.Frame on an empty list, producing the white-flash artifacts
+	// reported on static elements (title background, game frame
+	// chrome).
 	//
-	// Held briefly under pixmap.OpsMu to serialize against the Gio
-	// goroutine's e.Frame consumer. The per-PixMap.Draw locks inside
-	// this function then re-acquire the same mutex.
+	// Contract: PixMap.Draw no longer takes OpsMu itself — every
+	// transitive append in this critical section runs under one
+	// lock. See pkg/jagex2/graphics/pixmap/pixmap.go for the full
+	// rationale.
 	pixmap.OpsMu.Lock()
+	defer pixmap.OpsMu.Unlock()
 	c.Ops.Reset()
-	pixmap.OpsMu.Unlock()
 
 	if c.ErrorStarted || c.ErrorLoading || c.ErrorHost {
 		c.DrawError()
@@ -10192,6 +10195,14 @@ func (c *Client) DrawProgress(message string, percent int) {
 	fmt.Printf("DrawProgress %v: %v\n", message, percent) // debug
 
 	c.LoadTitle()
+
+	// Top-level frame entry point during boot (called from RunGameShell's
+	// prologue and GetJagFile's retry loop before c.Draw() takes over).
+	// Hold OpsMu for the entire frame build so the Gio goroutine can't
+	// observe a partial op list; same rationale as c.Draw above.
+	pixmap.OpsMu.Lock()
+	defer pixmap.OpsMu.Unlock()
+	c.Ops.Reset()
 
 	if c.JagTitle == nil {
 		c.DrawProgressGameShell(message, percent)
