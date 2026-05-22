@@ -2349,6 +2349,21 @@ func (c *Client) HandleInputKey() {
 }
 
 func (c *Client) Draw() {
+	// Reset the op list at the start of every frame. Gio's op.Ops is
+	// an immediate-mode operation log, NOT a frame buffer — callers
+	// are expected to Reset between frames. Without this every
+	// event.Op, PixMap.Draw, and pix2d operation accumulates across
+	// the program's entire run, and e.Frame replays the whole history
+	// on each present. Symptom (reported live): memory grows
+	// unbounded and GPU usage rises steadily as the op buffer fills.
+	//
+	// Held briefly under pixmap.OpsMu to serialize against the Gio
+	// goroutine's e.Frame consumer. The per-PixMap.Draw locks inside
+	// this function then re-acquire the same mutex.
+	pixmap.OpsMu.Lock()
+	c.Ops.Reset()
+	pixmap.OpsMu.Unlock()
+
 	if c.ErrorStarted || c.ErrorLoading || c.ErrorHost {
 		c.DrawError()
 		return
