@@ -35,6 +35,16 @@ func runWaveWatcher(ctx *oto.Context) {
 // runs once up front rather than streaming — SFX clips top out at a
 // few seconds and the wave package's buffer is bounded to ~441 KB
 // (sound/wave.go:28), so the in-memory cost is negligible.
+//
+// CRITICAL: oto's Player relies on a finalizer for cleanup (see the
+// note at player.go:93 in oto/v3 — "(*mux.Player).Close() is called
+// by the finalizer. Let's rely on it"). If the Player goes
+// GC-unreachable before playback finishes, the finalizer will Close
+// it mid-stream and the SFX gets cut off. We anchor the Player in a
+// goroutine's closure that polls IsPlaying() until the source is
+// drained, then drops the reference. Without this anchor, even a
+// 1-second sound effect can be silenced after just a few ms of
+// audible playback.
 func playWaveFile(ctx *oto.Context, path string) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -48,6 +58,11 @@ func playWaveFile(ctx *oto.Context, path string) {
 	}
 	p := ctx.NewPlayer(&byteSliceReader{b: stereo})
 	p.Play()
+	go func() {
+		for p.IsPlaying() {
+			time.Sleep(50 * time.Millisecond)
+		}
+	}()
 }
 
 // wave8MonoToStereoInt16 parses a RIFF/WAV file emitted by sound.wave

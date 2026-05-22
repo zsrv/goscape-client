@@ -143,7 +143,13 @@ func (d *midiDriver) play(path string, fade bool, gain float32) {
 		return
 	}
 	seq := meltysynth.NewMidiFileSequencer(synth)
-	seq.Play(midiFile, true)
+	// loop=false: the game re-issues SetMidi via the NextMusicDelay
+	// countdown at client.go:6997 when it wants the track restarted.
+	// The TS reference reached the same conclusion — its synth-side
+	// looping is commented out at tinymidipcm.js:190-194 with the note
+	// "this was buggy with some midi files". Synth-side looping is
+	// the wrong layer; the game decides when to repeat.
+	seq.Play(midiFile, false)
 
 	gen := d.gen.Add(1)
 
