@@ -276,16 +276,21 @@ func (d *midiDriver) fadeAndSwap(src *midiSource, newSeq *meltysynth.MidiFileSeq
 // afterwards the sequencer is cleared so no further notes are
 // produced and Read synthesizes silence.
 //
-// For hard stops (fade=false), the source is silenced AND the player
-// is paused. Pausing matters because oto maintains an internal buffer
-// (BufferSize, 100ms by default) of audio it has already pulled from
-// the source but not yet shipped to the OS. Without Pause, that
-// buffer keeps playing the most-recently-rendered ~100ms of music
-// even after the source goes silent — exactly the "delay between
-// logout and silence" the TS reference doesn't have (Web Audio's
-// GainNode mutes the post-Read buffer too). Pause halts oto's audio
-// thread; the OS audio queue then drains in ~10ms. play() restarts
-// the player on the next track.
+// Stops must FLUSH oto's internal buffer, not just halt it. oto pulls
+// ~100ms of audio from the source's Read in advance and queues it
+// internally; if we only Pause(), that queue stays frozen and replays
+// on the next Play() — audible as a brief snippet of pre-stop music
+// before the new track starts (the symptom that prompted this code:
+// logout → silence → login → small piece of the old track → new
+// track). Reset() pauses AND clears the queue, which is what we want.
+//
+// Reset is marked deprecated in oto v3.4 with the note "use Pause or
+// Seek instead" — but neither alternative achieves "halt and flush"
+// for a non-seekable streaming source like midiSource. The
+// deprecation is misleading for this use case; if a future oto
+// version removes Reset we will need to either implement io.Seeker
+// on midiSource (returning 0 to discard the queue) or rebuild the
+// player. For now Reset is the correct tool.
 func (d *midiDriver) stop(fade bool) {
 	d.mu.Lock()
 	src := d.src
@@ -301,7 +306,7 @@ func (d *midiDriver) stop(fade bool) {
 		src.swap(nil)
 		src.snapGain(0)
 		if player != nil {
-			player.Pause()
+			player.Reset()
 		}
 		return
 	}
@@ -313,12 +318,13 @@ func (d *midiDriver) stop(fade bool) {
 		}
 		src.swap(nil)
 		src.snapGain(0)
-		// Faded stop: by the time we get here the gain is already
-		// near zero from the smoother, so a Pause has no audible
-		// "snap" to it. Pause anyway so a quick re-play after the
-		// fade reuses the same buffer-flushed state as a hard stop.
+		// Faded stop: gain has already smoothed to ~0 over the
+		// fade window, but oto's internal queue still holds those
+		// (near-silent) samples from the fade. Reset flushes them
+		// so a quick re-play has a clean baseline — same rationale
+		// as the hard-stop path above.
 		if player != nil {
-			player.Pause()
+			player.Reset()
 		}
 	}()
 }
