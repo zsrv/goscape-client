@@ -401,23 +401,33 @@ func (c *Client) handleKey(e key.Event) {
 	if var2 == 10 {
 		var3 = 10
 	}
-	if var2 >= 112 && var2 <= 123 {
-		var3 = var2 + 1008 - 112
-	}
-	if var2 == 36 {
-		var3 = 1000
-	}
-	if var2 == 35 {
-		var3 = 1001
-	}
-	if var2 == 33 {
-		var3 = 1002
-	}
-	if var2 == 34 {
-		var3 = 1003
-	}
 
+	// Java: GameShell.java:338-397 (keyPressed) applies the F-key, Home,
+	// End, PgUp, PgDown overrides AFTER the var2 == 10 line; GameShell.java:
+	// 399-439 (keyReleased) deliberately stops at var2 == 10 and does NOT
+	// apply those overrides. The prior Go port collapsed both into one
+	// override sequence and then branched on Press/Release, causing the
+	// release branch to pick up press-only overrides and feed the
+	// override-mapped sentinel value (1008+offset, 1000, 1001, 1002, 1003)
+	// to inputtracking.KeyReleased — Java would have fed it the raw
+	// keyChar (typically CHAR_UNDEFINED = 0xFFFF). Recorded input-tracking
+	// byte streams therefore diverged on every release of a special key.
 	if e.State == key.Press {
+		if var2 >= 112 && var2 <= 123 {
+			var3 = var2 + 1008 - 112
+		}
+		if var2 == 36 {
+			var3 = 1000
+		}
+		if var2 == 35 {
+			var3 = 1001
+		}
+		if var2 == 33 {
+			var3 = 1002
+		}
+		if var2 == 34 {
+			var3 = 1003
+		}
 		if var3 > 0 && var3 < 128 {
 			c.ActionKey[var3] = 1
 		}
@@ -431,7 +441,8 @@ func (c *Client) handleKey(e key.Event) {
 		return
 	}
 
-	// key.Release
+	// key.Release — note: no F-key / Home / End / PgUp / PgDown overrides
+	// here, matching Java's keyReleased.
 	if var3 > 0 && var3 < 128 {
 		c.ActionKey[var3] = 0
 	}
