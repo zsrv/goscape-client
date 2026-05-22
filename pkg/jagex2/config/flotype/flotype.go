@@ -124,19 +124,25 @@ func (f *FloType) SetColour(arg1 int) {
 	}
 	f.Luminance = max(f.Luminance, 1)
 	f.Chroma = int(var13 * float64(f.Luminance))
-	var19 := f.Hue + int((rand.Float64()*16.0)-8)
+	// Java: FloType.java:148/154/160 — `(int)(Math.random() * N) - offset`
+	// (cast applies only to the multiplication; subtraction then runs in
+	// int). The prior Go port subtracted the offset inside the int()
+	// conversion, producing an asymmetric truncation-toward-zero that
+	// loses the minimum boundary value (-8 / -24) and double-weights 0.
+	// Each floor's hue/sat/lightness jitter was biased upward by ~1.
+	var19 := f.Hue + int(rand.Float64()*16.0) - 8
 	if var19 < 0 {
 		var19 = 0
 	} else if var19 > 0xFF {
 		var19 = 0xFF
 	}
-	var20 := f.Saturation + int((rand.Float64()*48.0)-24)
+	var20 := f.Saturation + int(rand.Float64()*48.0) - 24
 	if var20 < 0 {
 		var20 = 0
 	} else if var20 > 0xFF {
 		var20 = 0xFF
 	}
-	var21 := f.Lightness + int((rand.Float64()*48.0)-24)
+	var21 := f.Lightness + int(rand.Float64()*48.0) - 24
 	if var21 < 0 {
 		var21 = 0
 	} else if var21 > 0xFF {
