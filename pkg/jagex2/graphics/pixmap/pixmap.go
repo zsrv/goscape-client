@@ -32,10 +32,9 @@ var OpsMu sync.Mutex
 
 // PixMap is a CPU-side pixel buffer that can be efficiently uploaded to GPU.
 type PixMap struct {
-	Data    []int
-	Width   int
-	Height  int
-	OpCache *op.Ops
+	Data   []int
+	Width  int
+	Height int
 }
 
 // NewPixMap allocates a width*height pixel buffer.
@@ -44,7 +43,6 @@ func NewPixMap(width, height int) *PixMap {
 	m.Width = width
 	m.Height = height
 	m.Data = make([]int, width*height)
-	m.OpCache = new(op.Ops)
 	m.Bind()
 	return &m
 }
@@ -55,49 +53,25 @@ func (p *PixMap) Bind() {
 	pix2d.Bind(p.Width, p.Data, p.Height)
 }
 
-// Draw splices a cached macro for this PixMap into the caller's op
-// list. Caller must hold OpsMu (see the OpsMu comment above). The lock
-// is held at frame granularity by the c.Draw entry point, so all
-// transitive PixMap.Draw calls within one frame run under the same
-// critical section.
+// Draw emits the GPU-upload ops for this PixMap directly into the
+// caller's op list. Caller must hold OpsMu (see OpsMu comment above).
+//
+// The prior implementation recorded a macro into a per-PixMap
+// `OpCache *op.Ops` field that was never Reset between calls; every
+// Draw appended a fresh macro region (including a reference to the
+// converted NRGBA image), and after a few minutes of play those
+// OpCaches retained multiple gigabytes of stale image data. The
+// macro indirection served no purpose — Draw recorded and
+// immediately called, no replay. Emitting ops directly to `ops`
+// is equivalent and lets GC collect the NRGBA after c.Ops.Reset
+// each frame.
 func (p *PixMap) Draw(ops *op.Ops, x, y int) {
-	//if !p.Ready {
-	//	p.Bind()
-	//}
-	//// Clip to the widget area
-	//clip.Rect{Min: image.Pt(x, y), Max: image.Pt(x+p.Wi, y+p.Hi)}.Push(ops)
-	//// Paint the image
-	//p.Op.Add(ops)
-	//paint.PaintOp{}.Add(ops)
-
-	// transofrmop translats the pos of the ops that come after it
-	// example: offset the red rect 100 pixels to the right:
-	// 	defer op.Offset(image.Pt(100, 0)).Push(ops).Pop()
-
-	// Save the operations in an independent ops value (the cache)
-	macro := op.Record(p.OpCache)
-	//defer op.Offset(image.Point{x, y}).Push(p.OpCache).Pop()
-	stack := op.Offset(image.Point{x, y}).Push(p.OpCache)
-	//op.TransformOp{}
+	defer op.Offset(image.Point{X: x, Y: y}).Push(ops).Pop()
 	img := convertPixmapPixels(p.Width, p.Height, p.Data)
 	imageOp := paint.NewImageOp(img)
 	imageOp.Filter = paint.FilterNearest
-	imageOp.Add(p.OpCache)
-	paint.PaintOp{}.Add(p.OpCache)
-	stack.Pop()
-	call := macro.Stop()
-	// Draw the operations from the cache
-	call.Add(ops)
-
-	// The specified ColorModel object should be used to convert the pixels into their corresponding color and alpha components.
-	//defer op.Offset(image.Point{x, y}).Push(ops).Pop()
-	////op.TransformOp{}
-	//img := convertPixmapPixels(p.Wi, p.Hi, p.Data)
-	//imageOp := paint.NewImageOp(img)
-	//imageOp.Filter = paint.FilterNearest
-	//imageOp.Add(ops)
-	//paint.PaintOp{}.Add(ops)
-
+	imageOp.Add(ops)
+	paint.PaintOp{}.Add(ops)
 }
 
 // convertPixmapPixels converts packed 0x00RRGGBB ints (Java pix2d format) to image.NRGBA.
