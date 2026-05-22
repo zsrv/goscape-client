@@ -6253,12 +6253,20 @@ func (c *Client) OpenURL(arg0 string) (*bytes.Reader, error) {
 
 func (c *Client) LoadTitle() {
 	if c.ImageTitle2 != nil {
-		// Already loaded — Logout → re-enter title path. Buffers
-		// stayed alive across UnloadTitle. Restart the flame goroutine
-		// if it isn't running. Mirrors the c.FlameActive check Java
-		// does inside LoadTitleImages at deob/client.java:3683-3686
-		// (which on first-load runs as part of LoadTitleImages below).
-		if !c.FlameActive {
+		// Already loaded path. Two cases:
+		//   1. Boot, before LoadTitleImages has run — first LoadTitle
+		//      allocated ImageTitle0..8 but the flame buffers
+		//      (FlameBuffer3 etc.) aren't ready yet. Don't start the
+		//      flame goroutine; LoadTitleImages will do it once the
+		//      buffers exist.
+		//   2. Logout → re-enter title — both ImageTitle2 and the flame
+		//      buffers stayed alive across UnloadTitle (b45b14e).
+		//      Restart the flame goroutine if it isn't running.
+		// `c.FlameBuffer3 != nil` distinguishes the two cases —
+		// LoadTitleImages allocates FlameBuffer3 at line 3180, which
+		// is the latest of the flame buffers, so its presence
+		// guarantees the rest are ready too.
+		if !c.FlameActive && c.FlameBuffer3 != nil {
 			c.FlamesThread = true
 			c.FlameActive = true
 			// Direct call — see Load:5491 for the dispatch-race rationale.
