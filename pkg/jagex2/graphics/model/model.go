@@ -70,6 +70,59 @@ func init() {
 	}
 }
 
+// Reset clears every package-level binding to its first-load state. Intended
+// for tests that need to start from a clean slate so a previous test's
+// loaded model data can't leak into the next (the rendering pipeline keeps
+// its state as package vars by design — see CLAUDE.md "Global State Pattern").
+//
+// Excluded: TmpDepthFaces, TmpPriorityFaces — populated once at package
+// init() with per-row scratch slices.
+func Reset() {
+	Face1 = nil
+	Face2 = nil
+	Face3 = nil
+	Face4 = nil
+	Face5 = nil
+	Point1 = nil
+	Point2 = nil
+	Point3 = nil
+	Point4 = nil
+	Point5 = nil
+	Vertex1 = nil
+	Vertex2 = nil
+	Axis = nil
+	FaceClippedX = make([]bool, 4096)
+	FaceNearClipped = make([]bool, 4096)
+	VertexScreenX = make([]int, 4096)
+	VertexScreenY = make([]int, 4096)
+	VertexScreenZ = make([]int, 4096)
+	VertexViewSpaceX = make([]int, 4096)
+	VertexViewSpaceY = make([]int, 4096)
+	VertexViewSpaceZ = make([]int, 4096)
+	TmpDepthFaceCount = make([]int, 1500)
+	TmpPriorityFaceCount = make([]int, 12)
+	TmpPriority10FaceDepth = make([]int, 2000)
+	TmpPriority11FaceDepth = make([]int, 2000)
+	TmpPriorityDepthSum = make([]int, 12)
+	ClippedX = make([]int, 10)
+	ClippedY = make([]int, 10)
+	ClippedColour = make([]int, 10)
+	PickedBitsets = make([]int, 1000)
+	Sin = pix3d.SinTable
+	Cos = pix3d.CosTable
+	Palette = pix3d.ColourTable
+	Reciprocal16 = pix3d.DivTable2
+	BaseX = 0
+	BaseY = 0
+	BaseZ = 0
+	MouseX = 0
+	MouseZ = 0
+	PickedCount = 0
+	Head = nil
+	CheckHover = false
+	Metadata = nil
+}
+
 type Model struct {
 	VertexCount          int
 	VertexX              []int

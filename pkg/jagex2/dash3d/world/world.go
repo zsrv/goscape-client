@@ -29,6 +29,22 @@ var (
 	RandomLightnessOffset              = int((rand.Float64() * 33.0) - 16)
 )
 
+// Reset clears every package-level binding to its first-load state. Intended
+// for tests that need to start from a clean slate so a previous test's
+// configuration can't leak into the next (world building keeps its state as
+// package vars by design — see CLAUDE.md "Global State Pattern").
+//
+// Excluded: ROTATION_WALL_TYPE, ROTATION_WALL_CORNER_TYPE,
+// WALL_DECORATION_ROTATION_FORWARD_X, WALL_DECORATION_ROTATION_FORWARD_Z —
+// const-shaped lookup tables populated once at package load.
+// Excluded: RandomHueOffset, RandomLightnessOffset — randomized seeds set
+// once at package load that are meant to be stable for the process lifetime.
+func Reset() {
+	LowMemory = true
+	LevelBuilt = 0
+	FullBright = false
+}
+
 type World struct {
 	MaxTileX                 int
 	MaxTileZ                 int

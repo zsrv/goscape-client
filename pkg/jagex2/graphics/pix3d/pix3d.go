@@ -49,6 +49,35 @@ func init() {
 	}
 }
 
+// Reset clears every package-level binding to its first-load state. Intended
+// for tests that need to start from a clean slate so a previous test's
+// configuration can't leak into the next (the rendering pipeline keeps its
+// state as package vars by design — see CLAUDE.md "Global State Pattern").
+//
+// Excluded: DivTable, DivTable2, SinTable, CosTable — const-shaped lookup
+// tables populated once at package init().
+func Reset() {
+	LowDetail = true
+	Jagged = true
+	Textures = make([]*pix8.Pix8, 50)
+	TextureTranslucent = make([]bool, 50)
+	AverageTextureRGB = make([]int, 50)
+	ActiveTexels = make([][]int, 50)
+	TextureCycle = make([]int, 50)
+	ColourTable = make([]int, 65536)
+	TexturePalette = make([][]int, 50)
+	Trans = 0
+	CenterW3D = 0
+	CenterH3D = 0
+	TextureCount = 0
+	PoolSize = 0
+	Cycle = 0
+	HClip = false
+	Opaque = false
+	LineOffset = nil
+	TexelPool = nil
+}
+
 func Unload() {
 	DivTable = nil
 	DivTable = nil
