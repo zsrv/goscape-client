@@ -3313,7 +3313,7 @@ func (c *Client) SaveMidi(arg0 []byte, arg2 int, arg3 bool) {
 	} else {
 		signlink.SetMidiFade(0)
 	}
-	audio.PlayMIDI(arg0[:arg2], arg3, signlink.ReadMidiVol())
+	audio.PlayMIDI(arg0[:arg2], arg3)
 }
 
 func (c *Client) PushNPCs() {

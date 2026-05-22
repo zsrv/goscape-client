@@ -100,18 +100,24 @@ func getMidiDriver() *midiDriver {
 // Called from c.SaveMidi instead of the historical signlink.MidiSave
 // detour, which required a temporary disk file (a Java-applet
 // artifact). fade matches signlink.MidiFade semantics: true for a
-// crossfade, false for an instant cut-in. volCentibels matches
-// signlink.MidiVol: negative attenuation, 0 = full volume.
+// crossfade, false for an instant cut-in.
+//
+// User volume is read from signlink.MidiVol inside playFromBytes and
+// applied to the persistent oto.Player via SetVolume — separate from
+// the source's per-sample fade gain. Splitting the two means the
+// volume slider takes effect AFTER oto's internal buffer (instant),
+// while track-change crossfades still ramp smoothly via the source's
+// per-sample smoother.
 //
 // Blocks briefly on first call only, until audio.Start finishes
 // initializing oto. Subsequent calls are non-blocking — playFromBytes
 // hands off to the audio thread via the driver's internal channels.
-func PlayMIDI(midData []byte, fade bool, volCentibels int) {
+func PlayMIDI(midData []byte, fade bool) {
 	d := getMidiDriver()
 	if d == nil {
 		return
 	}
-	d.playFromBytes(midData, fade, volumeFromCentibels(volCentibels))
+	d.playFromBytes(midData, fade)
 }
 
 // midiDriver runs a single persistent oto Player attached to a
@@ -154,16 +160,16 @@ func newMidiDriver(ctx *oto.Context) *midiDriver {
 
 // handle dispatches one signlink Midi command. The three shapes are:
 //   - "stop":      stop sequencing, honoring MidiFade.
-//   - "voladjust": adjust gain on the live stream without restarting.
+//   - "voladjust": adjust user volume on the persistent Player.
 //   - <path>:      load the .mid at this path and start playing it.
 func (d *midiDriver) handle(cmd string) {
 	switch cmd {
 	case "stop":
 		d.stop(signlink.ReadMidiFade() == 1)
 	case "voladjust":
-		d.setGain(volumeFromCentibels(signlink.ReadMidiVol()))
+		d.setUserVolume(volumeFromCentibels(signlink.ReadMidiVol()))
 	default:
-		d.play(cmd, signlink.ReadMidiFade() == 1, volumeFromCentibels(signlink.ReadMidiVol()))
+		d.play(cmd, signlink.ReadMidiFade() == 1)
 	}
 }
 
@@ -171,13 +177,13 @@ func (d *midiDriver) handle(cmd string) {
 // for any signlink consumer that still publishes paths via
 // signlink.MidiSave. The primary entry point is now PlayMIDI (via
 // c.SaveMidi), which bypasses the disk roundtrip entirely.
-func (d *midiDriver) play(path string, fade bool, gain float32) {
+func (d *midiDriver) play(path string, fade bool) {
 	midData, err := os.ReadFile(path)
 	if err != nil {
 		fmt.Printf("audio/midi: read %q: %v\n", path, err)
 		return
 	}
-	d.playFromBytes(midData, fade, gain)
+	d.playFromBytes(midData, fade)
 }
 
 // playFromBytes is the actual play implementation. Reused by play()
@@ -185,7 +191,11 @@ func (d *midiDriver) play(path string, fade bool, gain float32) {
 // c.SaveMidi). The expensive bits — MIDI parsing, Synthesizer
 // allocation, SoundFont voicing setup — happen on the caller's
 // goroutine; only the brief player/source handoff takes d.mu.
-func (d *midiDriver) playFromBytes(midData []byte, fade bool, gain float32) {
+//
+// User volume is read from signlink.MidiVol and applied via the
+// Player's SetVolume on every track change so a "music off → on"
+// option toggle doesn't leak old volume into the new player.
+func (d *midiDriver) playFromBytes(midData []byte, fade bool) {
 	if d.ctx == nil {
 		return
 	}
@@ -216,12 +226,18 @@ func (d *midiDriver) playFromBytes(midData []byte, fade bool, gain float32) {
 	// the wrong layer; the game decides when to repeat.
 	seq.Play(midiFile, false)
 
+	userVol := float64(volumeFromCentibels(signlink.ReadMidiVol()))
+
 	gen := d.gen.Add(1)
 
 	d.mu.Lock()
 	if d.src == nil {
-		d.src = newMidiSource(seq, gain)
+		// First-ever play creates the persistent player and source.
+		// Source's fade-gain starts at 1.0 (full) — the source's gain
+		// is the FADE multiplier, not the user volume.
+		d.src = newMidiSource(seq, 1.0)
 		d.player = d.ctx.NewPlayer(d.src)
+		d.player.SetVolume(userVol)
 		d.player.Play()
 		d.mu.Unlock()
 		return
@@ -230,45 +246,53 @@ func (d *midiDriver) playFromBytes(midData []byte, fade bool, gain float32) {
 	player := d.player
 	d.mu.Unlock()
 
-	// Always Play() in case a previous hard-stop paused the player to
+	// Re-apply user volume on every track change. Covers the case
+	// where MidiVol changed while music was disabled (no voladjust
+	// publish) and then the option flipped back on — without this,
+	// the player would still carry the pre-disable volume.
+	player.SetVolume(userVol)
+
+	// Always Play() in case a previous hard-stop reset the player to
 	// flush oto's internal buffer. Play() is idempotent on a
 	// currently-playing player.
 	player.Play()
 
 	if !fade {
-		// No fade requested: swap the sequencer and snap to the new
-		// gain. From the listener's perspective the new track replaces
-		// the old immediately. The snap (rather than setGainTarget)
-		// keeps a coming-out-of-stop start from suffering an
-		// unintended ~0.5s fade-in.
+		// No fade requested: swap the sequencer and snap the fade-
+		// gain back to full. From the listener's perspective the new
+		// track replaces the old immediately. The snap (rather than
+		// setGainTarget) keeps a coming-out-of-stop start from
+		// suffering an unintended ~0.5s fade-in via the smoother.
 		src.swap(seq)
-		src.snapGain(gain)
+		src.snapGain(1.0)
 		return
 	}
 
-	go d.fadeAndSwap(src, seq, gain, gen)
+	go d.fadeAndSwap(src, seq, gen)
 }
 
 // fadeAndSwap drives the TS-style "fade-out, then start" sequencing:
 //
-//  1. Sets src's gain target to 0 — the per-sample smoother in Read
-//     exponentially decays the running gain toward 0 over the 0.5 s
-//     time constant. At t = 2 s (= 4τ) the effective gain is ~1.8 %,
+//  1. Sets src's fade-gain target to 0 — the per-sample smoother in
+//     Read exponentially decays it toward 0 over the 0.5s time
+//     constant. At t = 2s (= 4τ) the effective fade-gain is ~1.8%,
 //     audibly silent.
 //  2. Sleeps fadeDuration.
 //  3. If still the current generation, swaps the sequencer and snaps
-//     both current and target gain to the new target — matching TS's
-//     instant onset of the new track at the end of its setTimeout.
+//     the fade-gain back to 1.0 — matching TS's instant onset of the
+//     new track at the end of its setTimeout. The Player's user
+//     volume is untouched throughout, so the new track resumes at
+//     whatever the slider was last set to.
 //
 // Abandons silently if a newer command supersedes the in-flight ramp.
-func (d *midiDriver) fadeAndSwap(src *midiSource, newSeq *meltysynth.MidiFileSequencer, target float32, gen uint64) {
+func (d *midiDriver) fadeAndSwap(src *midiSource, newSeq *meltysynth.MidiFileSequencer, gen uint64) {
 	src.setGainTarget(0)
 	time.Sleep(fadeDuration)
 	if d.gen.Load() != gen {
 		return
 	}
 	src.swap(newSeq)
-	src.snapGain(target)
+	src.snapGain(1.0)
 }
 
 // stop silences the live source. If fade is true, the gain target
@@ -329,27 +353,27 @@ func (d *midiDriver) stop(fade bool) {
 	}()
 }
 
-// setGain is the "voladjust" handler — the in-game audio settings
-// slider. Volume changes from the slider are user-driven imperative
-// actions: the user expects loudness to change NOW, not glide over a
-// half-second. We match TS's setValueAtTime semantics (instant) via
-// snapGain rather than setGainTarget (which would glide via the
-// per-sample smoother — that was the previous behavior, reported as
-// "volume slowly goes up/down" by a live tester). Any momentary
-// click from the discontinuity is masked by ongoing music; in
-// practice the slider has four discrete values 100/200 cb apart
-// (~12dB max step) and even worst-case is inaudible vs the music.
-// Increments the generation so any in-flight fade ramp aimed at 0
-// abandons rather than fighting the new gain.
-func (d *midiDriver) setGain(g float32) {
+// setUserVolume is the "voladjust" handler — the in-game audio
+// settings slider. Volume lives on the persistent oto.Player rather
+// than the source so the change is applied AFTER oto's internal
+// buffer (~100ms of pre-Read audio that's already in the queue),
+// matching TS's gainNode-after-BufferSource topology. Source-side
+// gain (snapGain/setGainTarget) only affects samples not yet pulled
+// from Read, so a volume slider routed through there has a ~100ms
+// tail at the old volume — exactly the "delay" the live tester
+// reported.
+//
+// Player.SetVolume is sample-accurate at oto's audio thread, so the
+// user hears the new volume essentially immediately (the 20ms
+// watcher poll is now the dominant latency, matching TS).
+func (d *midiDriver) setUserVolume(linear float32) {
 	d.mu.Lock()
-	src := d.src
+	player := d.player
 	d.mu.Unlock()
-	if src == nil {
+	if player == nil {
 		return
 	}
-	d.gen.Add(1)
-	src.snapGain(g)
+	player.SetVolume(float64(linear))
 }
 
 // fadeDuration is the audible fade-out window. Matches TS's
