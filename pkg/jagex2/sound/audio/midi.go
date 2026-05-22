@@ -35,15 +35,19 @@ import (
 // zipper noise of discrete steps and matches TS's smoothness.
 const gainSmoothingAlpha float32 = 0.9999093
 
-// runMidiWatcher polls signlink.ConsumeMidi every midiPollInterval. The
-// poll cadence (50ms) matches the Java signlink.run loop and the
-// existing client.RunMidi poll — fast enough that title-screen and
-// gameplay music feel responsive, slow enough to be invisible to CPU.
+// runMidiWatcher polls signlink.ConsumeMidi every midiPollInterval.
+// The cadence matches the game's tick rate (20ms) so a Logout-issued
+// "stop" never has to wait longer than a single tick before the
+// audio side reacts — important because the TS reference's
+// browser-side equivalent is essentially synchronous, and any extra
+// latency here shows up as audible "music still playing after the
+// title screen appeared". Doubled-up with player.Pause inside
+// stop() to flush oto's internal buffer.
 //
 // On nil ctx (oto init failed), still drains commands so the channel
 // doesn't back up — but doesn't actually play. This keeps Java's
 // fire-and-forget protocol semantics intact even with audio disabled.
-const midiPollInterval = 50 * time.Millisecond
+const midiPollInterval = 20 * time.Millisecond
 
 func runMidiWatcher(ctx *oto.Context) {
 	d := newMidiDriver(ctx)
@@ -162,17 +166,22 @@ func (d *midiDriver) play(path string, fade bool, gain float32) {
 		return
 	}
 	src := d.src
+	player := d.player
 	d.mu.Unlock()
 
+	// Always Play() in case a previous hard-stop paused the player to
+	// flush oto's internal buffer. Play() is idempotent on a
+	// currently-playing player.
+	player.Play()
+
 	if !fade {
-		// No fade requested: swap the sequencer and let the smoother
-		// glide the gain over its time constant. From the listener's
-		// perspective the new track replaces the old immediately — any
-		// per-sample transient between the swap point's tail and the
-		// new track's first samples is masked by meltysynth's own
-		// envelope decay.
+		// No fade requested: swap the sequencer and snap to the new
+		// gain. From the listener's perspective the new track replaces
+		// the old immediately. The snap (rather than setGainTarget)
+		// keeps a coming-out-of-stop start from suffering an
+		// unintended ~0.5s fade-in.
 		src.swap(seq)
-		src.setGainTarget(gain)
+		src.snapGain(gain)
 		return
 	}
 
@@ -204,11 +213,22 @@ func (d *midiDriver) fadeAndSwap(src *midiSource, newSeq *meltysynth.MidiFileSeq
 // stop silences the live source. If fade is true, the gain target
 // ramps to 0 over fadeDuration first via the source's smoother;
 // afterwards the sequencer is cleared so no further notes are
-// produced and Read synthesizes silence. The player itself stays
-// alive — the next play() reuses it.
+// produced and Read synthesizes silence.
+//
+// For hard stops (fade=false), the source is silenced AND the player
+// is paused. Pausing matters because oto maintains an internal buffer
+// (BufferSize, 100ms by default) of audio it has already pulled from
+// the source but not yet shipped to the OS. Without Pause, that
+// buffer keeps playing the most-recently-rendered ~100ms of music
+// even after the source goes silent — exactly the "delay between
+// logout and silence" the TS reference doesn't have (Web Audio's
+// GainNode mutes the post-Read buffer too). Pause halts oto's audio
+// thread; the OS audio queue then drains in ~10ms. play() restarts
+// the player on the next track.
 func (d *midiDriver) stop(fade bool) {
 	d.mu.Lock()
 	src := d.src
+	player := d.player
 	d.mu.Unlock()
 	if src == nil {
 		return
@@ -219,6 +239,9 @@ func (d *midiDriver) stop(fade bool) {
 	if !fade {
 		src.swap(nil)
 		src.snapGain(0)
+		if player != nil {
+			player.Pause()
+		}
 		return
 	}
 	go func() {
@@ -229,6 +252,13 @@ func (d *midiDriver) stop(fade bool) {
 		}
 		src.swap(nil)
 		src.snapGain(0)
+		// Faded stop: by the time we get here the gain is already
+		// near zero from the smoother, so a Pause has no audible
+		// "snap" to it. Pause anyway so a quick re-play after the
+		// fade reuses the same buffer-flushed state as a hard stop.
+		if player != nil {
+			player.Pause()
+		}
 	}()
 }
 
