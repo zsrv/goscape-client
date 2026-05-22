@@ -57,6 +57,12 @@ func playWaveFile(ctx *oto.Context, path string) {
 		return
 	}
 	p := ctx.NewPlayer(&byteSliceReader{b: stereo})
+	// SFX volume is per-Player rather than per-context because each
+	// clip is short and the slider only takes effect for *new* sounds
+	// — exactly oto.Player.SetVolume's contract. Reading WaveVol once
+	// at spawn time matches what the slider's case 0..3 dispatch
+	// publishes (client.go:3823-3833) for the four discrete options.
+	p.SetVolume(float64(volumeFromCentibels(signlink.ReadWaveVol())))
 	p.Play()
 	go func() {
 		for p.IsPlaying() {

@@ -330,12 +330,17 @@ func (d *midiDriver) stop(fade bool) {
 }
 
 // setGain is the "voladjust" handler — the in-game audio settings
-// slider. Setting the target glides the gain smoothly via the
-// source's per-sample smoother; TS uses an instant setValueAtTime
-// here, but smooth transitions avoid the audible click an
-// instantaneous PCM gain step would produce. Increments the
-// generation so any in-flight fade ramp aimed at 0 abandons rather
-// than fighting the new target.
+// slider. Volume changes from the slider are user-driven imperative
+// actions: the user expects loudness to change NOW, not glide over a
+// half-second. We match TS's setValueAtTime semantics (instant) via
+// snapGain rather than setGainTarget (which would glide via the
+// per-sample smoother — that was the previous behavior, reported as
+// "volume slowly goes up/down" by a live tester). Any momentary
+// click from the discontinuity is masked by ongoing music; in
+// practice the slider has four discrete values 100/200 cb apart
+// (~12dB max step) and even worst-case is inaudible vs the music.
+// Increments the generation so any in-flight fade ramp aimed at 0
+// abandons rather than fighting the new gain.
 func (d *midiDriver) setGain(g float32) {
 	d.mu.Lock()
 	src := d.src
@@ -344,7 +349,7 @@ func (d *midiDriver) setGain(g float32) {
 		return
 	}
 	d.gen.Add(1)
-	src.setGainTarget(g)
+	src.snapGain(g)
 }
 
 // fadeDuration is the audible fade-out window. Matches TS's

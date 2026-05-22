@@ -490,6 +490,25 @@ func ReadMidiVol() int {
 	return MidiVol
 }
 
+// SetWaveVol publishes the SFX volume in centibels (negative =
+// quieter, 0 = full). The audio driver reads it when spawning a
+// per-SFX Player so the slider in the in-game audio options affects
+// freshly-triggered sound effects.
+func SetWaveVol(v int) {
+	mu.Lock()
+	defer mu.Unlock()
+	WaveVol = v
+}
+
+// ReadWaveVol snapshots WaveVol for the audio driver. Race-free
+// counterpart to the bare `signlink.WaveVol` field reads that used
+// to be in client code.
+func ReadWaveVol() int {
+	mu.Lock()
+	defer mu.Unlock()
+	return WaveVol
+}
+
 func ReportErrorFunc(e string) {
 	if !ReportError {
 		return

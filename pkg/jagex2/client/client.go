@@ -5320,7 +5320,7 @@ func (c *Client) ReplayWave() bool {
 }
 
 func (c *Client) SetWaveVolume(vol int) {
-	signlink.WaveVol = vol
+	signlink.SetWaveVol(vol)
 }
 
 func (c *Client) GetNpcPosNewVis(arg1 *io.Packet, arg2 int) {
