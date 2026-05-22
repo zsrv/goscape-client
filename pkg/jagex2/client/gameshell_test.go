@@ -1,8 +1,14 @@
 package client
 
-import "testing"
+import (
+	"testing"
+
+	"goscape-client/pkg/jagex2/graphics/pix2d"
+)
 
 func TestDrawProgressGameShell_ClearsRefreshAndPopulatesOverlay(t *testing.T) {
+	t.Cleanup(pix2d.Reset)
+
 	c := &Client{}
 	c.ScreenWidth = 789
 	c.ScreenHeight = 532

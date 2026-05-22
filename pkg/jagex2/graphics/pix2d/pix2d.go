@@ -24,6 +24,23 @@ func Bind(width int, data []int, height int) {
 	SetClipping(height, 0, width, 0)
 }
 
+// Reset clears every package-level binding to its zero value. Intended for
+// tests that need to start from a clean slate so a previous test's Bind
+// can't leak into the next (the rendering pipeline keeps its state as
+// package vars by design — see CLAUDE.md "Global State Pattern").
+func Reset() {
+	Data = nil
+	Width2D = 0
+	Height2D = 0
+	Top = 0
+	Bottom = 0
+	Left = 0
+	Right = 0
+	SafeWidth = 0
+	CenterW2D = 0
+	CenterH2D = 0
+}
+
 func ResetClipping() {
 	Left = 0
 	Top = 0
