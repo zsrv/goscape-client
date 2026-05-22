@@ -3421,8 +3421,14 @@ func (c *Client) PrepareGameScreen() {
 	c.ImageTitle2 = nil
 	c.ImageTitle3 = nil
 	c.ImageTitle4 = nil
-	c.ImageTitle0 = nil
-	c.ImageTitle1 = nil
+	// Java: deob/client.java:3900-3901 also nils imageTitle0 / imageTitle1
+	// here. Go keeps them alive because Gio's op.Ops is immediate-mode
+	// and re-uploads the pixmap each frame from PixMap.Data; without
+	// the buffer we'd render white at the top-left (0,0) and top-right
+	// (661,0) corners in-game. Java got the visual for free via AWT's
+	// retained back buffer (last flame-animation frame stayed in the
+	// back buffer indefinitely); Go has to keep the CPU buffer to
+	// achieve the same effect. ~270 KB total — negligible.
 	c.ImageTitle5 = nil
 	c.ImageTitle6 = nil
 	c.ImageTitle7 = nil
@@ -4158,13 +4164,19 @@ func (c *Client) DrawGame() {
 	// Always upload the static frame-chrome tiles. Pre-Gio (Java/AWT)
 	// these were gated by c.RedrawFrame because AWT retained the back
 	// buffer; Gio's op.Ops is immediate-mode and Reset every frame.
-	// Flames tiles (ImageTitle0/1) too — DrawFlames now only updates
-	// their pixel buffers, this entry point uploads. ImageTitle0/1
-	// are dual-purpose buffers: static title imagery when flames are
-	// inactive, animated pixels when active. Upload unconditionally;
-	// the buffer content is correct either way.
-	c.ImageTitle0.Draw(&c.Ops, 0, 0)
-	c.ImageTitle1.Draw(&c.Ops, 661, 0)
+	// Flame tiles (ImageTitle0/1) too — DrawFlames now only updates
+	// their pixel buffers, this entry point uploads. The pixmaps stay
+	// alive past PrepareGameScreen so the top-left/top-right corners
+	// render the last flame-animation frame (matching Java's retained-
+	// back-buffer visual). Nil-guarded for the Logout → LoadTitle
+	// transition window where the buffers are briefly nil before
+	// being re-allocated.
+	if c.ImageTitle0 != nil {
+		c.ImageTitle0.Draw(&c.Ops, 0, 0)
+	}
+	if c.ImageTitle1 != nil {
+		c.ImageTitle1.Draw(&c.Ops, 661, 0)
+	}
 	c.AreaBackleft1.Draw(&c.Ops, 0, 11)
 	c.AreaBackleft2.Draw(&c.Ops, 0, 375)
 	c.AreaBackright1.Draw(&c.Ops, 729, 5)
