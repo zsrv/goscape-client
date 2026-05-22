@@ -117,7 +117,7 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 		case 3:
 			t.Desc = arg1.GStrByte()
 		case 12:
-			t.Size = arg1.G1B()
+			t.Size = byte(arg1.G1B())
 		case 13:
 			t.ReadyAnim = arg1.G2()
 		case 14:

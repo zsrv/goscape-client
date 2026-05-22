@@ -51,12 +51,12 @@ func NewPix8(jag *io.Jagfile, name string, sprite int) *Pix8 {
 
 	if pixelOrder == 0 {
 		for i := range length {
-			p.Pixels[i] = dat.G1B()
+			p.Pixels[i] = byte(dat.G1B())
 		}
 	} else if pixelOrder == 1 {
 		for x := range p.Wi {
 			for y := range p.Hi {
-				p.Pixels[x+y*p.Wi] = dat.G1B()
+				p.Pixels[x+y*p.Wi] = byte(dat.G1B())
 			}
 		}
 	}

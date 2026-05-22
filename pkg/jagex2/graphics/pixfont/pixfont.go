@@ -97,12 +97,12 @@ func NewPixFont(arg0 *io.Jagfile, arg1 string) *PixFont {
 		p.CharMask[i] = make([]byte, var11)
 		if var10 == 0 {
 			for j := range var11 {
-				p.CharMask[i][j] = var4.G1B()
+				p.CharMask[i][j] = byte(var4.G1B())
 			}
 		} else if var10 == 1 {
 			for j := range var8 {
 				for k := range var9 {
-					p.CharMask[i][j+k*var8] = var4.G1B()
+					p.CharMask[i][j+k*var8] = byte(var4.G1B())
 				}
 			}
 		}

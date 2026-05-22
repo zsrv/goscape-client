@@ -178,7 +178,7 @@ func (w *World) LoadGround(arg0 []byte, arg1, arg3, arg4, arg5 int) {
 							break
 						}
 						if var13 <= 49 {
-							w.LevelTileOverlayIDs[i][var11][var12] = var7.G1B()
+							w.LevelTileOverlayIDs[i][var11][var12] = byte(var7.G1B())
 							w.LevelTileOverlayShape[i][var11][var12] = byte((var13 - 2) / 4)
 							w.LevelTileOverlayRotation[i][var11][var12] = byte((var13 - 2) & 0x3)
 						} else if var13 <= 81 {

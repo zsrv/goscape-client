@@ -1298,7 +1298,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 						var19.LocOffsetX = var5*128 + var27*64
 						var19.LocOffsetZ = var6*128 + var28*64
 						var19.LocOffsetY = c.GetHeightMapY(c.CurrentLevel, var19.LocOffsetX, var19.LocOffsetZ)
-						var29 := byte(0)
+						var29 := int8(0)
 						if var39 > var41 {
 							var29 = var39
 							var39 = var41

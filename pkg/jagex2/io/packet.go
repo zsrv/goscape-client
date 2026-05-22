@@ -201,8 +201,12 @@ func (p *Packet) G1() int {
 	return n
 }
 
-func (p *Packet) G1B() byte {
-	n := p.Data[p.Pos]
+// G1B reads a signed byte (Java byte; -128..127). Use int(p.G1B()) when
+// widening — Go's int(int8) sign-extends, matching Java's byte->int
+// promotion. For unsigned storage of the raw byte pattern, wrap as
+// byte(p.G1B()) (this is a bit-preserving reinterpretation).
+func (p *Packet) G1B() int8 {
+	n := int8(p.Data[p.Pos])
 	p.Pos++
 	return n
 }
