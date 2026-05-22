@@ -6250,18 +6250,17 @@ func (c *Client) OpenURL(arg0 string) (*bytes.Reader, error) {
 }
 
 func (c *Client) LoadTitle() {
-	// Restart the flame animation goroutine if it isn't running. On
-	// first call (boot) the goroutine starts inside LoadTitleImages
-	// below; on subsequent calls (Logout → re-enter title) the early-
-	// return at the next line skips LoadTitleImages, so we restart
-	// here. Mirrors the c.FlameActive check Java does inside
-	// LoadTitleImages at deob/client.java:3683-3686.
-	if !c.FlameActive {
-		c.FlamesThread = true
-		c.FlameActive = true
-		go c.Run() // RunFlames
-	}
 	if c.ImageTitle2 != nil {
+		// Already loaded — Logout → re-enter title path. Buffers
+		// stayed alive across UnloadTitle. Restart the flame goroutine
+		// if it isn't running. Mirrors the c.FlameActive check Java
+		// does inside LoadTitleImages at deob/client.java:3683-3686
+		// (which on first-load runs as part of LoadTitleImages below).
+		if !c.FlameActive {
+			c.FlamesThread = true
+			c.FlameActive = true
+			go c.Run() // RunFlames
+		}
 		return
 	}
 	c.AreaChatback = nil
