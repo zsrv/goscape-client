@@ -37,10 +37,18 @@ func runMidiWatcher(ctx *oto.Context) {
 	}
 }
 
-// midiDriver owns the live meltysynth sequencer and the oto Player that
-// pulls bytes from it. There is at most one active player at a time
-// (matching the original Java single-Sequencer model); a "stop" tears it
-// down, a new track path swaps the sequencer's midi file under lock.
+// midiDriver runs a single persistent oto Player attached to a
+// midiSource whose internal sequencer is hot-swappable. Track changes,
+// stops, and volume adjustments mutate the source in place rather than
+// tearing down the player. This mirrors the TS reference client's
+// architecture (tinymidipcm.js:226-295): one gainNode + one
+// BufferSource line, the source's content gets swapped via setTimeout
+// after a fade-out, never overlapping the previous track.
+//
+// Before this design, faded track changes spawned a second Player in
+// parallel with the fading-out first, producing audible overlap for
+// the 2-second fade window. Live-reported bug fixed by collapsing to
+// a single persistent player.
 type midiDriver struct {
 	ctx *oto.Context
 
@@ -49,11 +57,18 @@ type midiDriver struct {
 	soundFont *meltysynth.SoundFont
 	loadOnce  sync.Once
 
-	// mu guards the live source/player handoff. handle() can swap them;
-	// the source's Read() reads them under lock too.
+	// mu guards the player handoff during first-play initialization.
+	// After the player exists, all further work happens through src,
+	// which has its own internal locking.
 	mu     sync.Mutex
 	src    *midiSource
 	player *oto.Player
+
+	// gen is incremented on every command. In-flight fade goroutines
+	// snapshot it at start and abandon if it diverges, so a rapid
+	// region change can't leave a stale fade clobbering the new track's
+	// gain. Atomic so abandon-checks are lock-free.
+	gen atomic.Uint64
 }
 
 func newMidiDriver(ctx *oto.Context) *midiDriver {
@@ -61,7 +76,7 @@ func newMidiDriver(ctx *oto.Context) *midiDriver {
 }
 
 // handle dispatches one signlink Midi command. The three shapes are:
-//   - "stop":      tear down the current player, honoring MidiFade.
+//   - "stop":      stop sequencing, honoring MidiFade.
 //   - "voladjust": adjust gain on the live stream without restarting.
 //   - <path>:      load the .mid at this path and start playing it.
 func (d *midiDriver) handle(cmd string) {
@@ -75,9 +90,12 @@ func (d *midiDriver) handle(cmd string) {
 	}
 }
 
-// play loads the .mid at path and starts it. If the SoundFont isn't
-// loaded yet, it's loaded on first call; if loading fails, play logs
-// and returns without crashing the game.
+// play loads the .mid at path and swaps it into the live source. The
+// first ever play() creates the persistent oto Player; subsequent
+// plays reuse it. If fade is true and a track is already playing,
+// the gain ramps to 0, the sequencer is swapped, then the gain ramps
+// back to the target — matching the TS reference's "fade-out, then
+// start" sequencing with no audible overlap.
 func (d *midiDriver) play(path string, fade bool, gain float32) {
 	if d.ctx == nil {
 		return
@@ -108,65 +126,110 @@ func (d *midiDriver) play(path string, fade bool, gain float32) {
 	seq := meltysynth.NewMidiFileSequencer(synth)
 	seq.Play(midiFile, true)
 
-	src := newMidiSource(seq, gain)
+	gen := d.gen.Add(1)
 
 	d.mu.Lock()
-	old := d.player
-	oldSrc := d.src
-	d.src = src
-	d.player = d.ctx.NewPlayer(src)
-	d.player.Play()
+	if d.src == nil {
+		d.src = newMidiSource(seq, gain)
+		d.player = d.ctx.NewPlayer(d.src)
+		d.player.Play()
+		d.mu.Unlock()
+		return
+	}
+	src := d.src
 	d.mu.Unlock()
 
-	if old != nil {
-		go retireOldPlayer(old, oldSrc, fade)
+	if !fade {
+		src.swap(seq, gain)
+		return
+	}
+
+	go d.fadeAndSwap(src, seq, gain, gen)
+}
+
+// fadeAndSwap ramps src's gain to 0 over fadeDuration, swaps in the
+// new sequencer, then ramps the gain back to target. Abandons silently
+// if a newer command supersedes it (gen mismatch).
+func (d *midiDriver) fadeAndSwap(src *midiSource, newSeq *meltysynth.MidiFileSequencer, target float32, gen uint64) {
+	startGain := src.gain()
+	if !d.rampGain(src, startGain, 0, gen) {
+		return
+	}
+	if d.gen.Load() != gen {
+		return
+	}
+	src.swap(newSeq, 0)
+	if !d.rampGain(src, 0, target, gen) {
+		return
 	}
 }
 
-// stop tears down the active player. If fade is true, it ramps the
-// player's gain to silence over the TS-matching 2-second fade window
-// before closing.
+// stop silences the live source. If fade is true, the gain ramps to 0
+// over fadeDuration first; afterwards the sequencer is cleared so no
+// further notes are produced and the player synthesizes silence. The
+// player itself stays alive — the next play() reuses it.
 func (d *midiDriver) stop(fade bool) {
 	d.mu.Lock()
-	old := d.player
-	oldSrc := d.src
-	d.player = nil
-	d.src = nil
+	src := d.src
 	d.mu.Unlock()
-
-	if old != nil {
-		go retireOldPlayer(old, oldSrc, fade)
+	if src == nil {
+		return
 	}
+
+	gen := d.gen.Add(1)
+
+	if !fade {
+		src.swap(nil, 0)
+		return
+	}
+	go func() {
+		if !d.rampGain(src, src.gain(), 0, gen) {
+			return
+		}
+		if d.gen.Load() != gen {
+			return
+		}
+		src.swap(nil, 0)
+	}()
 }
 
-// setGain adjusts volume on the currently-playing track without
-// restarting. No-op if no track is playing.
+// setGain is the "voladjust" handler. It does not restart the track.
+// In-flight fade ramps will see the gen they captured no longer
+// matches and abandon; voladjust's caller is expected to also drive
+// SetMidi("voladjust") frequently enough to keep the live gain correct
+// after the abandoned ramp leaves it stranded.
 func (d *midiDriver) setGain(g float32) {
 	d.mu.Lock()
 	src := d.src
 	d.mu.Unlock()
-	if src != nil {
-		src.setGain(g)
+	if src == nil {
+		return
 	}
+	d.gen.Add(1)
+	src.setGain(g)
 }
 
-// retireOldPlayer fades (or hard-stops) and closes a player. Called on a
-// goroutine so handle() returns promptly. fadeDuration matches the TS
-// _tinyMidiStop timeout (tinymidipcm.js:140).
-const fadeDuration = 2 * time.Second
+// rampGain interpolates src's gain from start to end over fadeDuration
+// in `fadeSteps` discrete time slices, polling d.gen each step and
+// returning false the moment it diverges from the captured gen — that
+// signal means a newer command took over and this ramp must abandon.
+// Returns true after a successful full ramp.
+const (
+	fadeDuration = 2 * time.Second
+	fadeSteps    = 40
+)
 
-func retireOldPlayer(p *oto.Player, src *midiSource, fade bool) {
-	if fade && src != nil {
-		const steps = 40
-		stepDur := fadeDuration / steps
-		start := src.gain()
-		for i := 1; i <= steps; i++ {
-			g := start * (1 - float32(i)/float32(steps))
-			src.setGain(g)
-			time.Sleep(stepDur)
+func (d *midiDriver) rampGain(src *midiSource, start, end float32, gen uint64) bool {
+	step := fadeDuration / fadeSteps
+	for i := 1; i <= fadeSteps; i++ {
+		if d.gen.Load() != gen {
+			return false
 		}
+		t := float32(i) / float32(fadeSteps)
+		src.setGain(start + (end-start)*t)
+		time.Sleep(step)
 	}
-	p.Pause()
+	return true
 }
 
 // ensureSoundFont lazy-loads the SF2. Returns nil if loading failed.
@@ -183,20 +246,24 @@ func (d *midiDriver) ensureSoundFont() *meltysynth.SoundFont {
 }
 
 // midiSource is the io.Reader that oto pulls PCM bytes from. It owns a
-// pair of float32 scratch buffers, calls the sequencer's Render to fill
-// them, applies gain, then interleaves and converts to int16 LE for oto.
+// swappable sequencer pointer (under seqMu) and a separate atomic gain.
+// When seq is nil, Read fills its output with silence so the player
+// stays alive across "stop" commands.
 //
-// Concurrent access: oto pulls on a dedicated audio goroutine. Gain is
-// adjusted from handle() goroutines. seq itself is not thread-safe;
-// nobody else touches it once we hand it to the source.
+// Concurrent access: oto's audio goroutine calls Read; driver goroutines
+// (handle, fadeAndSwap, stop) call swap and setGain. The seqMu critical
+// section in Read is one pointer copy long; meltysynth's Render runs
+// outside it so a long render can't block a swap.
 type midiSource struct {
-	seq *meltysynth.MidiFileSequencer
+	seqMu sync.Mutex
+	seq   *meltysynth.MidiFileSequencer
 
 	// gainBits is the linear gain (0..1) as float32 bits, manipulated
 	// via atomic so setGain doesn't need to coordinate with Read.
 	gainBits atomic.Uint32
 
-	// scratch buffers reused across Read calls.
+	// scratch buffers reused across Read calls. Read is single-reader
+	// (oto's audio goroutine) so these need no lock.
 	left  []float32
 	right []float32
 }
@@ -205,6 +272,17 @@ func newMidiSource(seq *meltysynth.MidiFileSequencer, initialGain float32) *midi
 	s := &midiSource{seq: seq}
 	s.setGain(initialGain)
 	return s
+}
+
+// swap atomically replaces the sequencer and sets the gain. Passing nil
+// for newSeq leaves the source emitting silence until the next swap.
+// The old sequencer is dropped — meltysynth has no Close, GC handles
+// it.
+func (s *midiSource) swap(newSeq *meltysynth.MidiFileSequencer, newGain float32) {
+	s.seqMu.Lock()
+	s.seq = newSeq
+	s.seqMu.Unlock()
+	s.setGain(newGain)
 }
 
 func (s *midiSource) setGain(g float32) {
@@ -216,13 +294,11 @@ func (s *midiSource) gain() float32 {
 }
 
 // Read fills p with interleaved stereo int16 LE PCM. It never returns
-// io.EOF — the sequencer loops, and even if it didn't we'd render
-// silence. oto treats a never-ending reader as a perpetual source,
-// which is what we want for a music track that may be hot-swapped.
+// io.EOF — when the sequencer is nil ("stop"), it emits silence so the
+// player stays alive and ready for the next play().
 //
 // p's length is determined by oto. It is expected to be a multiple of
-// 4 (one stereo int16 frame), though we tolerate odd remainders by
-// rounding down.
+// 4 (one stereo int16 frame); odd remainders are truncated.
 func (s *midiSource) Read(p []byte) (int, error) {
 	frames := len(p) / 4
 	if frames == 0 {
@@ -235,7 +311,18 @@ func (s *midiSource) Read(p []byte) (int, error) {
 		s.left = s.left[:frames]
 		s.right = s.right[:frames]
 	}
-	s.seq.Render(s.left, s.right)
+
+	s.seqMu.Lock()
+	seq := s.seq
+	s.seqMu.Unlock()
+
+	if seq == nil {
+		clear(s.left)
+		clear(s.right)
+	} else {
+		seq.Render(s.left, s.right)
+	}
+
 	g := s.gain()
 	for i := range frames {
 		l := clipInt16(s.left[i] * g)
@@ -272,4 +359,3 @@ func volumeFromCentibels(cb int) float32 {
 	}
 	return float32(math.Pow(10, float64(cb)/100.0/20.0))
 }
-
