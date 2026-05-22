@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"sync"
 
+	"gioui.org/app"
+
 	"goscape-client/pkg/jagex2/client"
 	"goscape-client/pkg/jagex2/client/clientextras"
 	"goscape-client/pkg/sign/signlink"
@@ -53,16 +55,18 @@ func main() {
 	// TODO: if initApplication shuts down, shut the network thread down and exit?
 	//  use select{}?
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		signlink.StartPriv()
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		app := client.NewClient()
-		app.InitApplication(532, 789)
-	}()
+	})
+	wg.Go(func() {
+		c := client.NewClient()
+		c.InitApplication(532, 789)
+	})
+	// Gio's documented pattern (https://gioui.org/app) requires app.Main()
+	// to run on the OS main thread — mandatory on macOS, looser elsewhere.
+	// It blocks until the last window closes. In practice the window
+	// goroutine inside InitApplication calls os.Exit(0) on DestroyEvent,
+	// so wg.Wait() below is only reached in degenerate paths.
+	app.Main()
 	wg.Wait()
 }

@@ -48,19 +48,12 @@ func (c *Client) InitApplication(height int, width int) {
 		}
 		os.Exit(0)
 	}()
-	// Gio's documented pattern (https://gioui.org/app) is to run the
-	// window event loop in a goroutine and call app.Main() last from the
-	// process's main function so it owns the OS main thread — required
-	// on macOS, looser on Linux/X11. InitApplication is itself launched
-	// from a goroutine in cmd/client/main.go, so app.Main() is already
-	// off the OS main thread; running it in a further goroutine here is
-	// only safe on platforms where the main-thread constraint does not
-	// apply (currently Linux/X11, where development happens). Promoting
-	// app.Main() to the process main goroutine for macOS portability is
-	// tracked separately and requires reshaping the cmd/client/main.go
-	// launch sequence, so we keep the `go` here for now to preserve
-	// existing behavior on Linux.
-	go app.Main()
+	// app.Main() is no longer called here; cmd/client/main.go owns it on
+	// the process's main goroutine, as required on macOS (see
+	// https://gioui.org/app). InitApplication runs from one of two
+	// goroutines spawned by main(), and the window event loop runs in
+	// the nested goroutine above. Only the game loop blocks this
+	// goroutine.
 	c.Run()
 }
 
