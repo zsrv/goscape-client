@@ -1724,7 +1724,7 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *component.Comp
 			}
 			if var12.ButtonType == 2 && c.SpellSelected == 0 && arg1 >= var20 && arg0 >= var21 && arg1 < var20+var12.Width && arg0 < var21+var12.Height {
 				var22 := var12.ActionVerb
-				if strings.Index(var22, " ") != -1 {
+				if strings.Contains(var22, " ") {
 					var22 = var22[0:strings.Index(var22, " ")]
 				}
 				c.MenuOption[c.MenuSize] = var22 + " @gre@" + var12.Action
@@ -2233,7 +2233,7 @@ func (c *Client) HandleInputKey() {
 						c.RedrawChatback = true
 					}
 					if (var2 == 13 || var2 == 10) && len(c.ChatTyped) > 0 {
-						if c.ChatTyped == "::clientdrop" && (c.Frame != nil || strings.Index(c.GetHost(), "192.168.1.") != -1) {
+						if c.ChatTyped == "::clientdrop" && (c.Frame != nil || strings.Contains(c.GetHost(), "192.168.1.")) {
 							c.TryReconnect()
 						} else if strings.HasPrefix(c.ChatTyped, "::") {
 							c.Out.P1Isaac(4)
@@ -3554,7 +3554,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 					}
 					var32 = var26 + var15.Height
 					for len(var29) > 0 {
-						if strings.Index(var29, "%") != -1 {
+						if strings.Contains(var29, "%") {
 						label260:
 							for {
 								var33 = strings.Index(var29, "%1")
@@ -4692,11 +4692,11 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.ActiveSpellFlags = var22.ActionTarget
 		c.ObjSelected = 0
 		var18 = var22.ActionVerb
-		if strings.Index(var18, " ") != -1 {
+		if strings.Contains(var18, " ") {
 			var18 = var18[0:strings.Index(var18, " ")]
 		}
 		var9 = var22.ActionVerb
-		if strings.Index(var9, " ") != -1 {
+		if strings.Contains(var9, " ") {
 			var9 = var9[strings.Index(var9, " ")+1:]
 		}
 		c.SpellCaption = var18 + " " + var22.Action + " " + var9
