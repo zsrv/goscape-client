@@ -4,8 +4,10 @@
 package profiling
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"time"
 )
 
@@ -32,4 +34,27 @@ func sessionDir(base, ts string) (string, error) {
 		return dir, nil
 	}
 	return abs, nil
+}
+
+// writeSnapshotProfile writes the named runtime/pprof profile to path.
+// Use this for any profile that produces an instantaneous snapshot:
+// "heap", "goroutine", "mutex", "block". CPU profiles use a different
+// API and are not handled here.
+//
+// If the named profile is unknown, no file is created and an error
+// is returned.
+func writeSnapshotProfile(name, path string) error {
+	p := pprof.Lookup(name)
+	if p == nil {
+		return fmt.Errorf("profiling: unknown profile %q", name)
+	}
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err != nil {
+		return fmt.Errorf("profiling: open %s: %w", path, err)
+	}
+	defer f.Close()
+	if err := p.WriteTo(f, 0); err != nil {
+		return fmt.Errorf("profiling: write %s: %w", path, err)
+	}
+	return nil
 }

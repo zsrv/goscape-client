@@ -71,3 +71,31 @@ func TestSessionDir_IdempotentOnExisting(t *testing.T) {
 		t.Errorf("second sessionDir on existing dir should succeed; got %v", err)
 	}
 }
+
+func TestWriteSnapshotProfile_GoroutineNonEmpty(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "goroutine.prof")
+	if err := writeSnapshotProfile("goroutine", path); err != nil {
+		t.Fatalf("writeSnapshotProfile: %v", err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat output: %v", err)
+	}
+	if info.Size() == 0 {
+		t.Errorf("goroutine profile is empty")
+	}
+}
+
+func TestWriteSnapshotProfile_UnknownNameErrors(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bogus.prof")
+	err := writeSnapshotProfile("not-a-real-profile-name", path)
+	if err == nil {
+		t.Errorf("expected error for unknown profile name; got nil")
+	}
+	// File should not have been created.
+	if _, statErr := os.Stat(path); statErr == nil {
+		t.Errorf("expected file to NOT exist on error path")
+	}
+}
