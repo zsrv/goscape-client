@@ -42,8 +42,8 @@ type LocType struct {
 	Occlude       bool
 	Anim          int
 	WallWidth     int
-	Ambient       byte
-	Contrast      byte
+	Ambient       int8
+	Contrast      int8
 	MapFunction   int
 	MapScene      int
 	ResizeX       int
@@ -201,9 +201,9 @@ func (loc *LocType) Decode(arg1 *io.Packet) {
 		case 28:
 			loc.WallWidth = arg1.G1()
 		case 29:
-			loc.Ambient = byte(arg1.G1B())
+			loc.Ambient = arg1.G1B()
 		case 39:
-			loc.Contrast = byte(arg1.G1B())
+			loc.Contrast = arg1.G1B()
 		case 30, 31, 32, 33, 34, 35, 36, 37, 38:
 			if loc.Op == nil {
 				loc.Op = make([]string, 5)

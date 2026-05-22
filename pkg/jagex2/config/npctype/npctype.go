@@ -21,7 +21,7 @@ type NpcType struct {
 	Index        int64
 	Name         string
 	Desc         []byte
-	Size         byte
+	Size         int8
 	Models       []int
 	Heads        []int
 	ReadyAnim    int
@@ -117,7 +117,7 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 		case 3:
 			t.Desc = arg1.GStrByte()
 		case 12:
-			t.Size = byte(arg1.G1B())
+			t.Size = arg1.G1B()
 		case 13:
 			t.ReadyAnim = arg1.G2()
 		case 14:

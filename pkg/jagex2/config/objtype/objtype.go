@@ -40,8 +40,8 @@ type ObjType struct {
 	Code10           int
 	Stackable        bool
 	Cost             int
-	ManWearOffsetY   byte
-	WomanWearOffsetY byte
+	ManWearOffsetY   int8
+	WomanWearOffsetY int8
 	ManWear          int
 	ManWear2         int
 	WomanWear        int
@@ -192,12 +192,12 @@ func (t *ObjType) Decode(arg1 *io.Packet) {
 			t.Members = true
 		case 23:
 			t.ManWear = arg1.G2()
-			t.ManWearOffsetY = byte(arg1.G1B())
+			t.ManWearOffsetY = arg1.G1B()
 		case 24:
 			t.ManWear2 = arg1.G2()
 		case 25:
 			t.WomanWear = arg1.G2()
-			t.WomanWearOffsetY = byte(arg1.G1B())
+			t.WomanWearOffsetY = arg1.G1B()
 		case 26:
 			t.WomanWear2 = arg1.G2()
 		case 30, 31, 32, 33, 34:
