@@ -5,11 +5,13 @@ package profiling
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
 	"runtime/trace"
+	"sync/atomic"
 	"time"
 )
 
@@ -127,4 +129,67 @@ func enableContentionProfiles() {
 func disableContentionProfiles() {
 	runtime.SetMutexProfileFraction(0)
 	runtime.SetBlockProfileRate(0)
+}
+
+// inFlight prevents overlapping captureAll runs. If a second SIGUSR1
+// arrives while a capture is active, the second invocation logs a
+// skip message and returns immediately. We do not queue: queuing
+// would surprise users who expect each signal to start an immediate
+// capture.
+var inFlight atomic.Bool
+
+// captureAll runs one complete capture session: enables mutex/block
+// sampling, runs CPU + trace concurrently for the window, then
+// snapshots heap/goroutine/mutex/block, then disables contention
+// sampling. All errors are logged but never returned — profiling is
+// strictly best-effort and must not affect gameplay.
+//
+// outBase is the directory under which a new timestamped session
+// subdirectory is created. cpuWindow is the CPU + trace + contention
+// sampling duration.
+func captureAll(outBase string, cpuWindow time.Duration) {
+	if !inFlight.CompareAndSwap(false, true) {
+		log.Printf("profiling: capture already in flight, ignoring SIGUSR1")
+		return
+	}
+	defer inFlight.Store(false)
+
+	defer func() {
+		if r := recover(); r != nil {
+			// A profiling-side panic must never crash the game.
+			log.Printf("profiling: capture panicked: %v", r)
+		}
+	}()
+
+	ts := sessionTimestamp(time.Now())
+	dir, err := sessionDir(outBase, ts)
+	if err != nil {
+		log.Printf("profiling: mkdir %s/%s: %v", outBase, ts, err)
+		return
+	}
+
+	enableContentionProfiles()
+	defer disableContentionProfiles()
+
+	if err := writeCPUAndTrace(dir, cpuWindow); err != nil {
+		log.Printf("profiling: cpu/trace: %v", err)
+		// Continue — we can still snapshot the four instant profiles.
+	}
+
+	// runtime.GC forces a mark phase so the heap profile reflects
+	// post-GC live/garbage classification. The net/http/pprof heap
+	// handler does this internally; programmatic capture must do it
+	// explicitly.
+	runtime.GC()
+
+	for _, name := range []string{"heap", "goroutine", "mutex", "block"} {
+		path := filepath.Join(dir, name+".prof")
+		if err := writeSnapshotProfile(name, path); err != nil {
+			log.Printf("profiling: %s: %v", name, err)
+			// Continue to the next profile — one failure does not
+			// abort the session.
+		}
+	}
+
+	log.Printf("profiling: capture complete: %s", dir)
 }

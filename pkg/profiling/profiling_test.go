@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -137,4 +138,65 @@ func TestEnableDisableContentionProfiles_ResetsMutexFraction(t *testing.T) {
 	}
 	// Block rate has no public getter; we trust the single line of
 	// code that sets it. See spec §"Testing strategy" for rationale.
+}
+
+func TestCaptureAll_ProducesAllSixFiles(t *testing.T) {
+	base := t.TempDir()
+	captureAll(base, 100*time.Millisecond)
+
+	// Find the one session directory under base.
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		t.Fatalf("read base: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 session dir, got %d", len(entries))
+	}
+	sessionPath := filepath.Join(base, entries[0].Name())
+
+	want := []string{"cpu.prof", "heap.prof", "goroutine.prof", "mutex.prof", "block.prof", "trace.out"}
+	for _, name := range want {
+		info, err := os.Stat(filepath.Join(sessionPath, name))
+		if err != nil {
+			t.Errorf("stat %s: %v", name, err)
+			continue
+		}
+		if info.Size() == 0 {
+			t.Errorf("%s is empty", name)
+		}
+	}
+}
+
+func TestCaptureAll_ReentrancySecondCallSkips(t *testing.T) {
+	base := t.TempDir()
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() { defer wg.Done(); captureAll(base, 200*time.Millisecond) }()
+	// Tiny delay so the first call wins the CAS reliably.
+	time.Sleep(20 * time.Millisecond)
+	go func() { defer wg.Done(); captureAll(base, 200*time.Millisecond) }()
+	wg.Wait()
+
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		t.Fatalf("read base: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Errorf("expected exactly 1 session dir after concurrent capture; got %d", len(entries))
+	}
+}
+
+func TestCaptureAll_ResetsMutexFraction(t *testing.T) {
+	// Confirm captureAll leaves the runtime in a clean state — mutex
+	// fraction back at 0 — regardless of whether sampling was on
+	// before the call.
+	prior := runtime.SetMutexProfileFraction(-1)
+	t.Cleanup(func() { runtime.SetMutexProfileFraction(prior) })
+	runtime.SetMutexProfileFraction(0) // start clean
+
+	captureAll(t.TempDir(), 50*time.Millisecond)
+
+	if got := runtime.SetMutexProfileFraction(-1); got != 0 {
+		t.Errorf("mutex fraction after captureAll = %d; want 0", got)
+	}
 }
