@@ -7014,7 +7014,8 @@ func (c *Client) UpdateGame() {
 	if c.CameraAnticheatAngle < -40 {
 		c.CameraOffsetYawModifier = 1
 	}
-	if c.CameraAnticheatAngle > 50 {
+	// Java: deob/client.java:7534 — `> 40`, symmetric with the `< -40` lower bound.
+	if c.CameraAnticheatAngle > 40 {
 		c.CameraOffsetYawModifier = -1
 	}
 	c.MinimapOffsetCycle++
@@ -7952,6 +7953,11 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 	}
 	var4 := -99999999
 	var var5 *entity.ObjStackEntity
+	// Java: ObjStackEntity extends Linkable, so addHead(var5) moves the
+	// existing list node. In Go, *Linkable is a wrapper around the entity
+	// pointer; track the wrapper from the iteration so we re-add it rather
+	// than allocating a duplicate. See deob/client.java:8490.
+	var var5Link *datastruct.Linkable[*entity.ObjStackEntity]
 	for var6 := var3.Head(); var6 != nil; var6 = var3.Next() {
 		v := var6.Value
 		var7 := objtype.Get(v.Index)
@@ -7962,9 +7968,10 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 		if var8 > var4 {
 			var4 = var8
 			var5 = v
+			var5Link = var6
 		}
 	}
-	var3.AddHead(datastruct.NewLinkable(var5))
+	var3.AddHead(var5Link)
 	var15 := -1
 	var8 := -1
 	var9 := 0
