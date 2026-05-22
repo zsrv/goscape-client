@@ -4159,11 +4159,12 @@ func (c *Client) DrawGame() {
 	// these were gated by c.RedrawFrame because AWT retained the back
 	// buffer; Gio's op.Ops is immediate-mode and Reset every frame.
 	// Flames tiles (ImageTitle0/1) too — DrawFlames now only updates
-	// their pixel buffers, this entry point uploads.
-	if c.FlameActive {
-		c.ImageTitle0.Draw(&c.Ops, 0, 0)
-		c.ImageTitle1.Draw(&c.Ops, 661, 0)
-	}
+	// their pixel buffers, this entry point uploads. ImageTitle0/1
+	// are dual-purpose buffers: static title imagery when flames are
+	// inactive, animated pixels when active. Upload unconditionally;
+	// the buffer content is correct either way.
+	c.ImageTitle0.Draw(&c.Ops, 0, 0)
+	c.ImageTitle1.Draw(&c.Ops, 661, 0)
 	c.AreaBackleft1.Draw(&c.Ops, 0, 11)
 	c.AreaBackleft2.Draw(&c.Ops, 0, 375)
 	c.AreaBackright1.Draw(&c.Ops, 729, 5)
@@ -10286,11 +10287,18 @@ func (c *Client) DrawProgress(message string, percent int) {
 	// this was gated by c.RedrawFrame relying on Java/AWT's retained
 	// back buffer; Gio's op.Ops is immediate-mode and Reset every
 	// frame.
+	//
+	// ImageTitle0 / ImageTitle1 are dual-purpose: they hold the
+	// static title flame imagery when flames are inactive, and are
+	// overwritten by DrawFlames with animated pixels when active.
+	// Either way the buffer content is correct, so upload
+	// unconditionally — the prior `if !c.FlameActive` skip relied on
+	// DrawFlames also issuing the upload (which it no longer does
+	// post-refactor) and produced white rectangles at (0,0) /
+	// (661,0) during boot when FlameActive is true.
 	c.RedrawFrame = false
-	if !c.FlameActive {
-		c.ImageTitle0.Draw(&c.Ops, 0, 0)
-		c.ImageTitle1.Draw(&c.Ops, 661, 0)
-	}
+	c.ImageTitle0.Draw(&c.Ops, 0, 0)
+	c.ImageTitle1.Draw(&c.Ops, 661, 0)
 	c.ImageTitle2.Draw(&c.Ops, 128, 0)
 	c.ImageTitle3.Draw(&c.Ops, 214, 386)
 	c.ImageTitle5.Draw(&c.Ops, 0, 265)
