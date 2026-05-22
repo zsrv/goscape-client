@@ -44,13 +44,17 @@ const gainSmoothingAlpha float32 = 0.9999093
 // title screen appeared". Doubled-up with player.Pause inside
 // stop() to flush oto's internal buffer.
 //
+// Track data (paths/bytes) does NOT travel through signlink anymore —
+// c.SaveMidi now calls audio.PlayMIDI directly, shaving ~70ms of
+// polling + disk-write latency off the title-to-game transition.
+// The watcher only handles "stop" and "voladjust" sentinels here.
+//
 // On nil ctx (oto init failed), still drains commands so the channel
 // doesn't back up — but doesn't actually play. This keeps Java's
 // fire-and-forget protocol semantics intact even with audio disabled.
 const midiPollInterval = 20 * time.Millisecond
 
-func runMidiWatcher(ctx *oto.Context) {
-	d := newMidiDriver(ctx)
+func runMidiWatcher(ctx *oto.Context, d *midiDriver) {
 	for {
 		cmd := signlink.ConsumeMidi()
 		if cmd != "" {
@@ -58,6 +62,56 @@ func runMidiWatcher(ctx *oto.Context) {
 		}
 		time.Sleep(midiPollInterval)
 	}
+}
+
+// midiDriverRegistry holds the singleton midiDriver and a close-once
+// channel that PlayMIDI callers wait on. This decouples the audio
+// subsystem's startup (oto init may take ~100ms+ on first run) from
+// the client's startup, which can call SetMidi/SaveMidi as soon as
+// c.Load runs. Without the wait, the very first scape_main play could
+// race ahead of audio.Start and be silently dropped.
+var (
+	driverMu    sync.Mutex
+	driver      *midiDriver
+	driverReady = make(chan struct{})
+)
+
+// registerMidiDriver publishes the driver and unblocks waiters. Called
+// exactly once from audio.Start — either with a real driver (success)
+// or with nil (oto init failed). Nil drivers still close the channel
+// so PlayMIDI returns silently instead of hanging the caller.
+func registerMidiDriver(d *midiDriver) {
+	driverMu.Lock()
+	driver = d
+	driverMu.Unlock()
+	close(driverReady)
+}
+
+// getMidiDriver waits until the driver is available, then returns it.
+// May return nil if audio.Start failed; callers must handle that.
+func getMidiDriver() *midiDriver {
+	<-driverReady
+	driverMu.Lock()
+	defer driverMu.Unlock()
+	return driver
+}
+
+// PlayMIDI feeds an in-memory Standard MIDI File to the synthesizer.
+// Called from c.SaveMidi instead of the historical signlink.MidiSave
+// detour, which required a temporary disk file (a Java-applet
+// artifact). fade matches signlink.MidiFade semantics: true for a
+// crossfade, false for an instant cut-in. volCentibels matches
+// signlink.MidiVol: negative attenuation, 0 = full volume.
+//
+// Blocks briefly on first call only, until audio.Start finishes
+// initializing oto. Subsequent calls are non-blocking — playFromBytes
+// hands off to the audio thread via the driver's internal channels.
+func PlayMIDI(midData []byte, fade bool, volCentibels int) {
+	d := getMidiDriver()
+	if d == nil {
+		return
+	}
+	d.playFromBytes(midData, fade, volumeFromCentibels(volCentibels))
 }
 
 // midiDriver runs a single persistent oto Player attached to a
@@ -113,13 +167,25 @@ func (d *midiDriver) handle(cmd string) {
 	}
 }
 
-// play loads the .mid at path and swaps it into the live source. The
-// first ever play() creates the persistent oto Player; subsequent
-// plays reuse it. If fade is true and a track is already playing,
-// the gain ramps to 0, the sequencer is swapped, then the gain ramps
-// back to the target — matching the TS reference's "fade-out, then
-// start" sequencing with no audible overlap.
+// play is the path-based entry point — kept as a defensive fallback
+// for any signlink consumer that still publishes paths via
+// signlink.MidiSave. The primary entry point is now PlayMIDI (via
+// c.SaveMidi), which bypasses the disk roundtrip entirely.
 func (d *midiDriver) play(path string, fade bool, gain float32) {
+	midData, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Printf("audio/midi: read %q: %v\n", path, err)
+		return
+	}
+	d.playFromBytes(midData, fade, gain)
+}
+
+// playFromBytes is the actual play implementation. Reused by play()
+// (file-path entry) and by PlayMIDI (direct in-memory entry from
+// c.SaveMidi). The expensive bits — MIDI parsing, Synthesizer
+// allocation, SoundFont voicing setup — happen on the caller's
+// goroutine; only the brief player/source handoff takes d.mu.
+func (d *midiDriver) playFromBytes(midData []byte, fade bool, gain float32) {
 	if d.ctx == nil {
 		return
 	}
@@ -128,14 +194,9 @@ func (d *midiDriver) play(path string, fade bool, gain float32) {
 		return
 	}
 
-	midData, err := os.ReadFile(path)
-	if err != nil {
-		fmt.Printf("audio/midi: read %q: %v\n", path, err)
-		return
-	}
 	midiFile, err := meltysynth.NewMidiFile(bytes.NewReader(midData))
 	if err != nil {
-		fmt.Printf("audio/midi: parse %q: %v\n", path, err)
+		fmt.Printf("audio/midi: parse: %v\n", err)
 		return
 	}
 

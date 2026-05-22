@@ -48,6 +48,7 @@ import (
 	"goscape-client/pkg/jagex2/io"
 	"goscape-client/pkg/jagex2/io/bzip2"
 	"goscape-client/pkg/jagex2/io/clientstream"
+	"goscape-client/pkg/jagex2/sound/audio"
 	"goscape-client/pkg/jagex2/sound/wave"
 	"goscape-client/pkg/jagex2/wordenc/wordfilter"
 	"goscape-client/pkg/jagex2/wordenc/wordpack"
@@ -3292,12 +3293,27 @@ func (c *Client) ValidateCharacterDesign() {
 }
 
 func (c *Client) SaveMidi(arg0 []byte, arg2 int, arg3 bool) {
+	// Java: deob/client.java:3782 — savemidi(byte[], int, boolean).
+	// The Java version wrote bytes through signlink.midisave so the
+	// signed-applet wrapper could read jingleN.mid from disk and feed
+	// it to javax.sound.midi. In Go there's no process boundary;
+	// audio.PlayMIDI accepts the bytes directly, cutting ~70ms of
+	// polling + disk write/read latency off the track-change path
+	// (most visibly on the title-screen → game-music transition,
+	// which the TS reference handles in essentially-zero time via
+	// playMidi(buffer)).
+	//
+	// MidiFade is still published through signlink so the audio
+	// watcher's "stop" / "voladjust" handlers can read it — same as
+	// before. SaveMidi's per-call fade arg flows directly into
+	// PlayMIDI rather than through the signlink field, which removes
+	// the same race-window the old signlink-field path had.
 	if arg3 {
 		signlink.SetMidiFade(1)
 	} else {
 		signlink.SetMidiFade(0)
 	}
-	signlink.MidiSave(arg0, arg2)
+	audio.PlayMIDI(arg0[:arg2], arg3, signlink.ReadMidiVol())
 }
 
 func (c *Client) PushNPCs() {

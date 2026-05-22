@@ -56,9 +56,23 @@ func Start() {
 	ctx, err := ensureContext()
 	if err != nil {
 		fmt.Printf("audio: oto init failed, game will run silently: %v\n", err)
+		// Unblock any PlayMIDI callers waiting on the driver — with a
+		// nil driver, they'll return silently and the game continues
+		// without music rather than hanging forever.
+		registerMidiDriver(nil)
+		return
 	}
 
-	go runMidiWatcher(ctx)
+	// Create and register the driver SYNCHRONOUSLY before spawning the
+	// watcher. This guarantees PlayMIDI callers (e.g. c.SaveMidi from
+	// the c.RunMidi goroutine) find a live driver as soon as
+	// audio.Start returns. Without sync registration, c.SaveMidi
+	// could race ahead of audio.Start during boot and lose the first
+	// scape_main play.
+	d := newMidiDriver(ctx)
+	registerMidiDriver(d)
+
+	go runMidiWatcher(ctx, d)
 	go runWaveWatcher(ctx)
 }
 
