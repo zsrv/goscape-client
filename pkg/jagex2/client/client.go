@@ -3422,6 +3422,12 @@ func (c *Client) Logout() {
 		c.Stream.Close()
 	}
 	c.Stream = nil
+	// Java: deob/client.java:3963 — `this.ingame = false`. Without
+	// this, the game-vs-title render dispatch (e.g. UpdateGame's early
+	// return at client.go:6818, and the InGame branches in the main draw
+	// path) keeps treating the session as in-game and the title screen
+	// never reappears.
+	c.InGame = false
 	c.TitleScreenState = 0
 	c.Username = ""
 	c.Password = ""
