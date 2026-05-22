@@ -103,7 +103,7 @@ func (m *CollisionMap) AddWall(arg1 int, arg2 int, arg3 int, arg4 bool, arg5 int
 			m.AddCMap(var8+1, var7, 65536)
 		case 3:
 			m.AddCMap(var8, var7, 16384)
-			m.AddCMap(var7, var7-1, 0x400)
+			m.AddCMap(var8, var7-1, 0x400)
 		}
 	case 1, 3:
 		switch arg1 {
@@ -123,7 +123,7 @@ func (m *CollisionMap) AddWall(arg1 int, arg2 int, arg3 int, arg4 bool, arg5 int
 	case 2:
 		switch arg1 {
 		case 0:
-			m.AddCMap(var8, var7, 65560)
+			m.AddCMap(var8, var7, 66560)
 			m.AddCMap(var8-1, var7, 4096)
 			m.AddCMap(var8, var7+1, 16384)
 		case 1:

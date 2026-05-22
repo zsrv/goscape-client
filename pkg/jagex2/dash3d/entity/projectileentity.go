@@ -57,7 +57,7 @@ func (e *ProjectileEntity) UpdateVelocity(arg0, arg1, arg2, arg4 int) {
 		var6 := arg2 - e.SrcX
 		var8 := float64(arg1 - e.SrcZ)
 		var10 := math.Sqrt(float64(var6*var6) + var8*var8)
-		e.X = float64(e.SrcX+var6) * float64(e.Arc) / var10
+		e.X = float64(e.SrcX) + float64(var6)*float64(e.Arc)/var10
 		e.Z = float64(e.SrcZ) + var8*float64(e.Arc)/var10
 		e.Y = float64(e.SrcY)
 	}

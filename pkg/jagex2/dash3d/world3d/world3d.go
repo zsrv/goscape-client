@@ -1330,7 +1330,7 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 											if wall.TypeA&frontWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeA) {
 												wall.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
 											}
-											if wall.TypeB&frontWallTypes != 0 && w.WallVisible(originalLevel, tileX, tileZ, wall.TypeB) {
+											if wall.TypeB&frontWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeB) {
 												wall.ModelB.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
 											}
 										}
@@ -2249,7 +2249,7 @@ func (w *World3D) Occluded(arg0, arg1, arg2 int) bool {
 			if var6 > 0 {
 				var7 = var5.MinX + ((var5.MinDeltaX * var6) >> 8)
 				var8 = var5.MaxX + ((var5.MaxDeltaX * var6) >> 8)
-				var9 = var5.MinZ + ((var5.MinDeltaX * var6) >> 8)
+				var9 = var5.MinZ + ((var5.MinDeltaZ * var6) >> 8)
 				var10 = var5.MaxZ + ((var5.MaxDeltaZ * var6) >> 8)
 				if arg0 >= var7 && arg0 <= var8 && arg2 >= var9 && arg2 <= var10 {
 					return true
