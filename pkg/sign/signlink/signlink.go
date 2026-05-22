@@ -130,12 +130,21 @@ func Run() {
 
 		switch {
 		case dnsReq != "":
-			names, err := net.LookupAddr(dnsReq)
+			// Java: sign/signlink.java:128 —
+			//   dns = InetAddress.getByName(dnsreq).getHostName();
+			// For an IP literal input (the only caller passes
+			// jstring.FormatIPv4(...)): if the reverse-DNS lookup
+			// resolves, returns the hostname (without trailing dot);
+			// if no PTR record exists, falls back to the IP string
+			// itself. The Java try/catch only sets "unknown" on a
+			// genuine exception (which for a valid IP literal does
+			// not occur in practice).
 			var resolved string
-			if err != nil || len(names) == 0 {
-				resolved = "unknown"
+			names, err := net.LookupAddr(dnsReq)
+			if err == nil && len(names) > 0 {
+				resolved = strings.TrimSuffix(names[0], ".")
 			} else {
-				resolved = names[0]
+				resolved = dnsReq
 			}
 			mu.Lock()
 			DNS = resolved
