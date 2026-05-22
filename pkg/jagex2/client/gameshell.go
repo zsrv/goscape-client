@@ -84,6 +84,12 @@ func (c *Client) draw(w *app.Window) error {
 			// can't race with the Gio compositor consuming c.Ops.
 			pixmap.OpsMu.Lock()
 			event.Op(&c.Ops, c)
+			// Request keyboard focus on the client tag so Gio routes
+			// key.EditEvent (OS-level typed-text dispatch, layout/IME/
+			// dead-key aware) to us. Re-issued every frame so focus
+			// re-asserts itself after alt-tab or window-manager focus
+			// changes. See `c.handleEditEvent`.
+			e.Source.Execute(key.FocusCmd{Tag: c})
 			for {
 				ev, ok := e.Source.Event(c.inputFilters...)
 				if !ok {
@@ -249,6 +255,13 @@ func (c *Client) buildInputFilters() {
 			Target: c,
 			Kinds:  pointer.Press | pointer.Release | pointer.Move | pointer.Drag | pointer.Enter | pointer.Leave,
 		},
+		// FocusFilter routes key.EditEvent (OS-aware text input) plus
+		// FocusEvent / SnippetEvent / SelectionEvent to us. EditEvent
+		// is the proper path for typed characters with correct keyboard
+		// layout / Shift / dead-key / IME handling; key.Event below
+		// stays focused on non-text keys (arrows, F-keys, etc.) where
+		// AWT-style sentinels are still meaningful.
+		key.FocusFilter{Target: c},
 	}
 
 	named := []key.Name{
@@ -285,6 +298,37 @@ func (c *Client) dispatchInputEvent(ev event.Event) {
 		c.handlePointer(e)
 	case key.Event:
 		c.handleKey(e)
+	case key.EditEvent:
+		c.handleEditEvent(e)
+	}
+}
+
+// handleEditEvent processes a Gio text-input event — the OS-level
+// typed-text channel that resolves keyboard layout, modifier combos,
+// dead keys, AltGr, and IME composition. Each rune in `e.Text` is the
+// character the user actually intended to type, regardless of physical
+// key layout. This is the proper port of Java's
+// `KeyEvent.getKeyChar()` semantics; key.Event below remains for the
+// modal sentinel keys (arrows, F-keys, Enter, Backspace, etc.) that
+// the Java client maps to specific numeric IDs.
+//
+// ActionKey held-state for letters/digits/punctuation is still
+// maintained by handleKey on key.Event (since EditEvent has no
+// release counterpart). For Press, handleKey skips KeyQueue and
+// inputtracking writes for text characters so this function is the
+// sole producer of typed-text entries in those streams.
+func (c *Client) handleEditEvent(e key.EditEvent) {
+	c.IdleCycles = 0
+	for _, r := range e.Text {
+		var3 := int(r)
+		if var3 <= 4 {
+			continue
+		}
+		c.KeyQueue[c.KeyQueueWritePos] = var3
+		c.KeyQueueWritePos = (c.KeyQueueWritePos + 1) & 0x7F
+		if inputtracking.Enabled {
+			inputtracking.KeyPressed(var3)
+		}
 	}
 }
 
@@ -428,15 +472,26 @@ func (c *Client) handleKey(e key.Event) {
 		if var2 == 34 {
 			var3 = 1003
 		}
+		// ActionKey records held-state for any in-range key, including
+		// text characters — non-text "letter held" checks elsewhere in
+		// the game still need this (e.g. while the chat input cursor
+		// is active).
 		if var3 > 0 && var3 < 128 {
 			c.ActionKey[var3] = 1
 		}
-		if var3 > 4 {
+		// Text characters (printable ASCII range, post-overrides) come
+		// in via key.EditEvent with proper keyboard-layout / shift /
+		// dead-key resolution; only the AWT-style sentinels for
+		// non-text keys (Ctrl=5, Backspace=8, Tab=9, Enter=10,
+		// Home/End/PgUp/PgDown=1000..1003, F1..F12=1008..1019) are
+		// pushed to KeyQueue and inputtracking from key.Event.
+		isSentinel := var3 == 5 || var3 == 8 || var3 == 9 || var3 == 10 || var3 >= 1000
+		if isSentinel {
 			c.KeyQueue[c.KeyQueueWritePos] = var3
 			c.KeyQueueWritePos = (c.KeyQueueWritePos + 1) & 0x7F
-		}
-		if inputtracking.Enabled {
-			inputtracking.KeyPressed(var3)
+			if inputtracking.Enabled {
+				inputtracking.KeyPressed(var3)
+			}
 		}
 		return
 	}
