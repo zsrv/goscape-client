@@ -1640,7 +1640,7 @@ func (c *Client) DrawFlames() {
 			if var10 == 0 {
 				var5++
 			} else {
-				//var11 = var10
+				var11 = var10
 				var12 = 256 - var10
 				var10 = c.FlameGradient[var10]
 				var13 = c.ImageTitle0.Data[var5]
@@ -1774,7 +1774,7 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *component.Comp
 										c.MenuParamC[c.MenuSize] = var12.Id
 										c.MenuSize++
 									}
-								} else if c.SpellSelected != 1 && !var12.Interactable {
+								} else if c.SpellSelected != 1 || !var12.Interactable {
 									if var12.Interactable {
 										for l := 4; l >= 3; l-- {
 											if var18.IOp != nil && var18.IOp[l] != "" {
@@ -2673,7 +2673,7 @@ func (c *Client) UpdateFlames() {
 	for i := range var2 - 1 {
 		c.FlameLineOffset[i] = c.FlameLineOffset[i+1]
 	}
-	c.FlameLineOffset[var2-1] = int(math.Sin(float64(clientextras.LoopCycle/14.0))*16.0 + math.Sin(float64(clientextras.LoopCycle/15.0))*14.0 + math.Sin(float64(clientextras.LoopCycle/16.0))*12.0)
+	c.FlameLineOffset[var2-1] = int(math.Sin(float64(clientextras.LoopCycle)/14.0)*16.0 + math.Sin(float64(clientextras.LoopCycle)/15.0)*14.0 + math.Sin(float64(clientextras.LoopCycle)/16.0)*12.0)
 	if c.FlameGradientCycle0 > 0 {
 		c.FlameGradientCycle0 -= 4
 	}
@@ -3907,7 +3907,7 @@ func (c *Client) UpdateMovement(arg1 *entity.PathingEntity) {
 		var7 -= 2048
 	}
 	var8 := arg1.SeqTurnAroundID
-	if var7 > +-256 && var7 <= 256 {
+	if var7 >= -256 && var7 <= 256 {
 		var8 = arg1.SeqWalkID
 	} else if var7 >= 256 && var7 < 768 {
 		var8 = arg1.SeqTurnRightId
@@ -6043,7 +6043,7 @@ func (c *Client) InteractWithLoc(arg0, arg1, arg2, arg3 int) bool {
 	c.CrossCycle = 0
 	c.Out.P1Isaac(arg0)
 	c.Out.P2(arg1 + c.SceneBaseTileX)
-	c.Out.P2(arg1 + c.SceneBaseTileZ)
+	c.Out.P2(arg2 + c.SceneBaseTileZ)
 	c.Out.P2(var6)
 	return true
 }
@@ -6730,7 +6730,7 @@ func (c *Client) AddPlayerOptions(arg1 int, arg2 int, arg3 *playerentity.PlayerE
 	if arg3 == c.LocalPlayer || c.MenuSize >= 400 {
 		return
 	}
-	var6 := arg3.Name + GetCombatLevelColorTag(c.LocalPlayer.CombatLevel, arg3.CombatLevel) + " (level-" + strconv.Itoa(arg3.CombatCycle) + ")"
+	var6 := arg3.Name + GetCombatLevelColorTag(c.LocalPlayer.CombatLevel, arg3.CombatLevel) + " (level-" + strconv.Itoa(arg3.CombatLevel) + ")"
 	if c.ObjSelected == 1 {
 		c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @whi@" + var6
 		c.MenuAction[c.MenuSize] = 367
@@ -6809,7 +6809,7 @@ func (c *Client) UpdateGame() {
 	if !c.InGame {
 		return
 	}
-	for i := range c.WaveCount {
+	for i := 0; i < c.WaveCount; i++ {
 		if c.WaveDelay[i] <= 0 {
 			var4 := false
 			if c.WaveIDs[i] != c.LastWaveID || c.WaveLoops[i] != c.LastWaveLoops {
@@ -6866,14 +6866,20 @@ func (c *Client) UpdateGame() {
 	c.UpdateNpcs()
 	c.UpdateEntityChats()
 	c.UpdateMergeLocs()
-	c.CameraMovedWrite++
-	if (c.ActionKey[1] == 1 || c.ActionKey[2] == 1 || c.ActionKey[3] == 1 || c.ActionKey[4] == 1) && c.CameraMovedWrite-1 > 5 {
-		c.CameraMovedWrite = 0
-		c.Out.P1Isaac(189)
-		c.Out.P2(c.OrbitCameraPitch)
-		c.Out.P2(c.OrbitCameraYaw)
-		c.Out.P1(c.MinimapAnticheatAngle)
-		c.Out.P1(c.MinimapZoom)
+	if c.ActionKey[1] == 1 || c.ActionKey[2] == 1 || c.ActionKey[3] == 1 || c.ActionKey[4] == 1 {
+		// Java: cameraMovedWrite++ > 5 — post-increment returns the pre-
+		// increment value to the comparator, then bumps the counter; the
+		// increment only happens when an arrow key is held.
+		origCMW := c.CameraMovedWrite
+		c.CameraMovedWrite++
+		if origCMW > 5 {
+			c.CameraMovedWrite = 0
+			c.Out.P1Isaac(189)
+			c.Out.P2(c.OrbitCameraPitch)
+			c.Out.P2(c.OrbitCameraYaw)
+			c.Out.P1(c.MinimapAnticheatAngle)
+			c.Out.P1(c.MinimapZoom)
+		}
 	}
 	c.SceneDelta++
 	if c.CrossMode != 0 {
@@ -7601,7 +7607,7 @@ func (c *Client) HandleMouseInput() {
 
 func (c *Client) ApplyCutscene() {
 	var2 := c.CutsceneSrcLocalTileX*128 + 64
-	var3 := c.CutsceneSrcLocalTileX*128 + 64
+	var3 := c.CutsceneSrcLocalTileZ*128 + 64
 	var4 := c.GetHeightMapY(c.CurrentLevel, c.CutsceneSrcLocalTileX, c.CutsceneSrcLocalTileZ) - c.CutsceneSrcHeight
 	if c.CameraX < var2 {
 		c.CameraX += c.CutsceneMoveSpeed + (var2-c.CameraX)*c.CutsceneMoveAcceleration/1000
@@ -7646,8 +7652,8 @@ func (c *Client) ApplyCutscene() {
 	var6 := var4 - c.CameraY
 	var7 := var3 - c.CameraZ
 	var8 := int(math.Sqrt(float64(var5*var5 + var7*var7)))
-	var9 := int(math.Atan2(float64(var6), float64(var8)*325.949)) & 0x7FF
-	var10 := int(math.Atan2(float64(var5), float64(var7)*-325.949)) & 0x7FF
+	var9 := int(math.Atan2(float64(var6), float64(var8))*325.949) & 0x7FF
+	var10 := int(math.Atan2(float64(var5), float64(var7))*-325.949) & 0x7FF
 	if var9 < 128 {
 		var9 = 128
 	}
@@ -8492,7 +8498,7 @@ func (c *Client) HandleViewportOptions() {
 					c.MenuParamB[c.MenuSize] = var5
 					c.MenuParamC[c.MenuSize] = var6
 					c.MenuSize++
-				} else if c.SpellSelected != -1 {
+				} else if c.SpellSelected != 1 {
 					if var9.Op != nil {
 						for j := 4; j >= 0; j-- {
 							if var9.Op[j] != "" {

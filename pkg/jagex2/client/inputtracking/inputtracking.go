@@ -128,7 +128,7 @@ func MouseReleased(arg0 int) {
 func MouseMoved(arg0, arg2 int) {
 	mu.Lock()
 	defer mu.Unlock()
-	if !Enabled || (arg2 < 0 || arg2 > 789 || arg0 < 0 || arg0 >= 532) {
+	if !Enabled || (arg2 < 0 || arg2 >= 789 || arg0 < 0 || arg0 >= 532) {
 		return
 	}
 	var3 := time.Now().UnixMilli()
@@ -144,7 +144,12 @@ func MouseMoved(arg0, arg2 int) {
 		EnsureCapacity(3)
 		OutBuffer.P1(5)
 		OutBuffer.P1(int(var5))
-		OutBuffer.P1(arg2 - LastX + 8 + (arg0 - (LastY+8)<<4))
+		// Java: outBuffer.p1(arg2 - lastX + 8 + (arg0 - lastY + 8 << 4))
+		// Java additive is higher precedence than <<, so the inner expr is
+		// ((arg0 - lastY + 8) << 4). Go shift is HIGHER than additive, so
+		// parens are required on both sides of the shift to preserve Java
+		// grouping.
+		OutBuffer.P1(arg2 - LastX + 8 + ((arg0-LastY+8)<<4))
 	} else if arg2-LastX < 128 && arg2-LastX >= -128 && arg0-LastY < 128 && arg0-LastY >= -128 {
 		EnsureCapacity(4)
 		OutBuffer.P1(6)
