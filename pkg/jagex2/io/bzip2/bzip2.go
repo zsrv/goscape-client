@@ -144,7 +144,7 @@ label67:
 						cNBlockUsed++
 
 						// macro: BZ_GET_FAST_C
-						cStateOutLen = int((k1 & 0xFF) + 4)
+						cStateOutLen = int(k1&0xFF) + 4
 						cTPos = cTT[cTPos]
 						cK0 = cTPos & 0xFF
 						cTPos >>= 0x8

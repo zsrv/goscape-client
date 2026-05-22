@@ -53,7 +53,7 @@ func Init() {
 		if rand.Float64() > 0.5 {
 			Noise[i] = 1
 		} else {
-			Noise[i] = 0
+			Noise[i] = -1
 		}
 	}
 	Sin = make([]int, 32768)
