@@ -40,8 +40,10 @@ func (e *NpcEntity) Draw() *model.Model {
 	var4.CalculateNormals(var3.Ambient+64, var3.Contrast+850, -30, -50, -30, true)
 	var5 := []*model.Model{var2, var4}
 	// Java: NpcEntity.java:35 — `new Model(var5, (byte) -31, 2)`.
-	// arg1 is unread inside NewModel3; preserves Java's literal.
-	var6 := model.NewModel3(var5, 2, -31)
+	// Java's `(byte) -31` is a deobfuscator overload disambiguator
+	// that NewModel3 never reads; dropped per the deob-artifact
+	// exclusion policy.
+	var6 := model.NewModel3(var5, 2)
 	if e.Type.Size == 1 {
 		var6.Pickable = true
 	}

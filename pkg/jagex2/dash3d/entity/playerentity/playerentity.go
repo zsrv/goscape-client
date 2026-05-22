@@ -150,7 +150,7 @@ func (e *PlayerEntity) Draw() *model.Model {
 		}
 		var4.CalculateNormals(var3.Ambient+64, var3.Contrast+850, -30, -50, -30, true)
 		var5 := []*model.Model{var2, var4}
-		var2 = model.NewModel3(var5, 2, -31)
+		var2 = model.NewModel3(var5, 2)
 	}
 	if e.LocModel != nil {
 		if clientextras.LoopCycle >= e.LocStopCycle {
@@ -170,7 +170,7 @@ func (e *PlayerEntity) Draw() *model.Model {
 				var6.RotateY90()
 			}
 			var8 := []*model.Model{var2, var6}
-			var2 = model.NewModel3(var8, 2, -31)
+			var2 = model.NewModel3(var8, 2)
 			if e.DstYaw == 512 {
 				var6.RotateY90()
 			} else if e.DstYaw == 0x400 {

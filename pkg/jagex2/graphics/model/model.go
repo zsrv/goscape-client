@@ -577,12 +577,10 @@ func NewModel2(arg1 []*Model, arg2 int) *Model {
 }
 
 // NewModel3 ports Java's `Model(Model[] arg0, byte arg1, int arg2)`
-// (Model.java:666). arg1 is a deobfuscation-removable disambiguator
-// — never read inside the constructor — but typed as int8 per the
-// project's byte→int8 convention so call sites can pass the literal
-// `(byte) -31` Java uses without conversion games. Renamed from arg3
-// for parity with Java's parameter position.
-func NewModel3(arg0 []*Model, arg2 int, arg1 int8) *Model {
+// (Model.java:666). Java's arg1 is a deobfuscator-preserved overload
+// disambiguator — never read inside the constructor — and is dropped
+// here per the project's deob-artifact exclusion policy.
+func NewModel3(arg0 []*Model, arg2 int) *Model {
 	var m Model
 
 	var5 := false
