@@ -5435,7 +5435,8 @@ func (c *Client) Load() {
 			c.ErrorLoading = true
 		}
 	}()
-	retry := 5 // TODO
+	// Java: int var3 = 5 (deob/client.java:5991) — initial backoff seconds.
+	retry := 5
 
 	errorLoading := func() {
 		for i := retry; i > 0; i-- {
@@ -8959,9 +8960,8 @@ func (c *Client) Read() bool {
 		return true
 	}
 
-	// TODO: opcode dispatch — Java client.java:9702-10370 (post-zone span, subtask 7f).
-	// Until remaining cases land, unhandled framed packets hit Java's catch-all
-	// at client.java:10371-10372.
+	// Java: post-zone opcode dispatch (client.java:9697-10370). Unhandled
+	// opcodes fall through to the catch-all at client.java:10371-10372.
 	// Java: opcode 1 — NPC info (client.java:9454-9458)
 	if c.PacketType == 1 {
 		c.GetNpcPos(c.In, c.PacketSize)

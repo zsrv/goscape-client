@@ -185,7 +185,9 @@ func Run() {
 			cond.Broadcast()
 			mu.Unlock()
 		case urlReq != "":
-			// TODO: extracted from client.getCodeBase() - no applet here
+			// Java: signlink.openurl dispatches to applet.getCodeBase() (signlink.java).
+			// Go is always standalone, so we construct the URL inline against the
+			// configured port offset.
 			resp, err := http.Get("http://127.0.0.1:" + strconv.Itoa(clientextras.PortOffset+8888) + "/" + urlReq)
 			var body []byte
 			if err == nil {
