@@ -2584,24 +2584,25 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 }
 
 func (c *Client) UnloadTitle() {
+	// Stop the flame animation goroutine (Java: deob/client.java:3111).
+	// The flame thread loops on c.FlameActive; set it false and spin
+	// until c.FlameThread observes that and exits.
 	c.FlameActive = false
 	for c.FlameThread {
 		c.FlameActive = false
 		time.Sleep(50 * time.Millisecond)
 	}
-	c.ImageTitleBox = nil
-	c.ImageTitleButton = nil
-	c.ImageRunes = nil
-	c.FlameGradient = nil
-	c.FlameGradient0 = nil
-	c.FlameGradient1 = nil
-	c.FlameGradient2 = nil
-	c.FlameBuffer0 = nil
-	c.FlameBuffer1 = nil
-	c.FlameBuffer3 = nil
-	c.FlameBuffer2 = nil
-	c.ImageFlamesLeft = nil
-	c.ImageFlamesRight = nil
+	// Java: deob/client.java:3119-3132 also nils imageTitlebox /
+	// imageTitlebutton / imageRunes / flameGradient* / flameBuffer* /
+	// imageFlamesLeft / imageFlamesRight here as a memory save. Go
+	// keeps all of them alive: title-screen lifecycle on Logout calls
+	// c.DrawTitleScreen from inside c.Draw (under OpsMu), and
+	// re-loading any of these buffers would have to go through
+	// LoadTitleImages → DrawProgress, which re-enters OpsMu and
+	// deadlocks (non-reentrant sync.Mutex). Keeping buffers alive
+	// makes LoadTitle's early-return at line 6256 fire on Logout,
+	// avoiding the re-entry. Combined memory cost with the kept
+	// ImageTitleN PixMaps is well under 2 MB — negligible.
 }
 
 func (c *Client) OrbitCamera(arg0, arg1, arg2, arg3, arg5, arg6 int) {
@@ -6249,6 +6250,17 @@ func (c *Client) OpenURL(arg0 string) (*bytes.Reader, error) {
 }
 
 func (c *Client) LoadTitle() {
+	// Restart the flame animation goroutine if it isn't running. On
+	// first call (boot) the goroutine starts inside LoadTitleImages
+	// below; on subsequent calls (Logout → re-enter title) the early-
+	// return at the next line skips LoadTitleImages, so we restart
+	// here. Mirrors the c.FlameActive check Java does inside
+	// LoadTitleImages at deob/client.java:3683-3686.
+	if !c.FlameActive {
+		c.FlamesThread = true
+		c.FlameActive = true
+		go c.Run() // RunFlames
+	}
 	if c.ImageTitle2 != nil {
 		return
 	}
