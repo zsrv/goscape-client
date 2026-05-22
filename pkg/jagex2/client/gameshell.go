@@ -69,7 +69,20 @@ func (c *Client) draw(w *app.Window) error {
 		switch e := w.Event().(type) {
 
 		case app.DestroyEvent:
-			// The window was closed
+			// Java: GameShell.windowClosing (GameShell.java:474-476) calls
+			// destroy() → sets state = -1 → game loop drains state and
+			// calls Shutdown() → Unload() → sleep → os.Exit. The prior
+			// Go DestroyEvent handler returned directly, then the parent
+			// goroutine called os.Exit(0) immediately — bypassing Unload
+			// entirely, so sockets / MIDI / cache handles leaked.
+			//
+			// Signal the game loop to run its Shutdown sequence (which
+			// closes c.Stream, drops cache references, calls
+			// signlink.StopMidi). Sleep briefly to let it complete in
+			// the common case; the fallback os.Exit(0) at the caller
+			// still fires if the game loop is wedged.
+			c.State = -1
+			time.Sleep(1500 * time.Millisecond)
 			return e.Err
 
 		case app.FrameEvent:
@@ -136,7 +149,11 @@ func (c *Client) RunGameShell() {
 	for i := range 10 {
 		c.OTim[i] = time.Now().UnixMilli()
 	}
-	var1 := int64(0)
+	// Java: GameShell.java:136 — `long var1 = System.currentTimeMillis()`.
+	// Value is unconditionally reassigned before any read (line 152 below),
+	// so the initial value is observationally irrelevant; aligned with Java
+	// for literal-port hygiene.
+	var1 := time.Now().UnixMilli()
 	for c.State >= 0 {
 		if c.State > 0 {
 			c.State--

@@ -83,9 +83,18 @@ func init() {
 // loaded model data can't leak into the next (the rendering pipeline keeps
 // its state as package vars by design — see CLAUDE.md "Global State Pattern").
 //
-// Excluded: TmpDepthFaces, TmpPriorityFaces — populated once at package
-// init() with per-row scratch slices.
+// TmpDepthFaces / TmpPriorityFaces are re-populated here as well so the
+// Unload → Reset ordering is safe; Unload nils both, and absent a re-init
+// here a follow-up draw would nil-deref. Matches the init() block below.
 func Reset() {
+	TmpDepthFaces = make([][]int, 1500)
+	for i := range TmpDepthFaces {
+		TmpDepthFaces[i] = make([]int, 512)
+	}
+	TmpPriorityFaces = make([][]int, 12)
+	for i := range TmpPriorityFaces {
+		TmpPriorityFaces[i] = make([]int, 2000)
+	}
 	Face1 = nil
 	Face2 = nil
 	Face3 = nil

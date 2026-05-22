@@ -266,11 +266,16 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 		}
 	}
 
+	// Corner labels reflect their actual world positions (matches the
+	// standalone AddLoc at world.go:1015-1019 below): (x, z) = SW,
+	// (x+1, z) = SE, (x+1, z+1) = NE, (x, z+1) = NW. The prior labels
+	// here had NW/NE swapped — values still flowed correctly through
+	// Java-positional GetModel calls but the names misled readers.
 	heightSW := w.LevelHeightMap[level][x][z]
 	heightSE := w.LevelHeightMap[level][x+1][z]
-	heightNW := w.LevelHeightMap[level][x+1][z+1]
-	heightNE := w.LevelHeightMap[level][x][z+1]
-	y := (heightSW + heightSE + heightNW + heightNE) >> 2
+	heightNE := w.LevelHeightMap[level][x+1][z+1]
+	heightNW := w.LevelHeightMap[level][x][z+1]
+	y := (heightSW + heightSE + heightNE + heightNW) >> 2
 
 	loc := loctype.Get(locId)
 
@@ -283,7 +288,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 
 	if shape != 22 {
 		if shape == 10 || shape == 11 {
-			mdl := loc.GetModel(10, angle, heightSW, heightSE, heightNW, heightNE, -1)
+			mdl := loc.GetModel(10, angle, heightSW, heightSE, heightNE, heightNW, -1)
 
 			if mdl != nil {
 				yaw := 0
@@ -326,7 +331,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 2, seqtype.Instances[loc.Anim], z, x)))
 			}
 		} else if shape >= 12 {
-			mdl := loc.GetModel(shape, angle, heightSW, heightSE, heightNW, heightNE, -1)
+			mdl := loc.GetModel(shape, angle, heightSW, heightSE, heightNE, heightNW, -1)
 
 			scene.AddLoc1(y, level, nil, typeCode, z, x, 1, info, mdl, 0, 1)
 
@@ -342,7 +347,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 2, seqtype.Instances[loc.Anim], z, x)))
 			}
 		} else if shape == 0 {
-			mdl := loc.GetModel(0, angle, heightSW, heightSE, heightNW, heightNE, -1)
+			mdl := loc.GetModel(0, angle, heightSW, heightSE, heightNE, heightNW, -1)
 
 			scene.AddWall(0, y, level, ROTATION_WALL_TYPE[angle], mdl, nil, x, typeCode, z, info)
 
@@ -393,7 +398,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				scene.SetWallDecorationOffset(level, z, x, loc.WallWidth)
 			}
 		} else if shape == 1 {
-			mdl := loc.GetModel(1, angle, heightSW, heightSE, heightNW, heightNE, -1)
+			mdl := loc.GetModel(1, angle, heightSW, heightSE, heightNE, heightNW, -1)
 
 			scene.AddWall(0, y, level, ROTATION_WALL_CORNER_TYPE[angle], mdl, nil, x, typeCode, z, info)
 
@@ -422,8 +427,8 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 			case 2:
 				offset := (angle + 1) & 0x3
 
-				mdl1 := loc.GetModel(2, angle+4, heightSW, heightSE, heightNW, heightNE, -1)
-				mdl2 := loc.GetModel(2, offset, heightSW, heightSE, heightNW, heightNE, -1)
+				mdl1 := loc.GetModel(2, angle+4, heightSW, heightSE, heightNE, heightNW, -1)
+				mdl2 := loc.GetModel(2, offset, heightSW, heightSE, heightNE, heightNW, -1)
 
 				scene.AddWall(ROTATION_WALL_TYPE[offset], y, level, ROTATION_WALL_TYPE[angle], mdl1, mdl2, x, typeCode, z, info)
 
@@ -456,7 +461,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 					scene.SetWallDecorationOffset(level, z, x, loc.WallWidth)
 				}
 			case 3:
-				mdl := loc.GetModel(3, angle, heightSW, heightSE, heightNW, heightNE, -1)
+				mdl := loc.GetModel(3, angle, heightSW, heightSE, heightNE, heightNW, -1)
 
 				scene.AddWall(0, y, level, ROTATION_WALL_CORNER_TYPE[angle], mdl, nil, x, typeCode, z, info)
 
@@ -481,7 +486,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
 				}
 			case 9:
-				mdl := loc.GetModel(shape, angle, heightSW, heightSE, heightNW, heightNE, -1)
+				mdl := loc.GetModel(shape, angle, heightSW, heightSE, heightNE, heightNW, -1)
 
 				scene.AddLoc1(y, level, nil, typeCode, z, x, 1, info, mdl, 0, 1)
 
@@ -493,7 +498,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 2, seqtype.Instances[loc.Anim], z, x)))
 				}
 			case 4:
-				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNW, heightNE, -1)
+				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
 
 				scene.SetWallDecoration(y, z, 0, typeCode, angle*512, ROTATION_WALL_TYPE[angle], 0, x, mdl, info, level)
 
@@ -508,7 +513,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 					wallWidth = loctype.Get((wallType >> 14) & 0x7FFF).WallWidth
 				}
 
-				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNW, heightNE, -1)
+				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
 
 				scene.SetWallDecoration(y, z, WALL_DECORATION_ROTATION_FORWARD_Z[angle]*wallWidth, typeCode, angle*512, ROTATION_WALL_TYPE[angle], WALL_DECORATION_ROTATION_FORWARD_X[angle]*wallWidth, x, mdl, info, level)
 
@@ -516,7 +521,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
 			case 6:
-				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNW, heightNE, -1)
+				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
 
 				scene.SetWallDecoration(y, z, 0, typeCode, angle, 256, 0, x, mdl, info, level)
 
@@ -524,7 +529,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
 			case 7:
-				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNW, heightNE, -1)
+				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
 
 				scene.SetWallDecoration(y, z, 0, typeCode, angle, 512, 0, x, mdl, info, level)
 
@@ -532,7 +537,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
 			case 8:
-				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNW, heightNE, -1)
+				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
 
 				scene.SetWallDecoration(y, z, 0, typeCode, angle, 768, 0, x, mdl, info, level)
 
@@ -542,7 +547,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 			}
 		}
 	} else if !LowMemory || loc.Active || loc.ForceDecor {
-		mdl := loc.GetModel(22, angle, heightSW, heightSE, heightNW, heightNE, -1)
+		mdl := loc.GetModel(22, angle, heightSW, heightSE, heightNE, heightNW, -1)
 		scene.AddGroundDecoration(mdl, x, typeCode, z, level, info, y)
 		if loc.BlockWalk && loc.Active && collision != nil {
 			collision.SetBlocked(z, x)

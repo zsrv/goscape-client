@@ -550,6 +550,11 @@ func NewClient() *Client {
 		MidiThreadActive:          true,
 		ImageSideIcons:            make([]*pix8.Pix8, 13),
 		OrbitCameraPitch:          128,
+		// Java: deob/client.java:92 — `public int selectedTab = 3;`
+		// Latent in current flows (Login resets to 3 before InGame goes
+		// true) but the field-init keeps the Go state aligned with Java
+		// for any future caller that reads SelectedTab pre-login.
+		SelectedTab:               3,
 		MAX_PLAYER_COUNT:          2048,
 		LOCAL_PLAYER_INDEX:        2047,
 		Projectiles:               datastruct.NewLinkList[*entity.ProjectileEntity](),

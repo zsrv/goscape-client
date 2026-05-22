@@ -432,6 +432,15 @@ func ReportErrorFunc(e string) {
 	var3 := strings.ReplaceAll(e, "@", "_")
 	var4 := strings.ReplaceAll(var3, "&", "_")
 	var5 := strings.ReplaceAll(var4, "#", "_")
+	// Java: sign/signlink.java:366-368 explicitly does
+	//   DataInputStream var1 = openurl(...);
+	//   var1.readLine();
+	//   var1.close();
+	// Go's OpenURL reads the full response body (and closes the
+	// connection) before returning, so the readLine + close pair
+	// is subsumed by the call itself. Discarding the body is the
+	// equivalent of Java's readLine-then-close pattern; the HTTP
+	// transaction is observably identical.
 	_, err := OpenURL("reporterror" + strconv.Itoa(225) + ".cgi?error=" + ErrorName + " " + var5)
 	if err != nil {
 		fmt.Printf("failed to open url: %v\n", err)
