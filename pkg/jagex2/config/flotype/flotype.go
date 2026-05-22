@@ -62,7 +62,7 @@ func (f *FloType) Decode(arg1 *io.Packet) {
 		case 3:
 			f.Overlay = true
 		case 5:
-			f.Occlude = true
+			f.Occlude = false
 		case 6:
 			f.Name = arg1.GJStr()
 		default:
@@ -72,9 +72,9 @@ func (f *FloType) Decode(arg1 *io.Packet) {
 }
 
 func (f *FloType) SetColour(arg1 int) {
-	var3 := float64(((arg1 >> 16) & 0xFF) / 256.0)
-	var22 := float64(((arg1 >> 8) & 0xFF) / 256.0)
-	var7 := float64((arg1 & 0xFF) / 256.0)
+	var3 := float64((arg1>>16)&0xFF) / 256.0
+	var22 := float64((arg1>>8)&0xFF) / 256.0
+	var7 := float64(arg1&0xFF) / 256.0
 	var9 := var3
 	if var22 < var3 {
 		var9 = var22
@@ -155,7 +155,7 @@ func (f *FloType) HSL24To16(arg0, arg1, arg2 int) int {
 	if arg2 > 217 {
 		arg1 /= 2
 	}
-	if arg2 >= 243 {
+	if arg2 > 243 {
 		arg1 /= 2
 	}
 	return ((arg0 / 4) << 10) + ((arg1 / 32) << 7) + arg2/2

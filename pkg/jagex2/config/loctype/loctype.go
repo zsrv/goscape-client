@@ -272,11 +272,7 @@ func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *mode
 		if var13 == -1 {
 			return nil
 		}
-		mirrorInt := 0
-		if loc.Mirror {
-			mirrorInt = 1
-		}
-		var14 := mirrorInt^arg1 > 3
+		var14 := loc.Mirror != (arg1 > 3)
 		if var14 {
 			var13 += 65536
 		}

@@ -282,7 +282,7 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 				var2 = t.CountObj[i]
 			}
 		}
-		if var2 != 1 {
+		if var2 != -1 {
 			return Get(var2).GetInterfaceModel(1)
 		}
 	}
