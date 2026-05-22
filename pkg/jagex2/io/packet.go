@@ -369,11 +369,66 @@ func (p *Packet) RSAEnc(mod *big.Int, exp *big.Int) {
 	plaintextBytes := make([]byte, length)
 	p.GData(length, 0, plaintextBytes)
 
-	plaintext := new(big.Int).SetBytes(plaintextBytes)
-	ciphertext := plaintext.Exp(plaintext, exp, mod)
-	ciphertextBytes := ciphertext.Bytes()
+	// Java: new BigInteger(byte[]) parses two's-complement big-endian.
+	// Go's SetBytes treats the buffer as unsigned magnitude. The two
+	// differ when the first byte has the high bit set, so we mirror
+	// Java's signed interpretation explicitly.
+	plaintext := javaBigIntFromBytes(plaintextBytes)
+	ciphertext := new(big.Int).Exp(plaintext, exp, mod)
+	// Java: BigInteger.toByteArray() emits two's-complement and includes
+	// a leading 0x00 byte when the magnitude's MSB is set, so a positive
+	// 0xFF... value round-trips as positive. Go's Bytes() omits that
+	// sign byte. The server (Java) round-trips through BigInteger and
+	// will mis-parse the unsigned form for any ciphertext whose first
+	// magnitude byte is >= 0x80.
+	ciphertextBytes := javaBytesFromBigInt(ciphertext)
 
 	p.Pos = 0
-	p.P1(int(len(ciphertextBytes)))
-	p.PData(ciphertextBytes, int(len(ciphertextBytes)), 0)
+	p.P1(len(ciphertextBytes))
+	p.PData(ciphertextBytes, len(ciphertextBytes), 0)
+}
+
+// javaBigIntFromBytes parses b as a big-endian two's-complement integer the
+// way java.math.BigInteger(byte[]) does. If the high bit of b[0] is set, the
+// resulting BigInteger is negative.
+func javaBigIntFromBytes(b []byte) *big.Int {
+	if len(b) == 0 {
+		return new(big.Int)
+	}
+	n := new(big.Int).SetBytes(b)
+	if b[0] >= 0x80 {
+		shift := new(big.Int).Lsh(big.NewInt(1), uint(8*len(b)))
+		n.Sub(n, shift)
+	}
+	return n
+}
+
+// javaBytesFromBigInt emits n in the byte format Java's
+// BigInteger.toByteArray() produces: two's-complement big-endian with a
+// leading 0x00 prepended when n is positive and the magnitude's MSB has
+// bit 7 set. RSA modPow output is always non-negative, so the negative
+// branch isn't reached in practice but is included for completeness.
+func javaBytesFromBigInt(n *big.Int) []byte {
+	if n.Sign() == 0 {
+		return []byte{0}
+	}
+	if n.Sign() < 0 {
+		bitLen := n.BitLen() + 1
+		byteLen := (bitLen + 7) / 8
+		shift := new(big.Int).Lsh(big.NewInt(1), uint(8*byteLen))
+		b := new(big.Int).Add(shift, n).Bytes()
+		if len(b) < byteLen {
+			pad := make([]byte, byteLen-len(b))
+			for i := range pad {
+				pad[i] = 0xFF
+			}
+			b = append(pad, b...)
+		}
+		return b
+	}
+	b := n.Bytes()
+	if b[0] >= 0x80 {
+		return append([]byte{0}, b...)
+	}
+	return b
 }
