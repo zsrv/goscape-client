@@ -223,6 +223,10 @@ func NewTileOverlay(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, 
 	if arg3 < arg17 {
 		var36 = arg3
 	}
+	// Java bug preserved: original has `if (arg3 > arg3)` (TileOverlay.java:274).
+	// The condition is always false — the intended max-branch for the (arg17, arg3)
+	// pair never fires, leaving var37 == arg3. Subsequent arg13/arg7 min/max passes
+	// still run normally. Bug-for-bug fidelity with the obfuscated Jagex source.
 	if arg3 > arg3 {
 		var37 = arg3
 	}

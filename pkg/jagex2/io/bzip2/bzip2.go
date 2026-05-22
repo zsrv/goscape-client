@@ -211,6 +211,11 @@ func Decompress(s *bzip2state.BZip2State) {
 	}
 
 	reading := true
+	// Java: BZip2.decompress's outer `while (true)` (BZip2.java:180-468) wraps the
+	// inner `while (var27)` loop. Both inner break-paths fall through to the
+	// outer `return`, so the outer for-loop body only executes once. Preserved
+	// verbatim from the obfuscated source; gopls correctly notes the outer loop
+	// is unconditionally terminated.
 	for {
 		for reading {
 			uc := GetUnsignedChar(s)
@@ -398,9 +403,10 @@ func Decompress(s *bzip2state.BZip2State) {
 						n := 1
 
 						for ok := true; ok; ok = nextSym == 0 || nextSym == 1 {
-							if nextSym == 0 {
+							switch nextSym {
+							case 0:
 								es += n
-							} else if nextSym == 1 {
+							case 1:
 								es += n * 2
 							}
 
