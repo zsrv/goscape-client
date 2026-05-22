@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"runtime/pprof"
 	"runtime/trace"
 	"time"
@@ -109,4 +110,21 @@ func writeCPUAndTrace(dir string, window time.Duration) error {
 		return cpuErr
 	}
 	return traceErr
+}
+
+// enableContentionProfiles turns on mutex and block contention
+// sampling at fraction/rate = 1 (every event recorded). The cost is
+// small but non-zero; the caller is responsible for calling
+// disableContentionProfiles when the capture window ends so the rest
+// of the process runs with zero contention-profiling overhead.
+func enableContentionProfiles() {
+	runtime.SetMutexProfileFraction(1)
+	runtime.SetBlockProfileRate(1)
+}
+
+// disableContentionProfiles turns off mutex and block contention
+// sampling. Always paired with a prior enableContentionProfiles().
+func disableContentionProfiles() {
+	runtime.SetMutexProfileFraction(0)
+	runtime.SetBlockProfileRate(0)
 }

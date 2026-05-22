@@ -3,6 +3,7 @@ package profiling
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -118,4 +119,22 @@ func TestWriteCPUAndTrace_BothFilesNonEmpty(t *testing.T) {
 			t.Errorf("%s is empty", name)
 		}
 	}
+}
+
+func TestEnableDisableContentionProfiles_ResetsMutexFraction(t *testing.T) {
+	// Snapshot the prior state so we leave the test process untouched.
+	prior := runtime.SetMutexProfileFraction(-1)
+	t.Cleanup(func() { runtime.SetMutexProfileFraction(prior) })
+
+	enableContentionProfiles()
+	if got := runtime.SetMutexProfileFraction(-1); got != 1 {
+		t.Errorf("after enable: mutex fraction = %d; want 1", got)
+	}
+
+	disableContentionProfiles()
+	if got := runtime.SetMutexProfileFraction(-1); got != 0 {
+		t.Errorf("after disable: mutex fraction = %d; want 0", got)
+	}
+	// Block rate has no public getter; we trust the single line of
+	// code that sets it. See spec §"Testing strategy" for rationale.
 }
