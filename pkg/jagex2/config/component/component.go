@@ -184,6 +184,10 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 					}
 				}
 				var8.IOps = make([]string, 5)
+				// Java assigns iops[i] = null on length()==0; Go uses "" — see
+				// LocType.Decode for the convention's full rationale. The
+				// `= ""` re-assignment is a no-op (already ""), kept to mirror
+				// Java's nulling pass for readability.
 				for i := range 5 {
 					var8.IOps[i] = var4.GJStr()
 					if len(var8.IOps[i]) == 0 {

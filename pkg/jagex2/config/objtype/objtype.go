@@ -205,6 +205,8 @@ func (t *ObjType) Decode(arg1 *io.Packet) {
 				t.Op = make([]string, 5)
 			}
 			t.Op[var3-30] = arg1.GJStr()
+			// Java assigns op[i] = null here; Go uses "" — see LocType.Decode
+			// for the convention's full rationale.
 			if strings.ToLower(t.Op[var3-30]) == "hidden" {
 				t.Op[var3-30] = ""
 			}
@@ -266,6 +268,10 @@ func (t *ObjType) ToCertificate() {
 	t.Members = var3.Members
 	t.Cost = var3.Cost
 	var4 := "a"
+	// Java: var3.name.charAt(0). RuneScape item names are ASCII, so byte
+	// indexing matches charAt for valid inputs. A non-ASCII first char would
+	// yield the leading UTF-8 byte (e.g. 0xC2 for £), which can never match
+	// the vowel set — safe outcome for both clients.
 	var5 := var3.Name[0]
 	if var5 == 'A' || var5 == 'E' || var5 == 'I' || var5 == 'O' || var5 == 'U' {
 		var4 = "an"

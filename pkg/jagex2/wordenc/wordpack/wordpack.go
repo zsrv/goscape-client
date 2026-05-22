@@ -61,7 +61,7 @@ func Unpack(buf *io.Packet, length int) string {
 	return string(CharBuffer[0:pos])
 }
 
-func Pack(buf *io.Packet, str string) {
+func Pack(buf *io.Packet, terminate bool, str string) {
 	// Java: arg2.length() / arg2.charAt(i) walk UTF-16 code units, not bytes.
 	// TABLE contains BMP-only chars (incl. '£' U+00A3), so []rune matches charAt
 	// exactly for this input. See WordPack.java:56-62.
@@ -100,7 +100,7 @@ func Pack(buf *io.Packet, str string) {
 		}
 	}
 
-	if carry != -1 {
+	if terminate && carry != -1 {
 		buf.P1(carry << 4)
 	}
 }

@@ -2176,7 +2176,7 @@ func (c *Client) HandleInputKey() {
 							c.Out.P1(0)
 							var7 = c.Out.Pos
 							c.Out.P8(c.SocialName37)
-							wordpack.Pack(c.Out, c.SocialInput)
+							wordpack.Pack(c.Out, true, c.SocialInput)
 							c.Out.PSize1(c.Out.Pos - var7)
 							c.SocialInput = jstring.ToSentenceCase(c.SocialInput)
 							c.SocialInput = wordfilter.Filter(c.SocialInput)
@@ -2297,7 +2297,7 @@ func (c *Client) HandleInputKey() {
 							var5 := c.Out.Pos
 							c.Out.P1(var3)
 							c.Out.P1(var4)
-							wordpack.Pack(c.Out, c.ChatTyped)
+							wordpack.Pack(c.Out, true, c.ChatTyped)
 							c.Out.PSize1(c.Out.Pos - var5)
 							c.ChatTyped = jstring.ToSentenceCase(c.ChatTyped)
 							c.ChatTyped = wordfilter.Filter(c.ChatTyped)
@@ -8894,6 +8894,10 @@ func (c *Client) Read() bool {
 	c.LastPacketType0 = c.PacketType
 
 	// Java: opcode 4 — general chat / trade-req / duel-req (client.java:10139-10173)
+	// strings.Index returns a byte offset; Java's indexOf returns a UTF-16
+	// code-unit offset. Player names are ASCII-bound by the protocol, so for
+	// valid inputs the substring split below is identical to Java's
+	// substring(0, indexOf(":")). Fidelity-only divergence on non-ASCII names.
 	if c.PacketType == 4 {
 		var3 := c.In.GJStr()
 		if strings.HasSuffix(var3, ":tradereq:") {

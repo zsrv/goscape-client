@@ -61,6 +61,14 @@ var (
 	Metadata               []*metadata.Metadata
 )
 
+// sliceAlias reports whether a and b refer to the same backing array,
+// mirroring Java's `==` reference equality on arrays. Used by DrawFaces
+// to detect when the priority-11 bucket has wrapped onto itself, which
+// Java's `var14 != TmpPriorityFaces[11]` expresses via array identity.
+func sliceAlias[T any](a, b []T) bool {
+	return unsafe.SliceData(a) == unsafe.SliceData(b)
+}
+
 func init() {
 	for i := range TmpDepthFaces {
 		TmpDepthFaces[i] = make([]int, 512)
@@ -1612,7 +1620,7 @@ func (m *Model) Draw2(arg0 bool, arg1 bool, arg2 int) {
 		for i == 0 && var11 > var8 {
 			m.DrawFace(var14[var12])
 			var12++
-			if var12 == var13 && unsafe.SliceData(var14) != unsafe.SliceData(TmpPriorityFaces[11]) {
+			if var12 == var13 && !sliceAlias(var14, TmpPriorityFaces[11]) {
 				var12 = 0
 				var13 = TmpPriorityFaceCount[11]
 				var14 = TmpPriorityFaces[11]
@@ -1627,7 +1635,7 @@ func (m *Model) Draw2(arg0 bool, arg1 bool, arg2 int) {
 		for i == 3 && var11 > var9 {
 			m.DrawFace(var14[var12])
 			var12++
-			if var12 == var13 && unsafe.SliceData(var14) != unsafe.SliceData(TmpPriorityFaces[11]) {
+			if var12 == var13 && !sliceAlias(var14, TmpPriorityFaces[11]) {
 				var12 = 0
 				var13 = TmpPriorityFaceCount[11]
 				var14 = TmpPriorityFaces[11]
@@ -1642,7 +1650,7 @@ func (m *Model) Draw2(arg0 bool, arg1 bool, arg2 int) {
 		for i == 5 && var11 > var10 {
 			m.DrawFace(var14[var12])
 			var12++
-			if var12 == var13 && unsafe.SliceData(var14) != unsafe.SliceData(TmpPriorityFaces[11]) {
+			if var12 == var13 && !sliceAlias(var14, TmpPriorityFaces[11]) {
 				var12 = 0
 				var13 = TmpPriorityFaceCount[11]
 				var14 = TmpPriorityFaces[11]
@@ -1663,7 +1671,7 @@ func (m *Model) Draw2(arg0 bool, arg1 bool, arg2 int) {
 	for var11 != -1000 {
 		m.DrawFace(var14[var12])
 		var12++
-		if var12 == var13 && unsafe.SliceData(var14) != unsafe.SliceData(TmpPriorityFaces[11]) {
+		if var12 == var13 && !sliceAlias(var14, TmpPriorityFaces[11]) {
 			var12 = 0
 			var14 = TmpPriorityFaces[11]
 			var13 = TmpPriorityFaceCount[11]

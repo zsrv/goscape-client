@@ -57,8 +57,11 @@ func (jf *Jagfile) Load(src []byte) {
 }
 
 func (jf *Jagfile) Read(name string, dst []byte) []byte {
+	// Java: Jagfile.read walks arg1.toUpperCase().charAt(i) (UTF-16 code units).
+	// Archive entry names are ASCII-only by convention, but iterating runes
+	// matches Java's semantics for any BMP input.
 	hash := int32(0)
-	upper := strings.ToUpper(name)
+	upper := []rune(strings.ToUpper(name))
 	for i := range len(upper) {
 		hash = hash*61 + int32(upper[i]) - 32
 	}

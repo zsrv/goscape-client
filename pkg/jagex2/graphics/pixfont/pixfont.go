@@ -109,6 +109,12 @@ func NewPixFont(arg0 *io.Jagfile, arg1 string) *PixFont {
 		p.Height = max(var9, p.Height)
 		p.CharOffsetX[i] = 1
 		p.CharAdvance[i] = var8 + 2
+		// Java: charMask is byte[][] (signed); the sum sign-extends each
+		// mask byte. Go's [][]byte zero-extends via int(byte). Benign with
+		// every currently shipped font (mask values are all-positive 0/1
+		// or alpha 0..127); would diverge only for masks with high-bit-set
+		// bytes. Storage type left as []byte to avoid widening DrawMask/
+		// DrawMaskAlpha signatures and their dispatch sites.
 		var12 := 0
 		for j := var9 / 7; j < var9; j++ {
 			var12 += int(p.CharMask[i][j*var8])

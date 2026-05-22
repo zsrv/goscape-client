@@ -209,6 +209,10 @@ func (loc *LocType) Decode(arg1 *io.Packet) {
 				loc.Op = make([]string, 5)
 			}
 			loc.Op[var4-30] = arg1.GJStr()
+			// Java assigns op[i] = null here; Go uses "" as the absence marker.
+			// All read sites compare via `!= ""`. The wire format never sends ""
+			// as a legitimate option, so the two markers are equivalent in
+			// practice. Same convention in NpcType and ObjType.
 			if strings.ToLower(loc.Op[var4-30]) == "hidden" {
 				loc.Op[var4-30] = ""
 			}

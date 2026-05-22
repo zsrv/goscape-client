@@ -11,10 +11,17 @@ var (
 )
 
 func ToBase37(s string) int64 {
+	// Java: JString.toBase37 walks arg1.charAt(i) for i < arg1.length() && i < 12,
+	// where length() is UTF-16 code units. RuneScape usernames are validated
+	// ASCII-only, so this matters for fidelity only. []rune approximates
+	// charAt sufficiently for the BMP-only chars the alphabet allows; the
+	// non-matching branch silently multiplies hash by 37 in Java but is
+	// reached only on invalid input.
+	runes := []rune(s)
 	var hash int64
 
-	for i := 0; i < len(s) && i < 12; i++ {
-		c := int64(s[i])
+	for i := 0; i < len(runes) && i < 12; i++ {
+		c := int64(runes[i])
 		hash *= 37
 
 		if c >= 'A' && c <= 'Z' {
@@ -53,7 +60,10 @@ func FromBase37(username int64) string {
 }
 
 func HashCode(s string) int64 {
-	upper := strings.ToUpper(s)
+	// Java: JString.hashCode walks charAt(i) for i < length() (UTF-16 code
+	// units). Sprite/file names supplied by callers are ASCII-only, but
+	// iterating runes matches Java's semantics for any BMP input.
+	upper := []rune(strings.ToUpper(s))
 
 	hash := int64(0)
 	for i := range len(upper) {

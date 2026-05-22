@@ -134,6 +134,8 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 				t.Op = make([]string, 5)
 			}
 			t.Op[var3-30] = arg1.GJStr()
+			// Java assigns op[i] = null here; Go uses "" — see LocType.Decode
+			// for the convention's full rationale.
 			if strings.ToLower(t.Op[var3-30]) == "hidden" {
 				t.Op[var3-30] = ""
 			}
