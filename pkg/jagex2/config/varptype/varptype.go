@@ -6,43 +6,33 @@ import (
 	"goscape-client/pkg/jagex2/io"
 )
 
+// VarpType decoder. Java VarpType.java has 10 opcodes (0-8, 10) that
+// write to per-instance fields and a package-level Code3 array, but
+// only opcode 5 (ClientCode) is ever read anywhere in the Java or Go
+// codebase. The remaining fields (code1, code2, hasCode3, code3,
+// code3Count, code4, code6, code7, code8, code10) are pure deobfuscator
+// residue per the project's deob-artifact exclusion policy. Decode
+// preserves the wire reads as discards so packet-position alignment
+// matches Java byte-for-byte.
+
 var (
-	Count      int
-	Instances  []*VarpType
-	Code3Count int
-	Code3      []int
+	Count     int
+	Instances []*VarpType
 )
 
 type VarpType struct {
-	Code10     string
-	Code1      int
-	Code2      int
-	HasCode3   bool
-	Code4      bool
 	ClientCode int
-	Code6      bool
-	Code7      int
-	Code8      bool
 }
 
 func NewVarpType() *VarpType {
-	return &VarpType{
-		HasCode3: false,
-		Code4:    true,
-		Code6:    false,
-		Code8:    false,
-	}
+	return &VarpType{}
 }
 
 func Unpack(arg0 *io.Jagfile) {
 	var2 := io.NewPacket(arg0.Read("varp.dat", nil))
-	Code3Count = 0
 	Count = var2.G2()
 	if Instances == nil {
 		Instances = make([]*VarpType, Count)
-	}
-	if Code3 == nil {
-		Code3 = make([]int, Count)
 	}
 	for i := range Count {
 		if Instances[i] == nil {
@@ -59,25 +49,23 @@ func (t *VarpType) Decode(arg1 int, arg2 *io.Packet) {
 		case 0:
 			return
 		case 1:
-			t.Code1 = arg2.G1()
+			arg2.G1() // Java: this.code1 = arg2.g1() — dead-write field omitted
 		case 2:
-			t.Code2 = arg2.G1()
+			arg2.G1() // Java: this.code2 = arg2.g1() — dead-write field omitted
 		case 3:
-			t.HasCode3 = true
-			Code3[Code3Count] = arg1
-			Code3Count++
+			// Java: this.hasCode3 = true; code3[code3Count++] = arg1 — dead
 		case 4:
-			t.Code4 = false
+			// Java: this.code4 = false — dead-write field omitted
 		case 5:
 			t.ClientCode = arg2.G2()
 		case 6:
-			t.Code6 = true
+			// Java: this.code6 = true — dead-write field omitted
 		case 7:
-			t.Code7 = arg2.G4()
+			arg2.G4() // Java: this.code7 = arg2.g4() — dead-write field omitted
 		case 8:
-			t.Code8 = true
+			// Java: this.code8 = true — dead-write field omitted
 		case 10:
-			t.Code10 = arg2.GJStr()
+			arg2.GJStr() // Java: this.code10 = arg2.gjstr() — dead-write field omitted
 		default:
 			fmt.Println("Error unrecognised config code:", var4)
 		}

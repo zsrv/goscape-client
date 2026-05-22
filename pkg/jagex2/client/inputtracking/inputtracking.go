@@ -12,7 +12,10 @@ var (
 	OutBuffer    *io.Packet
 	OldBuffer    *io.Packet
 	LastTime     int64
-	TrackedCount int
+	// Java: InputTracking.java:22 declares trackedCount, incremented in
+	// 9 sites (every record* function) and never read. Pure deob residue;
+	// removed per the deob-artifact exclusion policy. The 9 increment
+	// sites are likewise dropped.
 	LastMoveTime int64
 	LastX        int
 	LastY        int
@@ -90,7 +93,6 @@ func MousePressed(arg0, arg1, arg2 int) {
 	if !Enabled || (arg0 < 0 || arg0 >= 789 || arg2 < 0 || arg2 >= 532) {
 		return
 	}
-	TrackedCount++
 	var4 := time.Now().UnixMilli()
 	var6 := (var4 - LastTime) / 10
 	var6 = min(var6, 250)
@@ -111,7 +113,6 @@ func MouseReleased(arg0 int) {
 	if !Enabled {
 		return
 	}
-	TrackedCount++
 	var2 := time.Now().UnixMilli()
 	var4 := (var2 - LastTime) / 10
 	var4 = min(var4, 250)
@@ -136,7 +137,6 @@ func MouseMoved(arg0, arg2 int) {
 		return
 	}
 	LastMoveTime = var3
-	TrackedCount++
 	var5 := (var3 - LastTime) / 10
 	var5 = min(var5, 250)
 	LastTime = var3
@@ -172,7 +172,6 @@ func KeyPressed(arg0 int) {
 	if !Enabled {
 		return
 	}
-	TrackedCount++
 	var2 := time.Now().UnixMilli()
 	var4 := (var2 - LastTime) / 10
 	var4 = min(var4, 250)
@@ -204,7 +203,6 @@ func KeyReleased(arg0 int) {
 	if !Enabled {
 		return
 	}
-	TrackedCount++
 	var2 := time.Now().UnixMilli()
 	var4 := (var2 - LastTime) / 10
 	var4 = min(var4, 250)
@@ -236,7 +234,6 @@ func FocusGained() {
 	if !Enabled {
 		return
 	}
-	TrackedCount++
 	var1 := time.Now().UnixMilli()
 	var3 := (var1 - LastTime) / 10
 	var3 = min(var3, 250)
@@ -252,7 +249,6 @@ func FocusLost() {
 	if !Enabled {
 		return
 	}
-	TrackedCount++
 	var1 := time.Now().UnixMilli()
 	var3 := (var1 - LastTime) / 10
 	var3 = min(var3, 250)
@@ -268,7 +264,6 @@ func MouseEntered() {
 	if !Enabled {
 		return
 	}
-	TrackedCount++
 	var1 := time.Now().UnixMilli()
 	var3 := (var1 - LastTime) / 10
 	var3 = min(var3, 250)
@@ -284,7 +279,6 @@ func MouseExited() {
 	if !Enabled {
 		return
 	}
-	TrackedCount++
 	var1 := time.Now().UnixMilli()
 	var3 := (var1 - LastTime) / 10
 	var3 = min(var3, 250)

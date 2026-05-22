@@ -115,11 +115,20 @@ type Client struct {
 	DelTime      int
 	MinDel       int
 	OTim         []int64
-	FPS          int
+	// Java: GameShell.java:38 declares `int fps`, computed every frame at
+	// gameshell.java:187 but never read anywhere. Pure deob residue;
+	// field omitted and the assignment dropped per the deob-artifact
+	// exclusion policy.
 	ScreenWidth  int
 	ScreenHeight int
 	//Graphics
-	DrawArea         *pixmap.PixMap
+	// Java: GameShell.java:50 declares `PixMap drawArea` (the AWT
+	// backbuffer) which Java code allocates and nils but never reads.
+	// The Go port uses Gio's framebuffer directly (uploaded via
+	// OverlayPixMap / PixMap.Draw in pix2d), so drawArea is pure deob
+	// residue here; field omitted per the deob-artifact exclusion
+	// policy. Three nil-assignment sites in client.go and one allocation
+	// in gameshell.go.InitApplication were dropped alongside.
 	OverlayPixMap    *pixmap.PixMap
 	Frame            *ViewBox
 	Refresh          bool
@@ -3370,7 +3379,6 @@ func (c *Client) PrepareGameScreen() {
 		return
 	}
 	c.UnloadTitle()
-	c.DrawArea = nil
 	c.ImageTitle2 = nil
 	c.ImageTitle3 = nil
 	c.ImageTitle4 = nil
@@ -6179,7 +6187,6 @@ func (c *Client) LoadTitle() {
 	if c.ImageTitle2 != nil {
 		return
 	}
-	c.DrawArea = nil
 	c.AreaChatback = nil
 	c.AreaMapback = nil
 	c.AreaSidebar = nil
@@ -6746,7 +6753,6 @@ func (c *Client) Unload() {
 	spotanimtype.Instances = nil
 	spotanimtype.ModelCache = nil
 	varptype.Instances = nil
-	c.DrawArea = nil
 	playerentity.ModelCache = nil
 	pix3d.Unload()
 	world3d.Unload()

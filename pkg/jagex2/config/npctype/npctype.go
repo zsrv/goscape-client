@@ -33,9 +33,11 @@ type NpcType struct {
 	RecolS       []int
 	RecolD       []int
 	Op           []string
-	ResizeX      int
-	ResizeY      int
-	ResizeZ      int
+	// Java: NpcType.java:73-79 declares resizex/resizey/resizez —
+	// assigned by opcodes 90/91/92 but never read anywhere in Java
+	// or Go. Pure deobfuscator residue; fields omitted per the
+	// deob-artifact exclusion policy. The wire reads in Decode()
+	// are preserved as discards to keep packet-position alignment.
 	Minimap      bool
 	VisLevel     int
 	ResizeH      int
@@ -52,9 +54,6 @@ func NewNpcType() *NpcType {
 		WalkAnimR:    -1,
 		WalkAnimL:    -1,
 		AnimHasAlpha: false,
-		ResizeX:      -1,
-		ResizeY:      -1,
-		ResizeZ:      -1,
 		Minimap:      true,
 		VisLevel:     -1,
 		ResizeH:      128,
@@ -153,12 +152,11 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 			for i := range var4 {
 				t.Heads[i] = arg1.G2()
 			}
-		case 90:
-			t.ResizeX = arg1.G2()
-		case 91:
-			t.ResizeY = arg1.G2()
-		case 92:
-			t.ResizeZ = arg1.G2()
+		// Java: NpcType.java:191-196 — opcodes 90/91/92 write resizex/y/z.
+		// Fields are deob artifacts (never read); reads kept as discards
+		// so packet-position alignment matches Java byte-for-byte.
+		case 90, 91, 92:
+			arg1.G2()
 		case 93:
 			t.Minimap = false
 		case 95:

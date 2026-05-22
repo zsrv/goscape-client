@@ -54,7 +54,6 @@ type Component struct {
 	OverColour       int
 	Anim             int
 	ActiveAnim       int
-	UnusedShort1     int
 	MarginX          int
 	MarginY          int
 	Model            *model.Model
@@ -64,7 +63,10 @@ type Component struct {
 	Font             *pixfont.PixFont
 	Text             string
 	ActiveText       string
-	UnusedBoolean1   bool
+	// Java: Component.java:130,160 declares unusedShort1/unusedBoolean1
+	// (assigned for Type==1 components but never read). Pure deob
+	// residue; fields omitted per the deob-artifact exclusion policy.
+	// Decode preserves the wire reads as discards.
 	Draggable        bool
 	Interactable     bool
 	Usable           bool
@@ -153,8 +155,11 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 				}
 			}
 			if var8.Type == 1 {
-				var8.UnusedShort1 = var4.G2()
-				var8.UnusedBoolean1 = var4.G1() == 1
+				// Java: Component.java:264-265 — Type==1 reads g2 + g1
+				// into unusedShort1 / unusedBoolean1. Reads kept as
+				// discards so packet-position alignment matches Java.
+				var4.G2()
+				var4.G1()
 			}
 			if var8.Type == 2 {
 				var8.InvSlotObjId = make([]int, var8.Width*var8.Height)

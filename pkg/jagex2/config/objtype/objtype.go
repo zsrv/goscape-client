@@ -36,8 +36,11 @@ type ObjType struct {
 	Zan2D            int
 	Xof2D            int
 	Yof2D            int
-	Code9            bool
-	Code10           int
+	// Java: ObjType.java:70,73 declares code9/code10 — assigned by
+	// opcodes 9/10 but never read in Java or Go. Pure deobfuscator
+	// residue; fields omitted per the deob-artifact exclusion policy.
+	// Decode preserves the wire reads as discards (opcode 10 reads
+	// G2; opcode 9 has no wire payload, just sets the field).
 	Stackable        bool
 	Cost             int
 	ManWearOffsetY   int8
@@ -127,8 +130,6 @@ func (t *ObjType) Reset() {
 	t.Zan2D = 0
 	t.Xof2D = 0
 	t.Yof2D = 0
-	t.Code9 = false
-	t.Code10 = -1
 	t.Stackable = false
 	t.Cost = 1
 	t.Members = false
@@ -180,10 +181,13 @@ func (t *ObjType) Decode(arg1 *io.Packet) {
 			if t.Yof2D > 32767 {
 				t.Yof2D -= 65536
 			}
+		// Java: ObjType.java:264-266 — opcodes 9/10 write code9/code10.
+		// Fields are deob artifacts (never read); opcode 10's G2 read
+		// kept as a discard so packet-position alignment matches Java.
 		case 9:
-			t.Code9 = true
+			// no wire payload
 		case 10:
-			t.Code10 = arg1.G2()
+			arg1.G2()
 		case 11:
 			t.Stackable = true
 		case 12:

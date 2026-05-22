@@ -23,13 +23,12 @@ type GameShell struct {
 func (c *Client) InitApplication(height int, width int) {
 	c.ScreenWidth = width
 	c.ScreenHeight = height
-	// Java: the AWT base component owned both a Frame and a Graphics field
-	// (this.frame / this.graphics) that AWT painted automatically when the
-	// component was added to the window. The Gio port replaces both with a
-	// CPU-side PixMap (DrawArea) that we explicitly upload to the GPU each
-	// FrameEvent in draw(); see viewbox.go for the same architectural
-	// deviation. There is no equivalent of AWT's auto-paint loop.
-	c.DrawArea = pixmap.NewPixMap(width, height)
+	// Java: the AWT base component owned both a Frame and a Graphics
+	// field (this.frame / this.graphics) that AWT painted automatically
+	// when the component was added to the window. The Gio port uploads
+	// directly via OverlayPixMap and the per-FrameEvent pixmap blit; see
+	// viewbox.go for the same architectural deviation. Java's drawArea
+	// PixMap field is a deob artifact (write-only) and is omitted here.
 	c.buildInputFilters()
 
 	// The window/event-loop goroutine below opens the Gio window before
@@ -196,9 +195,9 @@ func (c *Client) RunGameShell() {
 			var6 += var4
 		}
 		var6 &= 0xFF
-		if c.DelTime > 0 {
-			c.FPS = var4 * 1000 / (c.DelTime * 256)
-		}
+		// Java: GameShell.java:186-188 computed `this.fps = var4 * 1000 /
+		// (this.delTime * 256)` here. fps was never read; dropped per the
+		// deob-artifact exclusion policy.
 		c.Draw()
 	}
 	if c.State == -1 {
