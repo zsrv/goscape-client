@@ -317,6 +317,26 @@ func (c *Client) dispatchInputEvent(ev event.Event) {
 		c.handleKey(e)
 	case key.EditEvent:
 		c.handleEditEvent(e)
+	case key.FocusEvent:
+		c.handleFocus(e)
+	}
+}
+
+// handleFocus mirrors Java's focusGained / focusLost on
+// GameShell (GameShell.java:444-456). Java sets `refresh = true`
+// and calls `refresh()` on focus gained, then forwards both
+// events to InputTracking. Gio delivers a key.FocusEvent via
+// FocusFilter when the window's focus state changes.
+func (c *Client) handleFocus(e key.FocusEvent) {
+	if e.Focus {
+		c.Refresh = true
+		if inputtracking.Enabled {
+			inputtracking.FocusGained()
+		}
+		return
+	}
+	if inputtracking.Enabled {
+		inputtracking.FocusLost()
 	}
 }
 

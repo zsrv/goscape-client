@@ -18,6 +18,7 @@ import (
 	"gioui.org/io/event"
 	"gioui.org/op"
 
+	"goscape-client/pkg/jagex2/client/class61"
 	"goscape-client/pkg/jagex2/client/clientextras"
 	"goscape-client/pkg/jagex2/client/inputtracking"
 	"goscape-client/pkg/jagex2/config/component"
@@ -75,6 +76,10 @@ var (
 	OpLogic6        int
 	OpLogic2        int
 	OpLogic9        int
+	// Java: deob/client.java:860 — `field1382` is assigned once in
+	// loginFunc (line 6915) and never read elsewhere. Pure dead state;
+	// kept here for literal-port symmetry with Java.
+	Field1382       int
 	CycleLogic1     int
 	OpLogic8        int
 	CycleLogic6     int
@@ -6438,6 +6443,9 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		OpLogic7 = 0
 		OpLogic8 = 0
 		OpLogic9 = 0
+		// Java: deob/client.java:6915 — `field1382 = 0`. Dead state
+		// (never read); assigned for literal-port symmetry.
+		Field1382 = 0
 		c.PrepareGameScreen()
 		return
 	}
@@ -6735,6 +6743,13 @@ func (c *Client) Unload() {
 	flotype.Instances = nil
 	idktype.Instances = nil
 	component.Instances = nil
+	// Java: deob/client.java:7227 — `class61.instances = null`. The Java
+	// class61 class is a deobfuscator stub with one static array and no
+	// behavior; ported as pkg/jagex2/client/class61 for literal-port
+	// symmetry. The Go assignment is observationally a no-op (nothing
+	// reads class61.Instances), kept to match Java's nilling-out sequence
+	// line-for-line.
+	class61.Instances = nil
 	seqtype.Instances = nil
 	spotanimtype.Instances = nil
 	spotanimtype.ModelCache = nil
