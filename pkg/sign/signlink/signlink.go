@@ -191,13 +191,21 @@ func Run() {
 			resp, err := http.Get("http://127.0.0.1:" + strconv.Itoa(clientextras.PortOffset+8888) + "/" + urlReq)
 			var body []byte
 			if err == nil {
-				b, readErr := io.ReadAll(resp.Body)
-				resp.Body.Close()
-				if readErr != nil {
-					fmt.Printf("failed to read response body: %v\n", readErr)
+				// Java: URL.openStream() throws on non-2xx; the catch block
+				// sets urlstream = null. http.Get does NOT error on 4xx/5xx
+				// (it returns a response with the error body), so we must
+				// reject non-2xx explicitly to match Java.
+				if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+					b, readErr := io.ReadAll(resp.Body)
+					if readErr != nil {
+						fmt.Printf("failed to read response body: %v\n", readErr)
+					} else {
+						body = b
+					}
 				} else {
-					body = b
+					fmt.Printf("openurl %s: HTTP %d\n", urlReq, resp.StatusCode)
 				}
+				resp.Body.Close()
 			}
 			mu.Lock()
 			URLStream = body
@@ -224,13 +232,18 @@ func FindCacheDir() string {
 		var4 := path.Join(var3, var1)
 		_, err := os.Stat(var4)
 		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				err2 := os.Mkdir(var4, 0755)
-				if err2 != nil {
-					fmt.Printf("couldn't create cache at %s: %v\n", var4, err2)
-					continue
-				}
-				return path.Join(var3, var1, "/")
+			if !errors.Is(err, os.ErrNotExist) {
+				// Java: File.exists() swallows permission errors and the
+				// outer try/catch continues. Mirror that: any non-NotExist
+				// stat error skips this candidate rather than returning a
+				// path we can't access.
+				fmt.Printf("couldn't stat cache at %s: %v\n", var4, err)
+				continue
+			}
+			err2 := os.Mkdir(var4, 0755)
+			if err2 != nil {
+				fmt.Printf("couldn't create cache at %s: %v\n", var4, err2)
+				continue
 			}
 		}
 		return path.Join(var3, var1, "/")
@@ -243,7 +256,9 @@ func GetUID(arg0 string) int {
 	stat, err := os.Stat(var1)
 	if err != nil || stat.Size() < 4 {
 		bs := make([]byte, 4)
-		binary.LittleEndian.PutUint32(bs, uint32(rand.Float64()*9.9999999e7))
+		// Java: DataOutputStream.writeInt — big-endian. Stay byte-compatible
+		// with the Java client's uid.dat format so shared caches work.
+		binary.BigEndian.PutUint32(bs, uint32(rand.Float64()*9.9999999e7))
 		os.WriteFile(var1, bs, 0644)
 	}
 
@@ -252,7 +267,7 @@ func GetUID(arg0 string) int {
 		fmt.Println("couldn't read uid.dat")
 		return 0
 	}
-	var6 := binary.LittleEndian.Uint32(var5)
+	var6 := binary.BigEndian.Uint32(var5)
 	return int(var6 + 1)
 }
 
