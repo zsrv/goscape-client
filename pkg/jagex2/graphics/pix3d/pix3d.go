@@ -2076,7 +2076,18 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 		var21 = (var17 - arg2) >> 3
 		var22 = (var18 - arg3) >> 3
 		arg2 += (arg7 >> 3) & 0xC0000
-		var23 = arg7 >> 23
+		// Java: Pix3D.java — `var23 = arg7 >> 23` is then used as a shift
+		// count for `arg1[...] >> var23` (six sites in this function).
+		// Java implicitly masks shift counts to 5 bits for int shifts, so
+		// negative values from `arg7 >> 23` (which Java's int32 produces
+		// once arg7 overflows past bit 31 through arg7 += var15 over many
+		// pixels) silently become valid 0..31 shift counts. Go's int64
+		// shift panics on negative counts and doesn't mask. Explicit
+		// `& 0x1F` reproduces Java's behavior bit-for-bit: bits 23-27 of
+		// arg7 are preserved through additive arithmetic regardless of
+		// 32-vs-64-bit width, so masking the result of `arg7 >> 23` to
+		// the low 5 bits matches Java's effective shift count exactly.
+		var23 = (arg7 >> 23) & 0x1F
 		if Opaque {
 			for ; var16 > 0; var16-- {
 				var25 = arg4 + 1
@@ -2128,7 +2139,7 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 				var22 = (var18 - arg3) >> 3
 				arg7 += var15
 				arg2 += (arg7 >> 3) & 0xC0000
-				var23 = arg7 >> 23
+				var23 = (arg7 >> 23) & 0x1F
 			}
 			var16 = (arg6 - arg5) & 0x7
 			for ; var16 > 0; var16-- {
@@ -2204,7 +2215,7 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 				var22 = (var18 - arg3) >> 3
 				arg7 += var15
 				arg2 += (arg7 >> 3) & 0xC0000
-				var23 = arg7 >> 23
+				var23 = (arg7 >> 23) & 0x1F
 			}
 			var16 = (arg6 - arg5) & 0x7
 			for ; var16 > 0; var16-- {
@@ -2250,7 +2261,7 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 	var21 = (var17 - arg2) >> 3
 	var22 = (var18 - arg3) >> 3
 	arg2 += arg7 & 0x600000
-	var23 = arg7 >> 23
+	var23 = (arg7 >> 23) & 0x1F
 	if Opaque {
 		for ; var16 > 0; var16-- {
 			var25 = arg4 + 1
@@ -2302,7 +2313,7 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 			var22 = (var18 - arg3) >> 3
 			arg7 += var15
 			arg2 += arg7 & 0x600000
-			var23 = arg7 >> 23
+			var23 = (arg7 >> 23) & 0x1F
 		}
 		var16 = (arg6 - arg5) & 0x7
 		for ; var16 > 0; var16-- {
@@ -2379,7 +2390,7 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 		var22 = (var18 - arg3) >> 3
 		arg7 += var15
 		arg2 += arg7 & 0x600000
-		var23 = arg7 >> 23
+		var23 = (arg7 >> 23) & 0x1F
 	}
 	var16 = (arg6 - arg5) & 0x7
 	for ; var16 > 0; var16-- {
