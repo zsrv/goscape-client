@@ -41,12 +41,13 @@ func TestMidiSourceNilSeqEmitsSilence(t *testing.T) {
 }
 
 func TestMidiSourceSwapToNilSilencesActiveStream(t *testing.T) {
-	// Start with a "loud" silent source (nil seq + max gain). A swap to
-	// (nil, 0) is what stop() issues; assert it's idempotent and Read
-	// still produces zeros. The point is to verify swap() doesn't get
-	// confused by an existing nil seq.
+	// Start with a "loud" silent source (nil seq + max gain). stop()
+	// issues swap(nil) followed by snapGain(0); assert this leaves the
+	// source emitting silence at zero gain. snapGain skips the smoother
+	// so the gain change is observable on the very next Read.
 	s := newMidiSource(nil, 1.0)
-	s.swap(nil, 0)
+	s.swap(nil)
+	s.snapGain(0)
 
 	buf := make([]byte, 32)
 	n, _ := s.Read(buf)
@@ -55,11 +56,43 @@ func TestMidiSourceSwapToNilSilencesActiveStream(t *testing.T) {
 	}
 	for _, b := range buf {
 		if b != 0 {
-			t.Fatalf("expected silence after swap(nil, 0), got %x", buf)
+			t.Fatalf("expected silence after swap(nil)+snapGain(0), got %x", buf)
 		}
 	}
 	if g := s.gain(); g != 0 {
-		t.Fatalf("gain after swap(nil, 0) = %v, want 0", g)
+		t.Fatalf("gain after swap(nil)+snapGain(0) = %v, want 0", g)
+	}
+}
+
+func TestMidiSourceSnapGainAppliesImmediately(t *testing.T) {
+	// snapGain must skip the smoother — both current and target jump.
+	// Without this, the very-first-Read after a swap would still smooth
+	// from the pre-snap gain (e.g. ~0 at the bottom of a fade-out)
+	// toward the new target over ~0.5 s, audible as a fade-in. TS does
+	// an instant onset; we match it via snapGain.
+	s := newMidiSource(nil, 0)
+	s.snapGain(0.75)
+	if got := s.gain(); got != 0.75 {
+		t.Fatalf("snapGain(0.75): currentGain = %v, want 0.75", got)
+	}
+}
+
+func TestMidiSourceSetGainTargetIsSmoothed(t *testing.T) {
+	// setGainTarget should NOT instantly change the current gain — it
+	// only sets the target, and Read smooths toward it. After a Read
+	// of one buffer-worth of samples, current should have moved
+	// partway toward the target but not all the way.
+	s := newMidiSource(nil, 0)
+	s.setGainTarget(1.0)
+	// 1024-frame buffer (4096 bytes). At α ≈ 0.9999093, after 1024
+	// iterations the gain ≈ 1 - α^1024 ≈ 1 - 0.911 ≈ 0.089. We don't
+	// pin the exact value; we just assert it's between 0 and the
+	// target — proving the smoother actually engages.
+	buf := make([]byte, 4096)
+	_, _ = s.Read(buf)
+	got := s.gain()
+	if got <= 0 || got >= 1.0 {
+		t.Fatalf("after one Read with target=1: currentGain = %v, want strictly between 0 and 1", got)
 	}
 }
 

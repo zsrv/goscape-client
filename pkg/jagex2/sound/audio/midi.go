@@ -16,6 +16,25 @@ import (
 	"goscape-client/pkg/sign/signlink"
 )
 
+// gainSmoothingAlpha is the per-sample low-pass coefficient used to
+// smooth gain changes inside midiSource.Read. It implements the same
+// exponential-approach automation as Web Audio's setTargetAtTime, which
+// the TS reference client uses for its fade-out (tinymidipcm.js:229
+// with a 0.5s time constant). For each sample:
+//
+//	current = current*α + target*(1-α)
+//
+// where α = exp(-1 / (τ × sampleRate)). With τ = 0.5s and sampleRate =
+// 22050 Hz that's exp(-1/11025) ≈ 0.9999093. At t = 4τ = 2s the gain
+// has decayed to e⁻⁴ ≈ 1.83 % of its starting value — what TS
+// considers "faded out" before it swaps tracks (fadeseconds = 2 at
+// tinymidipcm.js:140).
+//
+// Moving gain interpolation from the driver (stepped every 50 ms in a
+// goroutine) into the per-sample Read loop eliminates the audible
+// zipper noise of discrete steps and matches TS's smoothness.
+const gainSmoothingAlpha float32 = 0.9999093
+
 // runMidiWatcher polls signlink.ConsumeMidi every midiPollInterval. The
 // poll cadence (50ms) matches the Java signlink.run loop and the
 // existing client.RunMidi poll — fast enough that title-screen and
@@ -140,34 +159,47 @@ func (d *midiDriver) play(path string, fade bool, gain float32) {
 	d.mu.Unlock()
 
 	if !fade {
-		src.swap(seq, gain)
+		// No fade requested: swap the sequencer and let the smoother
+		// glide the gain over its time constant. From the listener's
+		// perspective the new track replaces the old immediately — any
+		// per-sample transient between the swap point's tail and the
+		// new track's first samples is masked by meltysynth's own
+		// envelope decay.
+		src.swap(seq)
+		src.setGainTarget(gain)
 		return
 	}
 
 	go d.fadeAndSwap(src, seq, gain, gen)
 }
 
-// fadeAndSwap ramps src's gain to 0 over fadeDuration, swaps in the
-// new sequencer, then ramps the gain back to target. Abandons silently
-// if a newer command supersedes it (gen mismatch).
+// fadeAndSwap drives the TS-style "fade-out, then start" sequencing:
+//
+//  1. Sets src's gain target to 0 — the per-sample smoother in Read
+//     exponentially decays the running gain toward 0 over the 0.5 s
+//     time constant. At t = 2 s (= 4τ) the effective gain is ~1.8 %,
+//     audibly silent.
+//  2. Sleeps fadeDuration.
+//  3. If still the current generation, swaps the sequencer and snaps
+//     both current and target gain to the new target — matching TS's
+//     instant onset of the new track at the end of its setTimeout.
+//
+// Abandons silently if a newer command supersedes the in-flight ramp.
 func (d *midiDriver) fadeAndSwap(src *midiSource, newSeq *meltysynth.MidiFileSequencer, target float32, gen uint64) {
-	startGain := src.gain()
-	if !d.rampGain(src, startGain, 0, gen) {
-		return
-	}
+	src.setGainTarget(0)
+	time.Sleep(fadeDuration)
 	if d.gen.Load() != gen {
 		return
 	}
-	src.swap(newSeq, 0)
-	if !d.rampGain(src, 0, target, gen) {
-		return
-	}
+	src.swap(newSeq)
+	src.snapGain(target)
 }
 
-// stop silences the live source. If fade is true, the gain ramps to 0
-// over fadeDuration first; afterwards the sequencer is cleared so no
-// further notes are produced and the player synthesizes silence. The
-// player itself stays alive — the next play() reuses it.
+// stop silences the live source. If fade is true, the gain target
+// ramps to 0 over fadeDuration first via the source's smoother;
+// afterwards the sequencer is cleared so no further notes are
+// produced and Read synthesizes silence. The player itself stays
+// alive — the next play() reuses it.
 func (d *midiDriver) stop(fade bool) {
 	d.mu.Lock()
 	src := d.src
@@ -179,25 +211,28 @@ func (d *midiDriver) stop(fade bool) {
 	gen := d.gen.Add(1)
 
 	if !fade {
-		src.swap(nil, 0)
+		src.swap(nil)
+		src.snapGain(0)
 		return
 	}
 	go func() {
-		if !d.rampGain(src, src.gain(), 0, gen) {
-			return
-		}
+		src.setGainTarget(0)
+		time.Sleep(fadeDuration)
 		if d.gen.Load() != gen {
 			return
 		}
-		src.swap(nil, 0)
+		src.swap(nil)
+		src.snapGain(0)
 	}()
 }
 
-// setGain is the "voladjust" handler. It does not restart the track.
-// In-flight fade ramps will see the gen they captured no longer
-// matches and abandon; voladjust's caller is expected to also drive
-// SetMidi("voladjust") frequently enough to keep the live gain correct
-// after the abandoned ramp leaves it stranded.
+// setGain is the "voladjust" handler — the in-game audio settings
+// slider. Setting the target glides the gain smoothly via the
+// source's per-sample smoother; TS uses an instant setValueAtTime
+// here, but smooth transitions avoid the audible click an
+// instantaneous PCM gain step would produce. Increments the
+// generation so any in-flight fade ramp aimed at 0 abandons rather
+// than fighting the new target.
 func (d *midiDriver) setGain(g float32) {
 	d.mu.Lock()
 	src := d.src
@@ -206,31 +241,13 @@ func (d *midiDriver) setGain(g float32) {
 		return
 	}
 	d.gen.Add(1)
-	src.setGain(g)
+	src.setGainTarget(g)
 }
 
-// rampGain interpolates src's gain from start to end over fadeDuration
-// in `fadeSteps` discrete time slices, polling d.gen each step and
-// returning false the moment it diverges from the captured gen — that
-// signal means a newer command took over and this ramp must abandon.
-// Returns true after a successful full ramp.
-const (
-	fadeDuration = 2 * time.Second
-	fadeSteps    = 40
-)
-
-func (d *midiDriver) rampGain(src *midiSource, start, end float32, gen uint64) bool {
-	step := fadeDuration / fadeSteps
-	for i := 1; i <= fadeSteps; i++ {
-		if d.gen.Load() != gen {
-			return false
-		}
-		t := float32(i) / float32(fadeSteps)
-		src.setGain(start + (end-start)*t)
-		time.Sleep(step)
-	}
-	return true
-}
+// fadeDuration is the audible fade-out window. Matches TS's
+// fadeseconds = 2 (tinymidipcm.js:140) and gives the 0.5 s smoothing
+// time constant 4 τ to converge to ~1.8 % of the starting gain.
+const fadeDuration = 2 * time.Second
 
 // ensureSoundFont lazy-loads the SF2. Returns nil if loading failed.
 func (d *midiDriver) ensureSoundFont() *meltysynth.SoundFont {
@@ -246,21 +263,27 @@ func (d *midiDriver) ensureSoundFont() *meltysynth.SoundFont {
 }
 
 // midiSource is the io.Reader that oto pulls PCM bytes from. It owns a
-// swappable sequencer pointer (under seqMu) and a separate atomic gain.
-// When seq is nil, Read fills its output with silence so the player
-// stays alive across "stop" commands.
+// swappable sequencer pointer (under seqMu) and a smoothed gain pair
+// (current → target via gainSmoothingAlpha). When seq is nil, Read
+// fills its output with silence so the player stays alive across
+// "stop" commands.
 //
 // Concurrent access: oto's audio goroutine calls Read; driver goroutines
-// (handle, fadeAndSwap, stop) call swap and setGain. The seqMu critical
-// section in Read is one pointer copy long; meltysynth's Render runs
-// outside it so a long render can't block a swap.
+// (handle, fadeAndSwap, stop) call swap, setGainTarget, and snapGain.
+// gainMu held during Read covers the per-sample smoothing loop, which
+// is microseconds for typical oto buffer sizes — short enough that
+// setters never wait noticeably.
 type midiSource struct {
 	seqMu sync.Mutex
 	seq   *meltysynth.MidiFileSequencer
 
-	// gainBits is the linear gain (0..1) as float32 bits, manipulated
-	// via atomic so setGain doesn't need to coordinate with Read.
-	gainBits atomic.Uint32
+	// gainMu guards currentGain and targetGain. currentGain is updated
+	// per sample inside Read; targetGain is updated by driver
+	// goroutines. snapGain sets both at once so a track change can
+	// match TS's instant onset.
+	gainMu      sync.Mutex
+	currentGain float32
+	targetGain  float32
 
 	// scratch buffers reused across Read calls. Read is single-reader
 	// (oto's audio goroutine) so these need no lock.
@@ -269,28 +292,51 @@ type midiSource struct {
 }
 
 func newMidiSource(seq *meltysynth.MidiFileSequencer, initialGain float32) *midiSource {
-	s := &midiSource{seq: seq}
-	s.setGain(initialGain)
-	return s
+	return &midiSource{
+		seq:         seq,
+		currentGain: initialGain,
+		targetGain:  initialGain,
+	}
 }
 
-// swap atomically replaces the sequencer and sets the gain. Passing nil
-// for newSeq leaves the source emitting silence until the next swap.
-// The old sequencer is dropped — meltysynth has no Close, GC handles
-// it.
-func (s *midiSource) swap(newSeq *meltysynth.MidiFileSequencer, newGain float32) {
+// swap atomically replaces the sequencer. Passing nil leaves the
+// source emitting silence until the next swap. Gain state is
+// untouched — the per-sample smoother handles any transition
+// continuously. Callers wanting an instant gain change at the swap
+// point follow with snapGain; callers wanting a smooth one use
+// setGainTarget.
+func (s *midiSource) swap(newSeq *meltysynth.MidiFileSequencer) {
 	s.seqMu.Lock()
 	s.seq = newSeq
 	s.seqMu.Unlock()
-	s.setGain(newGain)
 }
 
-func (s *midiSource) setGain(g float32) {
-	s.gainBits.Store(math.Float32bits(g))
+// setGainTarget glides the gain toward g via the per-sample smoother.
+// Used for voladjust and fade-outs. Time constant is ~0.5 s
+// (gainSmoothingAlpha); the audible effect is an exponential approach
+// reaching ~63 % at 0.5 s and ~98 % at 2 s.
+func (s *midiSource) setGainTarget(g float32) {
+	s.gainMu.Lock()
+	s.targetGain = g
+	s.gainMu.Unlock()
 }
 
+// snapGain sets BOTH current and target gain to g, skipping the
+// smoother. Used after a fade-out completes so the new track's first
+// samples are at full volume — matching TS's setValueAtTime restore
+// in tinymidipcm.js:248.
+func (s *midiSource) snapGain(g float32) {
+	s.gainMu.Lock()
+	s.currentGain = g
+	s.targetGain = g
+	s.gainMu.Unlock()
+}
+
+// gain returns the most recent currentGain — exposed only for tests.
 func (s *midiSource) gain() float32 {
-	return math.Float32frombits(s.gainBits.Load())
+	s.gainMu.Lock()
+	defer s.gainMu.Unlock()
+	return s.currentGain
 }
 
 // Read fills p with interleaved stereo int16 LE PCM. It never returns
@@ -299,6 +345,13 @@ func (s *midiSource) gain() float32 {
 //
 // p's length is determined by oto. It is expected to be a multiple of
 // 4 (one stereo int16 frame); odd remainders are truncated.
+//
+// The per-sample gain smoothing loop runs under gainMu so snapGain and
+// setGainTarget see consistent state. The lock is held for the
+// duration of one oto buffer's worth of samples (typically 1024
+// frames, ~46 ms of audio but a few hundred µs of CPU); driver
+// goroutines waiting on the lock for a setter call see no noticeable
+// delay.
 func (s *midiSource) Read(p []byte) (int, error) {
 	frames := len(p) / 4
 	if frames == 0 {
@@ -323,14 +376,20 @@ func (s *midiSource) Read(p []byte) (int, error) {
 		seq.Render(s.left, s.right)
 	}
 
-	g := s.gain()
+	s.gainMu.Lock()
+	current := s.currentGain
+	target := s.targetGain
+	const oneMinusAlpha = 1 - gainSmoothingAlpha
 	for i := range frames {
-		l := clipInt16(s.left[i] * g)
-		r := clipInt16(s.right[i] * g)
+		current = current*gainSmoothingAlpha + target*oneMinusAlpha
+		l := clipInt16(s.left[i] * current)
+		r := clipInt16(s.right[i] * current)
 		off := i * 4
 		binary.LittleEndian.PutUint16(p[off:], uint16(l))
 		binary.LittleEndian.PutUint16(p[off+2:], uint16(r))
 	}
+	s.currentGain = current
+	s.gainMu.Unlock()
 	return frames * 4, nil
 }
 
