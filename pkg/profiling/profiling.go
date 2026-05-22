@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/pprof"
+	"runtime/trace"
 	"time"
 )
 
@@ -57,4 +58,55 @@ func writeSnapshotProfile(name, path string) error {
 		return fmt.Errorf("profiling: write %s: %w", path, err)
 	}
 	return nil
+}
+
+// writeCPUAndTrace runs runtime/pprof CPU profiling and runtime/trace
+// concurrently for the given window, writing cpu.prof and trace.out
+// into dir. The two profilers can run simultaneously; the stdlib
+// supports it.
+//
+// If either profile fails to start, the other is unaffected: e.g., a
+// failure to open trace.out still produces a usable cpu.prof. The
+// returned error joins any per-profile errors so the caller can log
+// them all at once.
+func writeCPUAndTrace(dir string, window time.Duration) error {
+	var (
+		cpuErr   error
+		traceErr error
+	)
+
+	cpuPath := filepath.Join(dir, "cpu.prof")
+	if cpuFile, err := os.OpenFile(cpuPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644); err != nil {
+		cpuErr = fmt.Errorf("profiling: open %s: %w", cpuPath, err)
+	} else if err := pprof.StartCPUProfile(cpuFile); err != nil {
+		cpuErr = fmt.Errorf("profiling: start cpu: %w", err)
+		cpuFile.Close()
+	} else {
+		defer cpuFile.Close()
+		defer pprof.StopCPUProfile()
+	}
+
+	tracePath := filepath.Join(dir, "trace.out")
+	if traceFile, err := os.OpenFile(tracePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644); err != nil {
+		traceErr = fmt.Errorf("profiling: open %s: %w", tracePath, err)
+	} else if err := trace.Start(traceFile); err != nil {
+		traceErr = fmt.Errorf("profiling: start trace: %w", err)
+		traceFile.Close()
+	} else {
+		defer traceFile.Close()
+		defer trace.Stop()
+	}
+
+	time.Sleep(window)
+
+	// Deferred Stop / StopCPUProfile + Close calls fire here in LIFO
+	// order: trace.Stop, traceFile.Close, pprof.StopCPUProfile, cpuFile.Close.
+
+	if cpuErr != nil && traceErr != nil {
+		return fmt.Errorf("%w; %w", cpuErr, traceErr)
+	}
+	if cpuErr != nil {
+		return cpuErr
+	}
+	return traceErr
 }

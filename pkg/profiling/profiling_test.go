@@ -99,3 +99,23 @@ func TestWriteSnapshotProfile_UnknownNameErrors(t *testing.T) {
 		t.Errorf("expected file to NOT exist on error path")
 	}
 }
+
+func TestWriteCPUAndTrace_BothFilesNonEmpty(t *testing.T) {
+	dir := t.TempDir()
+	// 100ms is long enough to record at least one CPU sample at 100Hz
+	// and a few trace events. Don't go shorter or the profiles can be
+	// truly empty.
+	if err := writeCPUAndTrace(dir, 100*time.Millisecond); err != nil {
+		t.Fatalf("writeCPUAndTrace: %v", err)
+	}
+	for _, name := range []string{"cpu.prof", "trace.out"} {
+		info, err := os.Stat(filepath.Join(dir, name))
+		if err != nil {
+			t.Errorf("stat %s: %v", name, err)
+			continue
+		}
+		if info.Size() == 0 {
+			t.Errorf("%s is empty", name)
+		}
+	}
+}
