@@ -6252,6 +6252,27 @@ func (c *Client) OpenURL(arg0 string) (*bytes.Reader, error) {
 }
 
 func (c *Client) LoadTitle() {
+	// Nil the in-game pixmaps unconditionally — Java does this inside
+	// the loadTitle body (deob/client.java:6661-6668) and relies on
+	// imageTitle2 being nil on Logout transitions to enter. The Go
+	// port keeps ImageTitle2 alive past PrepareGameScreen (0f2d815)
+	// so the early-return below fires on Logout; hoisting the nils
+	// out keeps them firing too. Without this, AreaViewport /
+	// AreaMapback retain the last in-game frame's pixel data, and
+	// re-login briefly shows the previous session's world + minimap
+	// before DrawScene/DrawMinimap repaint (PrepareGameScreen also
+	// early-returns when AreaChatback is non-nil, skipping the
+	// re-allocation). These assignments are no-ops on boot (already
+	// nil) and during continuous title-screen rendering (already nil
+	// from a prior LoadTitle).
+	c.AreaChatback = nil
+	c.AreaMapback = nil
+	c.AreaSidebar = nil
+	c.AreaViewport = nil
+	c.AreaBackbase1 = nil
+	c.AreaBackbase2 = nil
+	c.AreaBackhmid1 = nil
+
 	if c.ImageTitle2 != nil {
 		// Already loaded path. Two cases:
 		//   1. Boot, before LoadTitleImages has run — first LoadTitle
@@ -6274,13 +6295,6 @@ func (c *Client) LoadTitle() {
 		}
 		return
 	}
-	c.AreaChatback = nil
-	c.AreaMapback = nil
-	c.AreaSidebar = nil
-	c.AreaViewport = nil
-	c.AreaBackbase1 = nil
-	c.AreaBackbase2 = nil
-	c.AreaBackhmid1 = nil
 	c.ImageTitle0 = pixmap.NewPixMap(128, 265)
 	pix2d.Clear()
 	c.ImageTitle1 = pixmap.NewPixMap(128, 265)
