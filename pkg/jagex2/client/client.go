@@ -880,8 +880,8 @@ func (c *Client) CloseInterfaces() {
 }
 
 func (c *Client) StopMidi() {
-	signlink.MidiFade = 0
-	signlink.Midi = "stop"
+	signlink.SetMidiFade(0)
+	signlink.SetMidiCommand("stop")
 }
 
 func (c *Client) DrawWildyLevel() {
@@ -3293,9 +3293,9 @@ func (c *Client) ValidateCharacterDesign() {
 
 func (c *Client) SaveMidi(arg0 []byte, arg2 int, arg3 bool) {
 	if arg3 {
-		signlink.MidiFade = 1
+		signlink.SetMidiFade(1)
 	} else {
-		signlink.MidiFade = 0
+		signlink.SetMidiFade(0)
 	}
 	signlink.MidiSave(arg0, arg2)
 }
@@ -3321,10 +3321,10 @@ func (c *Client) PushNPCs() {
 }
 
 func (c *Client) SetMidiVolume(arg0 int, arg1 int, arg2 bool) {
-	signlink.MidiVol = arg1
+	signlink.SetMidiVol(arg1)
 	c.PacketSize += arg0
 	if arg2 {
-		signlink.Midi = "voladjust"
+		signlink.SetMidiCommand("voladjust")
 	}
 }
 

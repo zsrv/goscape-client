@@ -424,6 +424,72 @@ func MidiSave(saveBuf []byte, saveLen int) {
 	SaveReq = "jingle" + strconv.Itoa(MidiPos) + ".mid"
 }
 
+// ConsumeMidi atomically reads and clears the Midi path/command. Returns
+// the empty string when nothing is queued. The audio playback driver
+// polls this; Java's signlink consumer (in the signed-applet wrapper)
+// read `midi` and reset it to `null` after acting, which this mirrors.
+//
+// Recognised values: a filesystem path to a .mid file (play it), the
+// sentinel "stop" (stop current track honoring MidiFade), or "voladjust"
+// (re-read MidiVol without restarting the track).
+func ConsumeMidi() string {
+	mu.Lock()
+	defer mu.Unlock()
+	s := Midi
+	Midi = ""
+	return s
+}
+
+// ConsumeWave is the SFX counterpart of ConsumeMidi. Returns the path to
+// the most recently saved .wav, or "" if nothing is queued.
+func ConsumeWave() string {
+	mu.Lock()
+	defer mu.Unlock()
+	s := Wave
+	Wave = ""
+	return s
+}
+
+// SetMidiCommand publishes a command/path to the audio driver. Used for
+// the "stop" and "voladjust" sentinels written from the game thread; the
+// I/O polling loop publishes resolved paths directly under mu.
+func SetMidiCommand(s string) {
+	mu.Lock()
+	defer mu.Unlock()
+	Midi = s
+}
+
+// SetMidiFade publishes the fade flag (0 = immediate, 1 = crossfade) that
+// the audio driver reads when honoring the next "stop" or track change.
+func SetMidiFade(v int) {
+	mu.Lock()
+	defer mu.Unlock()
+	MidiFade = v
+}
+
+// SetMidiVol publishes the music volume in centibels (negative = quieter,
+// 0 = full). The audio driver applies it on the next "voladjust" or
+// track change.
+func SetMidiVol(v int) {
+	mu.Lock()
+	defer mu.Unlock()
+	MidiVol = v
+}
+
+// ReadMidiFade snapshots MidiFade for the audio driver.
+func ReadMidiFade() int {
+	mu.Lock()
+	defer mu.Unlock()
+	return MidiFade
+}
+
+// ReadMidiVol snapshots MidiVol for the audio driver.
+func ReadMidiVol() int {
+	mu.Lock()
+	defer mu.Unlock()
+	return MidiVol
+}
+
 func ReportErrorFunc(e string) {
 	if !ReportError {
 		return

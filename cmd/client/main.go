@@ -10,6 +10,7 @@ import (
 
 	"goscape-client/pkg/jagex2/client"
 	"goscape-client/pkg/jagex2/client/clientextras"
+	"goscape-client/pkg/jagex2/sound/audio"
 	"goscape-client/pkg/sign/signlink"
 )
 
@@ -57,6 +58,14 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		signlink.StartPriv()
+	})
+	wg.Go(func() {
+		// audio.Start spawns its own watcher goroutines and returns
+		// after the oto context is ready (or has failed). The watchers
+		// poll signlink.ConsumeMidi / ConsumeWave for the lifetime of
+		// the process. Started after signlink so the soundfont fetch
+		// (via signlink.OpenURL) doesn't race the protocol coming up.
+		audio.Start()
 	})
 	wg.Go(func() {
 		c := client.NewClient()
