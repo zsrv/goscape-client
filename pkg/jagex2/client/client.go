@@ -3437,7 +3437,11 @@ func (c *Client) Logout() {
 }
 
 func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, arg4 int) {
-	if arg3.Type != 0 || arg3.ChildID != nil || arg3.Hide && c.ViewportHoveredInterfaceIndex != arg3.Id && c.SidebarHoveredInterfaceIndex != arg3.Id && c.ChatHoveredInterfaceIndex != arg3.Id {
+	// Java: deob/client.java:3981 — `arg3.childId == null` (return when there
+	// are no children). Java `== null` ports as Go `== nil`; the prior
+	// translation flipped the operator to `!= nil`, which made every Type-0
+	// layer with children early-return — silently blanking every interface.
+	if arg3.Type != 0 || arg3.ChildID == nil || arg3.Hide && c.ViewportHoveredInterfaceIndex != arg3.Id && c.SidebarHoveredInterfaceIndex != arg3.Id && c.ChatHoveredInterfaceIndex != arg3.Id {
 		return
 	}
 	var6 := pix2d.Left
@@ -3550,7 +3554,12 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 						label260:
 							for {
 								var33 = strings.Index(var29, "%1")
-								if var33 == 1 {
+								// Java: deob/client.java:4093 — `== -1` (not found
+								// → fall through to %2). The prior `== 1` typo dropped
+								// the minus and would (a) skip the %1 substitution
+								// whenever %1 sat at non-1 positions in text, and
+								// (b) panic on var29[0:-1] when no "%1" was present.
+								if var33 == -1 {
 									for {
 										var33 = strings.Index(var29, "%2")
 										if var33 == -1 {
