@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 	"math"
-	"slices"
+	"unsafe"
 
 	"goscape-client/pkg/jagex2/graphics/animframe"
 	"goscape-client/pkg/jagex2/graphics/metadata"
@@ -1612,7 +1612,7 @@ func (m *Model) Draw2(arg0 bool, arg1 bool, arg2 int) {
 		for i == 0 && var11 > var8 {
 			m.DrawFace(var14[var12])
 			var12++
-			if var12 == var13 && !slices.Equal(var14, TmpPriorityFaces[11]) {
+			if var12 == var13 && unsafe.SliceData(var14) != unsafe.SliceData(TmpPriorityFaces[11]) {
 				var12 = 0
 				var13 = TmpPriorityFaceCount[11]
 				var14 = TmpPriorityFaces[11]
@@ -1627,7 +1627,7 @@ func (m *Model) Draw2(arg0 bool, arg1 bool, arg2 int) {
 		for i == 3 && var11 > var9 {
 			m.DrawFace(var14[var12])
 			var12++
-			if var12 == var13 && !slices.Equal(var14, TmpPriorityFaces[11]) {
+			if var12 == var13 && unsafe.SliceData(var14) != unsafe.SliceData(TmpPriorityFaces[11]) {
 				var12 = 0
 				var13 = TmpPriorityFaceCount[11]
 				var14 = TmpPriorityFaces[11]
@@ -1642,7 +1642,7 @@ func (m *Model) Draw2(arg0 bool, arg1 bool, arg2 int) {
 		for i == 5 && var11 > var10 {
 			m.DrawFace(var14[var12])
 			var12++
-			if var12 == var13 && !slices.Equal(var14, TmpPriorityFaces[11]) {
+			if var12 == var13 && unsafe.SliceData(var14) != unsafe.SliceData(TmpPriorityFaces[11]) {
 				var12 = 0
 				var13 = TmpPriorityFaceCount[11]
 				var14 = TmpPriorityFaces[11]
@@ -1663,7 +1663,7 @@ func (m *Model) Draw2(arg0 bool, arg1 bool, arg2 int) {
 	for var11 != -1000 {
 		m.DrawFace(var14[var12])
 		var12++
-		if var12 == var13 && !slices.Equal(var14, TmpPriorityFaces[11]) {
+		if var12 == var13 && unsafe.SliceData(var14) != unsafe.SliceData(TmpPriorityFaces[11]) {
 			var12 = 0
 			var14 = TmpPriorityFaces[11]
 			var13 = TmpPriorityFaceCount[11]

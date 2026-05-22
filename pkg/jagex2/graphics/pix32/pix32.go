@@ -372,7 +372,7 @@ func (p *Pix32) Crop(arg0, arg1, arg2, arg4 int) {
 		arg2 -= var16
 		var15 += var16
 	}
-	p.Scale(var8, var18, pix2d.Data, var19, var19, p.Pixels, var15, var14, arg0, var6, arg2)
+	p.Scale(var8, var18, pix2d.Data, var19, var9, p.Pixels, var15, var14, arg0, var6, arg2)
 }
 
 func (p *Pix32) Scale(arg0 int, arg1 int, arg2 []int, arg4 int, arg5 int, arg7 []int, arg8, arg9, arg10, arg11, arg12 int) {

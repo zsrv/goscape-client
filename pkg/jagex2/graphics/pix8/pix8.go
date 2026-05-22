@@ -112,7 +112,7 @@ func (p *Pix8) HFlip() {
 	i := 0
 	for y := range p.Hi {
 		for x := p.Wi - 1; x >= 0; x-- {
-			pixels[i] = p.Pixels[x+y+p.Wi]
+			pixels[i] = p.Pixels[x+y*p.Wi]
 			i++
 		}
 	}

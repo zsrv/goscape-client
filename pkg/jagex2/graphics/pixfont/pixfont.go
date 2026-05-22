@@ -202,7 +202,7 @@ func (p *PixFont) DrawCenteredWave(arg0 int, arg2 int, arg3 int, arg4 int, arg5 
 	for _, r := range arg5 {
 		var8 := GlyphIndex(r)
 		if var8 != 94 {
-			p.DrawChar(p.CharMask[var8], arg2+p.CharOffsetX[var8], var9+p.CharOffsetY[var8]+int(math.Sin(float64(i)/20+float64(arg0)/5.0)*5.0), p.CharMaskWidth[var8], p.CharMaskHeight[var8], arg4)
+			p.DrawChar(p.CharMask[var8], arg2+p.CharOffsetX[var8], var9+p.CharOffsetY[var8]+int(math.Sin(float64(i)/2.0+float64(arg0)/5.0)*5.0), p.CharMaskWidth[var8], p.CharMaskHeight[var8], arg4)
 		}
 		arg2 += p.CharAdvance[var8]
 		i++
