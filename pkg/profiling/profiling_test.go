@@ -1,6 +1,9 @@
 package profiling
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -33,5 +36,38 @@ func TestSessionTimestamp_AlwaysUTC(t *testing.T) {
 	want := "20260522T143015Z"
 	if got != want {
 		t.Errorf("sessionTimestamp on LA-local 07:30 = %q; want %q (UTC)", got, want)
+	}
+}
+
+func TestSessionDir_CreatesAndReturnsAbsolute(t *testing.T) {
+	base := t.TempDir()
+	ts := "20260522T143015Z"
+	got, err := sessionDir(base, ts)
+	if err != nil {
+		t.Fatalf("sessionDir: %v", err)
+	}
+	if !filepath.IsAbs(got) {
+		t.Errorf("returned path %q is not absolute", got)
+	}
+	if !strings.HasSuffix(got, ts) {
+		t.Errorf("returned path %q does not end with timestamp %q", got, ts)
+	}
+	info, err := os.Stat(got)
+	if err != nil {
+		t.Fatalf("stat created dir: %v", err)
+	}
+	if !info.IsDir() {
+		t.Errorf("created path is not a directory")
+	}
+}
+
+func TestSessionDir_IdempotentOnExisting(t *testing.T) {
+	base := t.TempDir()
+	ts := "20260522T143015Z"
+	if _, err := sessionDir(base, ts); err != nil {
+		t.Fatalf("first sessionDir: %v", err)
+	}
+	if _, err := sessionDir(base, ts); err != nil {
+		t.Errorf("second sessionDir on existing dir should succeed; got %v", err)
 	}
 }
