@@ -11,6 +11,7 @@ import (
 	"goscape-client/pkg/jagex2/client"
 	"goscape-client/pkg/jagex2/client/clientextras"
 	"goscape-client/pkg/jagex2/sound/audio"
+	"goscape-client/pkg/profiling"
 	"goscape-client/pkg/sign/signlink"
 )
 
@@ -52,6 +53,11 @@ func main() {
 	if len(os.Args) == 6 {
 		clientextras.Host = os.Args[5]
 	}
+
+	// Register SIGUSR1 profile-capture handler. Non-blocking; returns
+	// after signal listener goroutine is spawned. See
+	// docs/superpowers/specs/2026-05-22-perf-profiling-design.md.
+	profiling.Start()
 
 	// TODO: if initApplication shuts down, shut the network thread down and exit?
 	//  use select{}?
