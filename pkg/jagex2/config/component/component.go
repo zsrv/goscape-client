@@ -328,12 +328,21 @@ func (c *Component) GetModel(arg0 int, arg1 int, arg2 bool) *model.Model {
 	return var5
 }
 
-func GetImage(arg0 *io.Jagfile, arg1 int, arg2 string) *pix32.Pix32 {
+func GetImage(arg0 *io.Jagfile, arg1 int, arg2 string) (result *pix32.Pix32) {
 	var4 := (jstring.HashCode(arg2) << 8) + int64(arg1)
 	var6 := ImageCache.Get(var4)
 	if var6 != nil {
 		return var6
 	}
+	// Java: Component.java:433-439 — try/catch returning null on any
+	// exception during Pix32 construction (missing/corrupt media entry,
+	// bad format). The Go pix32 ctor can panic on malformed input; mirror
+	// Java's tolerance so a single bad asset doesn't brick boot/Unpack.
+	defer func() {
+		if recover() != nil {
+			result = nil
+		}
+	}()
 	var6 = pix32.NewPix323(arg0, arg2, arg1)
 	ImageCache.Put(var4, var6)
 	return var6
