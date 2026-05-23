@@ -17,23 +17,29 @@ package client
 // A literal port would just be a thin wrapper around app.Window contributing
 // nothing the gameshell.go path doesn't already provide.
 //
-// We therefore keep ViewBox as a stub solely to preserve the Client.Frame
-// field as a "has a window been initialised yet?" sentinel. The only
-// remaining caller is client.go:2235, which uses `c.Frame != nil` to gate
-// the "::clientdrop" debug command — the same nil/non-nil check works
-// against any zero-cost sentinel value.
+// We therefore keep ViewBox only as the Go type for the Client.Frame field,
+// which is the structural 1:1 mapping of Java's GameShell.frame (a ViewBox
+// reference). NewViewBox is never called, so c.Frame is always nil — and that
+// is the correct, consistent choice for this port: Go always behaves as Java's
+// "frame == null" (applet/embedded) case. GetHost already returns the
+// configured host unconditionally instead of Java's standalone "runescape.com"
+// branch, so the field's only live consumer is the "::clientdrop" debug gate,
+// where `c.Frame != nil` is always false. That leaves the command gated purely
+// on a 192.168.1.x LAN host — a deliberate, harmless deviation from Java's
+// standalone path (where frame != null would also allow it).
 //
-// TODO: Gio replacement. The cleaner long-term shape is to delete ViewBox
-// entirely and replace `c.Frame *ViewBox` with `c.Window *app.Window`
-// (assigned in InitApplication / gameshell.go where we currently create the
-// window inline). Then `c.Frame != nil` becomes `c.Window != nil`, and we
-// can drop this file. Skipped here to keep the change small and avoid
-// touching the client struct layout.
+// Deferred cleanup (intentionally NOT done — PORTING.md §2 rule 4, "don't
+// refactor opportunistically"): the tidier long-term shape is to delete this
+// file, drop the Client.Frame *ViewBox field, and reduce the clientdrop gate
+// to the host check alone (behavior-preserving, since c.Frame is always nil).
+// That edits the Client struct layout and erases the Java `super.frame`
+// mapping, so it is left for a dedicated pass rather than folded into
+// unrelated work.
 //
 // Java source: jagex2/client/ViewBox.java
 // Go callers:
-//   - pkg/jagex2/client/client.go (Client.Frame field, line ~123)
-//   - pkg/jagex2/client/client.go (c.Frame != nil check, line ~2235)
+//   - pkg/jagex2/client/client.go (Client.Frame field, ~line 134)
+//   - pkg/jagex2/client/client.go (c.Frame != nil check, ~line 2266)
 
 // ViewBox is an intentional stub. See file-header comment for the decision
 // rationale; do not flesh this out as a literal AWT port.

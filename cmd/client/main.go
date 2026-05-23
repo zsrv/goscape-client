@@ -59,8 +59,13 @@ func main() {
 	// docs/superpowers/specs/2026-05-22-perf-profiling-design.md.
 	profiling.Start()
 
-	// TODO: if initApplication shuts down, shut the network thread down and exit?
-	//  use select{}?
+	// These three subsystems run for the lifetime of the process. There is
+	// no explicit shutdown handshake between them: when the Gio window closes
+	// the window goroutine inside InitApplication calls os.Exit(0) on
+	// DestroyEvent (see the app.Main note below), which tears the whole
+	// process down — signlink's StartPriv poll loop and audio's watcher
+	// goroutines included — so a select{}/cancellation dance would be dead
+	// code here.
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		signlink.StartPriv()
