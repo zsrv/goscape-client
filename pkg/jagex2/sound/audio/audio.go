@@ -72,7 +72,7 @@ func Start() {
 	d := newMidiDriver(ctx)
 	registerMidiDriver(d)
 
-	go runMidiWatcher(ctx, d)
+	go runMidiWatcher(d)
 	go runWaveWatcher(ctx)
 }
 

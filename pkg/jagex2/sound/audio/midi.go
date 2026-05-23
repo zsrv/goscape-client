@@ -3,6 +3,7 @@ package audio
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -49,12 +50,15 @@ const gainSmoothingAlpha float32 = 0.9999093
 // polling + disk-write latency off the title-to-game transition.
 // The watcher only handles "stop" and "voladjust" sentinels here.
 //
-// On nil ctx (oto init failed), still drains commands so the channel
-// doesn't back up — but doesn't actually play. This keeps Java's
-// fire-and-forget protocol semantics intact even with audio disabled.
+// audio.Start only spawns this watcher in the success path (on oto init
+// failure it registers a nil driver and returns), so the watcher always
+// runs with a live context. The d.ctx == nil guard inside playFromBytes
+// is the belt-and-suspenders path for any direct PlayMIDI caller. Either
+// way commands are drained and never play, keeping Java's fire-and-forget
+// protocol semantics intact even with audio disabled.
 const midiPollInterval = 20 * time.Millisecond
 
-func runMidiWatcher(ctx *oto.Context, d *midiDriver) {
+func runMidiWatcher(d *midiDriver) {
 	for {
 		cmd := signlink.ConsumeMidi()
 		if cmd != "" {
@@ -306,15 +310,9 @@ func (d *midiDriver) fadeAndSwap(src *midiSource, newSeq *meltysynth.MidiFileSeq
 // on the next Play() — audible as a brief snippet of pre-stop music
 // before the new track starts (the symptom that prompted this code:
 // logout → silence → login → small piece of the old track → new
-// track). Reset() pauses AND clears the queue, which is what we want.
-//
-// Reset is marked deprecated in oto v3.4 with the note "use Pause or
-// Seek instead" — but neither alternative achieves "halt and flush"
-// for a non-seekable streaming source like midiSource. The
-// deprecation is misleading for this use case; if a future oto
-// version removes Reset we will need to either implement io.Seeker
-// on midiSource (returning 0 to discard the queue) or rebuild the
-// player. For now Reset is the correct tool.
+// track). haltAndFlush does the halt-and-flush via Pause + Seek; see
+// its doc for why that pair is the post-v3.4 replacement for the
+// deprecated Player.Reset().
 func (d *midiDriver) stop(fade bool) {
 	d.mu.Lock()
 	src := d.src
@@ -330,7 +328,7 @@ func (d *midiDriver) stop(fade bool) {
 		src.swap(nil)
 		src.snapGain(0)
 		if player != nil {
-			player.Reset()
+			haltAndFlush(player)
 		}
 		return
 	}
@@ -348,9 +346,24 @@ func (d *midiDriver) stop(fade bool) {
 		// so a quick re-play has a clean baseline — same rationale
 		// as the hard-stop path above.
 		if player != nil {
-			player.Reset()
+			haltAndFlush(player)
 		}
 	}()
+}
+
+// haltAndFlush stops player AND discards oto's internal pre-read buffer —
+// the post-v3.4 replacement for the now-deprecated Player.Reset(), which
+// did both in one call. Pause() alone only halts: oto keeps ~100ms of
+// already-rendered PCM queued, which replays on the next Play(). Seeking
+// flushes that queue — mux.Player.Seek resets its internal buffer before
+// delegating to the source. Pause MUST come first: Seek resumes playback
+// if the player was playing, so moving to the paused state before the
+// flush is what makes this equivalent to Reset (paused + empty buffer).
+// The Seek lands on midiSource.Seek, a no-op that exists only to satisfy
+// oto's io.Seeker requirement.
+func haltAndFlush(player *oto.Player) {
+	player.Pause()
+	_, _ = player.Seek(0, io.SeekStart)
 }
 
 // setUserVolume is the "voladjust" handler — the in-game audio
@@ -523,6 +536,15 @@ func (s *midiSource) Read(p []byte) (int, error) {
 	s.currentGain = current
 	s.gainMu.Unlock()
 	return frames * 4, nil
+}
+
+// Seek is a no-op that exists solely so *oto.Player.Seek can flush oto's
+// internal buffer on a stop (see haltAndFlush). A MIDI synthesizer has no
+// seekable byte position — Read always renders the current sequencer — so
+// there is nothing to reposition; returning (0, nil) just satisfies the
+// io.Seeker assertion mux.Player.Seek makes before truncating its buffer.
+func (s *midiSource) Seek(offset int64, whence int) (int64, error) {
+	return 0, nil
 }
 
 // clipInt16 quantizes a float32 sample (nominally -1..1) to int16 with
