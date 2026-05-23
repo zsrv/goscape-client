@@ -36,6 +36,12 @@ type PixMap struct {
 	Data   []int
 	Width  int
 	Height int
+
+	// imgBuf is a reusable RGBA buffer, sized to the PixMap and allocated
+	// once here. It is scaffolding for the per-frame render path: a
+	// follow-up change wires Draw to fill it in place instead of
+	// allocating a fresh image every frame.
+	imgBuf *image.RGBA
 }
 
 // NewPixMap allocates a width*height pixel buffer.
@@ -44,6 +50,7 @@ func NewPixMap(width, height int) *PixMap {
 	m.Width = width
 	m.Height = height
 	m.Data = make([]int, width*height)
+	m.imgBuf = image.NewRGBA(image.Rect(0, 0, width, height))
 	m.Bind()
 	return &m
 }

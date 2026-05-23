@@ -75,3 +75,16 @@ func TestWritePixmapPixelsReusesBuffer(t *testing.T) {
 		t.Error("writePixmapPixels reallocated the backing array; expected in-place reuse")
 	}
 }
+
+// TestNewPixMapAllocatesImageBuffer verifies the reusable upload buffer is
+// created at construction time, sized to the PixMap, so Draw never allocates.
+func TestNewPixMapAllocatesImageBuffer(t *testing.T) {
+	p := NewPixMap(4, 3)
+
+	if p.imgBuf == nil {
+		t.Fatal("NewPixMap did not allocate imgBuf")
+	}
+	if b := p.imgBuf.Bounds(); b.Dx() != 4 || b.Dy() != 3 {
+		t.Errorf("imgBuf bounds = %v, want 4x3", b)
+	}
+}
