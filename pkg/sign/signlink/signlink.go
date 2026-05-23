@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -157,7 +158,7 @@ func Run() {
 			if _, err := os.Stat(p); err == nil {
 				b, err := os.ReadFile(p)
 				if err != nil {
-					fmt.Printf("failed to read file %s: %v\n", p, err)
+					log.Printf("signlink: failed to read file %s: %v", p, err)
 				} else {
 					buf = b
 				}
@@ -170,7 +171,7 @@ func Run() {
 		case saveReq != "":
 			if saveBuf != nil {
 				if err := os.WriteFile(path.Join(var1, saveReq), saveBuf[0:saveLen], 0644); err != nil {
-					fmt.Printf("failed to write file %s: %v\n", path.Join(var1, saveReq), err)
+					log.Printf("signlink: failed to write file %s: %v", path.Join(var1, saveReq), err)
 				}
 			}
 			waveOut := ""
@@ -207,12 +208,12 @@ func Run() {
 				if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 					b, readErr := io.ReadAll(resp.Body)
 					if readErr != nil {
-						fmt.Printf("failed to read response body: %v\n", readErr)
+						log.Printf("signlink: failed to read response body: %v", readErr)
 					} else {
 						body = b
 					}
 				} else {
-					fmt.Printf("openurl %s: HTTP %d\n", urlReq, resp.StatusCode)
+					log.Printf("signlink: openurl %s: HTTP %d", urlReq, resp.StatusCode)
 				}
 				resp.Body.Close()
 			}
@@ -234,7 +235,7 @@ func FindCacheDir() string {
 		var3 := var0[i]
 		if len(var3) > 0 {
 			if _, err := os.Stat(var3); err != nil {
-				fmt.Printf("couldn't find cache at %s: %v\n", var3, err)
+				log.Printf("signlink: couldn't find cache at %s: %v", var3, err)
 				continue
 			}
 		}
@@ -246,12 +247,12 @@ func FindCacheDir() string {
 				// outer try/catch continues. Mirror that: any non-NotExist
 				// stat error skips this candidate rather than returning a
 				// path we can't access.
-				fmt.Printf("couldn't stat cache at %s: %v\n", var4, err)
+				log.Printf("signlink: couldn't stat cache at %s: %v", var4, err)
 				continue
 			}
 			err2 := os.Mkdir(var4, 0755)
 			if err2 != nil {
-				fmt.Printf("couldn't create cache at %s: %v\n", var4, err2)
+				log.Printf("signlink: couldn't create cache at %s: %v", var4, err2)
 				continue
 			}
 		}
@@ -273,7 +274,7 @@ func GetUID(arg0 string) int {
 
 	var5, err := os.ReadFile(var1)
 	if err != nil {
-		fmt.Println("couldn't read uid.dat")
+		log.Println("signlink: couldn't read uid.dat")
 		return 0
 	}
 	var6 := binary.BigEndian.Uint32(var5)
@@ -528,7 +529,7 @@ func ReportErrorFunc(e string) {
 	// transaction is observably identical.
 	_, err := OpenURL("reporterror" + strconv.Itoa(225) + ".cgi?error=" + ErrorName + " " + var5)
 	if err != nil {
-		fmt.Printf("failed to open url: %v\n", err)
+		log.Printf("signlink: failed to open url: %v", err)
 		return
 	}
 }

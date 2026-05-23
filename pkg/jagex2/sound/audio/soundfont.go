@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/sinshu/go-meltysynth/meltysynth"
 
@@ -32,7 +33,7 @@ func loadSoundFont() (*meltysynth.SoundFont, error) {
 		if sf, err := meltysynth.NewSoundFont(bytes.NewReader(buf)); err == nil {
 			return sf, nil
 		} else {
-			fmt.Printf("audio: cached soundfont was corrupt, refetching: %v\n", err)
+			log.Printf("audio: cached soundfont was corrupt, refetching: %v", err)
 		}
 	}
 

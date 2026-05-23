@@ -3,7 +3,7 @@ package audio
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
+	"log"
 	"math"
 	"os"
 	"sync"
@@ -180,7 +180,7 @@ func (d *midiDriver) handle(cmd string) {
 func (d *midiDriver) play(path string, fade bool) {
 	midData, err := os.ReadFile(path)
 	if err != nil {
-		fmt.Printf("audio/midi: read %q: %v\n", path, err)
+		log.Printf("audio/midi: read %q: %v", path, err)
 		return
 	}
 	d.playFromBytes(midData, fade)
@@ -206,7 +206,7 @@ func (d *midiDriver) playFromBytes(midData []byte, fade bool) {
 
 	midiFile, err := meltysynth.NewMidiFile(bytes.NewReader(midData))
 	if err != nil {
-		fmt.Printf("audio/midi: parse: %v\n", err)
+		log.Printf("audio/midi: parse: %v", err)
 		return
 	}
 
@@ -214,7 +214,7 @@ func (d *midiDriver) playFromBytes(midData []byte, fade bool) {
 	settings.EnableReverbAndChorus = false
 	synth, err := meltysynth.NewSynthesizer(sf, settings)
 	if err != nil {
-		fmt.Printf("audio/midi: synth init: %v\n", err)
+		log.Printf("audio/midi: synth init: %v", err)
 		return
 	}
 	seq := meltysynth.NewMidiFileSequencer(synth)
@@ -386,7 +386,7 @@ func (d *midiDriver) ensureSoundFont() *meltysynth.SoundFont {
 	d.loadOnce.Do(func() {
 		sf, err := loadSoundFont()
 		if err != nil {
-			fmt.Printf("audio/midi: soundfont unavailable, music will be silent: %v\n", err)
+			log.Printf("audio/midi: soundfont unavailable, music will be silent: %v", err)
 			return
 		}
 		d.soundFont = sf

@@ -22,7 +22,7 @@
 package audio
 
 import (
-	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -55,7 +55,7 @@ var (
 func Start() {
 	ctx, err := ensureContext()
 	if err != nil {
-		fmt.Printf("audio: oto init failed, game will run silently: %v\n", err)
+		log.Printf("audio: oto init failed, game will run silently: %v", err)
 		// Unblock any PlayMIDI callers waiting on the driver — with a
 		// nil driver, they'll return silently and the game continues
 		// without music rather than hanging forever.

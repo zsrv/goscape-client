@@ -2,8 +2,8 @@ package audio
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
+	"log"
 	"os"
 	"time"
 
@@ -48,12 +48,12 @@ func runWaveWatcher(ctx *oto.Context) {
 func playWaveFile(ctx *oto.Context, path string) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		fmt.Printf("audio/wave: read %q: %v\n", path, err)
+		log.Printf("audio/wave: read %q: %v", path, err)
 		return
 	}
 	stereo, ok := wave8MonoToStereoInt16(data)
 	if !ok {
-		fmt.Printf("audio/wave: unsupported WAV format in %q\n", path)
+		log.Printf("audio/wave: unsupported WAV format in %q", path)
 		return
 	}
 	p := ctx.NewPlayer(&byteSliceReader{b: stereo})

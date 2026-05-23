@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	io2 "io"
+	"log"
 	"math"
 	"math/big"
 	"math/rand"
@@ -57,7 +58,7 @@ import (
 
 func RecoverPanic() {
 	if err := recover(); err != nil {
-		fmt.Printf("recovered from panic: %v\n", err)
+		log.Printf("client: recovered from panic: %v", err)
 	}
 }
 
@@ -1575,7 +1576,7 @@ func (c *Client) RunMidi() {
 			if var14 == nil {
 				var15, err := c.OpenURL(var2 + "_" + strconv.Itoa(var3) + ".mid")
 				if err != nil {
-					fmt.Printf("RunMidi error: %v\n", err)
+					log.Printf("client: RunMidi error: %v", err)
 					return
 				}
 				var14 = make([]byte, var4)
@@ -2527,7 +2528,7 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 
 		reader, err := c.OpenURL(name + strconv.Itoa(crc))
 		if err != nil {
-			fmt.Printf("GetJagFile error: %v\n", err)
+			log.Printf("client: GetJagFile error: %v", err)
 			loadingError()
 			continue
 		}
@@ -2535,12 +2536,12 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 		header := make([]byte, 6)
 		n, err := reader.Read(header)
 		if err != nil {
-			fmt.Printf("GetJagFile read error: %v\n", err)
+			log.Printf("client: GetJagFile read error: %v", err)
 			loadingError()
 			continue
 		}
 		if n < 6 {
-			fmt.Printf("GetJagFile read %v bytes, expected 6", n)
+			log.Printf("client: GetJagFile read %v bytes, expected 6", n)
 			loadingError()
 			continue
 		}
@@ -2562,7 +2563,7 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 
 			n, err := reader.Read(data[pos : pos+chunkSize])
 			if err != nil {
-				fmt.Printf("GetJagFile read error: %v\n", err)
+				log.Printf("client: GetJagFile read error: %v", err)
 				loadingError()
 				readFailed = true
 				break
@@ -5556,7 +5557,7 @@ func (c *Client) Load() {
 	// crashing.
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Printf("Client.Load panic: %v\n", r)
+			log.Printf("client: Client.Load panic: %v", r)
 			c.ErrorLoading = true
 		}
 	}()
@@ -5579,7 +5580,7 @@ func (c *Client) Load() {
 		c.DrawProgress("Connecting to fileserver", 10)
 		reader, err := c.OpenURL("crc" + strconv.Itoa(int(rand.Float64()*9.9999999e7)))
 		if err != nil {
-			fmt.Printf("Client.Load OpenURL error: %v\n", err)
+			log.Printf("client: Client.Load OpenURL error: %v", err)
 			errorLoading()
 			continue
 		}
@@ -5587,7 +5588,7 @@ func (c *Client) Load() {
 		crc := io.NewPacket(make([]byte, 36))
 		_, err = reader.Read(crc.Data[:36])
 		if err != nil {
-			fmt.Printf("Client.Load Read error: %v\n", err)
+			log.Printf("client: Client.Load Read error: %v", err)
 			errorLoading()
 			continue
 		}

@@ -43,7 +43,7 @@ func (c *Client) InitApplication(height int, width int) {
 		w.Option(app.MaxSize(unit.Dp(c.ScreenWidth), unit.Dp(c.ScreenHeight)))
 
 		if err := c.draw(w); err != nil {
-			log.Fatal(err)
+			log.Fatalf("gameshell: %v", err)
 		}
 		os.Exit(0)
 	}()
