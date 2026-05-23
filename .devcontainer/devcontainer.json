@@ -25,8 +25,6 @@
 		}
 	},
 
-	// go.mod / go.sum are intentionally untracked in this repo, so they must be
-	// present in the workspace you mount (they are, in a normal local checkout).
 	// Prime the module cache so the first build/test is fast.
 	"postCreateCommand": "go mod download"
 }
