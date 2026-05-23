@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 // TestPackUnpackPound verifies that '£' (U+00A3, multi-byte UTF-8) round-trips.

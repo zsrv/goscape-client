@@ -1,10 +1,10 @@
 package entity
 
 import (
-	"goscape-client/pkg/jagex2/config/npctype"
-	"goscape-client/pkg/jagex2/config/seqtype"
-	"goscape-client/pkg/jagex2/config/spotanimtype"
-	"goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/npctype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
 )
 
 type NpcEntity struct {

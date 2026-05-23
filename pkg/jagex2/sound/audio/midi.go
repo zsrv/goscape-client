@@ -14,7 +14,7 @@ import (
 	"github.com/ebitengine/oto/v3"
 	"github.com/sinshu/go-meltysynth/meltysynth"
 
-	"goscape-client/pkg/sign/signlink"
+	"github.com/zsrv/goscape-client/pkg/sign/signlink"
 )
 
 // gainSmoothingAlpha is the per-sample low-pass coefficient used to

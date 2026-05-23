@@ -8,11 +8,11 @@ import (
 
 	"gioui.org/app"
 
-	"goscape-client/pkg/jagex2/client"
-	"goscape-client/pkg/jagex2/client/clientextras"
-	"goscape-client/pkg/jagex2/sound/audio"
-	"goscape-client/pkg/profiling"
-	"goscape-client/pkg/sign/signlink"
+	"github.com/zsrv/goscape-client/pkg/jagex2/client"
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
+	"github.com/zsrv/goscape-client/pkg/jagex2/sound/audio"
+	"github.com/zsrv/goscape-client/pkg/profiling"
+	"github.com/zsrv/goscape-client/pkg/sign/signlink"
 )
 
 func main() {

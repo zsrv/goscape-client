@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"goscape-client/pkg/jagex2/client/clientextras"
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
 )
 
 // mu serializes the signlink polling protocol's request setup, mirroring

@@ -4,8 +4,8 @@ import (
 	"math"
 	"math/rand"
 
-	"goscape-client/pkg/jagex2/graphics/pix2d"
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 // CHAR_LOOKUP maps a Latin-1 codepoint (0..255) to a glyph table index.

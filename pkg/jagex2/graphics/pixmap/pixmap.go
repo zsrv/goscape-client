@@ -8,7 +8,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/paint"
 
-	"goscape-client/pkg/jagex2/graphics/pix2d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
 )
 
 // OpsMu serializes all access to the *op.Ops owned by Client. Both the

@@ -3,7 +3,7 @@ package entity
 import (
 	"math/rand"
 
-	"goscape-client/pkg/jagex2/config/seqtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
 )
 
 type LocEntity struct {

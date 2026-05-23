@@ -1,6 +1,6 @@
 package envelope
 
-import "goscape-client/pkg/jagex2/io"
+import "github.com/zsrv/goscape-client/pkg/jagex2/io"
 
 type Envelope struct {
 	Length     int

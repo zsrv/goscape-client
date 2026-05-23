@@ -3,7 +3,7 @@ package varptype
 import (
 	"fmt"
 
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 // VarpType decoder. Java VarpType.java has 10 opcodes (0-8, 10) that

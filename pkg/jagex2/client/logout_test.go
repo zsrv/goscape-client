@@ -3,8 +3,8 @@ package client
 import (
 	"testing"
 
-	"goscape-client/pkg/jagex2/dash3d"
-	"goscape-client/pkg/jagex2/dash3d/world3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/world3d"
 )
 
 // TestLogout_ResetsInGameAndTitleState pins the post-fix behavior at

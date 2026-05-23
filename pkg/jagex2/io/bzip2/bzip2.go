@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"goscape-client/pkg/jagex2/io/bzip2state"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io/bzip2state"
 )
 
 var (

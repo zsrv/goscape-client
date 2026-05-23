@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"math"
 
-	"goscape-client/pkg/jagex2/dash3d"
-	"goscape-client/pkg/jagex2/dash3d/entity"
-	"goscape-client/pkg/jagex2/dash3d/typ"
-	"goscape-client/pkg/jagex2/datastruct"
-	"goscape-client/pkg/jagex2/graphics/model"
-	"goscape-client/pkg/jagex2/graphics/pix2d"
-	"goscape-client/pkg/jagex2/graphics/pix3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/typ"
+	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix3d"
 )
 
 var (

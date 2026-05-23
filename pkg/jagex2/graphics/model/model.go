@@ -5,12 +5,12 @@ import (
 	"math"
 	"unsafe"
 
-	"goscape-client/pkg/jagex2/graphics/animframe"
-	"goscape-client/pkg/jagex2/graphics/metadata"
-	"goscape-client/pkg/jagex2/graphics/pix2d"
-	"goscape-client/pkg/jagex2/graphics/pix3d"
-	"goscape-client/pkg/jagex2/graphics/vertexnormal"
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/animframe"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/metadata"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/vertexnormal"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 var (

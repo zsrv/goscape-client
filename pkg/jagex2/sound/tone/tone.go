@@ -4,8 +4,8 @@ import (
 	"math"
 	"math/rand"
 
-	"goscape-client/pkg/jagex2/io"
-	"goscape-client/pkg/jagex2/sound/envelope"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/sound/envelope"
 )
 
 var (

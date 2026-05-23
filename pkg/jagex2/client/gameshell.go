@@ -11,10 +11,10 @@ import (
 	"gioui.org/io/pointer"
 	"gioui.org/unit"
 
-	"goscape-client/pkg/jagex2/client/inputtracking"
-	"goscape-client/pkg/jagex2/graphics/bootfont"
-	"goscape-client/pkg/jagex2/graphics/pix2d"
-	"goscape-client/pkg/jagex2/graphics/pixmap"
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/inputtracking"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/bootfont"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pixmap"
 )
 
 type GameShell struct {

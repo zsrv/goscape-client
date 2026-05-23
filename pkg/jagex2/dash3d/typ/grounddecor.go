@@ -1,6 +1,6 @@
 package typ
 
-import "goscape-client/pkg/jagex2/graphics/model"
+import "github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
 
 type GroundDecor struct {
 	Y      int

@@ -3,7 +3,7 @@ package world3d
 import (
 	"testing"
 
-	"goscape-client/pkg/jagex2/dash3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
 )
 
 // TestOccludedMode5_UsesZDeltaForZProjection is a regression test for the

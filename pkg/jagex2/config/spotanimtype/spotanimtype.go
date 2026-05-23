@@ -3,10 +3,10 @@ package spotanimtype
 import (
 	"fmt"
 
-	"goscape-client/pkg/jagex2/config/seqtype"
-	"goscape-client/pkg/jagex2/datastruct"
-	"goscape-client/pkg/jagex2/graphics/model"
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 var (

@@ -3,7 +3,7 @@ package bootfont
 import (
 	"testing"
 
-	"goscape-client/pkg/jagex2/graphics/pixmap"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pixmap"
 )
 
 func TestHeight(t *testing.T) {

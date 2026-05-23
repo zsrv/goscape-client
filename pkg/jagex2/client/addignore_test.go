@@ -3,8 +3,8 @@ package client
 import (
 	"testing"
 
-	"goscape-client/pkg/jagex2/datastruct/jstring"
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct/jstring"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 // AddIgnore is a faithful port of client.java's addIgnore: five branches —

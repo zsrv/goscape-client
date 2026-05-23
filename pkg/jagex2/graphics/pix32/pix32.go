@@ -6,9 +6,9 @@ import (
 	"image"
 	"math"
 
-	"goscape-client/pkg/jagex2/graphics/pix2d"
-	"goscape-client/pkg/jagex2/graphics/pix8"
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix8"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 type Pix32 struct {

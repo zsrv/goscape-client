@@ -3,8 +3,8 @@ package entity
 import (
 	"math"
 
-	"goscape-client/pkg/jagex2/config/spotanimtype"
-	"goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
 )
 
 // ClientProj

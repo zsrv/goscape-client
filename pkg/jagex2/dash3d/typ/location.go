@@ -1,8 +1,8 @@
 package typ
 
 import (
-	"goscape-client/pkg/jagex2/dash3d/entity"
-	"goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
 )
 
 type Location struct {

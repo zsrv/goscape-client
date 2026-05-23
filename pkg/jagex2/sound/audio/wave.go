@@ -9,7 +9,7 @@ import (
 
 	"github.com/ebitengine/oto/v3"
 
-	"goscape-client/pkg/sign/signlink"
+	"github.com/zsrv/goscape-client/pkg/sign/signlink"
 )
 
 // runWaveWatcher polls signlink.ConsumeWave for newly-saved SFX files.

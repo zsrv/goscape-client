@@ -3,7 +3,7 @@ package io
 import (
 	"strings"
 
-	"goscape-client/pkg/jagex2/io/bzip2"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io/bzip2"
 )
 
 type Jagfile struct {

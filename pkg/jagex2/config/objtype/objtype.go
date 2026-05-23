@@ -3,12 +3,12 @@ package objtype
 import (
 	"strings"
 
-	"goscape-client/pkg/jagex2/datastruct"
-	"goscape-client/pkg/jagex2/graphics/model"
-	"goscape-client/pkg/jagex2/graphics/pix2d"
-	"goscape-client/pkg/jagex2/graphics/pix32"
-	"goscape-client/pkg/jagex2/graphics/pix3d"
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix32"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 var (

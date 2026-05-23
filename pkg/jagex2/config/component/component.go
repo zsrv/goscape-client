@@ -4,12 +4,12 @@ import (
 	"strconv"
 	"strings"
 
-	"goscape-client/pkg/jagex2/datastruct"
-	"goscape-client/pkg/jagex2/datastruct/jstring"
-	"goscape-client/pkg/jagex2/graphics/model"
-	"goscape-client/pkg/jagex2/graphics/pix32"
-	"goscape-client/pkg/jagex2/graphics/pixfont"
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
+	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct/jstring"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix32"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pixfont"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 var (

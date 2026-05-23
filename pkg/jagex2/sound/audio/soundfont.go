@@ -8,7 +8,7 @@ import (
 
 	"github.com/sinshu/go-meltysynth/meltysynth"
 
-	"goscape-client/pkg/sign/signlink"
+	"github.com/zsrv/goscape-client/pkg/sign/signlink"
 )
 
 // soundFontCacheName is the filename used inside signlink's cache

@@ -1,16 +1,16 @@
 package playerentity
 
 import (
-	"goscape-client/pkg/jagex2/client/clientextras"
-	"goscape-client/pkg/jagex2/config/idktype"
-	"goscape-client/pkg/jagex2/config/objtype"
-	"goscape-client/pkg/jagex2/config/seqtype"
-	"goscape-client/pkg/jagex2/config/spotanimtype"
-	"goscape-client/pkg/jagex2/dash3d/entity"
-	"goscape-client/pkg/jagex2/datastruct"
-	"goscape-client/pkg/jagex2/datastruct/jstring"
-	"goscape-client/pkg/jagex2/graphics/model"
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/idktype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/objtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity"
+	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
+	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct/jstring"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 var (

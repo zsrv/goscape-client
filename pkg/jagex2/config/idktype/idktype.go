@@ -3,8 +3,8 @@ package idktype
 import (
 	"fmt"
 
-	"goscape-client/pkg/jagex2/graphics/model"
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 var (

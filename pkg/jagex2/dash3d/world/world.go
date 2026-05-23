@@ -5,16 +5,16 @@ import (
 	"math/rand"
 	"strings"
 
-	"goscape-client/pkg/jagex2/config/flotype"
-	"goscape-client/pkg/jagex2/config/loctype"
-	"goscape-client/pkg/jagex2/config/seqtype"
-	"goscape-client/pkg/jagex2/dash3d"
-	"goscape-client/pkg/jagex2/dash3d/entity"
-	"goscape-client/pkg/jagex2/dash3d/world3d"
-	"goscape-client/pkg/jagex2/datastruct"
-	"goscape-client/pkg/jagex2/graphics/model"
-	"goscape-client/pkg/jagex2/graphics/pix3d"
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/flotype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/loctype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/world3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 var (

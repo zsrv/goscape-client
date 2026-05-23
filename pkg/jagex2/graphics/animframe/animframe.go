@@ -1,8 +1,8 @@
 package animframe
 
 import (
-	"goscape-client/pkg/jagex2/graphics/animbase"
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/animbase"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 var Instances []*AnimFrame

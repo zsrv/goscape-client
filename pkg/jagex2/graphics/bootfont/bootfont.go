@@ -19,7 +19,7 @@ import (
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"
 
-	"goscape-client/pkg/jagex2/graphics/pixmap"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pixmap"
 )
 
 // Height returns the font's inter-line height in pixels.

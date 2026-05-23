@@ -1,6 +1,6 @@
 package entity
 
-import "goscape-client/pkg/jagex2/config/seqtype"
+import "github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
 
 type PathingEntity struct {
 	X                        int

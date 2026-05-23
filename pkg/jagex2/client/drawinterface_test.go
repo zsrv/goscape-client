@@ -3,8 +3,8 @@ package client
 import (
 	"testing"
 
-	"goscape-client/pkg/jagex2/config/component"
-	"goscape-client/pkg/jagex2/graphics/pix2d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/component"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
 )
 
 // TestDrawInterface_RendersChildren pins the post-fix early-return

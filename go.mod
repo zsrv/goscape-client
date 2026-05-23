@@ -1,4 +1,4 @@
-module goscape-client
+module github.com/zsrv/goscape-client
 
 go 1.26
 

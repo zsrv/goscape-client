@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"goscape-client/pkg/jagex2/client/clientextras"
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
 )
 
 func TestFindCacheDir(t *testing.T) {

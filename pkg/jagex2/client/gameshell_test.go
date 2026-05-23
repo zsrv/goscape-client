@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"goscape-client/pkg/jagex2/graphics/pix2d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
 )
 
 func TestDrawProgressGameShell_ClearsRefreshAndPopulatesOverlay(t *testing.T) {

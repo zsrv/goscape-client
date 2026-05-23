@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 var (

@@ -3,8 +3,8 @@ package seqtype
 import (
 	"fmt"
 
-	"goscape-client/pkg/jagex2/graphics/animframe"
-	"goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/animframe"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
 var (
