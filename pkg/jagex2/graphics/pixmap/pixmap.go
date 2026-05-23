@@ -74,11 +74,17 @@ func (p *PixMap) Draw(ops *op.Ops, x, y int) {
 	paint.PaintOp{}.Add(ops)
 }
 
-// convertPixmapPixels converts packed 0x00RRGGBB ints (Java pix2d format) to image.NRGBA.
+// convertPixmapPixels converts packed 0x00RRGGBB ints (Java pix2d format) to image.RGBA.
 // Java's DirectColorModel has no alpha mask, so all pixels are fully opaque.
-// image.NRGBA (straight alpha) is also Gio's preferred optimized format for paint.NewImageOp.
-func convertPixmapPixels(width, height int, javaPixels []int) *image.NRGBA {
-	rgba := image.NewNRGBA(image.Rect(0, 0, width, height))
+//
+// The type matters for performance: paint.NewImageOp uses an *image.RGBA
+// as-is, but force-converts any other type (e.g. *image.NRGBA) via a
+// per-frame draw.Draw — which the 2026-05-23 baseline profile showed
+// costing ~25% of CPU and ~48% of all allocations. Because every pixel
+// is fully opaque, premultiplied RGBA and straight NRGBA are byte-
+// identical, so emitting RGBA is both faster and pixel-equivalent.
+func convertPixmapPixels(width, height int, javaPixels []int) *image.RGBA {
+	rgba := image.NewRGBA(image.Rect(0, 0, width, height))
 
 	for i, argb := range javaPixels {
 		rgba.Pix[i*4] = uint8(argb >> 16)
