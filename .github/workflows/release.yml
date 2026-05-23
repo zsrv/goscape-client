@@ -7,7 +7,9 @@
 # repos, since 2025-08) cover the arm64 targets, and Gio is pure-Go on Windows
 # (CGO off there).
 #
-# Two stages:
+# Three stages:
+#   test    — the shared CI gate (ci-gate.yml: `make ci`). Blocks the build, so
+#             a tag that fails fmt/vet/test/lint can never publish artifacts.
 #   build   — matrix over 6 native runners; each builds, archives, and uploads
 #             its target as a workflow artifact.
 #   release — downloads all artifacts, writes SHA256SUMS, creates the Release.
@@ -21,11 +23,13 @@ on:
   push:
     tags: ['v*']
 
-permissions:
-  contents: write # required to create the GitHub Release
-
 jobs:
+  test:
+    # Shared CI gate — a tag that fails it never reaches the build matrix.
+    uses: ./.github/workflows/ci-gate.yml
+
   build:
+    needs: test
     name: build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -92,6 +96,8 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the GitHub Release
     steps:
       - name: Download all build artifacts
         uses: actions/download-artifact@v4

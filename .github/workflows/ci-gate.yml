@@ -1,0 +1,64 @@
+# Reusable CI gate for goscape-client.
+#
+# Runs `make ci` (gofmt check, go vet, race tests, golangci-lint) INSIDE the
+# devcontainer image, so every caller shares one toolchain and one
+# system-dependency set (.devcontainer/apt-packages.txt) — important for a
+# CGO/Gio project whose build links native libraries.
+#
+# Called by:
+#   - ci.yml      on push / pull_request
+#   - release.yml as the test gate before building release artifacts
+#
+# Scope: headless build/test/lint only. The Gio client is never *run* here.
+#
+# Security: the only ${{ }} uses are runner.os / hashFiles (trusted). No run:
+# step interpolates untrusted input.
+name: CI gate
+
+on:
+  workflow_call:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build the dev image (toolchain + Gio/ALSA deps + golangci-lint). The
+      # context is .devcontainer/ so the Dockerfile's `COPY apt-packages.txt`
+      # resolves. GHA layer cache keeps rebuilds cheap when the Dockerfile and
+      # package list are unchanged.
+      - name: Build dev image
+        uses: docker/build-push-action@v6
+        with:
+          context: .devcontainer
+          file: .devcontainer/Dockerfile
+          tags: goscape-client-dev:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Persist the Go module + build cache between runs.
+      - name: Cache Go modules and build cache
+        uses: actions/cache@v4
+        with:
+          path: .gocache
+          key: gocache-${{ runner.os }}-${{ hashFiles('go.sum') }}
+          restore-keys: gocache-${{ runner.os }}-
+
+      # Run the gate inside the image with the repo mounted and the cache dir
+      # pointed at the persisted location.
+      - name: Run make ci in the dev image
+        run: |
+          mkdir -p .gocache
+          docker run --rm \
+            -v "$PWD":/work -w /work \
+            -e CGO_ENABLED=1 \
+            -e GOPATH=/work/.gocache/go \
+            -e GOCACHE=/work/.gocache/build \
+            goscape-client-dev:ci \
+            make ci
