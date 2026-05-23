@@ -1616,7 +1616,7 @@ func (c *Client) DrawFlames() {
 	// longer touch c.Ops here.
 	//
 	// Hold OpsMu while writing the pixel buffers: the frame goroutine
-	// reads them via PixMap.Draw → convertPixmapPixels, which races
+	// reads them via PixMap.Draw → writePixmapPixels, which races
 	// with our writes without the lock. OpsMu is the project-wide
 	// per-frame lock; reusing it serializes DrawFlames against c.Draw.
 	pixmap.OpsMu.Lock()

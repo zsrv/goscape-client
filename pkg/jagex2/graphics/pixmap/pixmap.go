@@ -37,10 +37,10 @@ type PixMap struct {
 	Width  int
 	Height int
 
-	// imgBuf is a reusable RGBA buffer, sized to the PixMap and allocated
-	// once here. It is scaffolding for the per-frame render path: a
-	// follow-up change wires Draw to fill it in place instead of
-	// allocating a fresh image every frame.
+	// imgBuf is the reusable RGBA buffer that Draw fills in place and
+	// hands to paint.NewImageOp each frame, so the steady-state render
+	// path performs no image allocation. See Draw for the safety
+	// invariants that make in-place reuse correct.
 	imgBuf *image.RGBA
 }
 
@@ -75,17 +75,31 @@ func (p *PixMap) Bind() {
 // each frame.
 func (p *PixMap) Draw(ops *op.Ops, x, y int) {
 	defer op.Offset(image.Point{X: x, Y: y}).Push(ops).Pop()
-	img := convertPixmapPixels(p.Width, p.Height, p.Data)
-	imageOp := paint.NewImageOp(img)
+	// Fill the reused buffer in place instead of allocating a fresh image
+	// every frame. This is safe because:
+	//   1. OpsMu serializes this write against e.Frame's read (the caller
+	//      holds OpsMu for the whole frame build; the FrameEvent handler
+	//      holds the same OpsMu across e.Frame).
+	//   2. The GL upload (TexSubImage2D, inside e.Frame) copies the bytes
+	//      synchronously, so imgBuf is free to overwrite once e.Frame
+	//      returns.
+	//   3. paint.NewImageOp still mints a fresh handle, which forces Gio
+	//      to re-read imgBuf every frame (a stable handle would show a
+	//      frozen frame).
+	// See docs/superpowers/specs/2026-05-23-pixmap-buffer-reuse-design.md.
+	writePixmapPixels(p.imgBuf, p.Data)
+	imageOp := paint.NewImageOp(p.imgBuf)
 	imageOp.Filter = paint.FilterNearest
 	imageOp.Add(ops)
 	paint.PaintOp{}.Add(ops)
 }
 
 // writePixmapPixels fills dst in place from packed 0x00RRGGBB ints (Java
-// pix2d format). dst must have at least len(javaPixels) pixels. Java's
-// DirectColorModel has no alpha mask, so all pixels are fully opaque;
-// premultiplied RGBA then equals straight NRGBA byte-for-byte.
+// pix2d format). dst must be a contiguous *image.RGBA (created by
+// image.NewRGBA, not SubImage) whose pixel count is at least
+// len(javaPixels). Java's DirectColorModel has no alpha mask, so all
+// pixels are fully opaque; premultiplied RGBA then equals straight NRGBA
+// byte-for-byte.
 //
 // 0x00RRGGBB -> 0xRRGGBBFF; a big-endian 32-bit store lays the bytes down
 // as [R, G, B, 0xFF]. One wide store per pixel is ~2.2x faster than four
@@ -98,26 +112,3 @@ func writePixmapPixels(dst *image.RGBA, javaPixels []int) {
 	}
 }
 
-// convertPixmapPixels converts packed 0x00RRGGBB ints (Java pix2d format) to image.RGBA.
-// Java's DirectColorModel has no alpha mask, so all pixels are fully opaque.
-//
-// The type matters for performance: paint.NewImageOp uses an *image.RGBA
-// as-is, but force-converts any other type (e.g. *image.NRGBA) via a
-// per-frame draw.Draw — which the 2026-05-23 baseline profile showed
-// costing ~25% of CPU and ~48% of all allocations. Because every pixel
-// is fully opaque, premultiplied RGBA and straight NRGBA are byte-
-// identical, so emitting RGBA is both faster and pixel-equivalent.
-func convertPixmapPixels(width, height int, javaPixels []int) *image.RGBA {
-	rgba := image.NewRGBA(image.Rect(0, 0, width, height))
-
-	dst := rgba.Pix
-	for i, argb := range javaPixels {
-		// 0x00RRGGBB -> 0xRRGGBBFF; a big-endian 32-bit store lays the
-		// bytes down as [R, G, B, 0xFF] — opaque, matching Java's
-		// DirectColorModel (no alpha mask). One wide store per pixel is
-		// ~2.2x faster than four byte writes (benchmarked 2026-05-23).
-		binary.BigEndian.PutUint32(dst[i*4:], uint32(argb)<<8|0xFF)
-	}
-
-	return rgba
-}
