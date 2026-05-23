@@ -979,6 +979,14 @@ Add a short "Performance profiling" section so a future user (or future-you) can
 **Files:**
 - Modify: `README.md`
 
+> **Execution deviation (2026-05-22):** during implementation the working
+> tree had 164 lines of pre-existing uncommitted README work that
+> pre-dated this session. To avoid bundling that pending work into the
+> profiling commit, the operational docs were instead landed as a
+> standalone file at `docs/profiling.md` (commit `0a5d238`). The content
+> below is preserved here as the original spec; it can still be folded
+> into `README.md` later if/when the pending README work is reconciled.
+
 - [ ] **Step 1: Read the current state of `README.md` to identify where to insert**
 
 Read `README.md`. Pick a sensible insertion point — typically after the "Build & Run" section or before "Translation notes," whichever exists. If you find no obvious section break, append the new section at the end of the file.
