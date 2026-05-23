@@ -8050,7 +8050,9 @@ func (c *Client) TryReconnect() {
 	c.FontPlain12.CentreString(143, 0xFFFFFF, "Connection lost", 256)
 	c.FontPlain12.CentreString(159, 0, "Please wait - attempting to reestablish", 257)
 	c.FontPlain12.CentreString(158, 0xFFFFFF, "Please wait - attempting to reestablish", 256)
+	pixmap.OpsMu.Lock()
 	c.AreaViewport.Draw(&c.Ops, 8, 11)
+	pixmap.OpsMu.Unlock()
 	c.FlagSceneTileX = 0
 	var2 := c.Stream
 	c.InGame = false
@@ -9181,7 +9183,9 @@ func (c *Client) Read() bool {
 			c.AreaViewport.Bind()
 			c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
 			c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
+			pixmap.OpsMu.Lock()
 			c.AreaViewport.Draw(&c.Ops, 8, 11)
+			pixmap.OpsMu.Unlock()
 			world.LevelBuilt = c.CurrentLevel
 			c.BuildScene()
 		}
@@ -9305,7 +9309,9 @@ func (c *Client) Read() bool {
 		c.AreaViewport.Bind()
 		c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
 		c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
+		pixmap.OpsMu.Lock()
 		c.AreaViewport.Draw(&c.Ops, 8, 11)
+		pixmap.OpsMu.Unlock()
 		signlink.LoopRate = 5
 		var5 := (c.PacketSize - 2) / 10
 		c.SceneMapLandData = make([][]byte, var5)
@@ -9363,7 +9369,9 @@ func (c *Client) Read() bool {
 			c.FontPlain12.CentreString(166, 0, "Map area updated since last visit, so load will take longer this time only", 257)
 			c.FontPlain12.CentreString(165, 0xFFFFFF, "Map area updated since last visit, so load will take longer this time only", 256)
 		}
+		pixmap.OpsMu.Lock()
 		c.AreaViewport.Draw(&c.Ops, 8, 11)
+		pixmap.OpsMu.Unlock()
 		var8 := c.SceneBaseTileX - c.MapLastBaseX
 		var9 := c.SceneBaseTileZ - c.MapLastBaseZ
 		c.MapLastBaseX = c.SceneBaseTileX
