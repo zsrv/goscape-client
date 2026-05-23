@@ -218,6 +218,19 @@ func Unload() {
 }
 
 func Unpack(arg1 *io.Jagfile) {
+	// Java: unpack() wraps its whole body in
+	//   try { ... } catch (Exception var21) {
+	//     System.out.println("Error loading model index"); var21.printStackTrace(); }
+	// (Model.java:296-403) — a corrupt/missing model archive is logged and
+	// swallowed rather than crashing the caller. The System.out.println is a
+	// faithful port (kept as fmt per the logging convention); printing the
+	// recovered value stands in for printStackTrace().
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Error loading model index")
+			fmt.Println(r)
+		}
+	}()
 	Head = io.NewPacket(arg1.Read("ob_head.dat", nil))
 	Face1 = io.NewPacket(arg1.Read("ob_face1.dat", nil))
 	Face2 = io.NewPacket(arg1.Read("ob_face2.dat", nil))
@@ -1417,7 +1430,13 @@ func (m *Model) DrawSimple(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 			VertexViewSpaceZ[i] = var22
 		}
 	}
-	m.Draw2(false, false, 0)
+	// Java: try { this.draw(false, false, 0); } catch (Exception var24) {}
+	// (Model.java:1572-1575) — silently swallow a panic during the depth/priority
+	// sort or face rasterization of a degenerate model; render nothing and return.
+	func() {
+		defer func() { _ = recover() }()
+		m.Draw2(false, false, 0)
+	}()
 }
 
 func (m *Model) Draw1(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
@@ -1524,7 +1543,13 @@ func (m *Model) Draw1(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) 
 			VertexViewSpaceZ[i] = var32
 		}
 	}
-	m.Draw2(var23, var24, arg8)
+	// Java: try { this.draw(var23, var24, arg8); } catch (Exception var34) {}
+	// (Model.java:1688-1691) — silently swallow a panic during the depth/priority
+	// sort or face rasterization of a degenerate model; render nothing and return.
+	func() {
+		defer func() { _ = recover() }()
+		m.Draw2(var23, var24, arg8)
+	}()
 }
 
 func (m *Model) Draw2(arg0 bool, arg1 bool, arg2 int) {

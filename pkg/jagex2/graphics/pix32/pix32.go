@@ -327,6 +327,14 @@ func (p *Pix32) Plot(pix2dData []int, pix32PixelsSrc []int, srcOff, dstOff, w, h
 }
 
 func (p *Pix32) Crop(arg0, arg1, arg2, arg4 int) {
+	// Java: crop() wraps its body in try { ... } catch (Exception var17) {
+	// System.out.println("error in sprite clipping routine"); } (Pix32.java:302-353)
+	// — an out-of-bounds index aborts this single draw, logs, and continues.
+	defer func() {
+		if recover() != nil {
+			fmt.Println("error in sprite clipping routine")
+		}
+	}()
 	var6 := p.Wi
 	var7 := p.Hi
 	var8 := 0
@@ -376,6 +384,14 @@ func (p *Pix32) Crop(arg0, arg1, arg2, arg4 int) {
 }
 
 func (p *Pix32) Scale(arg0 int, arg1 int, arg2 []int, arg4 int, arg5 int, arg7 []int, arg8, arg9, arg10, arg11, arg12 int) {
+	// Java: scale() wraps its body in try { ... } catch (Exception var18) {
+	// System.out.println("error in plot_scale"); } (Pix32.java:357-378) — an
+	// out-of-bounds index aborts this single draw, logs, and continues.
+	defer func() {
+		if recover() != nil {
+			fmt.Println("error in plot_scale")
+		}
+	}()
 	var14 := arg0
 	for i := -arg10; i < 0; i++ {
 		var16 := (arg5 >> 16) * arg11
@@ -462,6 +478,10 @@ func (p *Pix32) TransPlot(arg0 int, arg2 []int, arg3 int, arg4 int, arg5 []int, 
 }
 
 func (p *Pix32) DrawRotatedMasked(arg0 int, w int, lineStart []int, h int, anchorY int, arg5 int, anchorX int, x int, y int, lineWidth []int) {
+	// Java: drawRotatedMasked() wraps its body in try { ... } catch (Exception
+	// var23) {} (Pix32.java:442-468) — silently swallow an out-of-bounds index
+	// (e.g. a rotated source coord outside Pixels) and skip this draw.
+	defer func() { _ = recover() }()
 	centerX := -w / 2
 	centerY := -h / 2
 

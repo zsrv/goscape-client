@@ -6986,21 +6986,29 @@ func (c *Client) UpdateGame() {
 	for i := 0; i < c.WaveCount; i++ {
 		if c.WaveDelay[i] <= 0 {
 			var4 := false
-			if c.WaveIDs[i] != c.LastWaveID || c.WaveLoops[i] != c.LastWaveLoops {
-				var5 := wave.Generate(c.WaveLoops[i], c.WaveIDs[i])
-				if time.Now().UnixMilli()+int64(var5.Pos/22) > c.LastWaveStartTime+int64(c.LastWaveLength/22) {
-					c.LastWaveLength = var5.Pos
-					c.LastWaveStartTime = time.Now().UnixMilli()
-					if c.SaveWave(var5.Data, var5.Pos) {
-						c.LastWaveID = c.WaveIDs[i]
-						c.LastWaveLoops = c.WaveLoops[i]
-					} else {
-						var4 = true
+			// Java: try { ... } catch (Exception var10) {} (client.java:7336-7353)
+			// — a per-wave audio exception (Wave.Generate/SaveWave/ReplayWave) is
+			// silently swallowed so one bad sound can't crash the game loop. The
+			// var4 retry flag (captured by reference) and the wave-removal logic
+			// below stay OUTSIDE the guard, matching Java.
+			func() {
+				defer func() { _ = recover() }()
+				if c.WaveIDs[i] != c.LastWaveID || c.WaveLoops[i] != c.LastWaveLoops {
+					var5 := wave.Generate(c.WaveLoops[i], c.WaveIDs[i])
+					if time.Now().UnixMilli()+int64(var5.Pos/22) > c.LastWaveStartTime+int64(c.LastWaveLength/22) {
+						c.LastWaveLength = var5.Pos
+						c.LastWaveStartTime = time.Now().UnixMilli()
+						if c.SaveWave(var5.Data, var5.Pos) {
+							c.LastWaveID = c.WaveIDs[i]
+							c.LastWaveLoops = c.WaveLoops[i]
+						} else {
+							var4 = true
+						}
 					}
+				} else if !c.ReplayWave() {
+					var4 = true
 				}
-			} else if !c.ReplayWave() {
-				var4 = true
-			}
+			}()
 			if var4 && c.WaveDelay[i] != -5 {
 				c.WaveDelay[i] = -5
 			} else {
@@ -7226,15 +7234,25 @@ func (c *Client) UpdateGame() {
 		c.Out.P1Isaac(108)
 	}
 	if c.Stream != nil && c.Out.Pos > 0 {
-		// Java distinguishes IOException -> tryReconnect from generic
-		// Exception -> logout; ClientStream.Write returns a single
-		// untyped error, so both branches collapse here.
-		if err := c.Stream.Write(c.Out.Data, c.Out.Pos, 0); err != nil {
-			c.TryReconnect()
-		} else {
-			c.Out.Pos = 0
-			c.HeartbeatTimer = 0
-		}
+		// Java: try { stream.write(...); out.pos = 0; heartbeatTimer = 0; }
+		//   catch (IOException) { tryReconnect(); }
+		//   catch (Exception)   { logout(); }
+		// (client.java:7569-7580). ClientStream.Write returns a single untyped
+		// error for the IOException arm (-> TryReconnect); a genuine runtime
+		// panic maps to Java's catch (Exception) -> logout via this recover.
+		func() {
+			defer func() {
+				if recover() != nil {
+					c.Logout()
+				}
+			}()
+			if err := c.Stream.Write(c.Out.Data, c.Out.Pos, 0); err != nil {
+				c.TryReconnect()
+			} else {
+				c.Out.Pos = 0
+				c.HeartbeatTimer = 0
+			}
+		}()
 	}
 }
 
@@ -9019,15 +9037,36 @@ func (c *Client) DrawChatback() {
 	c.AreaChatback.Draw(&c.Ops, 22, 375)
 }
 
-func (c *Client) Read() bool {
+func (c *Client) Read() (ok bool) {
 	if c.Stream == nil {
 		return false
 	}
-	// Java: read() (client.java:9316-10384). Step 7a ports framing + history
-	// shift + catch-all only; per-opcode dispatch lands in subtasks 7b-7f.
-	// Java's catch (IOException) → tryReconnect collapses into a per-call
-	// err check here; Java's catch (Exception) → logout hex-dump path is
-	// deferred until dispatch exists to actually throw.
+	// Java: read() (client.java:9316-10384). Java wraps the whole body in
+	//   try { ... } catch (IOException) { tryReconnect() }
+	//                catch (Exception)  { reporterror("T2 ...") ; logout() }
+	// The catch (IOException) path is handled inline below: every Available/
+	// ReadFully error routes to TryReconnect()+return true. The deferred
+	// recover here reproduces catch (Exception): a panic while parsing or
+	// dispatching a packet (e.g. a malformed/hostile packet) emits the "T2"
+	// diagnostic byte-dump and logs out gracefully instead of crashing the
+	// client goroutine.
+	defer func() {
+		if r := recover(); r != nil {
+			// Java: client.java:10374-10382 (catch (Exception) var25).
+			var3 := fmt.Sprintf("T2 - %d,%d,%d - %d,%d,%d - ",
+				c.PacketType, c.LastPacketType1, c.LastPacketType2, c.PacketSize,
+				c.SceneBaseTileX+c.LocalPlayer.PathTileX[0],
+				c.SceneBaseTileZ+c.LocalPlayer.PathTileZ[0])
+			// Java concatenates the signed byte in.data[var4]; In.Data is []byte
+			// (unsigned) here, so cast to int8 to reproduce Java's signed output.
+			for var4 := 0; var4 < c.PacketSize && var4 < 50; var4++ {
+				var3 += fmt.Sprintf("%d,", int8(c.In.Data[var4]))
+			}
+			signlink.ReportErrorFunc(var3)
+			c.Logout()
+			ok = true
+		}
+	}()
 	var2, err := c.Stream.Available()
 	if err != nil {
 		c.TryReconnect()
@@ -9146,18 +9185,28 @@ func (c *Client) Read() bool {
 			}
 		}
 		if !var32 && c.OverrideChat == 0 {
-			// Java: catch (Exception) { signlink.reporterror("cde1"); } —
-			// applet-era diagnostic that swallowed exceptions and posted a
-			// host-side error log. No Go equivalent; let any panic propagate.
-			c.MessageIds[c.PrivateMessageCount] = var5
-			c.PrivateMessageCount = (c.PrivateMessageCount + 1) % 100
-			var37 := wordpack.Unpack(c.In, c.PacketSize-13)
-			var38 := wordfilter.Filter(var37)
-			if var6 > 1 {
-				c.AddMessage(7, var38, jstring.FormatName(jstring.FromBase37(var39)))
-			} else {
-				c.AddMessage(3, var38, jstring.FormatName(jstring.FromBase37(var39)))
-			}
+			// Java: try { ... } catch (Exception) { signlink.reporterror("cde1"); }
+			// (client.java:10054-10067) — a WordPack/WordFilter decode failure is
+			// swallowed locally, logged as "cde1", and the read continues. The
+			// closure-scoped recover keeps this from escalating to the outer T2
+			// logout. The messageIds/privateMessageCount writes happen before the
+			// decode (inside Java's try), so they persist even on failure.
+			func() {
+				defer func() {
+					if recover() != nil {
+						signlink.ReportErrorFunc("cde1")
+					}
+				}()
+				c.MessageIds[c.PrivateMessageCount] = var5
+				c.PrivateMessageCount = (c.PrivateMessageCount + 1) % 100
+				var37 := wordpack.Unpack(c.In, c.PacketSize-13)
+				var38 := wordfilter.Filter(var37)
+				if var6 > 1 {
+					c.AddMessage(7, var38, jstring.FormatName(jstring.FromBase37(var39)))
+				} else {
+					c.AddMessage(3, var38, jstring.FormatName(jstring.FromBase37(var39)))
+				}
+			}()
 		}
 		c.PacketType = -1
 		return true
@@ -10281,20 +10330,30 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 				}
 			}
 			if !var12 && c.OverrideChat == 0 {
-				// Java: catch (Exception) { signlink.reporterror("cde2"); } —
-				// applet-era diagnostic that swallowed exceptions and posted a
-				// host-side error log. No Go equivalent; let any panic propagate.
-				var17 := wordpack.Unpack(arg3, var16)
-				var18 := wordfilter.Filter(var17)
-				arg4.Chat = var18
-				arg4.ChatColor = var6 >> 8
-				arg4.ChatStyle = var6 & 0xFF
-				arg4.ChatTimer = 150
-				if var15 > 1 {
-					c.AddMessage(1, var18, arg4.Name)
-				} else {
-					c.AddMessage(2, var18, arg4.Name)
-				}
+				// Java: try { ... } catch (Exception) { signlink.reporterror("cde2"); }
+				// (client.java:10513-10528) — a WordPack/WordFilter decode failure
+				// is swallowed locally, logged as "cde2", and processing continues.
+				// The closure-scoped recover keeps this from escalating to the outer
+				// T2 logout. Note arg3.Pos = var9 + var16 below is OUTSIDE Java's try
+				// and must run on failure too, so it stays outside this closure.
+				func() {
+					defer func() {
+						if recover() != nil {
+							signlink.ReportErrorFunc("cde2")
+						}
+					}()
+					var17 := wordpack.Unpack(arg3, var16)
+					var18 := wordfilter.Filter(var17)
+					arg4.Chat = var18
+					arg4.ChatColor = var6 >> 8
+					arg4.ChatStyle = var6 & 0xFF
+					arg4.ChatTimer = 150
+					if var15 > 1 {
+						c.AddMessage(1, var18, arg4.Name)
+					} else {
+						c.AddMessage(2, var18, arg4.Name)
+					}
+				}()
 			}
 		}
 		arg3.Pos = var9 + var16

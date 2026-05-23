@@ -143,13 +143,20 @@ func InitPool(size int) {
 func UnpackTextures(jag *io.Jagfile) {
 	TextureCount = 0
 	for i := range 50 {
-		Textures[i] = pix8.NewPix8(jag, strconv.Itoa(i), 0)
-		if LowDetail && Textures[i].OWi == 128 {
-			Textures[i].HalveSize()
-		} else {
-			Textures[i].Trim()
-		}
-		TextureCount++
+		// Java: try { textures[var2] = new Pix8(...); ...; textureCount++; }
+		// catch (Exception var3) {} (Pix3D.java:145-154) — a bad/missing texture
+		// is skipped (TextureCount stays unincremented, inside the closure) and
+		// the loop continues, rather than crashing on a corrupt archive entry.
+		func() {
+			defer func() { _ = recover() }()
+			Textures[i] = pix8.NewPix8(jag, strconv.Itoa(i), 0)
+			if LowDetail && Textures[i].OWi == 128 {
+				Textures[i].HalveSize()
+			} else {
+				Textures[i].Trim()
+			}
+			TextureCount++
+		}()
 	}
 }
 
