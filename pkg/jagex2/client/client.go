@@ -2601,7 +2601,7 @@ func (c *Client) UnloadTitle() {
 	// re-loading any of these buffers would have to go through
 	// LoadTitleImages → DrawProgress, which re-enters OpsMu and
 	// deadlocks (non-reentrant sync.Mutex). Keeping buffers alive
-	// makes LoadTitle's early-return at line 6256 fire on Logout,
+	// makes LoadTitle's early-return (the `if c.ImageTitle2 != nil` guard) fire on Logout,
 	// avoiding the re-entry. Combined memory cost with the kept
 	// ImageTitleN PixMaps is well under 2 MB — negligible.
 }
@@ -3442,7 +3442,7 @@ func (c *Client) PrepareGameScreen() {
 	//      corner flame regions) — Gio's op.Ops re-uploads from PixMap.Data
 	//      each frame without AWT's retained back buffer to fall back on.
 	//   2. ImageTitle2..8 stay alive so c.DrawTitleScreen → c.LoadTitle's
-	//      early-return at line 6256 fires on Logout transition. Otherwise
+	//      early-return (the `if c.ImageTitle2 != nil` guard) fires on Logout transition. Otherwise
 	//      LoadTitle would re-run from inside c.Draw (under OpsMu), which
 	//      transitively calls DrawProgress, which tries to acquire OpsMu
 	//      again — non-reentrant deadlock that froze the client on Logout.
@@ -10328,8 +10328,6 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 }
 
 func (c *Client) DrawProgress(message string, percent int) {
-	fmt.Printf("DrawProgress %v: %v\n", message, percent) // debug
-
 	c.LoadTitle()
 
 	// Top-level frame entry point during boot (called from RunGameShell's
