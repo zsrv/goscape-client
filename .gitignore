@@ -1,0 +1,46 @@
+# .gitignore for goscape-client.
+
+# === Compiled binaries ===
+# Anchored with a leading slash so ONLY root-level binaries match — the
+# `cmd/client/` SOURCE directory must NOT be ignored.
+/client
+/client1
+/client2
+/bin/
+*.exe
+
+# === Test / coverage / profiling output ===
+*.test
+coverage.txt
+coverage.html
+test_results.txt
+*.prof
+*.pprof
+*.pb.gz
+# SIGUSR1 pprof captures written by pkg/profiling.
+/profiles/
+
+# === Local / private config — never push ===
+# CLAUDE.local.md is private per its own header (CLAUDE.md, by contrast, is
+# meant to be committed — do not add it here).
+CLAUDE.local.md
+# Claude Code: per-user local settings + personal session state. To SHARE
+# team config, un-ignore specific paths, e.g.:
+#   !.claude/settings.json
+#   !.claude/commands/
+.claude/
+# Project MCP config can carry server URLs / tokens — ignore by default.
+.mcp.json
+
+# === Editors / IDEs ===
+.idea/
+.vscode/
+*.swp
+*~
+
+# === Tool caches ===
+.serena/
+
+# === OS cruft ===
+.DS_Store
+Thumbs.db
