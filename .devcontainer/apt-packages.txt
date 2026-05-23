@@ -1,0 +1,26 @@
+# Linux system build dependencies for goscape-client.
+#
+# Canonical Gio build set (https://gioui.org/doc/install/linux) plus
+# libasound2-dev for oto (audio). Required at COMPILE time, not just runtime:
+# packages like pkg/jagex2/client import gioui.org/app, so even their test
+# binaries link against these native libraries.
+#
+# Single source of truth: consumed by .devcontainer/Dockerfile (the dev/CI
+# image) and the Makefile `setup` target (host install). One package per line;
+# blank lines and lines starting with '#' are ignored by both consumers.
+#
+# Package names target Debian trixie / recent Ubuntu. Note the libglvnd
+# vendor-neutral names: libgles2-mesa-dev -> libgles-dev, libegl1-mesa-dev ->
+# libegl-dev (the old Mesa names from Gio's docs are transitional dummies here).
+gcc
+pkg-config
+libffi-dev
+libwayland-dev
+libx11-dev
+libx11-xcb-dev
+libxkbcommon-x11-dev
+libxcursor-dev
+libgles-dev
+libegl-dev
+libvulkan-dev
+libasound2-dev

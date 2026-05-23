@@ -1,0 +1,70 @@
+# CI for goscape-client.
+#
+# Runs the same gate as `make ci` (gofmt check, go vet, race tests, golangci-lint)
+# INSIDE the devcontainer image, so CI and local development share one toolchain
+# and one system-dependency set (.devcontainer/apt-packages.txt). This matters
+# for a CGO/Gio project: the build links native libraries whose versions must
+# match between local and CI.
+#
+# Scope mirrors the devcontainer: headless build/test/lint only. The Gio client
+# is never *run* here (no display/GPU/audio), so no display server is set up.
+#
+# Security note: the only ${{ }} interpolation is github.ref in the concurrency
+# group (a controlled value). No run: step interpolates untrusted input.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build the dev image (toolchain + Gio/ALSA deps + golangci-lint). The
+      # context is .devcontainer/ so the Dockerfile's `COPY apt-packages.txt`
+      # resolves. GHA layer cache keeps rebuilds cheap when the Dockerfile and
+      # package list are unchanged.
+      - name: Build dev image
+        uses: docker/build-push-action@v6
+        with:
+          context: .devcontainer
+          file: .devcontainer/Dockerfile
+          tags: goscape-client-dev:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Persist the Go module + build cache between runs so go test / lint don't
+      # re-download and recompile dependencies every time.
+      - name: Cache Go modules and build cache
+        uses: actions/cache@v4
+        with:
+          path: .gocache
+          key: gocache-${{ runner.os }}-${{ hashFiles('go.sum') }}
+          restore-keys: gocache-${{ runner.os }}-
+
+      # Run the gate inside the image with the repo mounted and the cache dir
+      # pointed at the persisted location.
+      - name: Run make ci in the dev image
+        run: |
+          mkdir -p .gocache
+          docker run --rm \
+            -v "$PWD":/work -w /work \
+            -e CGO_ENABLED=1 \
+            -e GOPATH=/work/.gocache/go \
+            -e GOCACHE=/work/.gocache/build \
+            goscape-client-dev:ci \
+            make ci

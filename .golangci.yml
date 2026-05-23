@@ -1,0 +1,26 @@
+# golangci-lint v2 configuration for goscape-client.
+# Run: golangci-lint run   (the devcontainer ships golangci-lint v2)
+#
+# Intentionally minimal. This is a bug-for-bug Java->Go port (see PORTING.md),
+# so idiomatic-Go *style* lints are deliberately NOT enforced — they would
+# fight the deliberate 1:1 mirroring of the Java client: var7-style locals,
+# non-tagged switches, and British spelling in the faithful System.out.println
+# ports ("unrecognised", "RANDOMISED"). We run only the correctness-focused
+# core, which is what the project already checks by hand (go vet + staticcheck).
+version: "2"
+
+linters:
+  # standard = errcheck, govet, ineffassign, staticcheck, unused.
+  default: standard
+
+  exclusions:
+    rules:
+      # client.go intentionally uses a non-tagged switch to stay faithful to
+      # the Java source. QF1003 is a stylistic quickfix, not a correctness
+      # issue, and the project has chosen to leave it (see PORTING.md).
+      # NOTE: this text match is unverified — golangci-lint v2 is not present
+      # in the build sandbox. Confirm it actually suppresses QF1003 on the
+      # first `golangci-lint run` and adjust (e.g. add `path: client.go`).
+      - linters:
+          - staticcheck
+        text: "QF1003"
