@@ -24,18 +24,18 @@ var (
 )
 
 type ObjType struct {
-	Index            int
-	Model            int
-	Name             string
-	Desc             []byte
-	RecolS           []int
-	RecolD           []int
-	Zoom2D           int
-	Xan2D            int
-	Yan2D            int
-	Zan2D            int
-	Xof2D            int
-	Yof2D            int
+	Index  int
+	Model  int
+	Name   string
+	Desc   []byte
+	RecolS []int
+	RecolD []int
+	Zoom2D int
+	Xan2D  int
+	Yan2D  int
+	Zan2D  int
+	Xof2D  int
+	Yof2D  int
 	// Java: ObjType.java:70,73 declares code9/code10 — assigned by
 	// opcodes 9/10 but never read in Java or Go. Pure deobfuscator
 	// residue; fields omitted per the deob-artifact exclusion policy.

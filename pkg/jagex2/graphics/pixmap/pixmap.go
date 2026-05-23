@@ -111,4 +111,3 @@ func writePixmapPixels(dst *image.RGBA, javaPixels []int) {
 		binary.BigEndian.PutUint32(pix[i*4:], uint32(argb)<<8|0xFF)
 	}
 }
-

@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	Enabled      bool
-	OutBuffer    *io.Packet
-	OldBuffer    *io.Packet
-	LastTime     int64
+	Enabled   bool
+	OutBuffer *io.Packet
+	OldBuffer *io.Packet
+	LastTime  int64
 	// Java: InputTracking.java:22 declares trackedCount, incremented in
 	// 9 sites (every record* function) and never read. Pure deob residue;
 	// removed per the deob-artifact exclusion policy. The 9 increment
@@ -149,7 +149,7 @@ func MouseMoved(arg0, arg2 int) {
 		// ((arg0 - lastY + 8) << 4). Go shift is HIGHER than additive, so
 		// parens are required on both sides of the shift to preserve Java
 		// grouping.
-		OutBuffer.P1(arg2 - LastX + 8 + ((arg0-LastY+8)<<4))
+		OutBuffer.P1(arg2 - LastX + 8 + ((arg0 - LastY + 8) << 4))
 	} else if arg2-LastX < 128 && arg2-LastX >= -128 && arg0-LastY < 128 && arg0-LastY >= -128 {
 		EnsureCapacity(4)
 		OutBuffer.P1(6)

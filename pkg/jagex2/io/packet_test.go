@@ -141,8 +141,8 @@ func TestJavaBytesFromBigInt_MSBSetPositive(t *testing.T) {
 	cases := []struct {
 		name string
 		// value in hex; magnitude byte 0 has the high bit set when expected.
-		hex     string
-		want    []byte
+		hex  string
+		want []byte
 	}{
 		{"0x80", "80", []byte{0x00, 0x80}},
 		{"0xFF", "FF", []byte{0x00, 0xFF}},

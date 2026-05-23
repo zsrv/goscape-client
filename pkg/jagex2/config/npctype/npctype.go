@@ -38,10 +38,10 @@ type NpcType struct {
 	// or Go. Pure deobfuscator residue; fields omitted per the
 	// deob-artifact exclusion policy. The wire reads in Decode()
 	// are preserved as discards to keep packet-position alignment.
-	Minimap      bool
-	VisLevel     int
-	ResizeH      int
-	ResizeV      int
+	Minimap  bool
+	VisLevel int
+	ResizeH  int
+	ResizeV  int
 }
 
 func NewNpcType() *NpcType {

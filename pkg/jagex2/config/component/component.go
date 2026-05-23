@@ -67,16 +67,16 @@ type Component struct {
 	// (assigned for Type==1 components but never read). Pure deob
 	// residue; fields omitted per the deob-artifact exclusion policy.
 	// Decode preserves the wire reads as discards.
-	Draggable        bool
-	Interactable     bool
-	Usable           bool
-	Fill             bool
-	Center           bool
-	Shadowed         bool
-	InvSlotOffsetX   []int
-	InvSlotOffsetY   []int
-	InvSlotSprite    []*pix32.Pix32
-	IOps             []string
+	Draggable      bool
+	Interactable   bool
+	Usable         bool
+	Fill           bool
+	Center         bool
+	Shadowed       bool
+	InvSlotOffsetX []int
+	InvSlotOffsetY []int
+	InvSlotSprite  []*pix32.Pix32
+	IOps           []string
 }
 
 func NewComponent() *Component {

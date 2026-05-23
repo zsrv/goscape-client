@@ -113,10 +113,10 @@ func init() {
 type Client struct {
 	//*GameShell
 	// BEGIN GameShell
-	State        int
-	DelTime      int
-	MinDel       int
-	OTim         []int64
+	State   int
+	DelTime int
+	MinDel  int
+	OTim    []int64
 	// Java: GameShell.java:38 declares `int fps`, computed every frame at
 	// gameshell.java:187 but never read anywhere. Pure deob residue;
 	// field omitted and the assignment dropped per the deob-artifact
@@ -501,28 +501,28 @@ type Client struct {
 	AreaViewport                  *pixmap.PixMap
 	AreaChatback                  *pixmap.PixMap
 	JagTitle                      *io.Jagfile
-	Stream *clientstream.ClientStream
-	ModalMessage        string
-	ObjSelectedName     string
-	SpellCaption        string
-	MidiSyncName        string
-	CurrentMidi         string
-	AreaChatbackOffsets []int
-	AreaSidebarOffsets  []int
-	AreaViewportOffsets []int
-	FlameBuffer0        []int
-	FlameBuffer1        []int
-	FlameGradient       []int
-	FlameGradient0      []int
-	FlameGradient1      []int
-	FlameGradient2      []int
-	SceneMapIndex       []int
-	FlameBuffer3        []int
-	FlameBuffer2        []int
-	ImageRunes          []*pix8.Pix8
-	SceneMapLocData     [][]byte
-	LevelTileFlags      [][][]byte
-	LevelHeightMap      [][][]int
+	Stream                        *clientstream.ClientStream
+	ModalMessage                  string
+	ObjSelectedName               string
+	SpellCaption                  string
+	MidiSyncName                  string
+	CurrentMidi                   string
+	AreaChatbackOffsets           []int
+	AreaSidebarOffsets            []int
+	AreaViewportOffsets           []int
+	FlameBuffer0                  []int
+	FlameBuffer1                  []int
+	FlameGradient                 []int
+	FlameGradient0                []int
+	FlameGradient1                []int
+	FlameGradient2                []int
+	SceneMapIndex                 []int
+	FlameBuffer3                  []int
+	FlameBuffer2                  []int
+	ImageRunes                    []*pix8.Pix8
+	SceneMapLocData               [][]byte
+	LevelTileFlags                [][][]byte
+	LevelHeightMap                [][][]int
 }
 
 func NewClient() *Client {
@@ -537,30 +537,30 @@ func NewClient() *Client {
 		KeyQueue:  make([]int, 128),
 		// END GameShell
 
-		LocList:                   datastruct.NewLinkList[*entity.LocEntity](),
-		CameraModifierEnabled:     make([]bool, 5),
-		MergedLocations:           datastruct.NewLinkList[*entity.LocMergeEntity](),
-		IgnoreName37:              make([]int64, 100),
-		MessageIds:                make([]int, 100),
-		Out:                       io.Alloc(1),
-		SkillLevel:                make([]int, 50),
-		ChatInterface:             component.NewComponent(),
-		WaveLoops:                 make([]int, 50),
-		LocalPID:                  -1,
-		DesignColors:              make([]int, 5),
-		Login:                     io.Alloc(1),
-		FriendWorld:               make([]int, 100),
-		MinimapLevel:              -1,
-		ImageHitmarks:             make([]*pix32.Pix32, 20),
-		LastWaveID:                -1,
-		DesignIdentikits:          make([]int, 7),
-		ActiveMapFunctions:        make([]*pix32.Pix32, 1000),
-		ChatScrollHeight:          78,
-		In:                        io.Alloc(1),
-		JagChecksum:               make([]int, 9),
-		MidiThreadActive:          true,
-		ImageSideIcons:            make([]*pix8.Pix8, 13),
-		OrbitCameraPitch:          128,
+		LocList:               datastruct.NewLinkList[*entity.LocEntity](),
+		CameraModifierEnabled: make([]bool, 5),
+		MergedLocations:       datastruct.NewLinkList[*entity.LocMergeEntity](),
+		IgnoreName37:          make([]int64, 100),
+		MessageIds:            make([]int, 100),
+		Out:                   io.Alloc(1),
+		SkillLevel:            make([]int, 50),
+		ChatInterface:         component.NewComponent(),
+		WaveLoops:             make([]int, 50),
+		LocalPID:              -1,
+		DesignColors:          make([]int, 5),
+		Login:                 io.Alloc(1),
+		FriendWorld:           make([]int, 100),
+		MinimapLevel:          -1,
+		ImageHitmarks:         make([]*pix32.Pix32, 20),
+		LastWaveID:            -1,
+		DesignIdentikits:      make([]int, 7),
+		ActiveMapFunctions:    make([]*pix32.Pix32, 1000),
+		ChatScrollHeight:      78,
+		In:                    io.Alloc(1),
+		JagChecksum:           make([]int, 9),
+		MidiThreadActive:      true,
+		ImageSideIcons:        make([]*pix8.Pix8, 13),
+		OrbitCameraPitch:      128,
 		// Java: deob/client.java:92 — `public int selectedTab = 3;`
 		// Latent in current flows (Login resets to 3 before InGame goes
 		// true) but the field-init keeps the Go state aligned with Java
