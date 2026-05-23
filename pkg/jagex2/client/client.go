@@ -6410,7 +6410,17 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 	if !arg2 {
 		c.LoginMessage0 = ""
 		c.LoginMessage1 = "Connecting to server..."
+		// DrawTitleScreen writes the ImageTitle* reused imgBufs and appends
+		// to c.Ops. This LoginFunc path runs on the game goroutine outside
+		// the frame lock (reached via UpdateTitle / TryReconnect), so it must
+		// hold OpsMu to not race the Gio goroutine's e.Frame upload. Safe
+		// from the DrawTitleScreen→LoadTitle→LoadTitleImages→DrawProgress
+		// re-entrant deadlock because ImageTitle2..8 are kept alive (see
+		// 3439-3448), so LoadTitle always early-returns here and never
+		// reaches DrawProgress's OpsMu.Lock.
+		pixmap.OpsMu.Lock()
 		c.DrawTitleScreen()
+		pixmap.OpsMu.Unlock()
 	}
 	conn, err := c.OpenSocket(clientextras.PortOffset + 43594)
 	if err != nil {
