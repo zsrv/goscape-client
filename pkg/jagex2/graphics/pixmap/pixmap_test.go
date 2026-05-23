@@ -36,3 +36,42 @@ func TestConvertPixmapPixelsProducesRGBA(t *testing.T) {
 		t.Errorf("Pix = %v, want %v", rgba.Pix, want)
 	}
 }
+
+// TestWritePixmapPixelsFillsRGBA verifies the in-place fill writes the
+// same opaque [R,G,B,0xFF] bytes the allocating converter produced.
+func TestWritePixmapPixelsFillsRGBA(t *testing.T) {
+	dst := image.NewRGBA(image.Rect(0, 0, 2, 1))
+	pixels := []int{0x00FF8040, 0x00010203}
+
+	writePixmapPixels(dst, pixels)
+
+	want := []uint8{
+		0xFF, 0x80, 0x40, 0xFF, // pixel 0: R, G, B, A(opaque)
+		0x01, 0x02, 0x03, 0xFF, // pixel 1
+	}
+	if !bytes.Equal(dst.Pix, want) {
+		t.Errorf("Pix = %v, want %v", dst.Pix, want)
+	}
+}
+
+// TestWritePixmapPixelsReusesBuffer documents the reuse contract: a second
+// fill overwrites the first's content and does NOT reallocate the backing
+// array (the whole point of the optimization).
+func TestWritePixmapPixelsReusesBuffer(t *testing.T) {
+	dst := image.NewRGBA(image.Rect(0, 0, 2, 1))
+	before := dst.Pix
+
+	writePixmapPixels(dst, []int{0x00112233, 0x00445566})
+	writePixmapPixels(dst, []int{0x00AABBCC, 0x00DDEEFF})
+
+	want := []uint8{
+		0xAA, 0xBB, 0xCC, 0xFF,
+		0xDD, 0xEE, 0xFF, 0xFF,
+	}
+	if !bytes.Equal(dst.Pix, want) {
+		t.Errorf("after reuse Pix = %v, want %v", dst.Pix, want)
+	}
+	if &dst.Pix[0] != &before[0] {
+		t.Error("writePixmapPixels reallocated the backing array; expected in-place reuse")
+	}
+}

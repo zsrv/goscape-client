@@ -1,6 +1,9 @@
 package pixmap
 
-import "testing"
+import (
+	"image"
+	"testing"
+)
 
 // benchPixels builds a full client-window worth of varied opaque pixels.
 const benchW, benchH = 532, 789
@@ -15,9 +18,12 @@ func benchPixels() []int {
 	return p
 }
 
-func BenchmarkConvertPixmapPixels(b *testing.B) {
+func BenchmarkWritePixmapPixels(b *testing.B) {
 	pixels := benchPixels()
+	// Allocate the destination ONCE outside the loop: the steady-state
+	// per-frame cost is the fill alone, which must be 0 allocs/op.
+	dst := image.NewRGBA(image.Rect(0, 0, benchW, benchH))
 	for b.Loop() {
-		_ = convertPixmapPixels(benchW, benchH, pixels)
+		writePixmapPixels(dst, pixels)
 	}
 }
