@@ -1,0 +1,113 @@
+# Release builds for goscape-client.
+#
+# Triggered by version tags (v*): builds the client for 6 platforms on NATIVE
+# GitHub-hosted runners — no cross-compilation. Gio needs CGO on Linux
+# (X11/Wayland/GL) and macOS (Cocoa/Metal), which makes cross-CGO painful;
+# native runners sidestep that entirely. Free arm64 hosted runners (public
+# repos, since 2025-08) cover the arm64 targets, and Gio is pure-Go on Windows
+# (CGO off there).
+#
+# Two stages:
+#   build   — matrix over 6 native runners; each builds, archives, and uploads
+#             its target as a workflow artifact.
+#   release — downloads all artifacts, writes SHA256SUMS, creates the Release.
+#
+# Security: github.ref_name (the tag) is passed via env, never inlined into a
+# run: script. The other ${{ }} uses are matrix.* / runner.* (workflow-defined,
+# trusted), not untrusted event input.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write # required to create the GitHub Release
+
+jobs:
+  build:
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: linux-amd64,   os: ubuntu-24.04,     goos: linux,   goarch: amd64, cgo: "1", ext: tar.gz }
+          - { target: linux-arm64,   os: ubuntu-24.04-arm, goos: linux,   goarch: arm64, cgo: "1", ext: tar.gz }
+          - { target: darwin-amd64,  os: macos-13,         goos: darwin,  goarch: amd64, cgo: "1", ext: tar.gz }
+          - { target: darwin-arm64,  os: macos-14,         goos: darwin,  goarch: arm64, cgo: "1", ext: tar.gz }
+          - { target: windows-amd64, os: windows-2022,     goos: windows, goarch: amd64, cgo: "0", ext: zip }
+          - { target: windows-arm64, os: windows-11-arm,   goos: windows, goarch: arm64, cgo: "0", ext: zip }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Gio's native build deps. Only Linux needs them (Gio links X11/Wayland/GL
+      # via CGO there); macOS uses the preinstalled Xcode SDK, Windows is pure-Go.
+      - name: Install Linux build deps
+        if: runner.os == 'Linux'
+        run: make setup
+
+      - name: Build
+        shell: bash
+        env:
+          CGO_ENABLED: ${{ matrix.cgo }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          mkdir -p dist
+          bin=client
+          [ "$GOOS" = windows ] && bin=client.exe
+          go build -trimpath -ldflags "-s -w" -o "dist/$bin" ./cmd/client
+
+      - name: Archive (tar.gz)
+        if: matrix.ext == 'tar.gz'
+        shell: bash
+        env:
+          VERSION: ${{ github.ref_name }}
+          TARGET: ${{ matrix.target }}
+        run: tar -C dist -czf "client-$VERSION-$TARGET.tar.gz" client
+
+      - name: Archive (zip)
+        if: matrix.ext == 'zip'
+        shell: pwsh
+        env:
+          VERSION: ${{ github.ref_name }}
+          TARGET: ${{ matrix.target }}
+        run: Compress-Archive -Path dist/client.exe -DestinationPath "client-$env:VERSION-$env:TARGET.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: client-*.${{ matrix.ext }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate SHA256SUMS
+        working-directory: artifacts
+        run: sha256sum client-* > SHA256SUMS
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/client-*
+            artifacts/SHA256SUMS
+          fail_on_unmatched_files: true
+          generate_release_notes: true
