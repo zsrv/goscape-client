@@ -1,8 +1,10 @@
 # CI for goscape-client.
 #
 # Runs the shared gate (ci-gate.yml: `make ci` inside the devcontainer image)
-# on every push to main and every PR. The gate is defined ONCE in ci-gate.yml
-# and reused here and by release.yml's pre-build test gate.
+# on every push to a revision branch (rev-*) and every PR targeting one. The
+# default `main` branch is docs-only (no Go code), so it is intentionally not
+# built here. The gate is defined ONCE in ci-gate.yml and reused here and by
+# release.yml's pre-build test gate.
 #
 # Security: the only ${{ }} use is github.ref in the concurrency group
 # (a controlled value).
@@ -10,8 +12,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ['rev-*']
   pull_request:
+    branches: ['rev-*']
 
 # Cancel superseded runs on the same ref.
 concurrency:

@@ -1,6 +1,10 @@
 # Release builds for goscape-client.
 #
-# Triggered by version tags (v*): builds the client for 6 platforms on NATIVE
+# Triggered by revision-namespaced tags of the form rev<N>-v<semver>, e.g.
+# `rev225-v1.0.0`. The revision lives in the tag name (and a tag points at a
+# commit on that revision's branch), so releases across revisions never collide
+# and every artifact name carries its revision (client-rev225-v1.0.0-<target>).
+# Builds the client for 6 platforms on NATIVE
 # GitHub-hosted runners — no cross-compilation. Gio needs CGO on Linux
 # (X11/Wayland/GL) and macOS (Cocoa/Metal), which makes cross-CGO painful;
 # native runners sidestep that entirely. Free arm64 hosted runners (public
@@ -21,7 +25,7 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags: ['rev*-v*']
 
 jobs:
   test:
