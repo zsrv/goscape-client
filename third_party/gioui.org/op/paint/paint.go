@@ -117,6 +117,41 @@ func (i ImageOp) Add(o *op.Ops) {
 	data[1] = byte(i.Filter)
 }
 
+// MutableImageOp draws an *image.RGBA whose pixels the caller mutates in place.
+// Unlike ImageOp (immutable; uploaded once per handle), its GPU texture is
+// created once and re-uploaded in place when the content changes, avoiding the
+// per-frame texture churn the WebGL backend never reclaims. Reuse one
+// MutableImageOp across frames (stable handle) and call Invalidate when the
+// backing pixels change. goscape patch over upstream gioui.org v0.10.0.
+type MutableImageOp struct {
+	Filter ImageFilter
+	src    *image.RGBA
+	handle *ops.MutableImageHandle
+}
+
+// NewMutableImageOp creates a MutableImageOp backed by src (mutated in place).
+func NewMutableImageOp(src *image.RGBA) MutableImageOp {
+	return MutableImageOp{src: src, handle: &ops.MutableImageHandle{}}
+}
+
+// Invalidate signals that src's pixels changed; the next frame re-uploads to
+// the existing GPU texture.
+func (m MutableImageOp) Invalidate() { m.handle.Gen++ }
+
+// Generation reports the current generation. Exposed for tests.
+func (m MutableImageOp) Generation() uint64 { return m.handle.Gen }
+
+// Add records the op. Encoding is identical to ImageOp.Add (same TypeImage and
+// {src, handle} refs); only the handle is the stable mutable one.
+func (m MutableImageOp) Add(o *op.Ops) {
+	if m.src == nil || m.src.Bounds().Empty() {
+		return
+	}
+	data := ops.Write2(&o.Internal, ops.TypeImageLen, m.src, m.handle)
+	data[0] = byte(ops.TypeImage)
+	data[1] = byte(m.Filter)
+}
+
 func (c ColorOp) Add(o *op.Ops) {
 	data := ops.Write(&o.Internal, ops.TypeColorLen)
 	data[0] = byte(ops.TypeColor)

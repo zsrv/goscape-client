@@ -257,6 +257,7 @@ type resource interface {
 type texture struct {
 	src *image.RGBA
 	tex driver.Texture
+	gen uint64 // goscape patch: last-uploaded MutableImageHandle generation
 }
 
 type blitter struct {
@@ -470,6 +471,39 @@ func (r *renderer) texHandle(cache *textureCache, data imageOpData) driver.Textu
 		cache.put(key, t)
 	}
 	tex = t.(*texture)
+
+	// goscape patch (mutable-image support over upstream gioui.org v0.10.0):
+	// a *ops.MutableImageHandle keeps a STABLE cache key, so its entry is never
+	// evicted/deleted (no per-frame texture churn — which WebGL never reclaims,
+	// leaking GBs). The texture is created once and re-uploaded in place via
+	// UploadImage (texSubImage2D) only when the handle's generation advances.
+	if mh, ok := data.handle.(*ops.MutableImageHandle); ok {
+		if tex.tex != nil && tex.gen == mh.Gen {
+			return tex.tex
+		}
+		if tex.tex == nil {
+			var minFilter, magFilter driver.TextureFilter
+			switch data.filter {
+			case filterLinear:
+				minFilter, magFilter = driver.FilterLinearMipmapLinear, driver.FilterLinear
+			case filterNearest:
+				minFilter, magFilter = driver.FilterNearest, driver.FilterNearest
+			}
+			handle, err := r.ctx.NewTexture(driver.TextureFormatSRGBA,
+				data.src.Bounds().Dx(), data.src.Bounds().Dy(),
+				minFilter, magFilter,
+				driver.BufferBindingTexture,
+			)
+			if err != nil {
+				panic(err)
+			}
+			tex.tex = handle
+		}
+		driver.UploadImage(tex.tex, image.Pt(0, 0), data.src)
+		tex.gen = mh.Gen
+		return tex.tex
+	}
+
 	if tex.tex != nil {
 		return tex.tex
 	}

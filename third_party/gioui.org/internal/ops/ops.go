@@ -79,6 +79,16 @@ const (
 	TypeActionInput
 )
 
+// MutableImageHandle is the handle of a paint.ImageOp whose backing image is
+// mutated in place (e.g. a software rasterizer's framebuffer). It is stable
+// across frames so its GPU texture-cache entry persists — no per-frame texture
+// create/delete churn (which the WebGL backend does not reclaim). Gen is bumped
+// by the producer when the pixels change, signalling gpu.texHandle to re-upload
+// to the existing texture (texSubImage2D) instead of allocating a new one.
+//
+// goscape patch over upstream gioui.org v0.10.0 (mutable-image support).
+type MutableImageHandle struct{ Gen uint64 }
+
 type StackID struct {
 	id   uint32
 	prev uint32
