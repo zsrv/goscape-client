@@ -23,6 +23,7 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 const (
@@ -35,7 +36,25 @@ const (
 	// burst of opcodes including a full REBUILD_NORMAL payload (~5500 bytes)
 	// without forcing the reader goroutine to block.
 	readBufSize = 8192
+	// defaultReadTimeout reproduces Java's `socket.setSoTimeout(30000)`
+	// (ClientStream.java:46): a blocking read that goes this long without the
+	// data it needs gives up instead of hanging forever. Java applied this at
+	// the socket so each blocking in.read() threw SocketTimeoutException; the
+	// Go port has no socket-level blocking read (the reader goroutine fills a
+	// ring), so the equivalent bound is applied to the consumer-side wait in
+	// Read/ReadFully — the only place that actually blocks. This matches Java's
+	// behavior exactly: the dispatcher gates gameplay reads on Available(), so
+	// only the login handshake's direct blocking reads are bounded; an idle
+	// (but healthy) in-game connection never blocks here, so it is never timed
+	// out, just as Java never times out an idle connection it isn't reading.
+	defaultReadTimeout = 30 * time.Second
 )
+
+// ErrReadTimeout is returned by Read/ReadFully when the SO_TIMEOUT window
+// elapses with insufficient data. It is the Go analog of Java's
+// SocketTimeoutException (an IOException), so callers route it to the same
+// reconnect/login-error path as any other read error.
+var ErrReadTimeout = errors.New("clientstream: read timed out (SO_TIMEOUT)")
 
 // ClientStream is the Go equivalent of jagex2.io.ClientStream.
 type ClientStream struct {
@@ -62,6 +81,10 @@ type ClientStream struct {
 	rPos int   // write head (advanced by readRun)
 	rLen int   // read tail (advanced by Read/ReadFully)
 	rErr error // sticky read-side error (EOF, conn closed, …)
+
+	// readTimeout is the SO_TIMEOUT window for a blocking consumer read.
+	// Set once at construction; tests may shorten it before issuing reads.
+	readTimeout time.Duration
 }
 
 // NewClientStream wraps conn. It does not dial — the caller is responsible
@@ -74,12 +97,21 @@ func NewClientStream(conn net.Conn) *ClientStream {
 		_ = tc.SetNoDelay(true)
 	}
 	cs := &ClientStream{
-		conn: conn,
-		rbuf: make([]byte, readBufSize),
+		conn:        conn,
+		rbuf:        make([]byte, readBufSize),
+		readTimeout: defaultReadTimeout,
 	}
 	cs.cond = sync.NewCond(&cs.mu)
 	go cs.readRun()
 	return cs
+}
+
+// broadcast wakes every goroutine blocked on cond. Used as the time.AfterFunc
+// callback that ends a blocking read's SO_TIMEOUT window.
+func (cs *ClientStream) broadcast() {
+	cs.mu.Lock()
+	cs.cond.Broadcast()
+	cs.mu.Unlock()
 }
 
 // Close terminates both goroutines and closes the underlying connection.
@@ -165,12 +197,27 @@ func (cs *ClientStream) Read() (int, error) {
 	}
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
+	var deadline time.Time
+	armed := false
 	for cs.availableLocked() == 0 {
 		if cs.rErr != nil {
 			if errors.Is(cs.rErr, io.EOF) {
 				return -1, nil
 			}
 			return 0, cs.rErr
+		}
+		if !armed {
+			// Java: socket.setSoTimeout(30000) — bound this blocking read to
+			// the SO_TIMEOUT window. Arm a single timer that broadcasts on
+			// expiry to break the cond.Wait; the deadline re-check below turns
+			// that wakeup into ErrReadTimeout.
+			deadline = time.Now().Add(cs.readTimeout)
+			timer := time.AfterFunc(cs.readTimeout, cs.broadcast)
+			defer timer.Stop()
+			armed = true
+		}
+		if !time.Now().Before(deadline) {
+			return 0, ErrReadTimeout
 		}
 		cs.cond.Wait()
 	}
@@ -207,6 +254,19 @@ func (cs *ClientStream) ReadFully(arg0 []byte, arg1, arg2 int) error {
 	defer cs.mu.Unlock()
 
 	readSome := false
+	// Java: socket.setSoTimeout(30000) bounds each individual in.read() inside
+	// readFully. The timer is armed only while stalled (ring empty) and
+	// disarmed as soon as a chunk flows, so a packet that trickles in keeps
+	// refreshing the window — only a genuine 30s stall yields ErrReadTimeout.
+	var deadline time.Time
+	var timer *time.Timer
+	disarm := func() {
+		if timer != nil {
+			timer.Stop()
+			timer = nil
+		}
+	}
+	defer disarm()
 	for arg2 > 0 {
 		if cs.availableLocked() == 0 {
 			if cs.rErr != nil {
@@ -215,9 +275,17 @@ func (cs *ClientStream) ReadFully(arg0 []byte, arg1, arg2 int) error {
 				}
 				return cs.rErr
 			}
+			if timer == nil {
+				deadline = time.Now().Add(cs.readTimeout)
+				timer = time.AfterFunc(cs.readTimeout, cs.broadcast)
+			}
+			if !time.Now().Before(deadline) {
+				return ErrReadTimeout
+			}
 			cs.cond.Wait()
 			continue
 		}
+		disarm() // progress is imminent — reset the per-read SO_TIMEOUT window
 		// Copy a contiguous run from rbuf[rLen:] up to rPos or the end of
 		// the ring, capped at arg2.
 		var chunk int

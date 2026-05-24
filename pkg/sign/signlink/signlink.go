@@ -92,6 +92,19 @@ var (
 type SignLink struct {
 }
 
+// StartPriv clears the request slots and enters the polling loop.
+//
+// Java: startpriv (sign/signlink.java:80-105) seeds threadliveid and then spins
+// `while (!active) Thread.sleep(50)` so no caller can submit a request before
+// run() finishes initializing. The `active` lifecycle flag, the threadliveid
+// stale-instance re-entrancy guard, and the !active early-return-null paths in
+// cacheload/cachesave/reporterror are INTENTIONALLY NOT PORTED: they exist to
+// coordinate restarts of the signed applet's privileged thread, which has no
+// analog in this single-shot standalone process (the loop never terminates and
+// is never restarted — see cmd/client/main.go). The mu/cond handoff already
+// orders submissions safely; a request issued before Run's loop spins up simply
+// waits on cond and is serviced late (benign) rather than returning null —
+// which here would be worse, reading as a spurious cache miss.
 func StartPriv() {
 	mu.Lock()
 	DNSReq = ""
@@ -131,21 +144,31 @@ func Run() {
 
 		switch {
 		case dnsReq != "":
-			// Java: sign/signlink.java:128 —
-			//   dns = InetAddress.getByName(dnsreq).getHostName();
-			// For an IP literal input (the only caller passes
-			// jstring.FormatIPv4(...)): if the reverse-DNS lookup
-			// resolves, returns the hostname (without trailing dot);
-			// if no PTR record exists, falls back to the IP string
-			// itself. The Java try/catch only sets "unknown" on a
-			// genuine exception (which for a valid IP literal does
-			// not occur in practice).
+			// Java: sign/signlink.java:127-131 —
+			//   try { dns = InetAddress.getByName(dnsreq).getHostName(); }
+			//   catch (Exception) { dns = "unknown"; }
+			// getByName(x).getHostName() has two distinct paths:
+			//   - x is an IP literal: getByName parses it (never throws) and
+			//     getHostName does a REVERSE lookup, returning the PTR name or,
+			//     on failure, the IP text itself.
+			//   - x is a hostname: getByName FORWARD-resolves it (throwing
+			//     UnknownHostException -> "unknown" if unresolvable) and
+			//     getHostName returns the original (cached) host string.
+			// The sole caller passes jstring.FormatIPv4(...) (an IP literal), so
+			// the IP branch is taken in practice; the hostname branch restores
+			// the "unknown" sentinel for parity completeness.
 			var resolved string
-			names, err := net.LookupAddr(dnsReq)
-			if err == nil && len(names) > 0 {
-				resolved = strings.TrimSuffix(names[0], ".")
+			if net.ParseIP(dnsReq) != nil {
+				names, err := net.LookupAddr(dnsReq)
+				if err == nil && len(names) > 0 {
+					resolved = strings.TrimSuffix(names[0], ".")
+				} else {
+					resolved = dnsReq
+				}
+			} else if _, err := net.LookupHost(dnsReq); err != nil {
+				resolved = "unknown" // Java: catch -> UnknownHostException path
 			} else {
-				resolved = dnsReq
+				resolved = dnsReq // getHostName returns the cached input host
 			}
 			mu.Lock()
 			DNS = resolved

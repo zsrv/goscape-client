@@ -333,3 +333,42 @@ func TestAvailableReportsBuffered(t *testing.T) {
 		t.Fatalf("Available after Close = %d, want 0", n)
 	}
 }
+
+// TestReadTimesOutWhenNoData verifies the SO_TIMEOUT port (Java
+// socket.setSoTimeout(30000)): a blocking Read with no data and no error must
+// give up after the timeout window with ErrReadTimeout, not hang forever.
+func TestReadTimesOutWhenNoData(t *testing.T) {
+	a, b := net.Pipe()
+	defer b.Close() // peer kept open but silent — forces a stall, not EOF
+	cs := NewClientStream(a)
+	cs.readTimeout = 50 * time.Millisecond
+	defer cs.Close()
+
+	start := time.Now()
+	n, err := cs.Read()
+	if !errors.Is(err, ErrReadTimeout) {
+		t.Fatalf("Read: want ErrReadTimeout, got n=%d err=%v", n, err)
+	}
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Fatalf("Read blocked %v, want ~50ms", elapsed)
+	}
+}
+
+// TestReadFullyTimesOutWhenNoData is the ReadFully counterpart.
+func TestReadFullyTimesOutWhenNoData(t *testing.T) {
+	a, b := net.Pipe()
+	defer b.Close()
+	cs := NewClientStream(a)
+	cs.readTimeout = 50 * time.Millisecond
+	defer cs.Close()
+
+	dst := make([]byte, 8)
+	start := time.Now()
+	err := cs.ReadFully(dst, 0, 8)
+	if !errors.Is(err, ErrReadTimeout) {
+		t.Fatalf("ReadFully: want ErrReadTimeout, got err=%v", err)
+	}
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Fatalf("ReadFully blocked %v, want ~50ms", elapsed)
+	}
+}
