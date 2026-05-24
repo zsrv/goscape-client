@@ -19,9 +19,6 @@ type cacheStore interface {
 	// uid returns the persistent client id (Java: GetUID). The browser
 	// implementation returns a session-stable constant.
 	uid() int
-	// cacheDir returns the on-disk base used to build wave/MIDI scratch paths
-	// in Run(). "" in the browser (no filesystem).
-	cacheDir() string
 }
 
 // store is the active backend, selected at build time by newCacheStore

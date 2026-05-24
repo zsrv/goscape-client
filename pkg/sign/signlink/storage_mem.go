@@ -48,5 +48,3 @@ func (s *memStore) save(name string, data []byte) {
 }
 
 func (s *memStore) uid() int { return browserUID }
-
-func (s *memStore) cacheDir() string { return "" }

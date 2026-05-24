@@ -44,12 +44,9 @@ func TestMemStoreOverwrite(t *testing.T) {
 	}
 }
 
-func TestMemStoreUIDAndDir(t *testing.T) {
+func TestMemStoreUID(t *testing.T) {
 	s := newMemStore()
 	if got := s.uid(); got != browserUID {
 		t.Fatalf("uid: got %d, want %d", got, browserUID)
-	}
-	if s.cacheDir() != "" {
-		t.Fatalf("cacheDir: got %q, want empty", s.cacheDir())
 	}
 }

@@ -9,7 +9,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -67,23 +66,18 @@ var (
 	LoopRate      int    = 50
 	Midi          string
 	Save          string
-	Wave          string
 	ReportError   bool = true
 	ErrorName     string
 	ClientVersion int = 225
 	MidiFade      int
-	MidiPos       int
 	MidiVol       int
 	SaveLen       int
 	//ThreadLiveID  int // not needed in go
 	UID     int
-	WavePos int
 	WaveVol int
 	//MainApp Applet
 	//SocketIP net.IPAddr // not needed in go
-	MidiPlay bool
-	SunJava  bool
-	WavePlay bool
+	SunJava bool
 )
 
 type SignLink struct {
@@ -120,7 +114,6 @@ func StartPriv() {
 //
 // Java: signlink.run() (sign/signlink.java:107-178).
 func Run() {
-	var1 := store.cacheDir()
 	uid := store.uid()
 	mu.Lock()
 	UID = uid
@@ -133,8 +126,6 @@ func Run() {
 		saveReq := SaveReq
 		saveBuf := SaveBuf
 		saveLen := SaveLen
-		wavePlay := WavePlay
-		midiPlay := MidiPlay
 		urlReq := URLReq
 		loopRate := LoopRate
 		mu.Unlock()
@@ -183,23 +174,7 @@ func Run() {
 			if saveBuf != nil {
 				store.save(saveReq, saveBuf[0:saveLen])
 			}
-			waveOut := ""
-			midiOut := ""
-			if wavePlay {
-				waveOut = path.Join(var1, saveReq)
-			}
-			if midiPlay {
-				midiOut = path.Join(var1, saveReq)
-			}
 			mu.Lock()
-			if wavePlay {
-				Wave = waveOut
-				WavePlay = false
-			}
-			if midiPlay {
-				Midi = midiOut
-				MidiPlay = false
-			}
 			SaveReq = ""
 			cond.Broadcast()
 			mu.Unlock()
@@ -359,48 +334,6 @@ func DNSLookup(arg0 string) {
 	DNSReq = arg0
 }
 
-func WaveSave(arg0 []byte, arg1 int) bool {
-	mu.Lock()
-	defer mu.Unlock()
-	if arg1 > 2_000_000 {
-		return false
-	}
-	if SaveReq == "" {
-		WavePos = (WavePos + 1) % 5
-		SaveLen = arg1
-		SaveBuf = arg0
-		WavePlay = true
-		SaveReq = "sound" + strconv.Itoa(WavePos) + ".wav"
-		return true
-	}
-	return false
-}
-
-func WaveReplay() bool {
-	mu.Lock()
-	defer mu.Unlock()
-	if SaveReq == "" {
-		SaveBuf = nil
-		WavePlay = true
-		SaveReq = "sound" + strconv.Itoa(WavePos) + ".wav"
-		return true
-	}
-	return false
-}
-
-func MidiSave(saveBuf []byte, saveLen int) {
-	mu.Lock()
-	defer mu.Unlock()
-	if saveLen > 2_000_000 || SaveReq != "" {
-		return
-	}
-	MidiPos = (MidiPos + 1) % 5
-	SaveLen = saveLen
-	SaveBuf = saveBuf
-	MidiPlay = true
-	SaveReq = "jingle" + strconv.Itoa(MidiPos) + ".mid"
-}
-
 // ConsumeMidi atomically reads and clears the Midi path/command. Returns
 // the empty string when nothing is queued. The audio playback driver
 // polls this; Java's signlink consumer (in the signed-applet wrapper)
@@ -414,16 +347,6 @@ func ConsumeMidi() string {
 	defer mu.Unlock()
 	s := Midi
 	Midi = ""
-	return s
-}
-
-// ConsumeWave is the SFX counterpart of ConsumeMidi. Returns the path to
-// the most recently saved .wav, or "" if nothing is queued.
-func ConsumeWave() string {
-	mu.Lock()
-	defer mu.Unlock()
-	s := Wave
-	Wave = ""
 	return s
 }
 

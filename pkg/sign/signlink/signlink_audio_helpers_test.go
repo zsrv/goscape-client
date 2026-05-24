@@ -6,7 +6,7 @@ import (
 )
 
 // These tests cover the audio-facing helpers added so the playback
-// subsystem can read the Midi/Wave/MidiFade/MidiVol fields without
+// subsystem can read the Midi/MidiFade/MidiVol fields without
 // racing the signlink polling loop (which holds mu while publishing).
 //
 // Before these helpers existed, client.StopMidi and client.SetMidiVolume
@@ -28,21 +28,6 @@ func TestConsumeMidiClearsAndReturns(t *testing.T) {
 	}
 	if again := ConsumeMidi(); again != "" {
 		t.Fatalf("ConsumeMidi should clear: got %q, want \"\"", again)
-	}
-}
-
-func TestConsumeWaveClearsAndReturns(t *testing.T) {
-	t.Cleanup(resetSignlinkAudioFields)
-
-	mu.Lock()
-	Wave = "/tmp/sound0.wav"
-	mu.Unlock()
-
-	if got := ConsumeWave(); got != "/tmp/sound0.wav" {
-		t.Fatalf("ConsumeWave: got %q, want %q", got, "/tmp/sound0.wav")
-	}
-	if again := ConsumeWave(); again != "" {
-		t.Fatalf("ConsumeWave should clear: got %q, want \"\"", again)
 	}
 }
 
@@ -95,7 +80,6 @@ func resetSignlinkAudioFields() {
 	mu.Lock()
 	defer mu.Unlock()
 	Midi = ""
-	Wave = ""
 	MidiFade = 0
 	MidiVol = 0
 }

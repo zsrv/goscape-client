@@ -209,6 +209,3 @@ func (s *idbStore) save(name string, data []byte) {
 // uid returns the constant browser client id (browserUID). The browser has no
 // persistent uid.dat and Client-TS sends a fixed value, so a constant is parity.
 func (s *idbStore) uid() int { return browserUID }
-
-// cacheDir returns "" — there is no on-disk scratch directory in the browser.
-func (s *idbStore) cacheDir() string { return "" }

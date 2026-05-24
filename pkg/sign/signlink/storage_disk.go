@@ -34,8 +34,6 @@ func (d *diskStore) ensure() {
 	})
 }
 
-func (d *diskStore) cacheDir() string { d.ensure(); return d.dir }
-
 func (d *diskStore) uid() int { d.ensure(); return d.id }
 
 func (d *diskStore) load(name string) []byte {
