@@ -18,7 +18,7 @@ import (
 func main() {
 	fmt.Println("RS2 user client - release #" + strconv.Itoa(225))
 	if len(os.Args) < 5 || len(os.Args) > 6 {
-		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members], [host]")
+		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members], [host|ws://host[:port][/path]|wss://host[:port][/path]]")
 		os.Exit(1)
 	}
 	var err error
@@ -38,7 +38,7 @@ func main() {
 	case "highmem":
 		client.SetHighMem()
 	default:
-		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members]")
+		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members], [host|ws://host[:port][/path]|wss://host[:port][/path]]")
 		os.Exit(1)
 	}
 	switch os.Args[4] {
@@ -47,16 +47,26 @@ func main() {
 	case "members":
 		client.MembersWorld = true
 	default:
-		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members], [host]")
+		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members], [host|ws://host[:port][/path]|wss://host[:port][/path]]")
 		os.Exit(1)
 	}
 	// Java main accepts exactly 4 args (deob/client.java:10599); the applet host
 	// came from getCodeBase().getHost(). This optional 5th `host` arg is a
 	// Go-original standalone extension (no browser codebase exists here) that
-	// lets the operator point the binary at a non-localhost server. Behavioral
-	// superset of Java's CLI, not a parity regression.
+	// lets the operator point the binary at a non-localhost server. A ws:// or
+	// wss:// scheme additionally selects the WebSocket transport (for a future
+	// js/wasm build); a bare host keeps the TCP default. The parsed bare
+	// hostname is stored in clientextras.Host so GetHost/GetCodeBase stay valid.
 	if len(os.Args) == 6 {
-		clientextras.Host = os.Args[5]
+		tk, host, wsPort, wsPath, err := parseHostArg(os.Args[5])
+		if err != nil {
+			fmt.Printf("invalid host: %v\n", err)
+			os.Exit(1)
+		}
+		clientextras.Host = host
+		clientextras.Transport = tk
+		clientextras.WSPort = wsPort
+		clientextras.WSPath = wsPath
 	}
 
 	// Register SIGUSR1 profile-capture handler. Non-blocking; returns
