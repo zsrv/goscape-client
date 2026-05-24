@@ -375,9 +375,18 @@ func CacheSave(arg0 string, arg1 []byte) {
 //
 // Deviation: a 10s connect timeout is applied (Java has none) so a stuck DNS
 // or unreachable host doesn't hang the caller indefinitely.
+// Transport branch (Go-original extension): ws://wss:// hosts dial a
+// WebSocket instead of a raw TCP socket, enabling a future js/wasm browser
+// build. TCP remains the Java-parity default. See
+// docs/superpowers/specs/2026-05-24-websocket-transport-design.md.
 func OpenSocket(port int) (net.Conn, error) {
 	const dialTimeout = 10 * time.Second
-	return net.DialTimeout("tcp", net.JoinHostPort(clientextras.Host, strconv.Itoa(port)), dialTimeout)
+	switch clientextras.Transport {
+	case clientextras.TransportWS, clientextras.TransportWSS:
+		return openWebSocket(clientextras.Transport, clientextras.Host, port, dialTimeout)
+	default:
+		return net.DialTimeout("tcp", net.JoinHostPort(clientextras.Host, strconv.Itoa(port)), dialTimeout)
+	}
 }
 
 // OpenURL submits a URLReq to the polling goroutine and waits until Run
