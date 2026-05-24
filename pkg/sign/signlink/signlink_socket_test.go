@@ -19,6 +19,10 @@ func TestResolveWSTarget(t *testing.T) {
 		{"https default port", "example.com", "", "https:", clientextras.TransportWSS, "example.com", 443},
 		{"http default port", "example.com", "", "http:", clientextras.TransportWS, "example.com", 80},
 		{"https explicit port", "10.0.0.1", "443", "https:", clientextras.TransportWSS, "10.0.0.1", 443},
+		// A non-numeric port (Atoi returns 0) must fall through to the scheme
+		// default — this also covers the "<undefined>" string syscall/js emits
+		// for a missing location.port, which native tooling can't exercise.
+		{"non-numeric port falls back to default", "example.com", "abc", "http:", clientextras.TransportWS, "example.com", 80},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

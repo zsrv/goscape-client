@@ -24,6 +24,9 @@ func dialTCP(host string, port int, timeout time.Duration) (net.Conn, error) {
 // origin (rather than a PortOffset+43594 TCP port) matches Client-TS and avoids
 // mixed-content under HTTPS.
 func ConfigureTransport() {
+	// window.location is spec-guaranteed in a browser window; hostname, port,
+	// and protocol are always present string properties (port is "" on the
+	// scheme's default port, which resolveWSTarget maps to 80/443).
 	loc := js.Global().Get("location")
 	hostname := loc.Get("hostname").String()
 	portStr := loc.Get("port").String()
