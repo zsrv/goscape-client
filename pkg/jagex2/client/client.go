@@ -5523,37 +5523,17 @@ func (c *Client) Load() {
 
 	AlreadyStarted = true
 
-	validHost := false
-	host := c.GetHost()
-	if strings.HasSuffix(host, "jagex.com") {
-		validHost = true
-	}
-	if strings.HasSuffix(host, "runescape.com") {
-		validHost = true
-	}
-	if strings.HasSuffix(host, "192.168.1.2") {
-		validHost = true
-	}
-	if strings.HasSuffix(host, "192.168.1.249") {
-		validHost = true
-	}
-	if strings.HasSuffix(host, "192.168.1.252") {
-		validHost = true
-	}
-	if strings.HasSuffix(host, "192.168.1.253") {
-		validHost = true
-	}
-	if strings.HasSuffix(host, "192.168.1.254") {
-		validHost = true
-	}
-	if strings.HasSuffix(host, "127.0.0.1") {
-		validHost = true
-	}
-
-	if !validHost {
-		c.ErrorHost = true
-		return
-	}
+	// Java host allowlist (deob/client.java:5962-5987): the applet set
+	// errorHost (refusing to load) unless getCodeBase().getHost() ended in
+	// jagex.com / runescape.com / a few 192.168.1.x dev IPs / 127.0.0.1.
+	//
+	// Intentionally NOT enforced in this standalone Go port: there is no
+	// browser codebase host to validate, and the optional [host] CLI arg — plus
+	// the ws://|wss:// WebSocket transport — exist precisely to point the client
+	// at an operator-chosen server, which the allowlist would otherwise reject
+	// (the source of the ErrorHost screen for any non-loopback host). Go-original
+	// deviation; c.ErrorHost and DrawError's handling of it are left in place but
+	// are no longer triggered here.
 
 	// Java: try { ... } catch (Exception) { this.errorLoading = true; } —
 	// wraps the entire archive-load / scene-init body below (client.java
