@@ -122,7 +122,9 @@ func (i ImageOp) Add(o *op.Ops) {
 // created once and re-uploaded in place when the content changes, avoiding the
 // per-frame texture churn the WebGL backend never reclaims. Reuse one
 // MutableImageOp across frames (stable handle) and call Invalidate when the
-// backing pixels change. goscape patch over upstream gioui.org v0.10.0.
+// backing pixels change. src's dimensions are fixed for the lifetime of the op
+// (the GPU texture is allocated once at construction); to resize, create a new
+// MutableImageOp. goscape patch over upstream gioui.org v0.10.0.
 type MutableImageOp struct {
 	Filter ImageFilter
 	src    *image.RGBA
