@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"math"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -162,10 +161,12 @@ func newMidiDriver(ctx *oto.Context) *midiDriver {
 	return &midiDriver{ctx: ctx}
 }
 
-// handle dispatches one signlink Midi command. The three shapes are:
+// handle dispatches one signlink Midi command. Only two shapes occur now:
 //   - "stop":      stop sequencing, honoring MidiFade.
 //   - "voladjust": adjust user volume on the persistent Player.
-//   - <path>:      load the .mid at this path and start playing it.
+//
+// Track data reaches the synth as bytes via PlayMIDI (c.SaveMidi), so the
+// command channel no longer carries file paths.
 func (d *midiDriver) handle(cmd string) {
 	switch cmd {
 	case "stop":
@@ -173,28 +174,16 @@ func (d *midiDriver) handle(cmd string) {
 	case "voladjust":
 		d.setUserVolume(volumeFromCentibels(signlink.ReadMidiVol()))
 	default:
-		d.play(cmd, signlink.ReadMidiFade() == 1)
+		// A path here would be unexpected (signlink.MidiSave is gone) and there
+		// is no filesystem in the browser — log rather than read a file.
+		log.Printf("audio/midi: ignoring unexpected command %q", cmd)
 	}
 }
 
-// play is the path-based entry point — kept as a defensive fallback
-// for any signlink consumer that still publishes paths via
-// signlink.MidiSave. The primary entry point is now PlayMIDI (via
-// c.SaveMidi), which bypasses the disk roundtrip entirely.
-func (d *midiDriver) play(path string, fade bool) {
-	midData, err := os.ReadFile(path)
-	if err != nil {
-		log.Printf("audio/midi: read %q: %v", path, err)
-		return
-	}
-	d.playFromBytes(midData, fade)
-}
-
-// playFromBytes is the actual play implementation. Reused by play()
-// (file-path entry) and by PlayMIDI (direct in-memory entry from
-// c.SaveMidi). The expensive bits — MIDI parsing, Synthesizer
-// allocation, SoundFont voicing setup — happen on the caller's
-// goroutine; only the brief player/source handoff takes d.mu.
+// playFromBytes is the play implementation. Called by PlayMIDI (direct
+// in-memory entry from c.SaveMidi). The expensive bits — MIDI parsing,
+// Synthesizer allocation, SoundFont voicing setup — happen on the
+// caller's goroutine; only the brief player/source handoff takes d.mu.
 //
 // User volume is read from signlink.MidiVol and applied via the
 // Player's SetVolume on every track change so a "music off → on"
