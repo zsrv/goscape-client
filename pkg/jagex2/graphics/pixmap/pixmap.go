@@ -37,11 +37,19 @@ type PixMap struct {
 	Width  int
 	Height int
 
-	// imgBuf is the reusable RGBA buffer that Draw fills in place and
-	// hands to paint.NewImageOp each frame, so the steady-state render
-	// path performs no image allocation. See Draw for the safety
-	// invariants that make in-place reuse correct.
+	// imgBuf is the reusable RGBA buffer that Draw fills in place, backing a
+	// stable mutable image op (imageOp). The steady-state render path performs
+	// no image allocation and no GPU texture churn — the texture is created
+	// once and re-uploaded in place only when the pixels change.
 	imgBuf *image.RGBA
+
+	// imageOp is one stable mutable op reused every frame. A fresh ImageOp per
+	// frame (the old approach) made Gio create+delete a GL texture per frame,
+	// which the WebGL backend never reclaimed (multi-GB wasm leak). See
+	// docs/superpowers/specs/2026-05-24-wasm-texture-leak-patched-gio-design.md.
+	imageOp  paint.MutableImageOp
+	lastHash uint64
+	uploaded bool
 }
 
 // NewPixMap allocates a width*height pixel buffer.
@@ -51,6 +59,8 @@ func NewPixMap(width, height int) *PixMap {
 	m.Height = height
 	m.Data = make([]int, width*height)
 	m.imgBuf = image.NewRGBA(image.Rect(0, 0, width, height))
+	m.imageOp = paint.NewMutableImageOp(m.imgBuf)
+	m.imageOp.Filter = paint.FilterNearest
 	m.Bind()
 	return &m
 }
@@ -64,34 +74,52 @@ func (p *PixMap) Bind() {
 // Draw emits the GPU-upload ops for this PixMap directly into the
 // caller's op list. Caller must hold OpsMu (see OpsMu comment above).
 //
-// The prior implementation recorded a macro into a per-PixMap
-// `OpCache *op.Ops` field that was never Reset between calls; every
-// Draw appended a fresh macro region (including a reference to the
-// converted NRGBA image), and after a few minutes of play those
-// OpCaches retained multiple gigabytes of stale image data. The
-// macro indirection served no purpose — Draw recorded and
-// immediately called, no replay. Emitting ops directly to `ops`
-// is equivalent and lets GC collect the NRGBA after c.Ops.Reset
-// each frame.
+// The prior implementation minted a fresh paint.NewImageOp every frame,
+// causing Gio to create+delete a GL texture per frame; the WebGL backend
+// never reclaimed these, producing a multi-GB memory leak in wasm builds.
+// This version reuses one stable paint.MutableImageOp and re-uploads (in
+// place, via the patched Gio) only when an FNV hash of the pixel data
+// detects a change since the last upload.
 func (p *PixMap) Draw(ops *op.Ops, x, y int) {
 	defer op.Offset(image.Point{X: x, Y: y}).Push(ops).Pop()
-	// Fill the reused buffer in place instead of allocating a fresh image
-	// every frame. This is safe because:
-	//   1. OpsMu serializes this write against e.Frame's read (the caller
-	//      holds OpsMu for the whole frame build; the FrameEvent handler
-	//      holds the same OpsMu across e.Frame).
-	//   2. The GL upload (TexSubImage2D, inside e.Frame) copies the bytes
-	//      synchronously, so imgBuf is free to overwrite once e.Frame
-	//      returns.
-	//   3. paint.NewImageOp still mints a fresh handle, which forces Gio
-	//      to re-read imgBuf every frame (a stable handle would show a
-	//      frozen frame).
-	// See docs/superpowers/specs/2026-05-23-pixmap-buffer-reuse-design.md.
-	writePixmapPixels(p.imgBuf, p.Data)
-	imageOp := paint.NewImageOp(p.imgBuf)
-	imageOp.Filter = paint.FilterNearest
-	imageOp.Add(ops)
+	// Re-upload only when the pixel content changed since the last upload. The
+	// stable imageOp keeps one GPU texture alive across frames (no per-frame
+	// texture create/delete churn), and hashPixels detects change without any
+	// plumbing into the pix2d write paths.
+	//
+	// CONCURRENCY: callers hold OpsMu across the whole frame build, and the
+	// FrameEvent handler holds the same OpsMu across e.Frame (inside which the
+	// patched gpu.texHandle does the in-place UploadImage). So the write to
+	// imgBuf, the Invalidate, and the upload are all serialized — same invariant
+	// as before. See the OpsMu comment above.
+	h := hashPixels(p.Data)
+	if !p.uploaded || h != p.lastHash {
+		writePixmapPixels(p.imgBuf, p.Data)
+		p.imageOp.Invalidate()
+		p.lastHash = h
+		p.uploaded = true
+	}
+	// Always add the op so the texture stays "used" this frame and is not
+	// evicted/deleted by Gio's texture cache.
+	p.imageOp.Add(ops)
 	paint.PaintOp{}.Add(ops)
+}
+
+// hashPixels is a fast FNV-1a-style 64-bit hash over the packed 0x00RRGGBB
+// pixels, used to detect whether the buffer changed since the last GPU upload.
+// Allocation-free and int-width-independent (each pixel fits in uint32). A
+// collision would at worst skip one frame's re-upload of changed content (a
+// 1-frame stale flicker), which is negligible for change detection.
+func hashPixels(data []int) uint64 {
+	const (
+		offset uint64 = 1469598103934665603
+		prime  uint64 = 1099511628211
+	)
+	h := offset
+	for _, v := range data {
+		h = (h ^ uint64(uint32(v))) * prime
+	}
+	return h
 }
 
 // writePixmapPixels fills dst in place from packed 0x00RRGGBB ints (Java

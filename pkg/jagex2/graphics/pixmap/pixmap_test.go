@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"image"
 	"testing"
+
+	"gioui.org/op"
 )
 
 // TestWritePixmapPixelsFillsRGBA verifies the in-place fill writes the
@@ -55,5 +57,39 @@ func TestNewPixMapAllocatesImageBuffer(t *testing.T) {
 	}
 	if b := p.imgBuf.Bounds(); b.Dx() != 4 || b.Dy() != 3 {
 		t.Errorf("imgBuf bounds = %v, want 4x3", b)
+	}
+}
+
+func TestHashPixelsDetectsChange(t *testing.T) {
+	a := []int{1, 2, 3, 0xFFFFFF}
+	if hashPixels(a) != hashPixels([]int{1, 2, 3, 0xFFFFFF}) {
+		t.Fatal("identical data hashed differently")
+	}
+	if hashPixels(a) == hashPixels([]int{1, 2, 3, 0xFFFFFE}) {
+		t.Fatal("different data hashed identically")
+	}
+}
+
+func TestPixMapUploadsOnlyOnChange(t *testing.T) {
+	p := NewPixMap(4, 4)
+	var ops op.Ops
+
+	p.Draw(&ops, 0, 0) // first draw must upload
+	g1 := p.imageOp.Generation()
+	if g1 == 0 {
+		t.Fatalf("first Draw should bump generation, got %d", g1)
+	}
+
+	ops.Reset()
+	p.Draw(&ops, 0, 0) // unchanged -> no re-upload
+	if g2 := p.imageOp.Generation(); g2 != g1 {
+		t.Fatalf("unchanged Draw re-uploaded: %d -> %d", g1, g2)
+	}
+
+	p.Data[5] = 0x123456 // change a pixel
+	ops.Reset()
+	p.Draw(&ops, 0, 0) // changed -> re-upload
+	if g3 := p.imageOp.Generation(); g3 == g1 {
+		t.Fatalf("changed Draw did not re-upload (gen stayed %d)", g3)
 	}
 }
