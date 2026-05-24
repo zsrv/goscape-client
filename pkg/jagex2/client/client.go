@@ -8455,44 +8455,57 @@ func (c *Client) DrawError() {
 
 	c.SetFrameRate(1)
 
+	// DrawError can run before the title fonts are loaded: Client.Load flags
+	// ErrorHost/ErrorLoading and returns before FontBold12 is built (the "b12"
+	// load site), and the recover() defer can likewise flag ErrorLoading on an
+	// early panic. Java drew these screens with always-available AWT system
+	// fonts (GameShell.java:541); the Go port reuses the cache-loaded
+	// FontBold12, so guard against nil — degrade to a background-only screen
+	// rather than dereferencing a nil *PixFont (the SIGSEGV when a host is set).
+	drawText := func(x, y, color int, s string) {
+		if c.FontBold12 != nil {
+			c.FontBold12.DrawString(x, y, color, s)
+		}
+	}
+
 	if c.ErrorLoading {
 		c.FlameActive = false
 		// Java: Font Helvetica BOLD 16, yellow header; BOLD 12 white body.
 		// Go: FontBold12 throughout — same divergence as elsewhere.
-		c.FontBold12.DrawString(30, 35, 0xFFFF00,
+		drawText(30, 35, 0xFFFF00,
 			"Sorry, an error has occured whilst loading RuneScape")
-		c.FontBold12.DrawString(30, 85, 0xFFFFFF,
+		drawText(30, 85, 0xFFFFFF,
 			"To fix this try the following (in order):")
-		c.FontBold12.DrawString(30, 135, 0xFFFFFF,
+		drawText(30, 135, 0xFFFFFF,
 			"1: Try closing ALL open web-browser windows, and reloading")
-		c.FontBold12.DrawString(30, 165, 0xFFFFFF,
+		drawText(30, 165, 0xFFFFFF,
 			"2: Try clearing your web-browsers cache from tools->internet options")
-		c.FontBold12.DrawString(30, 195, 0xFFFFFF,
+		drawText(30, 195, 0xFFFFFF,
 			"3: Try using a different game-world")
-		c.FontBold12.DrawString(30, 225, 0xFFFFFF,
+		drawText(30, 225, 0xFFFFFF,
 			"4: Try rebooting your computer")
-		c.FontBold12.DrawString(30, 255, 0xFFFFFF,
+		drawText(30, 255, 0xFFFFFF,
 			"5: Try selecting a different version of Java from the play-game menu")
 	}
 	if c.ErrorHost {
 		c.FlameActive = false
 		// Java: Font Helvetica BOLD 20, white. Go: FontBold12.
-		c.FontBold12.DrawString(50, 50, 0xFFFFFF, "Error - unable to load game!")
-		c.FontBold12.DrawString(50, 100, 0xFFFFFF, "To play RuneScape make sure you play from")
-		c.FontBold12.DrawString(50, 150, 0xFFFFFF, "http://www.runescape.com")
+		drawText(50, 50, 0xFFFFFF, "Error - unable to load game!")
+		drawText(50, 100, 0xFFFFFF, "To play RuneScape make sure you play from")
+		drawText(50, 150, 0xFFFFFF, "http://www.runescape.com")
 	}
 	if !c.ErrorStarted {
 		c.OverlayPixMap.Draw(&c.Ops, 0, 0)
 		return
 	}
 	c.FlameActive = false
-	c.FontBold12.DrawString(30, 35, 0xFFFF00,
+	drawText(30, 35, 0xFFFF00,
 		"Error a copy of RuneScape already appears to be loaded")
-	c.FontBold12.DrawString(30, 85, 0xFFFFFF,
+	drawText(30, 85, 0xFFFFFF,
 		"To fix this try the following (in order):")
-	c.FontBold12.DrawString(30, 135, 0xFFFFFF,
+	drawText(30, 135, 0xFFFFFF,
 		"1: Try closing ALL open web-browser windows, and reloading")
-	c.FontBold12.DrawString(30, 165, 0xFFFFFF,
+	drawText(30, 165, 0xFFFFFF,
 		"2: Try rebooting your computer, and reloading")
 	c.OverlayPixMap.Draw(&c.Ops, 0, 0)
 }
