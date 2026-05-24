@@ -53,9 +53,9 @@ func openWebSocket(kind clientextras.TransportKind, host string, port int, timeo
 		return nil, err
 	}
 
-	// Server frames can be large (e.g. map data); the 32 KiB default read
-	// limit would error on an oversized message. Raise it generously.
-	c.SetReadLimit(1 << 20) // 1 MiB
-
+	// websocket.NetConn disables the per-message read limit internally
+	// (SetReadLimit(-1)), so large server frames (e.g. map data) never trip the
+	// 32 KiB default — no explicit limit is needed here. This matches the TS
+	// client, which imposes no per-message cap either.
 	return websocket.NetConn(context.Background(), c, websocket.MessageBinary), nil
 }

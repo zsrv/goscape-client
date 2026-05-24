@@ -375,7 +375,7 @@ func CacheSave(arg0 string, arg1 []byte) {
 //
 // Deviation: a 10s connect timeout is applied (Java has none) so a stuck DNS
 // or unreachable host doesn't hang the caller indefinitely.
-// Transport branch (Go-original extension): ws://wss:// hosts dial a
+// Transport branch (Go-original extension): ws:// or wss:// hosts dial a
 // WebSocket instead of a raw TCP socket, enabling a future js/wasm browser
 // build. TCP remains the Java-parity default. See
 // docs/superpowers/specs/2026-05-24-websocket-transport-design.md.
