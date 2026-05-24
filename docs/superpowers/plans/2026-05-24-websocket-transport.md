@@ -180,7 +180,8 @@ func TestBuildWSURL(t *testing.T) {
 		want         string
 	}{
 		{"bare ws default port", clientextras.TransportWS, "gameserver", 43594, 0, "", "ws://gameserver:43594/"},
-		{"port offset applied", clientextras.TransportWS, "gameserver", 43595, 0, "", "ws://gameserver:43595/"},
+		{"caller-supplied default port", clientextras.TransportWS, "gameserver", 43595, 0, "", "ws://gameserver:43595/"},
+		{"non-positive override falls back to default", clientextras.TransportWS, "gameserver", 43594, -1, "", "ws://gameserver:43594/"},
 		{"override port", clientextras.TransportWS, "10.0.0.5", 43594, 8080, "", "ws://10.0.0.5:8080/"},
 		{"wss with port and path", clientextras.TransportWSS, "play.example.com", 43594, 443, "/ws", "wss://play.example.com:443/ws"},
 		{"path no override port", clientextras.TransportWS, "host", 43594, 0, "/path", "ws://host:43594/path"},
@@ -221,7 +222,7 @@ import (
 )
 
 // buildWSURL assembles the WebSocket dial URL. overridePort is the explicit
-// port from the host argument (0 -> use defaultPort); overridePath is the
+// port from the host argument (<= 0 -> use defaultPort); overridePath is the
 // explicit path ("" -> "/"). Pure (no globals) so it is unit-tested directly.
 func buildWSURL(kind clientextras.TransportKind, host string, defaultPort, overridePort int, overridePath string) string {
 	scheme := "ws"
@@ -229,7 +230,7 @@ func buildWSURL(kind clientextras.TransportKind, host string, defaultPort, overr
 		scheme = "wss"
 	}
 	port := defaultPort
-	if overridePort != 0 {
+	if overridePort > 0 {
 		port = overridePort
 	}
 	path := overridePath

@@ -211,7 +211,7 @@ Two pieces, the first pure and the second the actual dial:
 
 ```go
 // buildWSURL assembles the dial URL. overridePort is the explicit port from the
-// host argument (0 → use defaultPort); overridePath is the explicit path
+// host argument (<= 0 → use defaultPort); overridePath is the explicit path
 // ("" → "/"). Pure (no globals) so it is unit-tested directly with table inputs.
 func buildWSURL(kind clientextras.TransportKind, host string, defaultPort, overridePort int, overridePath string) string {
     scheme := "ws"
@@ -219,7 +219,7 @@ func buildWSURL(kind clientextras.TransportKind, host string, defaultPort, overr
         scheme = "wss"
     }
     port := defaultPort
-    if overridePort != 0 {
+    if overridePort > 0 { // non-positive (incl. the 0 sentinel) → keep defaultPort
         port = overridePort
     }
     path := overridePath
@@ -321,8 +321,10 @@ Native (`linux/amd64`) unit + integration tests:
    `websocket.Accept`, accepting the `binary` subprotocol), dial it via
    `openWebSocket`, wrap the result in `clientstream.NewClientStream`, then
    write a byte slice and read it back via `ReadFully`, asserting byte-for-byte
-   equality and that `Available()` reflects buffered bytes. Proves the
-   `NetConn` adapter and `ClientStream` interoperate.
+   equality. (An explicit `Available()` assertion is intentionally omitted: it
+   would require a poll/sleep to wait for the reader goroutine to buffer the
+   inbound frame, introducing flakiness — and `ReadFully` already exercises the
+   buffering path.) Proves the `NetConn` adapter and `ClientStream` interoperate.
 
 WASM compile check (no run):
 
