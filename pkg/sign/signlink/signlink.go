@@ -207,7 +207,7 @@ func Run() {
 			// Java: signlink.openurl dispatches to applet.getCodeBase() (signlink.java).
 			// Go is always standalone, so we construct the URL inline against the
 			// configured port offset.
-			resp, err := http.Get("http://127.0.0.1:" + strconv.Itoa(clientextras.PortOffset+8888) + "/" + urlReq)
+			resp, err := http.Get(urlBase() + "/" + urlReq)
 			var body []byte
 			if err == nil {
 				// Java: URL.openStream() throws on non-2xx; the catch block
