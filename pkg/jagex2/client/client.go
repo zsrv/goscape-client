@@ -39,6 +39,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct/jstring"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/animbase"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/animframe"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/bootfont"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix32"
@@ -8438,10 +8439,12 @@ func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) (resu
 // client.java:8727-8781.
 //
 // Java painted directly to the AWT base component's Graphics; the Go
-// port clears a shared overlay PixMap (via ensureOverlay), uses pixfont
-// (FontBold12) for all text, then composites via OverlayPixMap.Draw.
-// FontBold12 substitutes for Java's Helvetica BOLD 16/20 — same
-// divergence as elsewhere in the port. The branch ordering, frame-rate
+// port clears a shared overlay PixMap (via ensureOverlay), draws text with
+// the boot font (bootfont/basicfont.Face7x13), then composites via
+// OverlayPixMap.Draw. The boot font substitutes for Java's Helvetica
+// BOLD 16/20 and is always available even when the error fires before the
+// cache fonts load (the cause of the nil-FontBold12 SIGSEGV when a host was
+// specified). The branch ordering, frame-rate
 // throttle, and FlameActive=false side effects mirror Java exactly so
 // the rest of the client stays in sync. The early return on
 // !ErrorStarted composites first (so any ErrorLoading/ErrorHost draws
@@ -8456,16 +8459,17 @@ func (c *Client) DrawError() {
 	c.SetFrameRate(1)
 
 	// DrawError can run before the title fonts are loaded: Client.Load flags
-	// ErrorHost/ErrorLoading and returns before FontBold12 is built (the "b12"
-	// load site), and the recover() defer can likewise flag ErrorLoading on an
-	// early panic. Java drew these screens with always-available AWT system
-	// fonts (GameShell.java:541); the Go port reuses the cache-loaded
-	// FontBold12, so guard against nil — degrade to a background-only screen
-	// rather than dereferencing a nil *PixFont (the SIGSEGV when a host is set).
+	// ErrorHost/ErrorLoading and returns before the cache "b12" PixFont is
+	// built, and the recover() defer can likewise flag ErrorLoading on an early
+	// panic. Java drew these screens with an always-available AWT system font
+	// (GameShell.java:541), so the original code never depended on game assets
+	// being loaded. The boot font (basicfont.Face7x13, shipped in x/image) is
+	// the Go analogue — always available and already used by
+	// DrawProgressGameShell — so route the error text through it (writing
+	// straight to the overlay) instead of the cache-loaded FontBold12, which is
+	// nil on these early-error paths. Baseline-y semantics match AWT drawString.
 	drawText := func(x, y, color int, s string) {
-		if c.FontBold12 != nil {
-			c.FontBold12.DrawString(x, y, color, s)
-		}
+		bootfont.DrawString(c.OverlayPixMap, x, y, color, s)
 	}
 
 	if c.ErrorLoading {
