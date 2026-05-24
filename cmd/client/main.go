@@ -90,11 +90,12 @@ func main() {
 		signlink.StartPriv()
 	})
 	wg.Go(func() {
-		// audio.Start spawns its own watcher goroutines and returns
-		// after the oto context is ready (or has failed). The watchers
-		// poll signlink.ConsumeMidi / ConsumeWave for the lifetime of
-		// the process. Started after signlink so the soundfont fetch
-		// (via signlink.OpenURL) doesn't race the protocol coming up.
+		// audio.Start spawns its MIDI watcher goroutine and returns
+		// after the oto context is ready (or has failed). The watcher
+		// polls signlink.ConsumeMidi for the lifetime of the process;
+		// SFX play synchronously via audio.PlayWave (no watcher). Started
+		// after signlink so the soundfont fetch (via signlink.OpenURL)
+		// doesn't race the protocol coming up.
 		//
 		// In low-memory mode we bring up no audio at all, matching the
 		// Java client: it never starts the MIDI thread, never unpacks

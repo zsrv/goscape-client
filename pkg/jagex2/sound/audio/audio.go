@@ -8,9 +8,10 @@
 // wasn't ported.
 //
 // This package supplies the missing consumer in Go. It owns the single
-// process-wide oto audio context, runs two poll-and-dispatch goroutines
-// (one for MIDI, one for SFX), and drives a meltysynth-based SoundFont
-// synthesizer for the MIDI side.
+// process-wide oto audio context, runs one poll-and-dispatch goroutine for
+// MIDI (driving a meltysynth-based SoundFont synthesizer), and plays SFX
+// synchronously on demand via PlayWave (the game hands it WAV bytes directly;
+// no watcher or scratch file).
 //
 // Format unification: oto allows exactly one context per process, with a
 // fixed sample format. We pick 22050 Hz stereo signed 16-bit LE because:
@@ -58,8 +59,8 @@ var (
 // returns; the game continues silently.
 //
 // Intended to be called once from cmd/client/main.go on a dedicated
-// goroutine. Returns when the watchers are running; the goroutines then
-// run for the process lifetime.
+// goroutine. Returns once the MIDI watcher is running; that goroutine then
+// runs for the process lifetime.
 func Start() {
 	ctx, err := ensureContext()
 	if err != nil {
