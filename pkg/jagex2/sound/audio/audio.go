@@ -24,6 +24,7 @@ package audio
 import (
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ebitengine/oto/v3"
@@ -42,12 +43,19 @@ const (
 var (
 	otoMu  sync.Mutex
 	otoCtx *oto.Context
+
+	// readyCtx publishes the oto context lock-free once it is ready, for the
+	// SFX path (PlayWave). It is separate from otoCtx because ensureContext
+	// holds otoMu across its blocking <-ready; PlayWave must not take otoMu or
+	// it would block the game-update goroutine until the first user gesture.
+	// nil = not ready (pre-gesture / low-memory / init failed) -> SFX dropped.
+	readyCtx atomic.Pointer[oto.Context]
 )
 
-// Start boots the audio subsystem: it brings up the oto context and
-// kicks off the MIDI and Wave watcher goroutines. It is safe to call
-// even if audio init fails — Start logs a warning and returns; the game
-// continues silently.
+// Start boots the audio subsystem: it brings up the oto context,
+// publishes it for the SFX path, and kicks off the MIDI watcher goroutine.
+// It is safe to call even if audio init fails — Start logs a warning and
+// returns; the game continues silently.
 //
 // Intended to be called once from cmd/client/main.go on a dedicated
 // goroutine. Returns when the watchers are running; the goroutines then
@@ -72,8 +80,11 @@ func Start() {
 	d := newMidiDriver(ctx)
 	registerMidiDriver(d)
 
+	// Publish the ready context lock-free so PlayWave can use it without
+	// taking otoMu (which ensureContext holds across <-ready).
+	readyCtx.Store(ctx)
+
 	go runMidiWatcher(d)
-	go runWaveWatcher(ctx)
 }
 
 // DisableForLowMemory is the low-memory counterpart of Start: it brings

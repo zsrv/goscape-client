@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 	"log"
-	"os"
+	"sync"
 	"time"
 
 	"github.com/ebitengine/oto/v3"
@@ -12,64 +12,87 @@ import (
 	"github.com/zsrv/goscape-client/pkg/sign/signlink"
 )
 
-// runWaveWatcher polls signlink.ConsumeWave for newly-saved SFX files.
-// Each successful pickup spawns a one-shot Player that drains the
-// converted PCM and self-finalizes when done. There's no centralized
-// player table because oto v3 doesn't require explicit Close, and the
-// audio goroutine inside oto handles cleanup when the reader hits EOF.
-const wavePollInterval = 50 * time.Millisecond
+// waveMu guards lastWave, the most recently played SFX bytes — replayed by
+// ReplayWave (Java replaywave).
+var (
+	waveMu   sync.Mutex
+	lastWave []byte
+)
 
-func runWaveWatcher(ctx *oto.Context) {
-	for {
-		path := signlink.ConsumeWave()
-		if path != "" && ctx != nil {
-			playWaveFile(ctx, path)
-		}
-		time.Sleep(wavePollInterval)
+// PlayWave plays a one-shot sound effect from in-memory WAV bytes (the 22050 Hz
+// mono 8-bit format sound/wave.GetWave emits). It caches a copy for ReplayWave,
+// then plays it if the audio context is ready.
+//
+// SFX are fire-and-forget: if the context is not ready — pre-gesture (oto only
+// resumes the browser AudioContext after the first user interaction), low-memory
+// mode, or a failed init — the clip is dropped, never queued or blocked. The
+// call runs on the game-update path, which must not block, and a clip queued
+// before the first gesture would otherwise fire as a stale burst on that
+// gesture. readyCtx is a lock-free signal precisely because ensureContext holds
+// otoMu across its blocking <-ready, so taking otoMu here would block until the
+// first gesture (see readyCtx in audio.go).
+func PlayWave(data []byte) {
+	// Cache a defensive copy regardless of readiness: upstream var5.Data is a
+	// reused buffer, and a later ReplayWave should still work.
+	cp := make([]byte, len(data))
+	copy(cp, data)
+	waveMu.Lock()
+	lastWave = cp
+	waveMu.Unlock()
+
+	ctx := readyCtx.Load()
+	if ctx == nil {
+		return
+	}
+	playWaveBytes(ctx, cp)
+}
+
+// ReplayWave replays the most recently played SFX (Java replaywave). No-op if
+// nothing has played yet or the context is not ready.
+func ReplayWave() {
+	ctx := readyCtx.Load()
+	if ctx == nil {
+		return
+	}
+	waveMu.Lock()
+	data := lastWave
+	waveMu.Unlock()
+	if data != nil {
+		playWaveBytes(ctx, data)
 	}
 }
 
-// playWaveFile loads a 22050 Hz mono 8-bit unsigned WAV from disk,
-// converts it to 22050 Hz stereo 16-bit signed LE (the shared oto
-// context's format), and spawns a Player to drain it. The conversion
-// runs once up front rather than streaming — SFX clips top out at a
-// few seconds and the wave package's buffer is bounded to ~441 KB
-// (sound/wave.go:28), so the in-memory cost is negligible.
+// lastWaveForTest exposes the replay cache for white-box tests.
+func lastWaveForTest() []byte {
+	waveMu.Lock()
+	defer waveMu.Unlock()
+	return lastWave
+}
+
+// playWaveBytes converts a 22050 Hz mono 8-bit WAV to the shared context's
+// 22050 Hz stereo 16-bit LE format and spawns a one-shot Player.
 //
-// CRITICAL: oto's Player relies on a finalizer for cleanup (see the
-// note at player.go:93 in oto/v3 — "(*mux.Player).Close() is called
-// by the finalizer. Let's rely on it"). If the Player goes
-// GC-unreachable before playback finishes, the finalizer will Close
-// it mid-stream and the SFX gets cut off. We anchor the Player in a
-// goroutine's closure that polls IsPlaying() until the source is
-// drained, then drops the reference. Without this anchor, even a
-// 1-second sound effect can be silenced after just a few ms of
-// audible playback.
-func playWaveFile(ctx *oto.Context, path string) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		log.Printf("audio/wave: read %q: %v", path, err)
-		return
-	}
+// CRITICAL: oto's Player relies on a finalizer for cleanup (oto/v3 player.go:93:
+// "(*mux.Player).Close() is called by the finalizer. Let's rely on it"). If the
+// Player goes GC-unreachable before playback finishes, the finalizer closes it
+// mid-stream and the SFX is cut off. We anchor the Player in a goroutine that
+// polls IsPlaying() until the source drains, then drops the reference. Without
+// this anchor even a 1-second clip can be silenced after a few ms.
+func playWaveBytes(ctx *oto.Context, data []byte) {
 	stereo, ok := wave8MonoToStereoInt16(data)
 	if !ok {
-		log.Printf("audio/wave: unsupported WAV format in %q", path)
+		log.Printf("audio/wave: unsupported WAV format")
 		return
 	}
 	p := ctx.NewPlayer(&byteSliceReader{b: stereo})
-	// SFX volume is per-Player rather than per-context because each
-	// clip is short and the slider only takes effect for *new* sounds
-	// — exactly oto.Player.SetVolume's contract. Reading WaveVol once
-	// at spawn time matches what the slider's case 0..3 dispatch
-	// publishes (client.go:3823-3833) for the four discrete options.
+	// SFX volume is per-Player (each clip is short; the slider only affects new
+	// sounds). Reading WaveVol once at spawn matches the slider dispatch
+	// (client.go:3823-3833).
 	p.SetVolume(float64(volumeFromCentibels(signlink.ReadWaveVol())))
 	p.Play()
-	// This goroutine holds the only strong reference to the one-shot Player so it
-	// isn't GC'd mid-playback; it exits (releasing the Player) once the reader
-	// EOFs and oto stops -> IsPlaying() goes false. The wait is unbounded: if oto
-	// ever wedged with IsPlaying() stuck true, the Player would leak for the
-	// process lifetime. Audit (sound-audio) judged this benign (SFX are short,
-	// <=441 KB) and recommended NOT adding a timeout — left as-is.
+	// Hold the only strong reference until the reader EOFs and oto stops, so the
+	// finalizer can't close the Player mid-playback. Unbounded by design (SFX
+	// are short, <=441 KB); a wedged IsPlaying() would leak one Player.
 	go func() {
 		for p.IsPlaying() {
 			time.Sleep(50 * time.Millisecond)
@@ -78,11 +101,10 @@ func playWaveFile(ctx *oto.Context, path string) {
 }
 
 // wave8MonoToStereoInt16 parses a RIFF/WAV file emitted by sound.wave
-// (22050 Hz, 1 ch, 8-bit unsigned PCM — see sound/wave.GetWave) and
-// returns interleaved stereo 16-bit signed LE samples. Returns false
-// if the header doesn't match what we expect: any deviation means the
-// file wasn't produced by our own tone synthesizer and we'd rather skip
-// than play garbage. Header layout matches GetWave in sound/wave.go:99.
+// (22050 Hz, 1 ch, 8-bit unsigned PCM — see sound/wave.GetWave) and returns
+// interleaved stereo 16-bit signed LE samples. Returns false if the header
+// doesn't match: any deviation means the file wasn't produced by our own tone
+// synthesizer and we'd rather skip than play garbage.
 func wave8MonoToStereoInt16(data []byte) ([]byte, bool) {
 	if len(data) < 44 {
 		return nil, false
@@ -109,11 +131,9 @@ func wave8MonoToStereoInt16(data []byte) ([]byte, bool) {
 	}
 	samples := data[44 : 44+dataLen]
 
-	// 8-bit unsigned PCM uses 0x80 as the silent midpoint; subtract 128
-	// to land in signed range, then scale to 16-bit. The shift is the
-	// standard 8→16 promotion: (s - 128) << 8 maps 0x80→0, 0xFF→+32512,
-	// 0x00→-32768, preserving zero-crossings correctly. Doubled to both
-	// channels for the stereo oto context.
+	// 8-bit unsigned PCM uses 0x80 as the silent midpoint; (s-128)<<8 maps
+	// 0x80->0, 0xFF->+32512, 0x00->-32768, preserving zero-crossings. Doubled to
+	// both channels for the stereo context.
 	out := make([]byte, len(samples)*4)
 	for i, s := range samples {
 		v := int16(int(s)-128) << 8
@@ -125,9 +145,8 @@ func wave8MonoToStereoInt16(data []byte) ([]byte, bool) {
 	return out, true
 }
 
-// byteSliceReader is the one-shot io.Reader an SFX Player drains. It
-// returns io.EOF after exhausting the slice, which signals oto's audio
-// goroutine to release the player.
+// byteSliceReader is the one-shot io.Reader an SFX Player drains. It returns
+// io.EOF after exhausting the slice, signalling oto to release the player.
 type byteSliceReader struct {
 	b   []byte
 	pos int

@@ -5318,11 +5318,13 @@ func (c *Client) SaveWave(arg0 []byte, arg1 int) bool {
 	if arg0 == nil {
 		return true
 	}
-	return signlink.WaveSave(arg0, arg1)
+	audio.PlayWave(arg0[:arg1])
+	return true
 }
 
 func (c *Client) ReplayWave() bool {
-	return signlink.WaveReplay()
+	audio.ReplayWave()
+	return true
 }
 
 func (c *Client) SetWaveVolume(vol int) {
