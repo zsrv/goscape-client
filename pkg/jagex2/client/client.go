@@ -7280,14 +7280,15 @@ func (c *Client) PushSpotanims() {
 }
 
 func (c *Client) GetCodeBase() string {
-	// Java: getCodeBase() (deob/client.java:7618-7628) — applet API; we're
-	// always standalone, so synthesize a URL from clientextras.Host +
-	// PortOffset. Used by OpenURL to fetch cache resources from the same
-	// host the game socket connects to. This mirrors Java's frame!=null
-	// STANDALONE branch (http://127.0.0.1:<portOffset+8888>) but uses the
-	// configured host instead of the literal 127.0.0.1, so an operator can
-	// point the standalone binary at a non-loopback server.
-	return "http://" + clientextras.Host + ":" + strconv.Itoa(clientextras.PortOffset+8888)
+	// Java: getCodeBase() (deob/client.java:7618-7628) — applet API. The URL is
+	// platform-specific (see codebase_native.go / codebase_js.go): the native
+	// standalone build synthesizes http://<host>:<portOffset+8888> (Java's
+	// frame!=null STANDALONE branch), while the js/wasm browser build returns
+	// the page's own origin so cache fetches are same-origin — matching the
+	// applet's document-base semantics (frame==null branch) and the Client-TS
+	// relative-path fetches, and pairing with signlink.ConfigureTransport, which
+	// derives the WebSocket target from the same window.location.
+	return codeBaseURL()
 }
 
 func SetHighMem() {
