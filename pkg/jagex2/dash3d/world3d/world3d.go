@@ -1168,7 +1168,7 @@ func (w *World3D) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 }
 
 func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
-	DrawTileQueue.AddTail(datastruct.NewLinkable(next))
+	DrawTileQueue.AddTail(next.DrawQueueNode)
 
 	for {
 		var tile *typ.Ground
@@ -1396,28 +1396,28 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 											if tileX < EyeTileX && spans&0x4 != 0 {
 												adjacent := tiles[tileX+1][tileZ]
 												if adjacent != nil && adjacent.Update {
-													DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
+													DrawTileQueue.AddTail(adjacent.DrawQueueNode)
 												}
 											}
 
 											if tileZ < EyeTileZ && spans&0x2 != 0 {
 												adjacent := tiles[tileX][tileZ+1]
 												if adjacent != nil && adjacent.Update {
-													DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
+													DrawTileQueue.AddTail(adjacent.DrawQueueNode)
 												}
 											}
 
 											if tileX > EyeTileX && spans&0x1 != 0 {
 												adjacent := tiles[tileX-1][tileZ]
 												if adjacent != nil && adjacent.Update {
-													DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
+													DrawTileQueue.AddTail(adjacent.DrawQueueNode)
 												}
 											}
 
 											if tileZ > EyeTileZ && spans&0x8 != 0 {
 												adjacent := tiles[tileX][tileZ-1]
 												if adjacent != nil && adjacent.Update {
-													DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
+													DrawTileQueue.AddTail(adjacent.DrawQueueNode)
 												}
 											}
 										}
@@ -1541,9 +1541,9 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 												occupied := tiles[x][z]
 
 												if occupied.CheckLocSpans != 0 {
-													DrawTileQueue.AddTail(datastruct.NewLinkable(occupied))
+													DrawTileQueue.AddTail(occupied.DrawQueueNode)
 												} else if (x != tileX || z != tileZ) && occupied.Update {
-													DrawTileQueue.AddTail(datastruct.NewLinkable(occupied))
+													DrawTileQueue.AddTail(occupied.DrawQueueNode)
 												}
 											}
 										}
@@ -1647,35 +1647,35 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 		if level < w.MaxLevel-1 {
 			above := w.LevelTiles[level+1][tileX][tileZ]
 			if above != nil && above.Update {
-				DrawTileQueue.AddTail(datastruct.NewLinkable(above))
+				DrawTileQueue.AddTail(above.DrawQueueNode)
 			}
 		}
 
 		if tileX < EyeTileX {
 			adjacent := tiles[tileX+1][tileZ]
 			if adjacent != nil && adjacent.Update {
-				DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
+				DrawTileQueue.AddTail(adjacent.DrawQueueNode)
 			}
 		}
 
 		if tileZ < EyeTileZ {
 			adjacent := tiles[tileX][tileZ+1]
 			if adjacent != nil && adjacent.Update {
-				DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
+				DrawTileQueue.AddTail(adjacent.DrawQueueNode)
 			}
 		}
 
 		if tileX > EyeTileX {
 			adjacent := tiles[tileX-1][tileZ]
 			if adjacent != nil && adjacent.Update {
-				DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
+				DrawTileQueue.AddTail(adjacent.DrawQueueNode)
 			}
 		}
 
 		if tileZ > EyeTileZ {
 			adjacent := tiles[tileX][tileZ-1]
 			if adjacent != nil && adjacent.Update {
-				DrawTileQueue.AddTail(datastruct.NewLinkable(adjacent))
+				DrawTileQueue.AddTail(adjacent.DrawQueueNode)
 			}
 		}
 	}

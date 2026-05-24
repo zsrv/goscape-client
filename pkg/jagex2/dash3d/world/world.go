@@ -25,8 +25,14 @@ var (
 	ROTATION_WALL_CORNER_TYPE          = []int{16, 32, 64, 128}
 	WALL_DECORATION_ROTATION_FORWARD_X = []int{1, 0, -1, 0}
 	WALL_DECORATION_ROTATION_FORWARD_Z = []int{0, -1, 0, 1}
-	RandomHueOffset                    = int((rand.Float64() * 17.0) - 8)
-	RandomLightnessOffset              = int((rand.Float64() * 33.0) - 16)
+	// Java: randomHueOffset = (int)(Math.random()*17.0) - 8 (World.java:86),
+	// randomLightnessOffset = (int)(Math.random()*33.0) - 16 (World.java:89).
+	// The cast binds ONLY to the non-negative product, then the subtraction is
+	// integer arithmetic — yielding a uniform -8..8 / -16..16. Casting the whole
+	// expression instead would truncate negatives toward zero (int(-2.5) == -2
+	// vs Java's floor -3), skewing the distribution.
+	RandomHueOffset       = int(rand.Float64()*17.0) - 8
+	RandomLightnessOffset = int(rand.Float64()*33.0) - 16
 )
 
 // Reset clears every package-level binding to its first-load state. Intended

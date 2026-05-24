@@ -53,10 +53,21 @@ func (l *LruCache[T]) Put(key int64, v T) {
 	l.History.Push(node)
 }
 
-// Delete removes the entry with the given key. Java does this by calling
-// node.unlink() on the DoublyLinkable, which removes it from both the
-// HashTable bucket list and the History list at once. Go needs explicit
-// map + history removal.
+// Delete removes the entry with the given key.
+//
+// INTENTIONAL DEVIATION from Java (kept deliberately — do not "fix" back to
+// Java's behavior). Java's only delete-style caller is ObjType.getIcon, which
+// calls node.unlink() (Linkable.unlink, Java LruCache caller path). unlink()
+// touches ONLY the bucket-list pointers: it removes the node from the HashTable
+// bucket but leaves it in the History list and does NOT change `available`. The
+// node lingers as an orphan in history until a later Pop evicts it, so each
+// delete-then-re-put permanently consumes one slot until eviction reclaims it —
+// Java's effective live capacity shrinks between evictions (a leak-then-reclaim
+// bug). Go instead removes from the map, Uncaches the node out of history, and
+// increments Available, so a subsequent Put nets Available unchanged with no
+// orphan. The audit (datastruct.md #8) classified Go as MORE correct here; the
+// project chose to keep it. The only observable difference is icon-cache
+// eviction timing, not correctness.
 func (l *LruCache[T]) Delete(key int64) {
 	node, ok := l.HashTable[key]
 	if !ok {
