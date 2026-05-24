@@ -35,10 +35,19 @@ func TestMemStoreCopySemantics(t *testing.T) {
 	}
 }
 
+func TestMemStoreOverwrite(t *testing.T) {
+	s := newMemStore()
+	s.save("k", []byte{1})
+	s.save("k", []byte{2, 3})
+	if got := s.load("k"); !bytes.Equal(got, []byte{2, 3}) {
+		t.Fatalf("overwrite: got %v, want [2 3]", got)
+	}
+}
+
 func TestMemStoreUIDAndDir(t *testing.T) {
 	s := newMemStore()
-	if s.uid() != browserUID {
-		t.Fatalf("uid: got %d, want %d", s.uid(), browserUID)
+	if got := s.uid(); got != browserUID {
+		t.Fatalf("uid: got %d, want %d", got, browserUID)
 	}
 	if s.cacheDir() != "" {
 		t.Fatalf("cacheDir: got %q, want empty", s.cacheDir())
