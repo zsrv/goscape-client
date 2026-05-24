@@ -14,3 +14,26 @@ var PortOffset int
 // frame, those resolve to the document-base/loopback host; "127.0.0.1" is the
 // standalone default (matching the literal http://127.0.0.1:... at client.java:7624).
 var Host = "127.0.0.1"
+
+// Transport selects the game-server connection transport. It is set once at
+// startup from the host CLI argument's URL scheme and read by
+// signlink.OpenSocket. The WS path is a Go-original standalone extension (the
+// original Java applet used raw sockets only); see
+// docs/superpowers/specs/2026-05-24-websocket-transport-design.md.
+type TransportKind int
+
+const (
+	TransportTCP TransportKind = iota // raw TCP socket (default; Java parity)
+	TransportWS                       // WebSocket (ws://)
+	TransportWSS                      // WebSocket over TLS (wss://)
+)
+
+var Transport TransportKind = TransportTCP
+
+// WSPort is an explicit WebSocket port parsed from a ws[s]:// host argument.
+// 0 means "use the default game port the dial site supplies (PortOffset+43594)".
+var WSPort int
+
+// WSPath is an explicit path parsed from a ws[s]:// host argument.
+// "" means "/".
+var WSPath string
