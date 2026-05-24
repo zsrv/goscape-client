@@ -8,6 +8,15 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/envelope"
 )
 
+// Theme C invariant (audit sound-java #24): Java declares these buffers and the
+// phase accumulators (var8/var11/tmpPhases in Generate) as 32-bit int[], which
+// silently wrap at 2^31. Go's int is 64-bit on amd64, so it does NOT wrap. This
+// is safe and behavior-equivalent here, NOT a latent bug: every phase consumer
+// masks with & 0x7FFF (Generate2), reaching 2^31 would need hundreds of millions
+// of samples (far beyond any real tone), and Buffer/reverb sums are clamped to
+// [-32768, 32767] per sample with per-harmonic contributions bounded ~16-bit
+// across ≤5 harmonics. Left as int per the audit decision (document, don't
+// re-type) — no concrete wrapping input exists.
 var (
 	Buffer       []int
 	Noise        []int

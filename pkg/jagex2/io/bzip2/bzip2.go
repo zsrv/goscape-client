@@ -597,6 +597,9 @@ func GetBits(n int, s *bzip2state.BZip2State) int {
 		}
 	}
 
+	// Theme C: BsBuff is Go int (64-bit) but Java's is 32-bit int. The int32()
+	// cast is LOAD-BEARING — it makes the right shift drop the high bits exactly
+	// as Java's 32-bit `bsBuff >> (bsLive - n)` does. Do not remove it.
 	value := int32(s.BsBuff) >> (int32(s.BsLive) - int32(n)) & ((0x1 << int32(n)) - 1)
 	s.BsLive -= n
 	return int(value)
