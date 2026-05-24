@@ -2,6 +2,7 @@
 
 package signlink
 
-// newCacheStore returns the volatile in-memory store for the browser build.
-// Durable IndexedDB-backed storage is sub-project 2, behind the same interface.
-func newCacheStore() cacheStore { return newMemStore() }
+// newCacheStore returns the IndexedDB-backed store for the browser build, so
+// cache survives reloads. It degrades to an in-memory store when IndexedDB is
+// unavailable (see idbStore).
+func newCacheStore() cacheStore { return newIDBStore() }
