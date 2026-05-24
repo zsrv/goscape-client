@@ -23,3 +23,9 @@ type cacheStore interface {
 	// in Run(). "" in the browser (no filesystem).
 	cacheDir() string
 }
+
+// store is the active backend, selected at build time by newCacheStore
+// (storage_disk.go / storage_js.go), mirroring the profiling Start() split.
+var store cacheStore = newCacheStore()
+
+var _ cacheStore = (*memStore)(nil)
