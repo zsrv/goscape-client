@@ -64,6 +64,12 @@ func playWaveFile(ctx *oto.Context, path string) {
 	// publishes (client.go:3823-3833) for the four discrete options.
 	p.SetVolume(float64(volumeFromCentibels(signlink.ReadWaveVol())))
 	p.Play()
+	// This goroutine holds the only strong reference to the one-shot Player so it
+	// isn't GC'd mid-playback; it exits (releasing the Player) once the reader
+	// EOFs and oto stops -> IsPlaying() goes false. The wait is unbounded: if oto
+	// ever wedged with IsPlaying() stuck true, the Player would leak for the
+	// process lifetime. Audit (sound-audio) judged this benign (SFX are short,
+	// <=441 KB) and recommended NOT adding a timeout — left as-is.
 	go func() {
 		for p.IsPlaying() {
 			time.Sleep(50 * time.Millisecond)

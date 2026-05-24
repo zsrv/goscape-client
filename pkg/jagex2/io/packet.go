@@ -15,6 +15,11 @@ const (
 )
 
 var (
+	// CRCTable is a DEAD field (io-core #18): never read in either the Java
+	// client (real CRC uses java.util.zip.CRC32) or the Go port. Java stores it
+	// as signed 32-bit int (negative entries); Go's int is 64-bit so entries are
+	// the positive equivalents (same low 32 bits). Inert — values are never
+	// consumed as signed. Kept for structural parity with Packet's static init.
 	CRCTable []int = make([]int, 256)
 	Bitmask  []int = []int{0, 1, 3, 7, 15, 31, 63, 127, 0xFF, 511, 1023, 2047, 4095, 8191, 16383, 32767, 0xFFFF, 131071, 262143, 524287, 1048575, 2097151, 4194303, 8388607, 0xFFFFFF, 33554431, 67108863, 134217727, 268435455, 536870911, 1073741823, 2147483647, -1}
 	CacheMin       = sync.Pool{

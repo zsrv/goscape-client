@@ -37,6 +37,13 @@ func (l *LruCache[T]) Get(key int64) T {
 	return node.Linkable.Value
 }
 
+// Put inserts v under key. CONSTRAINT (datastruct.md #29): callers must Get
+// first and only Put on a miss — Put does not guard against a duplicate key.
+// A duplicate-key Put would orphan the previous node in History and
+// double-decrement Available. Java's HashTable.put unlinked the prior bucket
+// node first; the Go map redesign drops that structural protection. All current
+// callers (objtype/loctype/npctype/spotanimtype/component/playerentity) follow
+// the Get-then-Put-if-miss pattern, so this is latent, not a live bug.
 func (l *LruCache[T]) Put(key int64, v T) {
 	if l.Available == 0 {
 		evicted := l.History.Pop()

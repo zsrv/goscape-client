@@ -114,6 +114,13 @@ func (cs *ClientStream) broadcast() {
 	cs.mu.Unlock()
 }
 
+// Java's ClientStream emits verbose per-byte System.out.println traces on every
+// read/write plus an "InputStream CLOSE" marker (ClientStream.java:54,82,97-132).
+// Those are intentionally NOT ported (io-net #19): per-byte stdout spam is
+// unusable in a real client and carries no game state. (The "faithful
+// System.out port" convention applies to user-facing diagnostics, not debug
+// instrumentation.)
+
 // Close terminates both goroutines and closes the underlying connection.
 // Idempotent — subsequent calls are no-ops.
 func (cs *ClientStream) Close() {

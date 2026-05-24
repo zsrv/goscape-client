@@ -50,6 +50,11 @@ func main() {
 		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members], [host]")
 		os.Exit(1)
 	}
+	// Java main accepts exactly 4 args (deob/client.java:10599); the applet host
+	// came from getCodeBase().getHost(). This optional 5th `host` arg is a
+	// Go-original standalone extension (no browser codebase exists here) that
+	// lets the operator point the binary at a non-localhost server. Behavioral
+	// superset of Java's CLI, not a parity regression.
 	if len(os.Args) == 6 {
 		clientextras.Host = os.Args[5]
 	}

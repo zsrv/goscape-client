@@ -357,7 +357,13 @@ func (c *Client) handleEditEvent(e key.EditEvent) {
 	c.IdleCycles = 0
 	for _, r := range e.Text {
 		var3 := int(r)
-		if var3 <= 4 {
+		// Java: keyPressed zeroes any keyChar < 30 then pushes only var3 > 4
+		// (GameShell.java:342-396), so a bare control char in [5,29] is dropped;
+		// only the explicit sentinel overrides (5/8/9/10/1000+) survive, and
+		// those arrive via key.Event (handleKey), not EditEvent text. Skip < 30
+		// here to match Java's drop — EditEvent.Text only carries printable
+		// runes (>= 32), so this never discards a needed character.
+		if var3 < 30 {
 			continue
 		}
 		c.KeyQueue[c.KeyQueueWritePos] = var3

@@ -41,7 +41,10 @@ func ToBase37(s string) int64 {
 }
 
 func FromBase37(username int64) string {
-	if username < 0 || username >= 6582952005840035281 {
+	// Java: if (arg0 <= 0L || arg0 >= 6582952005840035281L) (JString.java:35) —
+	// the first clause rejects 0 too. Match it literally with <= 0 (0 is also
+	// caught by the %37==0 branch, so behavior was already identical).
+	if username <= 0 || username >= 6582952005840035281 {
 		return "invalid_name"
 	} else if username%37 == 0 {
 		return "invalid_name"

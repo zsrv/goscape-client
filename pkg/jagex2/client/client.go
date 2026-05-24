@@ -5590,7 +5590,11 @@ func (c *Client) Load() {
 		}
 
 		crc := io.NewPacket(make([]byte, 36))
-		_, err = reader.Read(crc.Data[:36])
+		// Java: in.readFully(var5.data, 0, 36) (client.java:5997-6002) blocks
+		// until all 36 bytes are read. io2.ReadFull matches that "fill exactly"
+		// semantics; a bare Read could return fewer bytes if the source were
+		// ever a streaming reader rather than the in-memory bytes.Reader.
+		_, err = io2.ReadFull(reader, crc.Data[:36])
 		if err != nil {
 			log.Printf("client: Client.Load Read error: %v", err)
 			errorLoading()
@@ -7298,7 +7302,10 @@ func (c *Client) GetCodeBase() string {
 	// Java: getCodeBase() (deob/client.java:7618-7628) — applet API; we're
 	// always standalone, so synthesize a URL from clientextras.Host +
 	// PortOffset. Used by OpenURL to fetch cache resources from the same
-	// host the game socket connects to.
+	// host the game socket connects to. This mirrors Java's frame!=null
+	// STANDALONE branch (http://127.0.0.1:<portOffset+8888>) but uses the
+	// configured host instead of the literal 127.0.0.1, so an operator can
+	// point the standalone binary at a non-loopback server.
 	return "http://" + clientextras.Host + ":" + strconv.Itoa(clientextras.PortOffset+8888)
 }
 
