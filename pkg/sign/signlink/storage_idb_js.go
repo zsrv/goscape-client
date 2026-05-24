@@ -4,6 +4,7 @@ package signlink
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 	"syscall/js"
@@ -34,31 +35,77 @@ type idbStore struct {
 
 func newIDBStore() *idbStore { return &idbStore{fallback: newMemStore()} }
 
-// await attaches success/error handlers to an IDBRequest and blocks until one
-// fires, returning req.result on success. Both js.Funcs are released before
-// returning. Must be called only from a goroutine that does not pump the JS
-// event loop (signlink.Run's goroutine qualifies).
+// await attaches success/error handlers to an IDBRequest — and an abort handler
+// to its transaction, when the request has one — then blocks until one fires,
+// returning req.result on success. All handlers are detached and their js.Funcs
+// released before returning, so a late or duplicate event can never invoke a
+// freed function (which would panic). Must be called only from a goroutine that
+// does not pump the JS event loop (signlink.Run's goroutine qualifies).
+//
+// The transaction onabort handler is a wedge guard: a transaction that aborts
+// for a reason not surfaced as the request's own onerror (e.g. a quota or
+// cross-tab versionchange abort) would otherwise leave the receive below
+// blocked forever, stalling Run's poll loop.
 func await(req js.Value) (js.Value, error) {
 	type result struct {
 		val js.Value
 		err error
 	}
 	ch := make(chan result, 1)
-	var onOK, onErr js.Func
+	// Non-blocking send: the first of success/error/abort to fire wins; any
+	// later or duplicate event is dropped rather than blocking the JS callback,
+	// which runs on the event loop.
+	send := func(r result) {
+		select {
+		case ch <- r:
+		default:
+		}
+	}
+
+	tx := req.Get("transaction") // null/undefined for open requests
+	var onOK, onErr, onAbort js.Func
 	onOK = js.FuncOf(func(this js.Value, args []js.Value) any {
-		ch <- result{val: req.Get("result")}
+		send(result{val: req.Get("result")})
 		return nil
 	})
 	onErr = js.FuncOf(func(this js.Value, args []js.Value) any {
-		ch <- result{err: errors.New("indexeddb request failed")}
+		send(result{err: reqError(req)})
+		return nil
+	})
+	onAbort = js.FuncOf(func(this js.Value, args []js.Value) any {
+		send(result{err: errors.New("indexeddb transaction aborted")})
 		return nil
 	})
 	req.Set("onsuccess", onOK)
 	req.Set("onerror", onErr)
+	if tx.Truthy() {
+		tx.Set("onabort", onAbort)
+	}
+
 	r := <-ch
+
+	// Detach handlers before releasing the js.Funcs, so a late event cannot
+	// invoke a freed function.
+	req.Set("onsuccess", js.Null())
+	req.Set("onerror", js.Null())
+	if tx.Truthy() {
+		tx.Set("onabort", js.Null())
+	}
 	onOK.Release()
 	onErr.Release()
+	onAbort.Release()
 	return r.val, r.err
+}
+
+// reqError builds an error from an IDBRequest's .error DOMException, including
+// its name (e.g. "QuotaExceededError") so the browser-only log lines in load/
+// save are actually diagnosable. Falls back to a generic message if .error is
+// absent.
+func reqError(req js.Value) error {
+	if e := req.Get("error"); e.Truthy() {
+		return fmt.Errorf("indexeddb: %s", e.Get("name").String())
+	}
+	return errors.New("indexeddb request failed")
 }
 
 // ensure opens the IndexedDB database exactly once, creating the object store on
@@ -93,6 +140,8 @@ func (s *idbStore) ensure() {
 		})
 		req.Set("onupgradeneeded", onUpgrade)
 		db, err := await(req)
+		// Safe to release now: await returns only after onsuccess, which always
+		// fires strictly after onupgradeneeded has run to completion.
 		onUpgrade.Release()
 		if err != nil || !db.Truthy() {
 			log.Printf("signlink: indexedDB open failed; cache will not persist: %v", err)
