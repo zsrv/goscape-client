@@ -44,7 +44,7 @@ func TestFilterAllowlistRestoresMaskedWords(t *testing.T) {
 		BadCombinations = prevCombos
 	})
 	BadWords = [][]rune{[]rune("cook")}
-	BadCombinations = [][][]byte{nil}
+	BadCombinations = [][][]int8{nil}
 
 	got := Filter("cook")
 	if got != "cook" {

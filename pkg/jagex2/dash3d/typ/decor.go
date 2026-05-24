@@ -10,7 +10,7 @@ type Decor struct {
 	Angle  int
 	Model  *model.Model
 	BitSet int
-	Info   byte
+	Info   int8 // Java: byte (signed); always read as int(Info)&0xFF
 }
 
 func NewDecor() *Decor {

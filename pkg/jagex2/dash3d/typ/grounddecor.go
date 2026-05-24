@@ -8,7 +8,7 @@ type GroundDecor struct {
 	Z      int
 	Model  *model.Model
 	BitSet int
-	Info   byte
+	Info   int8 // Java: byte (signed); always read as int(Info)&0xFF
 }
 
 func NewGroundDecor() *GroundDecor {

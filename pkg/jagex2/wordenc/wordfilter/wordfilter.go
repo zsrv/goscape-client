@@ -9,7 +9,7 @@ import (
 var (
 	Fragments       []int
 	BadWords        [][]rune
-	BadCombinations [][][]byte
+	BadCombinations [][][]int8
 	Domains         [][]rune
 	TLDs            [][]rune
 	TLDType         []int
@@ -54,7 +54,7 @@ func ReadTLD(buf *io.Packet) {
 func ReadBadWords(buf *io.Packet) {
 	count := buf.G4()
 	BadWords = make([][]rune, count)
-	BadCombinations = make([][][]byte, count)
+	BadCombinations = make([][][]int8, count)
 
 	ReadBadCombinations(BadCombinations, BadWords, buf)
 }
@@ -76,7 +76,7 @@ func ReadFragments(buf *io.Packet) {
 }
 
 // DecodeBadCombinations
-func ReadBadCombinations(badCombinations [][][]byte, badWords [][]rune, buf *io.Packet) {
+func ReadBadCombinations(badCombinations [][][]int8, badWords [][]rune, buf *io.Packet) {
 	for i := range len(badWords) {
 		badWord := make([]rune, buf.G1())
 		for j := range len(badWord) {
@@ -85,11 +85,14 @@ func ReadBadCombinations(badCombinations [][][]byte, badWords [][]rune, buf *io.
 
 		badWords[i] = badWord
 
-		combination := make([][]byte, buf.G1())
+		combination := make([][]int8, buf.G1())
 		for j := range len(combination) {
-			combination[j] = make([]byte, 2)
-			combination[j][0] = byte(buf.G1())
-			combination[j][1] = byte(buf.G1())
+			combination[j] = make([]int8, 2)
+			// Java: combination[j][0] = (byte) buf.g1() (WordFilter.java:96-97) —
+			// signed byte storage so values >127 read back negative, matching
+			// the signed comparison in ComboMatches.
+			combination[j][0] = int8(buf.G1())
+			combination[j][1] = int8(buf.G1())
 		}
 
 		if len(combination) > 0 {
@@ -606,7 +609,7 @@ func GetTLDSlashFilterStatus(b []rune, start int, a []rune) int {
 	}
 }
 
-func Filter2(badCombinations [][]byte, chars []rune, fragment []rune) {
+func Filter2(badCombinations [][]int8, chars []rune, fragment []rune) {
 	if len(fragment) > len(chars) {
 		return
 	}
@@ -775,7 +778,10 @@ func Filter2(badCombinations [][]byte, chars []rune, fragment []rune) {
 	}
 }
 
-func ComboMatches(a byte, combos [][]byte, b byte) bool {
+// ComboMatches mirrors Java comboMatches(byte, byte[][], byte) (WordFilter.java:679).
+// All operands are signed int8 so the binary-search ordering test below matches
+// Java's signed-byte comparison; a stored combination byte >127 sorts negative.
+func ComboMatches(a int8, combos [][]int8, b int8) bool {
 	first := 0
 	if combos[first][0] == a && combos[first][1] == b {
 		return true
@@ -1051,15 +1057,19 @@ func GetEmulatedSize(c, a, b rune) int {
 	return 0
 }
 
-func GetIndex(c rune) byte {
+// GetIndex mirrors Java getIndex (WordFilter.java) which returns a byte; the Go
+// return is int8 so its result feeds ComboMatches's signed comparison directly.
+// All returned values are positive (1..38), so the signedness is inert here, but
+// the type matches Java's byte return.
+func GetIndex(c rune) int8 {
 	if c >= 'a' && c <= 'z' {
-		return byte(c - 'a' + 1)
+		return int8(c - 'a' + 1)
 	}
 	if c == '\'' {
 		return 28
 	}
 	if c >= '0' && c <= '9' {
-		return byte(c - '0' + 29)
+		return int8(c - '0' + 29)
 	}
 	return 27
 }

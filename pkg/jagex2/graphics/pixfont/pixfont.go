@@ -32,7 +32,11 @@ func GlyphIndex(r rune) int {
 }
 
 type PixFont struct {
-	CharMask       [][]byte
+	// Java: charMask is byte[][] (signed int8). Stored as int8 so the
+	// advance-trim sums (DrawChar setup) sign-extend each mask byte exactly
+	// as Java's byte->int promotion does. Pixel reads only test `== 0`, so
+	// signedness is irrelevant there.
+	CharMask       [][]int8
 	CharMaskWidth  []int
 	CharMaskHeight []int
 	CharOffsetX    []int
@@ -64,7 +68,7 @@ func init() {
 
 func NewPixFont(arg0 *io.Jagfile, arg1 string) *PixFont {
 	p := &PixFont{
-		CharMask:       make([][]byte, 94),
+		CharMask:       make([][]int8, 94),
 		CharMaskWidth:  make([]int, 94),
 		CharMaskHeight: make([]int, 94),
 		CharOffsetX:    make([]int, 94),
@@ -94,27 +98,26 @@ func NewPixFont(arg0 *io.Jagfile, arg1 string) *PixFont {
 		var9 := p.CharMaskHeight[i]
 		var10 := var5.G1() // pixel order
 		var11 := var8 * var9
-		p.CharMask[i] = make([]byte, var11)
+		p.CharMask[i] = make([]int8, var11)
 		if var10 == 0 {
 			for j := range var11 {
-				p.CharMask[i][j] = byte(var4.G1B())
+				p.CharMask[i][j] = var4.G1B()
 			}
 		} else if var10 == 1 {
 			for j := range var8 {
 				for k := range var9 {
-					p.CharMask[i][j+k*var8] = byte(var4.G1B())
+					p.CharMask[i][j+k*var8] = var4.G1B()
 				}
 			}
 		}
 		p.Height = max(var9, p.Height)
 		p.CharOffsetX[i] = 1
 		p.CharAdvance[i] = var8 + 2
-		// Java: charMask is byte[][] (signed); the sum sign-extends each
-		// mask byte. Go's [][]byte zero-extends via int(byte). Benign with
-		// every currently shipped font (mask values are all-positive 0/1
-		// or alpha 0..127); would diverge only for masks with high-bit-set
-		// bytes. Storage type left as []byte to avoid widening DrawMask/
-		// DrawMaskAlpha signatures and their dispatch sites.
+		// Java: var12 += this.charMask[var7][...] (PixFont.java:78,87) where
+		// charMask is byte[][] (signed) — each mask byte sign-extends into the
+		// sum. CharMask is now []int8 (see field decl), so int(...) below
+		// sign-extends to match; a high-bit-set mask byte contributes a
+		// negative value, flipping CharAdvance/CharOffsetX exactly as in Java.
 		var12 := 0
 		for j := var9 / 7; j < var9; j++ {
 			var12 += int(p.CharMask[i][j*var8])
@@ -316,7 +319,7 @@ func (p *PixFont) EvaluateTag(arg1 string) int {
 	}
 }
 
-func (p *PixFont) DrawChar(arg0 []byte, arg1, arg2, arg3, arg4, arg5 int) {
+func (p *PixFont) DrawChar(arg0 []int8, arg1, arg2, arg3, arg4, arg5 int) {
 	var7 := arg1 + arg2*pix2d.Width2D
 	var8 := pix2d.Width2D - arg3
 	var9 := 0
@@ -352,7 +355,7 @@ func (p *PixFont) DrawChar(arg0 []byte, arg1, arg2, arg3, arg4, arg5 int) {
 	}
 }
 
-func (p *PixFont) DrawMask(arg0 []int, arg1 []byte, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
+func (p *PixFont) DrawMask(arg0 []int, arg1 []int8, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 	var10 := -(arg5 >> 2)
 	var14 := -(arg5 & 0x3)
 	for i := -arg6; i < 0; i++ {
@@ -400,7 +403,7 @@ func (p *PixFont) DrawMask(arg0 []int, arg1 []byte, arg2, arg3, arg4, arg5, arg6
 	}
 }
 
-func (p *PixFont) DrawCharAlpha(arg0 []byte, arg2, arg3, arg4, arg5, arg6, arg7 int) {
+func (p *PixFont) DrawCharAlpha(arg0 []int8, arg2, arg3, arg4, arg5, arg6, arg7 int) {
 	var9 := arg2 + arg5*pix2d.Width2D
 	var10 := pix2d.Width2D - arg7
 	var11 := 0
@@ -436,7 +439,7 @@ func (p *PixFont) DrawCharAlpha(arg0 []byte, arg2, arg3, arg4, arg5, arg6, arg7 
 	}
 }
 
-func (p *PixFont) DrawMaskAlpha(arg0 int, arg1 int, arg2 int, arg3 []int, arg4 []byte, arg5 int, arg6 int, arg7 int, arg8 int, arg10 int) {
+func (p *PixFont) DrawMaskAlpha(arg0 int, arg1 int, arg2 int, arg3 []int, arg4 []int8, arg5 int, arg6 int, arg7 int, arg8 int, arg10 int) {
 	var17 := ((((arg10 & 0xFF00FF) * arg5) & 0xFF00FF00) + (((arg10 & 0xFF00) * arg5) & 0xFF0000)) >> 8
 	var15 := 256 - arg5
 	for i := -arg0; i < 0; i++ {

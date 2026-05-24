@@ -246,7 +246,7 @@ func (w *World3D) AddGroundDecoration(arg0 *model.Model, arg2, arg3, arg4, arg5 
 	var9.Z = arg4*128 + 64
 	var9.Y = arg7
 	var9.BitSet = arg3
-	var9.Info = arg6
+	var9.Info = int8(arg6) // Java: byte field; (byte) reinterpret of the typecode
 	if w.LevelTiles[arg5][arg2][arg4] == nil {
 		w.LevelTiles[arg5][arg2][arg4] = typ.NewGround(arg5, arg2, arg4)
 	}
@@ -285,7 +285,7 @@ func (w *World3D) AddWall(angle2, y, level, angle1 int, model1 *model.Model, mod
 
 	wall := typ.NewWall()
 	wall.BitSet = typecode1
-	wall.Info = typecode2
+	wall.Info = int8(typecode2)
 	wall.X = tileX*128 + 64
 	wall.Z = tileZ*128 + 64
 	wall.Y = y
@@ -311,7 +311,7 @@ func (w *World3D) SetWallDecoration(y, z, zOffset, typecode, angle2, angle1, xOf
 
 	decor := typ.NewDecor()
 	decor.BitSet = typecode
-	decor.Info = typecode2
+	decor.Info = int8(typecode2)
 	decor.X = x*128 + 64 + xOffset
 	decor.Z = z*128 + 64 + zOffset
 	decor.Y = y
@@ -395,7 +395,7 @@ func (w *World3D) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, ar
 	}
 	var22 := typ.NewLocation()
 	var22.BitSet = arg12
-	var22.Info = arg13
+	var22.Info = int8(arg13)
 	var22.Level = arg0
 	var22.X = arg5
 	var22.Z = arg6
@@ -649,17 +649,17 @@ func (w *World3D) GetInfo(arg0, arg1, arg2, arg3 int) int {
 		return -1
 	}
 	if var5.Wall != nil && var5.Wall.BitSet == arg3 {
-		return int(var5.Wall.Info & 0xFF)
+		return int(var5.Wall.Info) & 0xFF
 	}
 	if var5.Decor != nil && var5.Decor.BitSet == arg3 {
-		return int(var5.Decor.Info & 0xFF)
+		return int(var5.Decor.Info) & 0xFF
 	}
 	if var5.GroundDecor != nil && var5.GroundDecor.BitSet == arg3 {
-		return int(var5.GroundDecor.Info & 0xFF)
+		return int(var5.GroundDecor.Info) & 0xFF
 	}
 	for i := range var5.LocCount {
 		if var5.Locs[i].BitSet == arg3 {
-			return int(var5.Locs[i].Info & 0xFF)
+			return int(var5.Locs[i].Info) & 0xFF
 		}
 	}
 	return -1

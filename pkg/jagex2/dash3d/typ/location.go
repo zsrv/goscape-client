@@ -20,7 +20,7 @@ type Location struct {
 	Distance      int
 	Cycle         int
 	BitSet        int
-	Info          byte
+	Info          int8 // Java: byte (signed); always read as int(Info)&0xFF
 }
 
 func NewLocation() *Location {

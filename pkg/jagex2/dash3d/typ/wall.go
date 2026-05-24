@@ -11,7 +11,7 @@ type Wall struct {
 	ModelA *model.Model
 	ModelB *model.Model
 	BitSet int
-	Info   byte
+	Info   int8 // Java: byte (signed); always read as int(Info)&0xFF
 }
 
 func NewWall() *Wall {
