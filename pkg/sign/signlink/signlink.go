@@ -318,7 +318,7 @@ func OpenSocket(port int) (net.Conn, error) {
 	case clientextras.TransportWS, clientextras.TransportWSS:
 		return openWebSocket(clientextras.Transport, clientextras.Host, port, dialTimeout)
 	default:
-		return net.DialTimeout("tcp", net.JoinHostPort(clientextras.Host, strconv.Itoa(port)), dialTimeout)
+		return dialTCP(clientextras.Host, port, dialTimeout)
 	}
 }
 

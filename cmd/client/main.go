@@ -69,6 +69,10 @@ func main() {
 		clientextras.WSPath = wsPath
 	}
 
+	// Browser builds derive the WebSocket target from window.location here;
+	// no-op on native, where the transport comes from the host arg above.
+	signlink.ConfigureTransport()
+
 	// Register SIGUSR1 profile-capture handler. Non-blocking; returns
 	// after signal listener goroutine is spawned. See
 	// docs/superpowers/specs/2026-05-22-perf-profiling-design.md.
