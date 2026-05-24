@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -32,6 +33,33 @@ func TestServesFromBundle(t *testing.T) {
 	for _, c := range cases {
 		if got := servesFromBundle(dir, c.path); got != c.want {
 			t.Errorf("servesFromBundle(%q) = %v, want %v", c.path, got, c.want)
+		}
+	}
+}
+
+func TestIsWebSocketUpgrade(t *testing.T) {
+	cases := []struct {
+		name                string
+		upgrade, connection string
+		want                bool
+	}{
+		{"ws upgrade", "websocket", "Upgrade", true},
+		{"ws upgrade with keep-alive", "websocket", "keep-alive, Upgrade", true},
+		{"case-insensitive", "WebSocket", "upgrade", true},
+		{"plain GET", "", "", false},
+		{"upgrade but not websocket", "h2c", "Upgrade", false},
+		{"websocket header but no connection upgrade", "websocket", "keep-alive", false},
+	}
+	for _, c := range cases {
+		r := httptest.NewRequest("GET", "/", nil)
+		if c.upgrade != "" {
+			r.Header.Set("Upgrade", c.upgrade)
+		}
+		if c.connection != "" {
+			r.Header.Set("Connection", c.connection)
+		}
+		if got := isWebSocketUpgrade(r); got != c.want {
+			t.Errorf("%s: isWebSocketUpgrade = %v, want %v", c.name, got, c.want)
 		}
 	}
 }
