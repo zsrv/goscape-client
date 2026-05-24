@@ -22,7 +22,7 @@ APT_PACKAGES = $(shell grep -vE '^[[:space:]]*#|^[[:space:]]*$$' .devcontainer/a
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build run test test-race vet lint fmt check-fmt ci setup clean
+.PHONY: help build run test test-race vet lint fmt check-fmt ci setup clean wasm wasm-serve
 
 help: ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -35,6 +35,15 @@ run: ## Run the client (override args with ARGS="...")
 
 $(BIN): ## Build the client binary into bin/client
 	go build -o $(BIN) $(CMD)
+
+# Browser build directory (gogio js output: index.html, main.wasm, wasm.js).
+WASM_OUT := gio/client
+
+wasm: ## Build the browser (js/wasm) client into gio/client/ via gogio
+	go run gioui.org/cmd/gogio -target js -o $(WASM_OUT) $(CMD)
+
+wasm-serve: ## Serve the browser build at http://localhost:8080 (run `make wasm` first)
+	go run ./cmd/wasmserve -dir $(WASM_OUT)
 
 test: ## Run unit tests
 	go test ./...
