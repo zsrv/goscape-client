@@ -221,6 +221,10 @@ func (c *Client) Shutdown() {
 	c.State = -2
 	c.Unload()
 	time.Sleep(1 * time.Second)
+	// os.Exit halts the Go program cleanly on wasm too (handled by the
+	// wasm_exec.js exit callback). Reviewed for the browser and intentionally
+	// unchanged: DestroyEvent only fires on tab/canvas teardown, when the page
+	// is going away regardless, so the best-effort Unload above is sufficient.
 	os.Exit(0)
 }
 
