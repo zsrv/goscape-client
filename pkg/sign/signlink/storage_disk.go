@@ -14,11 +14,13 @@ import (
 
 func newCacheStore() cacheStore { return &diskStore{} }
 
-// diskStore is the native cacheStore: the original Java-parity file store under
-// FindCacheDir()/.file_store_32. dir and id are resolved once, lazily, on first
-// use — matching the historical timing where Run() called FindCacheDir/GetUID
-// at startup (not at package init), so importing signlink without running it
-// has no filesystem side effects.
+var _ cacheStore = (*diskStore)(nil)
+
+// diskStore is the native cacheStore: the original Java-parity file store at the
+// .file_store_32/ directory returned by FindCacheDir(). dir and id are resolved
+// once, lazily, on first use — matching the historical timing where Run()
+// called FindCacheDir/GetUID at startup (not at package init), so importing
+// signlink without running it has no filesystem side effects.
 type diskStore struct {
 	once sync.Once
 	dir  string
