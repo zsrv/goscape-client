@@ -102,6 +102,17 @@ func (c *Client) draw(w *app.Window) error {
 			// re-asserts itself after alt-tab or window-manager focus
 			// changes. See `c.handleEditEvent`.
 			e.Source.Execute(key.FocusCmd{Tag: c})
+			// Web backend only: Gio's js driver (app/os_js.go) captures every
+			// keyboard and text event on a hidden <textarea> that is focused
+			// solely when the app requests text input (ShowTextInput -> focus()).
+			// Without this request the textarea never gains focus and NO
+			// keystrokes reach the client, so username/password/chat input is
+			// dead in the browser. The game always wants keyboard input, so we
+			// request it every frame alongside focus. SoftKeyboardCmd routes to
+			// driver.ShowTextInput, which is an empty no-op on every desktop
+			// driver (os_x11/os_windows/os_macos/os_wayland), so this does not
+			// change native behavior — it only activates the browser textarea.
+			e.Source.Execute(key.SoftKeyboardCmd{Show: true})
 			for {
 				ev, ok := e.Source.Event(c.inputFilters...)
 				if !ok {
