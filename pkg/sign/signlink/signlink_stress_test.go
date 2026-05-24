@@ -33,15 +33,14 @@ import (
 func TestSignlinkConcurrentStress(t *testing.T) {
 	dir := t.TempDir()
 
-	// Pre-populate cache files that CacheLoad will read. CacheLoad keys
-	// by strconv-formatted GetHash, so file names match the wire format.
+	// Pre-populate cache files that CacheLoad will read. CacheLoad keys by the
+	// plain name, so the file names are the keys verbatim.
 	cachedKeys := []string{"alpha", "beta", "gamma", "delta", "epsilon"}
 	cachedBodies := map[string][]byte{}
 	for _, k := range cachedKeys {
 		body := []byte(strings.Repeat(k+":", 32))
 		cachedBodies[k] = body
-		name := strconv.FormatInt(GetHash(k), 10)
-		if err := os.WriteFile(filepath.Join(dir, name), body, 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, k), body, 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}

@@ -237,6 +237,11 @@ func Run() {
 	}
 }
 
+// GetHash is Java's signlink.gethash: a base-37 hash of the first 12 chars
+// (case-insensitive). It was the file-store key derivation, but CacheLoad/
+// CacheSave now key by the plain name (see the DEVIATION note there), so this
+// is no longer used for caching. Retained as a faithful port of the Java
+// algorithm; remove if a future cleanup wants it gone.
 func GetHash(arg0 string) int64 {
 	var5 := strings.TrimSpace(arg0)
 	var1 := int64(0)
@@ -269,7 +274,12 @@ func CacheLoad(arg0 string) []byte {
 	defer slotMu.Unlock()
 	mu.Lock()
 	defer mu.Unlock()
-	LoadReq = strconv.FormatInt(GetHash(arg0), 10)
+	// DEVIATION from Java: the original signlink hashes the resource name via
+	// GetHash and keys the file store by the decimal hash (Client-Java does the
+	// same). We use the plain name as the key instead — readable cache keys
+	// matching the Client-TS browser client, easy to inspect in IndexedDB and
+	// on disk. Java: cacheload set loadreq = String.valueOf(gethash(name)).
+	LoadReq = arg0
 	for LoadReq != "" {
 		cond.Wait()
 	}
@@ -291,7 +301,8 @@ func CacheSave(arg0 string, arg1 []byte) {
 	}
 	SaveLen = len(arg1)
 	SaveBuf = arg1
-	SaveReq = strconv.FormatInt(GetHash(arg0), 10)
+	// DEVIATION from Java: plain name as the key, not GetHash. See CacheLoad.
+	SaveReq = arg0
 	for SaveReq != "" {
 		cond.Wait()
 	}

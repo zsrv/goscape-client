@@ -17,15 +17,13 @@ import (
 // when it asked for `scape_main.mid`.
 func TestCacheLoadRace(t *testing.T) {
 	dir := t.TempDir()
-	// Files keyed by hash, since CacheLoad strconv-formats GetHash(name).
+	// Files keyed by plain name: CacheLoad now keys by the name verbatim.
 	fileA := []byte("AAAAAAAAAA")
 	fileB := []byte("BBBBBBBBBB")
-	hashA := GetHash("a")
-	hashB := GetHash("b")
-	if err := os.WriteFile(filepath.Join(dir, itoa(hashA)), fileA, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "a"), fileA, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, itoa(hashB)), fileB, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "b"), fileB, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -90,28 +88,4 @@ func TestCacheLoadRace(t *testing.T) {
 	if mismatches > 0 {
 		t.Fatalf("CacheLoad returned the wrong file %d/%d times (race on LoadReq/LoadBuf)", mismatches, 2*iters)
 	}
-}
-
-// itoa is a tiny inlined int64-to-string to avoid pulling in strconv from
-// a test that's already adjacent to the implementation.
-func itoa(n int64) string {
-	if n == 0 {
-		return "0"
-	}
-	var buf [20]byte
-	i := len(buf)
-	neg := n < 0
-	if neg {
-		n = -n
-	}
-	for n > 0 {
-		i--
-		buf[i] = byte('0' + n%10)
-		n /= 10
-	}
-	if neg {
-		i--
-		buf[i] = '-'
-	}
-	return string(buf[i:])
 }
