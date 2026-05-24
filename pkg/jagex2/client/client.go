@@ -131,6 +131,9 @@ type Client struct {
 	// residue here; field omitted per the deob-artifact exclusion
 	// policy. Three nil-assignment sites in client.go and one allocation
 	// in gameshell.go.InitApplication were dropped alongside.
+	// Java: GameShell.java:53 declares `Pix32[] temp = new Pix32[6]`, a
+	// dead deob array never read. Intentionally not ported per the
+	// deob-artifact exclusion policy.
 	OverlayPixMap    *pixmap.PixMap
 	Frame            *ViewBox
 	Refresh          bool
@@ -159,7 +162,7 @@ type Client struct {
 	HintOffsetX                   int
 	HintOffsetZ                   int
 	MinimapOffsetCycle            int
-	RedrawFrame                   bool
+	RedrawFrame                   bool // Java: redrawBackground (deob/client.java:74)
 	LocList                       *datastruct.LinkList[*entity.LocEntity]
 	RandomIn                      *io.Isaac
 	CameraModifierEnabled         []bool
@@ -2491,6 +2494,7 @@ func (c *Client) UpdateTitle() {
 	}
 }
 
+// Java: loadArchive (deob/client.java:3046-3047) — renamed to GetJagFile.
 func (c *Client) GetJagFile(displayName string, crc int, name string, progress int) *io.Jagfile {
 	retry := 5
 	data := signlink.CacheLoad(name)

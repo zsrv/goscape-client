@@ -9,5 +9,8 @@ var LoopCycle int
 
 var PortOffset int
 
-// Java: signlink.mainapp.getCodeBase().getHost() (deob/client.java:4865)
+// Java: getHost() (deob/client.java:5508-5514) and the socket path
+// getCodeBase().getHost() (deob/client.java:7244). With no signed applet and no
+// frame, those resolve to the document-base/loopback host; "127.0.0.1" is the
+// standalone default (matching the literal http://127.0.0.1:... at client.java:7624).
 var Host = "127.0.0.1"

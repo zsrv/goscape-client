@@ -28,6 +28,14 @@ package client
 // on a 192.168.1.x LAN host — a deliberate, harmless deviation from Java's
 // standalone path (where frame != null would also allow it).
 //
+// Caveat: the "always frame == null" generalization holds for clientdrop and
+// GetHost, but NOT for GetCodeBase (client.go GetCodeBase), which returns
+// http://<host>:<portOffset+8888> — structurally Java's frame != null STANDALONE
+// branch (http://127.0.0.1:<portOffset+8888>), not the frame == null applet
+// document-base branch. Using the configured host instead of literal 127.0.0.1
+// is the right standalone choice; only the blanket "frame == null" framing above
+// is imprecise for that one method.
+//
 // Deferred cleanup (intentionally NOT done — PORTING.md §2 rule 4, "don't
 // refactor opportunistically"): the tidier long-term shape is to delete this
 // file, drop the Client.Frame *ViewBox field, and reduce the clientdrop gate
