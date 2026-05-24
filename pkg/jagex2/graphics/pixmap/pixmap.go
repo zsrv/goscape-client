@@ -112,8 +112,8 @@ func (p *PixMap) Draw(ops *op.Ops, x, y int) {
 // 1-frame stale flicker), which is negligible for change detection.
 func hashPixels(data []int) uint64 {
 	const (
-		offset uint64 = 1469598103934665603
-		prime  uint64 = 1099511628211
+		offset uint64 = 14695981039346656037 // FNV-1a 64-bit offset basis
+		prime  uint64 = 1099511628211        // FNV-1a 64-bit prime
 	)
 	h := offset
 	for _, v := range data {
