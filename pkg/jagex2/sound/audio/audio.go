@@ -76,6 +76,29 @@ func Start() {
 	go runWaveWatcher(ctx)
 }
 
+// DisableForLowMemory is the low-memory counterpart of Start: it brings
+// up no oto context, loads no SoundFont, and spawns no watcher
+// goroutines. It exists so the audio subsystem matches the Java client's
+// lowMemory behavior, where the MIDI thread is never started, sounds.dat
+// is never unpacked, and every runtime playback path is gated behind
+// !lowMemory (deob/client.java:5949, 6163, 7374/9656/9868/9889). Doing
+// any audio work there would contradict the whole point of low-memory
+// mode.
+//
+// It still registers a nil MIDI driver — identical to Start's failed-init
+// path above — so that any stray PlayMIDI caller returns silently instead
+// of blocking forever on driverReady. In lowMemory every SetMidi/SaveMidi
+// site is provably gated out and c.RunMidi never starts, so PlayMIDI
+// should be unreachable; the nil driver is belt-and-suspenders matching
+// the rest of this package.
+//
+// The lowMemory decision lives in cmd/client/main.go rather than here
+// because the audio package cannot import client (client imports audio),
+// so the flag is read at the one call site that knows both.
+func DisableForLowMemory() {
+	registerMidiDriver(nil)
+}
+
 // ensureContext lazily initializes oto on first call. Subsequent calls
 // return the cached context. The function may return (nil, err) if the
 // audio device is unavailable; callers must handle a nil context.

@@ -91,6 +91,18 @@ func main() {
 		// poll signlink.ConsumeMidi / ConsumeWave for the lifetime of
 		// the process. Started after signlink so the soundfont fetch
 		// (via signlink.OpenURL) doesn't race the protocol coming up.
+		//
+		// In low-memory mode we bring up no audio at all, matching the
+		// Java client: it never starts the MIDI thread, never unpacks
+		// sounds.dat, and gates every playback path behind !lowMemory
+		// (deob/client.java:5949/6163/7374/...). Initializing oto there
+		// would open an audio device and spawn watchers for a queue
+		// nothing ever fills. client.LowMemory is set synchronously by
+		// SetLowMem above, well before this goroutine reads it.
+		if client.LowMemory {
+			audio.DisableForLowMemory()
+			return
+		}
 		audio.Start()
 	})
 	wg.Go(func() {
