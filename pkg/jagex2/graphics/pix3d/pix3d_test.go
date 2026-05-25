@@ -2,21 +2,7 @@ package pix3d
 
 import "testing"
 
-// TestVar23ShiftCountStaysInRange pins the post-fix contract that
-// TextureRaster's `var23 = (arg7 >> 23) & 0x1F` always produces a
-// non-negative shift count in [0, 31].
-//
-// Pre-fix (`var23 = arg7 >> 23`): once arg7 grew past 31 bits via
-// the accumulating `arg7 += var15` inside the rasterizer's pixel
-// loop, Go's int64 arithmetic-right-shift produced a negative
-// result. The downstream `arg1[i] >> var23` then panicked with
-// "runtime error: negative shift amount" — observed live during
-// gameplay after a few minutes of textured-tile rendering.
-//
-// The mask `& 0x1F` matches Java's implicit 5-bit shift-count
-// mask for int operations and is bit-equivalent regardless of
-// int32-vs-int64 representation (bits 23-27 of arg7 are preserved
-// through additive arithmetic in both widths).
+// TestInitPoolReusesAfterClearTexels verifies the scene-rebuild cycle reuses the texel pool buffers instead of reallocating them.
 func TestInitPoolReusesAfterClearTexels(t *testing.T) {
 	// Mirror the scene-rebuild cycle: InitPool -> (textures bound) -> ClearTexels
 	// -> InitPool. The second InitPool must REUSE the existing buffers.
@@ -68,6 +54,7 @@ func TestInitPoolReusesAfterClearTexels(t *testing.T) {
 func TestInitPoolReallocatesOnDetailChange(t *testing.T) {
 	// If LowDetail changes (required buffer length differs), the guard must fall
 	// through and reallocate rather than reuse wrong-sized buffers.
+	defer func() { LowDetail = true }()
 	LowDetail = true
 	TexelPool = nil
 	for i := range ActiveTexels {
@@ -86,6 +73,21 @@ func TestInitPoolReallocatesOnDetailChange(t *testing.T) {
 	}
 }
 
+// TestVar23ShiftCountStaysInRange pins the post-fix contract that
+// TextureRaster's `var23 = (arg7 >> 23) & 0x1F` always produces a
+// non-negative shift count in [0, 31].
+//
+// Pre-fix (`var23 = arg7 >> 23`): once arg7 grew past 31 bits via
+// the accumulating `arg7 += var15` inside the rasterizer's pixel
+// loop, Go's int64 arithmetic-right-shift produced a negative
+// result. The downstream `arg1[i] >> var23` then panicked with
+// "runtime error: negative shift amount" — observed live during
+// gameplay after a few minutes of textured-tile rendering.
+//
+// The mask `& 0x1F` matches Java's implicit 5-bit shift-count
+// mask for int operations and is bit-equivalent regardless of
+// int32-vs-int64 representation (bits 23-27 of arg7 are preserved
+// through additive arithmetic in both widths).
 func TestVar23ShiftCountStaysInRange(t *testing.T) {
 	cases := []struct {
 		name string
