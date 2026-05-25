@@ -12,3 +12,8 @@ func Main(width, height int, title string, loop func()) {
 	Active = newGLFWBackend(width, height, title)
 	loop()
 }
+
+// Yield is a no-op on native: audio runs on its own OS thread, so a long CPU
+// burst on the loop goroutine never starves it (unlike single-threaded wasm,
+// where Yield returns control to the JS event loop so Web Audio stays fed).
+func Yield() {}
