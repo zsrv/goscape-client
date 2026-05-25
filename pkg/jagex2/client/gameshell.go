@@ -427,7 +427,18 @@ func charFor(e platform.KeyPress) int {
 // RunShell is the single game loop: poll input, run catch-up logic ticks, draw,
 // present, sleep. Faithful to Java GameShell.run() / the TS client (no
 // requestAnimationFrame). Runs on the loop goroutine established by platform.Main.
+// initScreenSize sets the client's screen dimensions from the active platform
+// backend's window size. The host-shell refactor's RunShell replaces the old
+// InitApplication, which formerly set ScreenWidth/Height; this restores that
+// step. Must run before the first DrawProgress: ensureOverlay sizes the overlay
+// PixMap from these, and a zero size yields an empty pixel buffer that crashes
+// the native gl.Ptr upload (panic: reflect: slice index out of range).
+func (c *Client) initScreenSize() {
+	c.ScreenWidth, c.ScreenHeight = platform.Active.Size()
+}
+
 func (c *Client) RunShell() {
+	c.initScreenSize()
 	c.DrawProgress("Loading...", 0)
 	c.Load()
 
