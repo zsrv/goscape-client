@@ -17,6 +17,13 @@ type PixMap struct {
 	Width  int
 	Height int
 
+	// AlwaysUpload skips the per-frame hashPixels change-detection and uploads
+	// unconditionally. Set true for pixmaps that change almost every frame (the
+	// 3D viewport): hashing the whole buffer to detect a change that is
+	// essentially always present is pure overhead, and the texture is reused in
+	// place (texSubImage2D), so unconditional upload does not leak.
+	AlwaysUpload bool
+
 	imgBuf *image.RGBA // reusable RGBA staging buffer written before each UploadTexture
 
 	// tex is the backend texture handle, allocated once in NewPixMap.
@@ -45,12 +52,18 @@ func (p *PixMap) Bind() {
 // Draw uploads the pixels (only if changed since last Draw) and blits the
 // texture with its top-left at (x, y). Java: Graphics.drawImage(image, x, y).
 func (p *PixMap) Draw(x, y int) {
-	h := hashPixels(p.Data)
-	if !p.uploaded || h != p.lastHash {
+	if p.AlwaysUpload {
+		// Skip the full-buffer hash for always-changing pixmaps; upload in place.
 		writePixmapPixels(p.imgBuf, p.Data)
 		platform.Active.UploadTexture(p.tex, p.imgBuf.Pix)
-		p.lastHash = h
-		p.uploaded = true
+	} else {
+		h := hashPixels(p.Data)
+		if !p.uploaded || h != p.lastHash {
+			writePixmapPixels(p.imgBuf, p.Data)
+			platform.Active.UploadTexture(p.tex, p.imgBuf.Pix)
+			p.lastHash = h
+			p.uploaded = true
+		}
 	}
 	platform.Active.Blit(p.tex, x, y)
 }

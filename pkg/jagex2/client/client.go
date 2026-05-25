@@ -3438,6 +3438,9 @@ func (c *Client) PrepareGameScreen() {
 	c.ImageMapback.PlotSprite(0, 0)
 	c.AreaSidebar = pixmap.NewPixMap(190, 261)
 	c.AreaViewport = pixmap.NewPixMap(512, 334)
+	// The viewport is re-rendered (DrawScene) almost every frame, so the
+	// hashPixels change-detection is pure overhead — upload unconditionally.
+	c.AreaViewport.AlwaysUpload = true
 	pix2d.Clear()
 	c.AreaBackbase1 = pixmap.NewPixMap(501, 61)
 	c.AreaBackbase2 = pixmap.NewPixMap(288, 40)

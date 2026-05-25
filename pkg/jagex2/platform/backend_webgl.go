@@ -13,31 +13,49 @@ type webglTexture struct {
 }
 
 type webglBackend struct {
-	doc    js.Value
-	canvas js.Value
-	gl     js.Value
-	prog   js.Value
-	vbo    js.Value
-	aPos   int
-	aUV    int
-	uTex   js.Value
-	uScr   js.Value
-	w, h   int
+	doc     js.Value
+	canvas  js.Value
+	gl      js.Value
+	prog    js.Value
+	vbo     js.Value // static unit-quad geometry, uploaded once
+	aUnit   int
+	uTex    js.Value
+	uScr    js.Value
+	uOrigin js.Value // blit top-left in px
+	uSize   js.Value // blit size in px
+	w, h    int
+
+	// Cached GL enum constants. gl.Get crosses the wasm↔JS boundary, the
+	// dominant per-op cost in Go wasm; the per-frame Blit/BeginFrame/
+	// UploadTexture paths must not re-fetch these every call.
+	cArrayBuffer    js.Value
+	cFloat          js.Value
+	cTriangles      js.Value
+	cTexture2D      js.Value
+	cTexture0       js.Value
+	cColorBufferBit js.Value
+	cRGBA           js.Value
+	cUnsignedByte   js.Value
 
 	events []Event
 	funcs  []js.Func // retained so the GC doesn't collect live listeners
 }
 
+// Static unit-quad geometry (two triangles, CCW). aUnit ∈ {0,1}² is both the
+// quad corner and the texture UV; the vertex shader scales/offsets it by the
+// uSize/uOrigin uniforms, so Blit uploads no geometry per call.
 const vertexShaderSrc = `
-attribute vec2 aPos;
-attribute vec2 aUV;
-uniform vec2 uScreen;
+attribute vec2 aUnit;     // unit-quad corner (0..1), doubles as UV
+uniform vec2 uScreen;     // viewport size in px
+uniform vec2 uOrigin;     // blit top-left in px
+uniform vec2 uSize;       // blit size in px
 varying vec2 vUV;
 void main() {
-	vec2 ndc = vec2(aPos.x / uScreen.x * 2.0 - 1.0,
-	                1.0 - aPos.y / uScreen.y * 2.0);
+	vec2 px = uOrigin + aUnit * uSize;
+	vec2 ndc = vec2(px.x / uScreen.x * 2.0 - 1.0,
+	                1.0 - px.y / uScreen.y * 2.0);
 	gl_Position = vec4(ndc, 0.0, 1.0);
-	vUV = aUV;
+	vUV = aUnit;
 }`
 
 const fragmentShaderSrc = `
@@ -68,12 +86,34 @@ func newJSBackend(width, height int, title string) Backend {
 	}
 
 	b := &webglBackend{doc: doc, canvas: canvas, gl: gl, w: width, h: height}
+	// Cache enum constants once (see struct comment) before any per-frame use.
+	b.cArrayBuffer = gl.Get("ARRAY_BUFFER")
+	b.cFloat = gl.Get("FLOAT")
+	b.cTriangles = gl.Get("TRIANGLES")
+	b.cTexture2D = gl.Get("TEXTURE_2D")
+	b.cTexture0 = gl.Get("TEXTURE0")
+	b.cColorBufferBit = gl.Get("COLOR_BUFFER_BIT")
+	b.cRGBA = gl.Get("RGBA")
+	b.cUnsignedByte = gl.Get("UNSIGNED_BYTE")
+
 	b.prog = b.buildProgram()
-	b.vbo = gl.Call("createBuffer")
-	b.aPos = gl.Call("getAttribLocation", b.prog, "aPos").Int()
-	b.aUV = gl.Call("getAttribLocation", b.prog, "aUV").Int()
+	b.aUnit = gl.Call("getAttribLocation", b.prog, "aUnit").Int()
 	b.uTex = gl.Call("getUniformLocation", b.prog, "uTex")
 	b.uScr = gl.Call("getUniformLocation", b.prog, "uScreen")
+	b.uOrigin = gl.Call("getUniformLocation", b.prog, "uOrigin")
+	b.uSize = gl.Call("getUniformLocation", b.prog, "uSize")
+
+	// Upload the static unit quad ONCE. Blit then only sets uOrigin/uSize and
+	// draws — no per-blit bufferData or Float32Array allocation.
+	b.vbo = gl.Call("createBuffer")
+	gl.Call("bindBuffer", b.cArrayBuffer, b.vbo)
+	unit := []float32{0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1}
+	ua := js.Global().Get("Float32Array").New(len(unit))
+	for i, v := range unit {
+		ua.SetIndex(i, v)
+	}
+	gl.Call("bufferData", b.cArrayBuffer, ua, gl.Get("STATIC_DRAW"))
+
 	gl.Call("disable", gl.Get("DEPTH_TEST"))
 	gl.Call("disable", gl.Get("BLEND"))
 	gl.Call("clearColor", 0, 0, 0, 1)
@@ -124,46 +164,33 @@ func (b *webglBackend) UploadTexture(t Texture, rgba []byte) {
 	gl := b.gl
 	tex := t.(*webglTexture)
 	js.CopyBytesToJS(tex.u8, rgba)
-	gl.Call("bindTexture", gl.Get("TEXTURE_2D"), tex.tex)
-	gl.Call("texSubImage2D", gl.Get("TEXTURE_2D"), 0, 0, 0, tex.w, tex.h,
-		gl.Get("RGBA"), gl.Get("UNSIGNED_BYTE"), tex.u8)
+	gl.Call("bindTexture", b.cTexture2D, tex.tex)
+	gl.Call("texSubImage2D", b.cTexture2D, 0, 0, 0, tex.w, tex.h,
+		b.cRGBA, b.cUnsignedByte, tex.u8)
 }
 
 func (b *webglBackend) BeginFrame() {
 	gl := b.gl
 	gl.Call("viewport", 0, 0, b.w, b.h)
-	gl.Call("clear", gl.Get("COLOR_BUFFER_BIT"))
+	gl.Call("clear", b.cColorBufferBit)
 	gl.Call("useProgram", b.prog)
 	gl.Call("uniform2f", b.uScr, float64(b.w), float64(b.h))
+	// (Re)bind the static unit quad + attribute for the frame. Cheap (3 calls)
+	// and keeps the vertex state valid regardless of intervening GL calls.
+	gl.Call("bindBuffer", b.cArrayBuffer, b.vbo)
+	gl.Call("enableVertexAttribArray", b.aUnit)
+	gl.Call("vertexAttribPointer", b.aUnit, 2, b.cFloat, false, 0, 0)
 }
 
 func (b *webglBackend) Blit(t Texture, x, y int) {
 	gl := b.gl
 	tex := t.(*webglTexture)
-	x0, y0 := float64(x), float64(y)
-	x1, y1 := float64(x+tex.w), float64(y+tex.h)
-	verts := []float64{
-		x0, y0, 0, 0,
-		x1, y0, 1, 0,
-		x0, y1, 0, 1,
-		x1, y0, 1, 0,
-		x1, y1, 1, 1,
-		x0, y1, 0, 1,
-	}
-	fa := js.Global().Get("Float32Array").New(len(verts))
-	for i, v := range verts {
-		fa.SetIndex(i, v)
-	}
-	gl.Call("bindBuffer", gl.Get("ARRAY_BUFFER"), b.vbo)
-	gl.Call("bufferData", gl.Get("ARRAY_BUFFER"), fa, gl.Get("DYNAMIC_DRAW"))
-	gl.Call("enableVertexAttribArray", b.aPos)
-	gl.Call("vertexAttribPointer", b.aPos, 2, gl.Get("FLOAT"), false, 16, 0)
-	gl.Call("enableVertexAttribArray", b.aUV)
-	gl.Call("vertexAttribPointer", b.aUV, 2, gl.Get("FLOAT"), false, 16, 8)
-	gl.Call("activeTexture", gl.Get("TEXTURE0"))
-	gl.Call("bindTexture", gl.Get("TEXTURE_2D"), tex.tex)
+	gl.Call("uniform2f", b.uOrigin, float64(x), float64(y))
+	gl.Call("uniform2f", b.uSize, float64(tex.w), float64(tex.h))
+	gl.Call("activeTexture", b.cTexture0)
+	gl.Call("bindTexture", b.cTexture2D, tex.tex)
 	gl.Call("uniform1i", b.uTex, 0)
-	gl.Call("drawArrays", gl.Get("TRIANGLES"), 0, 6)
+	gl.Call("drawArrays", b.cTriangles, 0, 6)
 }
 
 // EndFrame is a no-op: WebGL commands flush when the loop goroutine next yields
