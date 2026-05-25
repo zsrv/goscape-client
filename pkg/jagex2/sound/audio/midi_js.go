@@ -65,7 +65,7 @@ func (s *musicStream) schedule(buf js.Value, at float64) {
 	s.mu.Lock()
 	if s.stopped {
 		s.mu.Unlock()
-		src.Call("stop")
+		safeStop(src)
 		src.Call("disconnect")
 		return
 	}
@@ -87,10 +87,19 @@ func (s *musicStream) stopAll() {
 	s.sources = nil
 	s.mu.Unlock()
 	for _, src := range srcs {
-		src.Call("stop")
+		safeStop(src)
 		src.Call("disconnect")
 	}
 	s.fadeGain.Call("disconnect")
+}
+
+// safeStop calls stop() on a source, swallowing the InvalidStateError some
+// browsers throw when the source has already ended naturally (e.g. a cache-hit
+// full-track source that finished before a loop re-issue's stopAll). A thrown
+// JS exception would otherwise panic the Go side via syscall/js.
+func safeStop(src js.Value) {
+	defer func() { _ = recover() }()
+	src.Call("stop")
 }
 
 // webMidiDriver owns the current playing stream, a one-track full-buffer cache
@@ -259,7 +268,7 @@ func (d *webMidiDriver) streamRender(s *musicStream, midData []byte, startAt flo
 // stop it after fadeDuration; without, stop immediately. gen-guarded so a
 // play arriving during the fade isn't clobbered.
 func (d *webMidiDriver) stop(fade bool) {
-	gen := d.gen.Add(1)
+	d.gen.Add(1) // supersede any in-flight render so its goroutine abandons
 	d.mu.Lock()
 	s := d.cur
 	d.cur = nil
@@ -275,9 +284,9 @@ func (d *webMidiDriver) stop(fade bool) {
 	s.fadeGain.Get("gain").Call("setTargetAtTime", 0.0, now, fadeTimeConstant)
 	go func() {
 		time.Sleep(fadeDuration)
-		if d.gen.Load() != gen {
-			return
-		}
+		// No gen check: stop already set d.cur=nil, so a PlayMIDI arriving
+		// during the fade builds a separate stream — stopping this faded-out
+		// one is always correct, and stopAll is idempotent.
 		s.stopAll()
 	}()
 }
