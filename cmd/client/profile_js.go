@@ -1,4 +1,4 @@
-//go:build js
+//go:build js && goscapedebug
 
 package main
 
@@ -10,8 +10,10 @@ import (
 	"syscall/js"
 )
 
-// init installs browser-console debug hooks for the wasm build. They exist only
-// in the js build (Go's pprof cannot write a file from wasm, and a browser heap
+// init installs browser-console debug hooks for the wasm build. Gated behind the
+// `goscapedebug` build tag so they are absent from the normal/release wasm
+// artifact; build with `-tags goscapedebug` to include them. They exist only in
+// the js build (Go's pprof cannot write a file from wasm, and a browser heap
 // snapshot sees the module as one opaque ArrayBuffer, so neither attributes
 // allocations to Go call sites). Call from DevTools:
 //
@@ -19,8 +21,7 @@ import (
 //	goscapeDumpAllocs()  // downloads allocs.pb.gz; analyze with
 //	                     //   go tool pprof -alloc_space allocs.pb.gz
 //
-// Harmless if never called. Remove (or gate behind a debug build tag) once the
-// allocation work is done.
+// Harmless if never called.
 func init() {
 	js.Global().Set("goscapeDumpAllocs", js.FuncOf(func(js.Value, []js.Value) any {
 		runtime.GC() // settle the heap so the profile reflects live allocations
