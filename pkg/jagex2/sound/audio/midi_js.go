@@ -113,6 +113,9 @@ func (d *webMidiDriver) playFromBytes(midData []byte, fade bool) {
 	if !buf.Truthy() {
 		return
 	}
+	// gen is bumped AFTER renderToBuffer so the previous track keeps playing
+	// (at its current gain) during the one-time render of a new track — a long
+	// render must not be treated as superseding the playing track.
 	gen := d.gen.Add(1)
 
 	d.mu.Lock()
@@ -134,7 +137,7 @@ func (d *webMidiDriver) playFromBytes(midData []byte, fade bool) {
 	}
 
 	if !fade || !oldSrc.Truthy() {
-		stopSource(oldSrc)
+		stopNodes(oldSrc, oldFade)
 		startNew()
 		return
 	}
@@ -146,7 +149,7 @@ func (d *webMidiDriver) playFromBytes(midData []byte, fade bool) {
 		if d.gen.Load() != gen {
 			return
 		}
-		stopSource(oldSrc)
+		stopNodes(oldSrc, oldFade)
 		startNew()
 	}()
 }
@@ -163,7 +166,7 @@ func (d *webMidiDriver) stop(fade bool) {
 		return
 	}
 	if !fade {
-		stopSource(src)
+		stopNodes(src, fadeGain)
 		return
 	}
 	now := ac.Get("currentTime").Float()
@@ -173,14 +176,18 @@ func (d *webMidiDriver) stop(fade bool) {
 		if d.gen.Load() != gen {
 			return
 		}
-		stopSource(src)
+		stopNodes(src, fadeGain)
 	}()
 }
 
-// stopSource stops + disconnects an AudioBufferSourceNode if present.
-func stopSource(src js.Value) {
+// stopNodes stops the source and disconnects both the source and its fade
+// GainNode, so a replaced track leaves no dead nodes wired into musicGain.
+func stopNodes(src, fadeGain js.Value) {
 	if src.Truthy() {
 		src.Call("stop")
 		src.Call("disconnect")
+	}
+	if fadeGain.Truthy() {
+		fadeGain.Call("disconnect")
 	}
 }
