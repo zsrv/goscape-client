@@ -47,7 +47,6 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io/bzip2"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io/clientstream"
-	"github.com/zsrv/goscape-client/pkg/jagex2/platform"
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/audio"
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/wave"
 	"github.com/zsrv/goscape-client/pkg/jagex2/wordenc/wordfilter"
@@ -8247,10 +8246,6 @@ func (c *Client) BuildScene() {
 		} else if c.SceneCenterZoneZ < 800 {
 			var3.ClearLandscape(var8, var9, 64, 64)
 		}
-		// wasm: return to the JS event loop between regions so the streaming
-		// MIDI player can refill — single-threaded wasm would otherwise starve
-		// it during this synchronous decode and skip the music. No-op on native.
-		platform.Yield()
 	}
 	c.Out.P1Isaac(108)
 	var16 := 0
@@ -8263,10 +8258,8 @@ func (c *Client) BuildScene() {
 			var12 := (c.SceneMapIndex[i]&0xFF)*64 - c.SceneBaseTileZ
 			var3.LoadLocations(var4, c.Scene, c.LevelCollisionMap, c.LocList, var12, var11)
 		}
-		platform.Yield() // wasm: keep audio fed between regions (see above); no-op native
 	}
 	c.Out.P1Isaac(108)
-	platform.Yield() // wasm: breathe before the heavy scene Build
 	var3.Build(c.Scene, c.LevelCollisionMap)
 	c.AreaViewport.Bind()
 	c.Out.P1Isaac(108)
