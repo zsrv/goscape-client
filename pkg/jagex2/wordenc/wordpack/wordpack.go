@@ -72,7 +72,7 @@ func Pack(buf *io.Packet, terminate bool, str string) {
 	runes = []rune(strings.ToLower(string(runes)))
 
 	carry := -1
-	for _, c := range runes {
+	for _, c := range runes { //nolint:staticcheck // SA6003: range over []rune mirrors Java char[] indexing; ranging the string would change char semantics
 		index := 0
 		for j := range len(TABLE) {
 			if c == TABLE[j] {

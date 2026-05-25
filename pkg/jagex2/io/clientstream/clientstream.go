@@ -326,7 +326,7 @@ func (cs *ClientStream) Write(arg0 []byte, arg1, arg3 int) error {
 	defer cs.mu.Unlock()
 	if cs.ioerror {
 		cs.ioerror = false
-		return errors.New("Error in writer thread")
+		return errors.New("Error in writer thread") //nolint:staticcheck // ST1005: faithful port of Java ClientStream.java:117 literal
 	}
 	if cs.buf == nil {
 		cs.buf = make([]byte, bufSize)

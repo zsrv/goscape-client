@@ -25,7 +25,7 @@ func TestOpenSocket(t *testing.T) {
 		if err != nil {
 			t.Fatalf("listen: %v", err)
 		}
-		t.Cleanup(func() { ln.Close() })
+		t.Cleanup(func() { _ = ln.Close() })
 
 		_, portStr, err := net.SplitHostPort(ln.Addr().String())
 		if err != nil {
@@ -55,7 +55,7 @@ func TestOpenSocket(t *testing.T) {
 		if err != nil {
 			t.Fatalf("OpenSocket: %v", err)
 		}
-		t.Cleanup(func() { conn.Close() })
+		t.Cleanup(func() { _ = conn.Close() })
 
 		var server net.Conn
 		select {
@@ -66,7 +66,7 @@ func TestOpenSocket(t *testing.T) {
 		case <-time.After(2 * time.Second):
 			t.Fatal("server never accepted")
 		}
-		t.Cleanup(func() { server.Close() })
+		t.Cleanup(func() { _ = server.Close() })
 
 		if _, err := conn.Write([]byte{0x42}); err != nil {
 			t.Fatalf("client write: %v", err)
@@ -92,15 +92,15 @@ func TestOpenSocket(t *testing.T) {
 		}
 		_, portStr, err := net.SplitHostPort(ln.Addr().String())
 		if err != nil {
-			ln.Close()
+			_ = ln.Close()
 			t.Fatalf("split host/port: %v", err)
 		}
 		port, err := strconv.Atoi(portStr)
 		if err != nil {
-			ln.Close()
+			_ = ln.Close()
 			t.Fatalf("parse port: %v", err)
 		}
-		ln.Close()
+		_ = ln.Close()
 
 		prev := clientextras.Host
 		clientextras.Host = "127.0.0.1"
@@ -108,7 +108,7 @@ func TestOpenSocket(t *testing.T) {
 
 		conn, err := OpenSocket(port)
 		if err == nil {
-			conn.Close()
+			_ = conn.Close()
 			t.Fatal("OpenSocket succeeded against a closed port; expected error")
 		}
 	})

@@ -51,7 +51,7 @@ func TestSignlinkConcurrentStress(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Strip leading slash. The path is the URL fragment OpenURL
 		// passed in, so the echoed body identifies the caller's request.
-		fmt.Fprintf(w, "URL:%s", strings.TrimPrefix(r.URL.Path, "/"))
+		_, _ = fmt.Fprintf(w, "URL:%s", strings.TrimPrefix(r.URL.Path, "/"))
 	}))
 	t.Cleanup(srv.Close)
 
@@ -107,7 +107,7 @@ func TestSignlinkConcurrentStress(t *testing.T) {
 				var body []byte
 				if err == nil {
 					body, _ = io.ReadAll(resp.Body)
-					resp.Body.Close()
+					_ = resp.Body.Close()
 				}
 				mu.Lock()
 				URLStream = body

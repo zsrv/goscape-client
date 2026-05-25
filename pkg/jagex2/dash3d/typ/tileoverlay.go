@@ -227,15 +227,15 @@ func NewTileOverlay(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, 
 	// The condition is always false — the intended max-branch for the (arg17, arg3)
 	// pair never fires, leaving var37 == arg3. Subsequent arg13/arg7 min/max passes
 	// still run normally. Bug-for-bug fidelity with the obfuscated Jagex source.
-	if arg3 > arg3 {
+	if arg3 > arg3 { //nolint:staticcheck // SA4000: always-false condition preserved bug-for-bug (see comment above)
 		var37 = arg3
 	}
 	var36 = min(arg13, var36)
 	var37 = max(arg13, var37)
 	var36 = min(arg7, var36)
 	var37 = max(arg7, var37)
-	var36 /= 14
-	var37 /= 14
+	var36 /= 14 //nolint:ineffassign // Java: TileOverlay.java:289 — faithful dead final scaling (var36 not read after)
+	var37 /= 14 //nolint:ineffassign // Java: TileOverlay.java:290 — faithful dead final scaling (var37 not read after)
 
 	return &t
 }

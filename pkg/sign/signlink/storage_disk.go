@@ -99,7 +99,9 @@ func GetUID(arg0 string) int {
 		// Java: DataOutputStream.writeInt — big-endian. Stay byte-compatible
 		// with the Java client's uid.dat format so shared caches work.
 		binary.BigEndian.PutUint32(bs, uint32(rand.Float64()*9.9999999e7))
-		os.WriteFile(var1, bs, 0644)
+		if err := os.WriteFile(var1, bs, 0644); err != nil {
+			log.Println("signlink: couldn't write uid.dat")
+		}
 	}
 
 	var5, err := os.ReadFile(var1)

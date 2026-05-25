@@ -1468,7 +1468,7 @@ func (m *Model) Draw1(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) 
 		return
 	}
 	var22 := var12 + ((m.MaxY * arg1) >> 16)
-	var23 := false
+	var23 := false //nolint:staticcheck // QF1007: separate declaration + conditional assignment mirrors the Java source
 	if var11-var22 <= 50 {
 		var23 = true
 	}

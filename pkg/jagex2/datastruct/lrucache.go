@@ -34,7 +34,7 @@ func (l *LruCache[T]) Get(key int64) T {
 	// Java: history.push(var3) — re-pushing an already-linked node
 	// Uncaches it then re-links at the tail (the most-recently-used slot).
 	l.History.Push(node)
-	return node.Linkable.Value
+	return node.Linkable.Value //nolint:staticcheck // QF1008: explicit embedded-field selector mirrors Java field access
 }
 
 // Put inserts v under key. CONSTRAINT (datastruct.md #29): callers must Get

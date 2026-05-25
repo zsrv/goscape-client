@@ -199,7 +199,7 @@ func Run() {
 				} else {
 					log.Printf("signlink: openurl %s: HTTP %d", urlReq, resp.StatusCode)
 				}
-				resp.Body.Close()
+				_ = resp.Body.Close()
 			}
 			mu.Lock()
 			URLStream = body

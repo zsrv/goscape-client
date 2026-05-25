@@ -268,7 +268,7 @@ func FilterDomain(arg0, arg2, domain, in []rune) {
 
 		match := false
 		for {
-			if end >= len(in) {
+			if end >= len(in) { //nolint:staticcheck // QF1006: explicit break mirrors Java while(true){ if(...) break }
 				break
 			}
 
@@ -413,7 +413,7 @@ func FilterTLD2(filteredSlash []rune, typ int, chars, tld, filteredDot []rune) {
 		match := false
 
 		for {
-			if end >= len(chars) {
+			if end >= len(chars) { //nolint:staticcheck // QF1006: explicit break mirrors Java while(true){ if(...) break }
 				break
 			}
 
@@ -629,7 +629,7 @@ func Filter2(badCombinations [][]int8, chars []rune, fragment []rune) {
 		b := rune(0)
 		c := rune(0)
 		for {
-			if end >= len(chars) || isEmulated && isNumeral {
+			if end >= len(chars) || isEmulated && isNumeral { //nolint:staticcheck // QF1006: explicit break mirrors Java while(true){ if(...) break }
 				break
 			}
 

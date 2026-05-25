@@ -223,18 +223,20 @@ func Decompress(s *bzip2state.BZip2State) {
 				return
 			}
 
-			uc = GetUnsignedChar(s)
-			uc = GetUnsignedChar(s)
-			uc = GetUnsignedChar(s)
-			uc = GetUnsignedChar(s)
-			uc = GetUnsignedChar(s)
+			// Java: BZip2.java:186-195 — these repeated getUnsignedChar reads advance
+			// the bit-stream for their side effect; the assignment to uc is discarded.
+			uc = GetUnsignedChar(s) //nolint:ineffassign,staticcheck
+			uc = GetUnsignedChar(s) //nolint:ineffassign,staticcheck
+			uc = GetUnsignedChar(s) //nolint:ineffassign,staticcheck
+			uc = GetUnsignedChar(s) //nolint:ineffassign,staticcheck
+			uc = GetUnsignedChar(s) //nolint:ineffassign,staticcheck
 
 			s.CurrBlockNo++
 
-			uc = GetUnsignedChar(s)
-			uc = GetUnsignedChar(s)
-			uc = GetUnsignedChar(s)
-			uc = GetUnsignedChar(s)
+			uc = GetUnsignedChar(s) //nolint:ineffassign,staticcheck // Java: BZip2.java skip-bytes (stream advance side effect)
+			uc = GetUnsignedChar(s) //nolint:ineffassign,staticcheck
+			uc = GetUnsignedChar(s) //nolint:ineffassign,staticcheck
+			uc = GetUnsignedChar(s) //nolint:ineffassign,staticcheck
 
 			uc = GetBit(s)
 			if uc == 0 {
@@ -571,7 +573,7 @@ func Decompress(s *bzip2state.BZip2State) {
 				break
 			}
 		}
-		return
+		return //nolint:staticcheck // SA4004: outer `for` intentionally runs once (faithful port; see comment above)
 	}
 }
 

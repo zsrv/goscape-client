@@ -442,7 +442,7 @@ func (c *Client) RunShell() {
 	// Value is unconditionally reassigned before any read (line 152 below),
 	// so the initial value is observationally irrelevant; aligned with Java
 	// for literal-port hygiene.
-	var1 := time.Now().UnixMilli()
+	var1 := time.Now().UnixMilli() //nolint:ineffassign,staticcheck // Java: faithful pre-loop init; reassigned before any read (see comment above)
 	for c.State >= 0 && !platform.Active.ShouldClose() {
 		if c.State > 0 {
 			c.State--

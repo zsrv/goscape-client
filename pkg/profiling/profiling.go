@@ -64,7 +64,7 @@ func writeSnapshotProfile(name, path string) error {
 	if err != nil {
 		return fmt.Errorf("profiling: open %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if err := p.WriteTo(f, 0); err != nil {
 		return fmt.Errorf("profiling: write %s: %w", path, err)
 	}
@@ -91,9 +91,9 @@ func writeCPUAndTrace(dir string, window time.Duration) error {
 		cpuErr = fmt.Errorf("profiling: open %s: %w", cpuPath, err)
 	} else if err := pprof.StartCPUProfile(cpuFile); err != nil {
 		cpuErr = fmt.Errorf("profiling: start cpu: %w", err)
-		cpuFile.Close()
+		_ = cpuFile.Close()
 	} else {
-		defer cpuFile.Close()
+		defer func() { _ = cpuFile.Close() }()
 		defer pprof.StopCPUProfile()
 	}
 
@@ -102,9 +102,9 @@ func writeCPUAndTrace(dir string, window time.Duration) error {
 		traceErr = fmt.Errorf("profiling: open %s: %w", tracePath, err)
 	} else if err := trace.Start(traceFile); err != nil {
 		traceErr = fmt.Errorf("profiling: start trace: %w", err)
-		traceFile.Close()
+		_ = traceFile.Close()
 	} else {
-		defer traceFile.Close()
+		defer func() { _ = traceFile.Close() }()
 		defer trace.Stop()
 	}
 

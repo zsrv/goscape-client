@@ -27,7 +27,7 @@ func TestOpenWebSocketRoundTrip(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer c.CloseNow()
+		defer func() { _ = c.CloseNow() }()
 		nc := websocket.NetConn(r.Context(), c, websocket.MessageBinary)
 		_, _ = io.Copy(nc, nc) // echo until the client closes
 	}))

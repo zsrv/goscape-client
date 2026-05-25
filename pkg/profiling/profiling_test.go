@@ -21,7 +21,7 @@ func TestSessionTimestamp_Format(t *testing.T) {
 func TestSessionTimestamp_SortableByTime(t *testing.T) {
 	early := sessionTimestamp(time.Date(2026, 5, 22, 14, 30, 15, 0, time.UTC))
 	later := sessionTimestamp(time.Date(2026, 5, 22, 14, 30, 16, 0, time.UTC))
-	if !(early < later) {
+	if early >= later {
 		t.Errorf("expected %q < %q lexicographically", early, later)
 	}
 }

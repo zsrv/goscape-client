@@ -24,7 +24,7 @@ func readN(t *testing.T, conn net.Conn, n int) []byte {
 
 func TestWriteRoundTrip(t *testing.T) {
 	a, b := net.Pipe()
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 	cs := NewClientStream(a)
 	defer cs.Close()
 
@@ -40,7 +40,7 @@ func TestWriteRoundTrip(t *testing.T) {
 
 func TestWriteOffsetAndLength(t *testing.T) {
 	a, b := net.Pipe()
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 	cs := NewClientStream(a)
 	defer cs.Close()
 
@@ -58,7 +58,7 @@ func TestWriteOffsetAndLength(t *testing.T) {
 
 func TestReadAndReadFully(t *testing.T) {
 	a, b := net.Pipe()
-	defer a.Close()
+	defer func() { _ = a.Close() }()
 	cs := NewClientStream(a)
 	defer cs.Close()
 
@@ -105,7 +105,7 @@ func TestReadEOFReturnsMinusOne(t *testing.T) {
 
 func TestCloseUnblocksReader(t *testing.T) {
 	a, b := net.Pipe()
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 	cs := NewClientStream(a)
 
 	done := make(chan error, 1)
@@ -134,7 +134,7 @@ func TestCloseUnblocksReader(t *testing.T) {
 
 func TestCloseIsIdempotent(t *testing.T) {
 	a, b := net.Pipe()
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 	cs := NewClientStream(a)
 
 	cs.Close()
@@ -144,7 +144,7 @@ func TestCloseIsIdempotent(t *testing.T) {
 
 func TestWriteAfterCloseIsNoOp(t *testing.T) {
 	a, b := net.Pipe()
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 	cs := NewClientStream(a)
 
 	cs.Close()
@@ -177,7 +177,7 @@ func TestReadFullyEOFBeforeComplete(t *testing.T) {
 
 func TestMultipleWritesDrain(t *testing.T) {
 	a, b := net.Pipe()
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 	cs := NewClientStream(a)
 	defer cs.Close()
 
@@ -208,7 +208,7 @@ func loopbackPair(t *testing.T) (net.Conn, net.Conn) {
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 	type res struct {
 		c   net.Conn
 		err error
@@ -238,7 +238,7 @@ func TestAvailableSeesUnreadKernelData(t *testing.T) {
 	a, b := loopbackPair(t)
 	cs := NewClientStream(a)
 	defer cs.Close()
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 
 	if _, err := b.Write([]byte{1, 2, 3, 4, 5}); err != nil {
 		t.Fatalf("peer Write: %v", err)
@@ -279,7 +279,7 @@ func TestAvailableProbeDoesNotPoisonReadFully(t *testing.T) {
 	a, b := loopbackPair(t)
 	cs := NewClientStream(a)
 	defer cs.Close()
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 
 	// Probe an empty conn — must return 0 without error.
 	n, err := cs.Available()
@@ -339,7 +339,7 @@ func TestAvailableReportsBuffered(t *testing.T) {
 // give up after the timeout window with ErrReadTimeout, not hang forever.
 func TestReadTimesOutWhenNoData(t *testing.T) {
 	a, b := net.Pipe()
-	defer b.Close() // peer kept open but silent — forces a stall, not EOF
+	defer func() { _ = b.Close() }() // peer kept open but silent — forces a stall, not EOF
 	cs := NewClientStream(a)
 	cs.readTimeout = 50 * time.Millisecond
 	defer cs.Close()
@@ -357,7 +357,7 @@ func TestReadTimesOutWhenNoData(t *testing.T) {
 // TestReadFullyTimesOutWhenNoData is the ReadFully counterpart.
 func TestReadFullyTimesOutWhenNoData(t *testing.T) {
 	a, b := net.Pipe()
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 	cs := NewClientStream(a)
 	cs.readTimeout = 50 * time.Millisecond
 	defer cs.Close()
