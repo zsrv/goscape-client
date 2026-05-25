@@ -1,4 +1,4 @@
-# Makefile for goscape-client — a Go (Gio) desktop port of the RuneScape 2
+# Makefile for goscape-client — a Go desktop port of the RuneScape 2
 # (rev #225) Java client.
 #
 # Tailored from the goscape *server* Makefile: all the server/infra scaffolding

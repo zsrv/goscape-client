@@ -4,12 +4,12 @@ Java's `jagex2.datastruct.HashTable` has been replaced by Go's built-in map.
 
 ## Browser (WebAssembly) build
 
-The client can run in a browser via Gio's `js/wasm` target. The game data and
+The client can run in a browser via its `js/wasm` target (syscall/js + WebGL). The game data and
 WebSocket server are expected to be served from the **same origin** as the page;
 the client derives its server target from `window.location` automatically.
 
 ```bash
-# 1. Build the wasm bundle into gio/client/ (needs gogio; pulled via go run).
+# 1. Build the wasm bundle into build/web/ (plain `go build`, no gogio).
 make wasm
 
 # 2. Serve it locally (maps .wasm to application/wasm, required for streaming).

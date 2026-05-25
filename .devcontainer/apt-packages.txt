@@ -5,8 +5,8 @@
 # pkg/jagex2/platform imports both, so even test binaries link against these
 # native libraries. Authoritative source: go-gl/glfw build.go cgo LDFLAGS.
 #
-# Gio is still vendored (third_party/gioui.org) pending removal; the Wayland /
-# EGL / Vulkan headers below are also harmless carry-overs from that era.
+# Gio has been removed; the Wayland / EGL / Vulkan headers below predate that
+# removal and may no longer be required — retained pending a dependency audit.
 #
 # libasound2-dev is for oto (audio).
 #

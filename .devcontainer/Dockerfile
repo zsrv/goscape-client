@@ -1,23 +1,24 @@
 # Build / test / lint container for goscape-client.
 #
 # SCOPE: headless development only — build, test, vet, lint. This image
-# deliberately does NOT support RUNNING the client. Gio needs a display
-# server (X11/Wayland), GPU/GL drivers, and an audio device, none of which
-# are wired up here. Run the game on your host instead:
+# deliberately does NOT support RUNNING the client. The native window backend
+# needs a display server (X11/Wayland), GPU/GL drivers, and an audio device,
+# none of which are wired up here. Run the game on your host instead:
 #
 #     go run ./cmd/client 10 0 highmem members
 #
 # The build dependencies live in apt-packages.txt (single source of truth,
 # also consumed by the Makefile `setup` target). They are required at COMPILE
-# time, not just at runtime: packages such as pkg/jagex2/client import
-# gioui.org/app, so even their *test* binaries link against these native libs.
+# time, not just at runtime: pkg/jagex2/platform imports go-gl/glfw and
+# go-gl/gl, so even *test* binaries link against these native libs.
 
 # Matches the base previously pinned in devcontainer.json (official Go image,
 # Debian trixie). The golang image is buildpack-deps based, so gcc/pkg-config/
 # curl are already present; they are listed below anyway for explicitness.
 FROM docker.io/golang:1.26.3-trixie
 
-# CGO is mandatory for Gio on Linux (cgo bindings to the windowing/GL libs).
+# CGO is mandatory for the native GLFW/go-gl backend on Linux (cgo bindings to
+# the windowing/GL libs).
 # The inherited server Makefile's blanket CGO_ENABLED=0 would break the build.
 ENV CGO_ENABLED=1
 

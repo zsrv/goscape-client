@@ -1,19 +1,19 @@
 // Headless build / test / lint environment for goscape-client.
 //
-// This container is NOT for running the Gio client — it has no display, GPU,
+// This container is NOT for running the client — it has no display, GPU,
 // or audio device. Run the game on your host: `go run ./cmd/client ...`.
 // See .devcontainer/Dockerfile for the rationale and the dependency set.
 //
 // For format details, see https://aka.ms/devcontainer.json.
 {
 	"name": "goscape-client (build/test/lint)",
-	// Built from the local Dockerfile, which layers the Gio/ALSA build deps
+	// Built from the local Dockerfile, which layers the native (GLFW/go-gl) + ALSA build deps
 	// and golangci-lint onto the official golang:1.26.3-trixie image.
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
 
-	// CGO is mandatory for Gio on Linux.
+	// CGO is mandatory for the native GLFW/go-gl backend on Linux.
 	"containerEnv": {
 		"CGO_ENABLED": "1"
 	},
