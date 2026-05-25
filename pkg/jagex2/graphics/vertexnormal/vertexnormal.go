@@ -6,7 +6,3 @@ type VertexNormal struct {
 	Z int
 	W int
 }
-
-func NewVertexNormal() *VertexNormal {
-	return new(VertexNormal)
-}

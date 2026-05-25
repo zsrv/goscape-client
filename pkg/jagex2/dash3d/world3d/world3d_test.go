@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/vertexnormal"
 )
 
 // TestOccludedMode5_UsesZDeltaForZProjection is a regression test for the
@@ -77,5 +79,37 @@ func TestOccludedMode5_RejectsOutsideZWindow(t *testing.T) {
 	// Z=50 with var6=200: projected Z window is [200, 300], Z=50 is below.
 	if got := w.Occluded(50, 200, 50); got {
 		t.Errorf("Occluded(X=50, Y=200, Z=50) = true; want false (Z=50 below projected window [200,300])")
+	}
+}
+
+// MergeNormals cross-accumulates the ORIGINAL normals of coincident vertices:
+// modelA's vertex gets modelB's original added, and vice-versa. One coincident
+// vertex pair at (0,0,0) -> each side becomes its own value plus the other's
+// original. merged<3 so the face-flatten pass is skipped.
+func TestMergeNormalsAccumulatesCoincident(t *testing.T) {
+	mkModel := func() *model.Model {
+		m := &model.Model{VertexCount: 1, FaceCount: 0}
+		m.VertexX = []int{0}
+		m.VertexY = []int{0}
+		m.VertexZ = []int{0}
+		m.VertexNormal = []vertexnormal.VertexNormal{{X: 0, Y: 0, Z: 0, W: 0}}
+		m.VertexNormalOriginal = []vertexnormal.VertexNormal{{X: 0, Y: 0, Z: 0, W: 0}}
+		return m
+	}
+	a := mkModel()
+	a.VertexNormal[0] = vertexnormal.VertexNormal{X: 10, Y: 0, Z: 0, W: 1}
+	a.VertexNormalOriginal[0] = vertexnormal.VertexNormal{X: 10, Y: 0, Z: 0, W: 1}
+	b := mkModel()
+	b.VertexNormal[0] = vertexnormal.VertexNormal{X: 0, Y: 20, Z: 0, W: 1}
+	b.VertexNormalOriginal[0] = vertexnormal.VertexNormal{X: 0, Y: 20, Z: 0, W: 1}
+
+	w := &World3D{MergeIndexA: make([]int, 1), MergeIndexB: make([]int, 1)}
+	w.MergeNormals(a, b, 0, 0, 0, false)
+
+	if got := a.VertexNormal[0]; got != (vertexnormal.VertexNormal{X: 10, Y: 20, Z: 0, W: 2}) {
+		t.Errorf("a.VertexNormal[0] = %+v, want {10 20 0 2}", got)
+	}
+	if got := b.VertexNormal[0]; got != (vertexnormal.VertexNormal{X: 10, Y: 20, Z: 0, W: 2}) {
+		t.Errorf("b.VertexNormal[0] = %+v, want {10 20 0 2}", got)
 	}
 }

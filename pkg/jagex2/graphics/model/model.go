@@ -164,8 +164,8 @@ type Model struct {
 	FaceAlpha            []int
 	FaceLabel            []int
 	FaceColour           []int
-	VertexNormal         []*vertexnormal.VertexNormal
-	VertexNormalOriginal []*vertexnormal.VertexNormal
+	VertexNormal         []vertexnormal.VertexNormal
+	VertexNormalOriginal []vertexnormal.VertexNormal
 	MaxY                 int
 	MinY                 int
 	Radius               int
@@ -797,15 +797,9 @@ func NewModel5(arg0 *Model, arg2 bool, arg3 bool) *Model {
 				m.FaceInfo[i] = arg0.FaceInfo[i]
 			}
 		}
-		m.VertexNormal = make([]*vertexnormal.VertexNormal, m.VertexCount)
+		m.VertexNormal = make([]vertexnormal.VertexNormal, m.VertexCount)
 		for i := range m.VertexCount {
-			m.VertexNormal[i] = vertexnormal.NewVertexNormal()
-			var7 := m.VertexNormal[i]
-			var8 := arg0.VertexNormal[i]
-			var7.X = var8.X
-			var7.Y = var8.Y
-			var7.Z = var8.Z
-			var7.W = var8.W
+			m.VertexNormal[i] = arg0.VertexNormal[i]
 		}
 		m.VertexNormalOriginal = arg0.VertexNormalOriginal
 	} else {
@@ -1284,10 +1278,7 @@ func (m *Model) CalculateNormals(arg0, arg1, arg2, arg3, arg4 int, arg5 bool) {
 		m.FaceColourC = make([]int, m.FaceCount)
 	}
 	if m.VertexNormal == nil {
-		m.VertexNormal = make([]*vertexnormal.VertexNormal, m.VertexCount)
-		for i := range m.VertexCount {
-			m.VertexNormal[i] = vertexnormal.NewVertexNormal()
-		}
+		m.VertexNormal = make([]vertexnormal.VertexNormal, m.VertexCount)
 	}
 	for i := range m.FaceCount {
 		var10 := m.FaceVertexA[i]
@@ -1315,21 +1306,18 @@ func (m *Model) CalculateNormals(arg0, arg1, arg2, arg3, arg4 int, arg5 bool) {
 		var20 = var20 * 256 / var22
 		var21 = var21 * 256 / var22
 		if m.FaceInfo == nil || m.FaceInfo[i]&0x1 == 0 {
-			var23 := m.VertexNormal[var10]
-			var23.X += var19
-			var23.Y += var20
-			var23.Z += var21
-			var23.W++
-			var26 := m.VertexNormal[var11]
-			var26.X += var19
-			var26.Y += var20
-			var26.Z += var21
-			var26.W++
-			var27 := m.VertexNormal[var12]
-			var27.X += var19
-			var27.Y += var20
-			var27.Z += var21
-			var27.W++
+			m.VertexNormal[var10].X += var19
+			m.VertexNormal[var10].Y += var20
+			m.VertexNormal[var10].Z += var21
+			m.VertexNormal[var10].W++
+			m.VertexNormal[var11].X += var19
+			m.VertexNormal[var11].Y += var20
+			m.VertexNormal[var11].Z += var21
+			m.VertexNormal[var11].W++
+			m.VertexNormal[var12].X += var19
+			m.VertexNormal[var12].Y += var20
+			m.VertexNormal[var12].Z += var21
+			m.VertexNormal[var12].W++
 		} else {
 			var28 := arg0 + (arg2*var19+arg3*var20+arg4*var21)/(var8+var8/2)
 			m.FaceColourA[i] = MulColourLightness(m.FaceColour[i], var28, m.FaceInfo[i])
@@ -1338,15 +1326,9 @@ func (m *Model) CalculateNormals(arg0, arg1, arg2, arg3, arg4 int, arg5 bool) {
 	if arg5 {
 		m.ApplyLighting(arg0, var8, arg2, arg3, arg4)
 	} else {
-		m.VertexNormalOriginal = make([]*vertexnormal.VertexNormal, m.VertexCount)
+		m.VertexNormalOriginal = make([]vertexnormal.VertexNormal, m.VertexCount)
 		for i := range m.VertexCount {
-			var24 := m.VertexNormal[i]
-			m.VertexNormalOriginal[i] = vertexnormal.NewVertexNormal()
-			var25 := m.VertexNormalOriginal[i]
-			var25.X = var24.X
-			var25.Y = var24.Y
-			var25.Z = var24.Z
-			var25.W = var24.W
+			m.VertexNormalOriginal[i] = m.VertexNormal[i]
 		}
 	}
 	if arg5 {

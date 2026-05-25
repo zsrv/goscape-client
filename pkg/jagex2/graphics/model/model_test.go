@@ -172,11 +172,38 @@ func TestResetFromModel6ClearsStaleFields(t *testing.T) {
 	src := sampleBaseModel(4, 2)
 	var m Model
 	m.Pickable = true
-	m.VertexNormal = make([]*vertexnormal.VertexNormal, 4)
+	m.VertexNormal = make([]vertexnormal.VertexNormal, 4)
 	m.MaxY = 555
 	m.ResetFromModel6(src, true)
 	if m.Pickable || m.VertexNormal != nil || m.MaxY != 0 {
 		t.Errorf("stale fields not cleared: Pickable=%v VertexNormal=%v MaxY=%d",
 			m.Pickable, m.VertexNormal != nil, m.MaxY)
+	}
+}
+
+// One face (0,0,0)-(100,0,0)-(0,0,100): the face normal reduces to (0,-256,0)
+// and each of the 3 vertices accumulates it once (W=1). Hand-computed from
+// CalculateNormals' cross-product + normalize-to-256 math.
+func TestCalculateNormalsSingleFace(t *testing.T) {
+	m := &Model{VertexCount: 3, FaceCount: 1}
+	m.VertexX = []int{0, 100, 0}
+	m.VertexY = []int{0, 0, 0}
+	m.VertexZ = []int{0, 0, 100}
+	m.FaceVertexA = []int{0}
+	m.FaceVertexB = []int{1}
+	m.FaceVertexC = []int{2}
+	m.FaceColour = []int{0}
+
+	m.CalculateNormals(64, 850, -30, -50, -30, false) // arg5=false: keep normals, build Original
+
+	for i := range 3 {
+		n := m.VertexNormal[i]
+		if n.X != 0 || n.Y != -256 || n.Z != 0 || n.W != 1 {
+			t.Errorf("VertexNormal[%d] = %+v, want {0 -256 0 1}", i, n)
+		}
+		o := m.VertexNormalOriginal[i]
+		if o != n {
+			t.Errorf("VertexNormalOriginal[%d] = %+v, want %+v", i, o, n)
+		}
 	}
 }

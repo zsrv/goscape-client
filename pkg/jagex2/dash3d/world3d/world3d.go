@@ -781,7 +781,6 @@ func (w *World3D) MergeNormals(modelA, modelB *model.Model, arg2, offsetY, arg4 
 	vertexCountB := modelB.VertexCount
 
 	for vertexA := range modelA.VertexCount {
-		normalA := modelA.VertexNormal[vertexA]
 		originalNormalA := modelA.VertexNormalOriginal[vertexA]
 
 		if originalNormalA.W != 0 {
@@ -792,17 +791,16 @@ func (w *World3D) MergeNormals(modelA, modelB *model.Model, arg2, offsetY, arg4 
 					z := modelA.VertexZ[vertexA] - arg4
 					if z >= modelB.MinZ && z <= modelB.MaxZ {
 						for j := range vertexCountB {
-							var17 := modelB.VertexNormal[j]
 							var18 := modelB.VertexNormalOriginal[j]
 							if x == vertexX[j] && z == modelB.VertexZ[j] && y == modelB.VertexY[j] && var18.W != 0 {
-								normalA.X += var18.X
-								normalA.Y += var18.Y
-								normalA.Z += var18.Z
-								normalA.W += var18.W
-								var17.X += originalNormalA.X
-								var17.Y += originalNormalA.Y
-								var17.Z += originalNormalA.Z
-								var17.W += originalNormalA.W
+								modelA.VertexNormal[vertexA].X += var18.X
+								modelA.VertexNormal[vertexA].Y += var18.Y
+								modelA.VertexNormal[vertexA].Z += var18.Z
+								modelA.VertexNormal[vertexA].W += var18.W
+								modelB.VertexNormal[j].X += originalNormalA.X
+								modelB.VertexNormal[j].Y += originalNormalA.Y
+								modelB.VertexNormal[j].Z += originalNormalA.Z
+								modelB.VertexNormal[j].W += originalNormalA.W
 								merged++
 								w.MergeIndexA[vertexA] = w.TmpMergeIndex
 								w.MergeIndexB[j] = w.TmpMergeIndex
