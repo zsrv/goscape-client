@@ -102,17 +102,18 @@ func safeStop(src js.Value) {
 	src.Call("stop")
 }
 
-// webMidiDriver owns the current playing stream, a one-track full-buffer cache
-// (so the game's loop re-issue replays instantly without re-synthesizing), and
-// a generation counter so a rapid track change abandons an in-flight render.
+// webMidiDriver owns the current playing stream, a one-track cache of the
+// rendered chunk buffers (so the game's loop re-issue replays instantly
+// without re-synthesizing), and a generation counter so a rapid track change
+// abandons an in-flight render.
 type webMidiDriver struct {
 	soundFont *meltysynth.SoundFont
 	loadOnce  sync.Once
 
-	mu       sync.Mutex
-	cur      *musicStream // current track's stream (nil before first play)
-	cacheKey string       // identity of the cached fully-rendered track
-	cacheBuf js.Value     // full AudioBuffer for cacheKey
+	mu          sync.Mutex
+	cur         *musicStream // current track's stream (nil before first play)
+	cacheKey    string       // identity of the cached track
+	cacheChunks []js.Value   // rendered chunk AudioBuffers for cacheKey
 
 	gen atomic.Uint64
 }
@@ -195,21 +196,47 @@ func (d *webMidiDriver) playTrack(midData []byte, fade bool, gen uint64) {
 		return
 	}
 	d.cur = s
-	cacheHit := d.cacheKey == string(midData) && d.cacheBuf.Truthy()
-	cbuf := d.cacheBuf
+	cacheHit := d.cacheKey == string(midData) && len(d.cacheChunks) > 0
+	var cached []js.Value
+	if cacheHit {
+		cached = d.cacheChunks
+	}
 	d.mu.Unlock()
 
 	if cacheHit {
-		s.schedule(cbuf, startAt) // instant replay of the cached full buffer
+		d.replayChunks(s, cached, startAt, gen) // re-schedule the cached chunks
 		return
 	}
 	d.streamRender(s, midData, startAt, gen)
 }
 
+// replayChunks re-schedules an already-rendered track's chunk buffers (a loop
+// re-issue) onto the new stream, gapless from startAt, advancing by each
+// chunk's own frame count. AudioBuffers are immutable and may back any number
+// of source nodes, so the cache holds the same buffers the first play used —
+// no extra copy of the PCM. Yields between chunks (single-threaded wasm) so the
+// game loop keeps drawing; abandons if superseded.
+func (d *webMidiDriver) replayChunks(s *musicStream, chunks []js.Value, startAt float64, gen uint64) {
+	at := startAt
+	for _, buf := range chunks {
+		if d.gen.Load() != gen {
+			return // superseded: the new command fades+stops this stream
+		}
+		s.schedule(buf, at)
+		at += float64(buf.Get("length").Int()) / float64(SampleRate)
+		time.Sleep(time.Millisecond)
+	}
+}
+
 // streamRender synthesizes the track chunk by chunk, scheduling each chunk to
 // play seamlessly as it is produced (so playback starts after chunk 0), and
-// caches the assembled full buffer for instant loop replay. Yields between
-// chunks so the game loop keeps drawing. Abandons if superseded.
+// caches the chunk buffers themselves for instant loop replay (the cache shares
+// these buffers — there is no second full-track copy). Renders through a small
+// reusable scratch buffer so the Go heap peak stays flat regardless of track
+// length; the rendered PCM lives only in the JS AudioBuffers (Go wasm linear
+// memory never shrinks, so a full-track []float32 would permanently inflate
+// it). Yields between chunks so the game loop keeps drawing. Abandons if
+// superseded.
 func (d *webMidiDriver) streamRender(s *musicStream, midData []byte, startAt float64, gen uint64) {
 	sf := d.ensureSoundFont()
 	if sf == nil {
@@ -231,23 +258,28 @@ func (d *webMidiDriver) streamRender(s *musicStream, midData []byte, startAt flo
 	seq.Play(midiFile, false) // no synth-side loop; the game re-issues SetMidi
 
 	frames := renderFrameCount(midiFile.GetLength())
-	left := make([]float32, frames)
-	right := make([]float32, frames)
+	// One reusable chunk-sized scratch pair, not two full-track slices. Safe to
+	// reuse because f32ToJSFloat32Array copies the bytes into the JS buffer
+	// before the next Render overwrites the scratch.
+	left := make([]float32, renderChunkFrames)
+	right := make([]float32, renderChunkFrames)
+	chunks := make([]js.Value, 0, (frames+renderChunkFrames-1)/renderChunkFrames)
 	at := startAt
 	for off := 0; off < frames; off += renderChunkFrames {
 		if d.gen.Load() != gen {
 			return // superseded: the new command fades+stops this stream
 		}
-		end := off + renderChunkFrames
-		if end > frames {
-			end = frames
+		n := renderChunkFrames
+		if off+n > frames {
+			n = frames - off
 		}
-		seq.Render(left[off:end], right[off:end])
-		n := end - off
+		ls, rs := left[:n], right[:n]
+		seq.Render(ls, rs)
 		buf := ac.Call("createBuffer", ChannelCount, n, SampleRate)
-		buf.Call("copyToChannel", f32ToJSFloat32Array(left[off:end]), 0)
-		buf.Call("copyToChannel", f32ToJSFloat32Array(right[off:end]), 1)
+		buf.Call("copyToChannel", f32ToJSFloat32Array(ls), 0)
+		buf.Call("copyToChannel", f32ToJSFloat32Array(rs), 1)
 		s.schedule(buf, at)
+		chunks = append(chunks, buf)
 		at += float64(n) / float64(SampleRate)
 		time.Sleep(time.Millisecond)
 	}
@@ -255,12 +287,9 @@ func (d *webMidiDriver) streamRender(s *musicStream, midData []byte, startAt flo
 	if d.gen.Load() != gen {
 		return
 	}
-	full := ac.Call("createBuffer", ChannelCount, frames, SampleRate)
-	full.Call("copyToChannel", f32ToJSFloat32Array(left), 0)
-	full.Call("copyToChannel", f32ToJSFloat32Array(right), 1)
 	d.mu.Lock()
 	d.cacheKey = string(midData)
-	d.cacheBuf = full
+	d.cacheChunks = chunks
 	d.mu.Unlock()
 }
 
