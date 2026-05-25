@@ -6,10 +6,9 @@ import (
 	"strconv"
 	"sync"
 
-	"gioui.org/app"
-
 	"github.com/zsrv/goscape-client/pkg/jagex2/client"
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
+	"github.com/zsrv/goscape-client/pkg/jagex2/platform"
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/audio"
 	"github.com/zsrv/goscape-client/pkg/profiling"
 	"github.com/zsrv/goscape-client/pkg/sign/signlink"
@@ -78,13 +77,11 @@ func main() {
 	// docs/superpowers/specs/2026-05-22-perf-profiling-design.md.
 	profiling.Start()
 
-	// These three subsystems run for the lifetime of the process. There is
-	// no explicit shutdown handshake between them: when the Gio window closes
-	// the window goroutine inside InitApplication calls os.Exit(0) on
-	// DestroyEvent (see the app.Main note below), which tears the whole
-	// process down — signlink's StartPriv poll loop and audio's watcher
-	// goroutines included — so a select{}/cancellation dance would be dead
-	// code here.
+	// These three subsystems run for the lifetime of the process. There is no
+	// explicit shutdown handshake: platform.Main blocks (native: the game loop
+	// on the main OS thread; browser: select{}). When RunShell exits the loop
+	// closure calls os.Exit(0), which tears down the background signlink and
+	// audio goroutines — so no wg.Wait() or cancellation dance is needed here.
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		signlink.StartPriv()
@@ -110,15 +107,18 @@ func main() {
 		}
 		audio.Start()
 	})
-	wg.Go(func() {
+
+	// platform.Main owns the threading model: native locks the OS thread,
+	// builds the GLFW backend, and runs the loop on the main goroutine; the
+	// browser build builds the WebGL backend and runs the loop in a goroutine,
+	// blocking on select{}. The client is created INSIDE the loop closure so it
+	// exists only once a backend is Active (NewClient / RunShell allocate
+	// PixMaps, which create backend textures via platform.Active). RunShell
+	// returns when the loop exits (window close / State == -1), then os.Exit(0)
+	// tears down the background signlink + audio goroutines.
+	platform.Main(532, 789, "Jagex", func() {
 		c := client.NewClient()
-		c.InitApplication(532, 789)
+		c.RunShell()
+		os.Exit(0)
 	})
-	// Gio's documented pattern (https://gioui.org/app) requires app.Main()
-	// to run on the OS main thread — mandatory on macOS, looser elsewhere.
-	// It blocks until the last window closes. In practice the window
-	// goroutine inside InitApplication calls os.Exit(0) on DestroyEvent,
-	// so wg.Wait() below is only reached in degenerate paths.
-	app.Main()
-	wg.Wait()
 }
