@@ -74,6 +74,9 @@ func sampleBaseModel(vertexCount, faceCount int) *Model {
 		m.FaceAlpha[i] = i + 7
 	}
 	m.FaceColour = make([]int, faceCount)
+	m.FaceColourA = make([]int, faceCount)
+	m.FaceColourB = make([]int, faceCount)
+	m.FaceColourC = make([]int, faceCount)
 	m.FaceVertexA = make([]int, faceCount)
 	return m
 }
@@ -99,6 +102,12 @@ func TestResetFromModel6SharesFaceRefs(t *testing.T) {
 	if m.FaceColour[0] != 1234 {
 		t.Error("FaceColour should share src's backing array")
 	}
+	src.FaceColourA[0] = 11
+	src.FaceColourB[0] = 22
+	src.FaceColourC[0] = 33
+	if m.FaceColourA[0] != 11 || m.FaceColourB[0] != 22 || m.FaceColourC[0] != 33 {
+		t.Error("FaceColourA/B/C should share src's backing arrays")
+	}
 }
 
 func TestResetFromModel6AlphaShareVsOwn(t *testing.T) {
@@ -123,14 +132,39 @@ func TestResetFromModel6ReusesBuffers(t *testing.T) {
 	m.ResetFromModel6(src, false)
 	capX := cap(m.VertexX)
 	ptr := &m.VertexX[0]
+	ptrY := &m.VertexY[0]
+	ptrZ := &m.VertexZ[0]
 	m.ResetFromModel6(src, false) // same size again
-	if cap(m.VertexX) != capX || &m.VertexX[0] != ptr {
-		t.Error("same-size rebuild reallocated VertexX instead of reusing it")
+	if cap(m.VertexX) != capX || &m.VertexX[0] != ptr || &m.VertexY[0] != ptrY || &m.VertexZ[0] != ptrZ {
+		t.Error("same-size rebuild reallocated VertexX/Y/Z instead of reusing them")
 	}
 	bigger := sampleBaseModel(64, 2)
 	m.ResetFromModel6(bigger, false)
 	if len(m.VertexX) != 64 {
 		t.Fatalf("len after grow = %d, want 64", len(m.VertexX))
+	}
+}
+
+func TestResetFromModel6AlphaNoAliasAcrossModes(t *testing.T) {
+	// Reuse a target with retainAlpha=true (shares srcA.FaceAlpha), then with
+	// retainAlpha=false on a different src. The second call must NOT write into
+	// srcA's backing array, and must own its alpha (not alias srcB).
+	srcA := sampleBaseModel(4, 3) // FaceAlpha = {7,8,9}
+	var m Model
+	m.ResetFromModel6(srcA, true)
+	srcB := sampleBaseModel(4, 3)
+	for i := range srcB.FaceAlpha {
+		srcB.FaceAlpha[i] = 100 + i
+	}
+	m.ResetFromModel6(srcB, false)
+	for i, want := range []int{7, 8, 9} {
+		if srcA.FaceAlpha[i] != want {
+			t.Fatalf("srcA.FaceAlpha[%d] = %d, want %d (second call corrupted a prior shared src)", i, srcA.FaceAlpha[i], want)
+		}
+	}
+	srcB.FaceAlpha[0] = 999
+	if m.FaceAlpha[0] == 999 {
+		t.Error("retainAlpha=false should own FaceAlpha, not alias srcB")
 	}
 }
 

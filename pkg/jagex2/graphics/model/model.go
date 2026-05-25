@@ -178,6 +178,7 @@ type Model struct {
 	LabelFaces           [][]int
 	LabelVertices        [][]int
 	ObjRaise             int
+	seqAlphaBuf          []int // owned FaceAlpha reuse pool for ResetFromModel6; never aliases a shared/src slice
 }
 
 func Unload() {
@@ -847,14 +848,14 @@ func growInts(s []int, n int) []int {
 }
 
 // ResetFromModel6 re-initializes m as a transformable copy of src, reusing m's
-// owned vertex (and FaceAlpha) backing arrays so per-frame rebuilds don't
-// allocate. The struct is cleared first so no field carries over from a prior
-// frame (matching a fresh NewModel6), then the owned arrays are restored.
-// Shared, read-only fields are re-pointed to src on every call because the base
-// model can change frame-to-frame. retainAlpha must be constant for a given
-// reused target (it is per entity/type). Java: Model(Model, boolean).
+// owned vertex backing arrays so per-frame rebuilds don't allocate. The struct
+// is cleared first so no field carries over from a prior frame (matching a
+// fresh NewModel6), then the owned arrays are restored. Shared, read-only
+// fields are re-pointed to src on every call because the base model can change
+// frame-to-frame. retainAlpha may safely vary across calls on the same reused
+// target. Java: Model(Model, boolean).
 func (m *Model) ResetFromModel6(src *Model, retainAlpha bool) {
-	vx, vy, vz, fa := m.VertexX, m.VertexY, m.VertexZ, m.FaceAlpha
+	vx, vy, vz, ab := m.VertexX, m.VertexY, m.VertexZ, m.seqAlphaBuf
 	*m = Model{}
 
 	m.VertexCount = src.VertexCount
@@ -873,18 +874,22 @@ func (m *Model) ResetFromModel6(src *Model, retainAlpha bool) {
 	if retainAlpha {
 		m.FaceAlpha = src.FaceAlpha
 	} else {
-		fa = growInts(fa, m.FaceCount)
+		ab = growInts(ab, m.FaceCount)
 		if src.FaceAlpha == nil {
 			for i := range m.FaceCount {
-				fa[i] = 0
+				ab[i] = 0
 			}
 		} else {
 			for i := range m.FaceCount {
-				fa[i] = src.FaceAlpha[i]
+				ab[i] = src.FaceAlpha[i]
 			}
 		}
-		m.FaceAlpha = fa
+		m.FaceAlpha = ab
 	}
+	// Preserve the owned pool across the struct reset. Because ab is only ever
+	// assigned from growInts/make (never from src), m.FaceAlpha can never carry
+	// a shared src pointer into a later reuse — fixing the retainAlpha flip hazard.
+	m.seqAlphaBuf = ab
 
 	m.FaceInfo = src.FaceInfo
 	m.FaceColour = src.FaceColour
