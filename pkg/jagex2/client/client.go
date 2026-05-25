@@ -4413,6 +4413,55 @@ func (c *Client) DrawGame() {
 	c.SceneDelta = 0
 }
 
+// blitIf blits p with its top-left at (x, y) when p is allocated. Out-of-band
+// repaints can run in transition windows where a few area pixmaps are briefly
+// nil (e.g. Logout → LoadTitle), so guard rather than panic.
+func (c *Client) blitIf(p *pixmap.PixMap, x, y int) {
+	if p != nil {
+		p.Draw(x, y)
+	}
+}
+
+// blitRetainedScreen re-blits the full in-game screen from the retained area
+// pixmaps WITHOUT re-rendering the 3D scene or touching redraw state. Positions
+// mirror DrawGame's composite (keep them in sync). The GL backend clears the
+// framebuffer on every BeginFrame, so an out-of-band present that blits only
+// AreaViewport blacks out the surrounding UI for a frame — Java/AWT retained it
+// across the partial drawImage. Re-blitting every area reproduces that retained
+// screen; PixMap.Draw re-uploads only the pixmaps whose pixels changed.
+func (c *Client) blitRetainedScreen() {
+	c.flameMu.Lock()
+	c.blitIf(c.ImageTitle0, 0, 0)
+	c.blitIf(c.ImageTitle1, 661, 0)
+	c.flameMu.Unlock()
+	c.blitIf(c.AreaBackleft1, 0, 11)
+	c.blitIf(c.AreaBackleft2, 0, 375)
+	c.blitIf(c.AreaBackright1, 729, 5)
+	c.blitIf(c.AreaBackright2, 752, 231)
+	c.blitIf(c.AreaBacktop1, 0, 0)
+	c.blitIf(c.AreaBacktop2, 561, 0)
+	c.blitIf(c.AreaBackvmid1, 520, 11)
+	c.blitIf(c.AreaBackvmid2, 520, 231)
+	c.blitIf(c.AreaBackvmid3, 501, 375)
+	c.blitIf(c.AreaBackhmid1, 520, 165)
+	c.blitIf(c.AreaBackhmid2, 0, 345)
+	c.blitIf(c.AreaBackbase1, 0, 471)
+	c.blitIf(c.AreaBackbase2, 501, 492)
+	c.blitIf(c.AreaViewport, 8, 11)
+	c.blitIf(c.AreaMapback, 561, 5)
+	c.blitIf(c.AreaSidebar, 562, 231)
+	c.blitIf(c.AreaChatback, 22, 375)
+}
+
+// presentLoadingMessage shows the current full game screen with the caller's
+// "Loading - please wait." text (already drawn into AreaViewport) overlaid in
+// the viewport, without re-rendering the scene. Replaces the old
+// present(AreaViewport.Draw) repaints, which blacked out everything but the
+// viewport for a frame. See blitRetainedScreen.
+func (c *Client) presentLoadingMessage() {
+	c.present(c.blitRetainedScreen)
+}
+
 func (c *Client) IsAddFriendOption(arg1 int) bool {
 	if arg1 < 0 {
 		return false
@@ -8036,7 +8085,7 @@ func (c *Client) TryReconnect() {
 	c.FontPlain12.CentreString(143, 0xFFFFFF, "Connection lost", 256)
 	c.FontPlain12.CentreString(159, 0, "Please wait - attempting to reestablish", 257)
 	c.FontPlain12.CentreString(158, 0xFFFFFF, "Please wait - attempting to reestablish", 256)
-	c.present(func() { c.AreaViewport.Draw(8, 11) })
+	c.presentLoadingMessage()
 	c.FlagSceneTileX = 0
 	var2 := c.Stream
 	c.InGame = false
@@ -9214,7 +9263,7 @@ func (c *Client) Read() (ok bool) {
 			c.AreaViewport.Bind()
 			c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
 			c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
-			c.present(func() { c.AreaViewport.Draw(8, 11) })
+			c.presentLoadingMessage()
 			world.LevelBuilt = c.CurrentLevel
 			c.BuildScene()
 		}
@@ -9338,7 +9387,7 @@ func (c *Client) Read() (ok bool) {
 		c.AreaViewport.Bind()
 		c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
 		c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
-		c.present(func() { c.AreaViewport.Draw(8, 11) })
+		c.presentLoadingMessage()
 		signlink.LoopRate = 5
 		var5 := (c.PacketSize - 2) / 10
 		c.SceneMapLandData = make([][]byte, var5)
@@ -9396,7 +9445,7 @@ func (c *Client) Read() (ok bool) {
 			c.FontPlain12.CentreString(166, 0, "Map area updated since last visit, so load will take longer this time only", 257)
 			c.FontPlain12.CentreString(165, 0xFFFFFF, "Map area updated since last visit, so load will take longer this time only", 256)
 		}
-		c.present(func() { c.AreaViewport.Draw(8, 11) })
+		c.presentLoadingMessage()
 		var8 := c.SceneBaseTileX - c.MapLastBaseX
 		var9 := c.SceneBaseTileZ - c.MapLastBaseZ
 		c.MapLastBaseX = c.SceneBaseTileX
