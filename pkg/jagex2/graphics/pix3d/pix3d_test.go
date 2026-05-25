@@ -17,6 +17,75 @@ import "testing"
 // mask for int operations and is bit-equivalent regardless of
 // int32-vs-int64 representation (bits 23-27 of arg7 are preserved
 // through additive arithmetic in both widths).
+func TestInitPoolReusesAfterClearTexels(t *testing.T) {
+	// Mirror the scene-rebuild cycle: InitPool -> (textures bound) -> ClearTexels
+	// -> InitPool. The second InitPool must REUSE the existing buffers.
+	LowDetail = true
+	TexelPool = nil
+	for i := range ActiveTexels {
+		ActiveTexels[i] = nil
+	}
+
+	InitPool(2)
+	if len(TexelPool) != 2 || len(TexelPool[0]) != 16384 {
+		t.Fatalf("InitPool(2) gave len=%d slot0len=%d, want 2 / 16384", len(TexelPool), len(TexelPool[0]))
+	}
+	slot0 := &TexelPool[0][0]
+	slot1 := &TexelPool[1][0]
+
+	// Simulate both buffers bound to textures (drain the free pool like GetTexels).
+	ActiveTexels[5] = TexelPool[1]
+	TexelPool[1] = nil
+	PoolSize--
+	ActiveTexels[9] = TexelPool[0]
+	TexelPool[0] = nil
+	PoolSize--
+	if PoolSize != 0 {
+		t.Fatalf("after draining both buffers PoolSize=%d, want 0", PoolSize)
+	}
+
+	ClearTexels()
+	if PoolSize != 2 {
+		t.Fatalf("ClearTexels left PoolSize=%d, want 2 (all buffers reclaimed)", PoolSize)
+	}
+	if TexelPool[0] == nil || TexelPool[1] == nil {
+		t.Fatal("ClearTexels left a nil slot; buffers not fully reclaimed")
+	}
+	if ActiveTexels[5] != nil || ActiveTexels[9] != nil {
+		t.Fatal("ClearTexels did not clear ActiveTexels")
+	}
+
+	InitPool(2)
+	got := map[*int]bool{&TexelPool[0][0]: true, &TexelPool[1][0]: true}
+	if !got[slot0] || !got[slot1] {
+		t.Error("InitPool reallocated buffers instead of reusing the reclaimed pool")
+	}
+	if PoolSize != 2 {
+		t.Fatalf("InitPool reuse path left PoolSize=%d, want 2", PoolSize)
+	}
+}
+
+func TestInitPoolReallocatesOnDetailChange(t *testing.T) {
+	// If LowDetail changes (required buffer length differs), the guard must fall
+	// through and reallocate rather than reuse wrong-sized buffers.
+	LowDetail = true
+	TexelPool = nil
+	for i := range ActiveTexels {
+		ActiveTexels[i] = nil
+	}
+	InitPool(2) // 16384-length buffers
+	old0 := &TexelPool[0][0]
+
+	LowDetail = false // now wants 65536-length buffers
+	InitPool(2)
+	if len(TexelPool[0]) != 65536 {
+		t.Fatalf("slot len=%d after detail change, want 65536 (should have reallocated)", len(TexelPool[0]))
+	}
+	if &TexelPool[0][0] == old0 {
+		t.Error("InitPool reused 16384 buffers after detail change to high detail")
+	}
+}
+
 func TestVar23ShiftCountStaysInRange(t *testing.T) {
 	cases := []struct {
 		name string

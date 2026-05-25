@@ -112,28 +112,46 @@ func Init3D(arg0 int, arg1 int) {
 	CenterH3D = arg0 / 2
 }
 
+// ClearTexels readies the texel pool for a fresh scene by reclaiming every
+// bound buffer back into the free pool instead of releasing them, so the
+// following InitPool can reuse the allocation. The pool's buffers are conserved
+// between TexelPool (free) and ActiveTexels (bound), so after this the pool is
+// full again (PoolSize == capacity) with no allocation.
 func ClearTexels() {
-	TexelPool = nil
-	for i := range 50 {
-		ActiveTexels[i] = nil
+	if TexelPool == nil {
+		return
+	}
+	for i := range ActiveTexels {
+		if ActiveTexels[i] != nil {
+			TexelPool[PoolSize] = ActiveTexels[i]
+			PoolSize++
+			ActiveTexels[i] = nil
+		}
 	}
 }
 
 func InitPool(size int) {
-	if TexelPool != nil {
+	texelLen := 65536
+	if LowDetail {
+		texelLen = 16384
+	}
+	// Reuse an existing pool only when it already matches the requested slot
+	// count and the current detail level's buffer length. Any mismatch (detail
+	// change, or a partially drained pool whose slot 0 was popped to nil ->
+	// len 0) falls through to (re)allocation, so correctness never depends on
+	// the reuse firing. ClearTexels repopulates all slots first in the scene-
+	// rebuild path, so this hits the reuse branch.
+	if TexelPool != nil && len(TexelPool) == size && len(TexelPool[0]) == texelLen {
+		PoolSize = size
+		for i := range 50 {
+			ActiveTexels[i] = nil
+		}
 		return
 	}
 	PoolSize = size
-	if LowDetail {
-		TexelPool = make([][]int, PoolSize)
-		for i := range TexelPool {
-			TexelPool[i] = make([]int, 16384)
-		}
-	} else {
-		TexelPool = make([][]int, PoolSize)
-		for i := range TexelPool {
-			TexelPool[i] = make([]int, 65536)
-		}
+	TexelPool = make([][]int, size)
+	for i := range TexelPool {
+		TexelPool[i] = make([]int, texelLen)
 	}
 	for i := range 50 {
 		ActiveTexels[i] = nil
