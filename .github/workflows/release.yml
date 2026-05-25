@@ -5,11 +5,12 @@
 # commit on that revision's branch), so releases across revisions never collide
 # and every artifact name carries its revision (client-rev225-v1.0.0-<target>).
 # Builds the client for 6 platforms on NATIVE
-# GitHub-hosted runners — no cross-compilation. Gio needs CGO on Linux
-# (X11/Wayland/GL) and macOS (Cocoa/Metal), which makes cross-CGO painful;
-# native runners sidestep that entirely. Free arm64 hosted runners (public
-# repos, since 2025-08) cover the arm64 targets, and Gio is pure-Go on Windows
-# (CGO off there).
+# GitHub-hosted runners — no cross-compilation. The native GLFW/go-gl backend
+# needs CGO on every OS — Linux (X11/GL), macOS (Cocoa/GL), and Windows
+# (opengl32 + a C toolchain) — which makes cross-CGO painful; native runners
+# sidestep that entirely. Free arm64 hosted runners (public repos, since
+# 2025-08) cover the arm64 targets. NOTE: windows/arm64 cgo support is
+# unverified — that target may need explicit toolchain setup.
 #
 # Three stages:
 #   test    — the shared CI gate (ci-gate.yml: `make ci`). Blocks the build, so
@@ -44,8 +45,8 @@ jobs:
           - { target: linux-arm64,   os: ubuntu-24.04-arm, goos: linux,   goarch: arm64, cgo: "1", ext: tar.gz }
           - { target: darwin-amd64,  os: macos-13,         goos: darwin,  goarch: amd64, cgo: "1", ext: tar.gz }
           - { target: darwin-arm64,  os: macos-14,         goos: darwin,  goarch: arm64, cgo: "1", ext: tar.gz }
-          - { target: windows-amd64, os: windows-2022,     goos: windows, goarch: amd64, cgo: "0", ext: zip }
-          - { target: windows-arm64, os: windows-11-arm,   goos: windows, goarch: arm64, cgo: "0", ext: zip }
+          - { target: windows-amd64, os: windows-2022,     goos: windows, goarch: amd64, cgo: "1", ext: zip }
+          - { target: windows-arm64, os: windows-11-arm,   goos: windows, goarch: arm64, cgo: "1", ext: zip }
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -56,8 +57,9 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # Gio's native build deps. Only Linux needs them (Gio links X11/Wayland/GL
-      # via CGO there); macOS uses the preinstalled Xcode SDK, Windows is pure-Go.
+      # The native backend's build deps. Only Linux needs the apt packages
+      # (go-gl/glfw links X11/GL via CGO); macOS uses the preinstalled Xcode SDK,
+      # and Windows builds against the runner's bundled C toolchain + opengl32.
       - name: Install Linux build deps
         if: runner.os == 'Linux'
         run: make setup
