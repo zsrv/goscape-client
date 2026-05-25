@@ -9,6 +9,7 @@ import (
 
 func TestDrawProgressGameShell_ClearsRefreshAndPopulatesOverlay(t *testing.T) {
 	t.Cleanup(pix2d.Reset)
+	setupTestBackend(t)
 
 	c := &Client{}
 	c.ScreenWidth = 789

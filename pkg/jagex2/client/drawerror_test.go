@@ -28,6 +28,7 @@ func TestDrawError_RendersWithoutCacheFont(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Cleanup(pix2d.Reset)
+			setupTestBackend(t)
 			c := &Client{}
 			c.ScreenWidth = 789
 			c.ScreenHeight = 532

@@ -16,9 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"gioui.org/io/event"
-	"gioui.org/op"
-
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/inputtracking"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/component"
@@ -127,11 +124,11 @@ type Client struct {
 	//Graphics
 	// Java: GameShell.java:50 declares `PixMap drawArea` (the AWT
 	// backbuffer) which Java code allocates and nils but never reads.
-	// The Go port uses Gio's framebuffer directly (uploaded via
-	// OverlayPixMap / PixMap.Draw in pix2d), so drawArea is pure deob
-	// residue here; field omitted per the deob-artifact exclusion
-	// policy. Three nil-assignment sites in client.go and one allocation
-	// in gameshell.go.InitApplication were dropped alongside.
+	// The Go port blits via platform.Active (uploaded via OverlayPixMap /
+	// PixMap.Draw), so drawArea is pure deob residue here; field omitted
+	// per the deob-artifact exclusion policy. Three nil-assignment sites
+	// in client.go and one allocation in the old gameshell.go boot path
+	// were dropped alongside.
 	// Java: GameShell.java:53 declares `Pix32[] temp = new Pix32[6]`, a
 	// dead deob array never read. Intentionally not ported per the
 	// deob-artifact exclusion policy.
@@ -150,12 +147,11 @@ type Client struct {
 	KeyQueueReadPos  int
 	KeyQueueWritePos int
 
-	// MINE
-	Ops op.Ops // Ops are the operations from the UI
-	// inputFilters is the per-frame filter set passed to source.Event() to
-	// drain Gio key/pointer events. Built once by buildInputFilters() at
-	// InitApplication time; no Java analogue (AWT used push listeners).
-	inputFilters []event.Filter
+	// flameMu guards concurrent access to ImageTitle0/1 pixel buffers between
+	// the RunFlames goroutine (writer) and the render loop (reader, via
+	// DrawTitleScreen, DrawGame, DrawProgress). Replaces the former global
+	// pixmap.OpsMu for this narrow writer↔reader hand-off.
+	flameMu sync.Mutex
 	// END GameShell
 
 	HintTileZ                     int
@@ -1545,7 +1541,7 @@ func (c *Client) DrawScene(arg0 int) {
 	c.DrawTileHint()
 	c.UpdateTextures(var9)
 	c.Draw3DEntityElements()
-	c.AreaViewport.Draw(&c.Ops, 8, 11)
+	c.AreaViewport.Draw(8, 11)
 	c.CameraX = var3
 	c.CameraY = var4
 	c.CameraZ = var5
@@ -1617,15 +1613,14 @@ func (c *Client) DrawFlames() {
 	// DrawFlames runs from the RunFlames goroutine, independent of
 	// c.Draw. It updates the ImageTitle0 / ImageTitle1 pixel buffers
 	// with the next animation step. The GPU upload of those buffers
-	// now happens in DrawTitleScreen / DrawGame each frame, so we no
-	// longer touch c.Ops here.
+	// happens in DrawTitleScreen / DrawGame / DrawProgress each frame.
 	//
-	// Hold OpsMu while writing the pixel buffers: the frame goroutine
-	// reads them via PixMap.Draw → writePixmapPixels, which races
-	// with our writes without the lock. OpsMu is the project-wide
-	// per-frame lock; reusing it serializes DrawFlames against c.Draw.
-	pixmap.OpsMu.Lock()
-	defer pixmap.OpsMu.Unlock()
+	// Hold flameMu while writing the pixel buffers so the render loop
+	// readers (DrawTitleScreen, DrawGame, DrawProgress) don't race with
+	// these writes. The lock is tight-scoped to just this function;
+	// each reader wraps only the consecutive ImageTitle0/1 .Draw calls.
+	c.flameMu.Lock()
+	defer c.flameMu.Unlock()
 
 	var2 := 256
 	if c.FlameGradientCycle0 > 0 {
@@ -2369,24 +2364,6 @@ func (c *Client) HandleInputKey() {
 }
 
 func (c *Client) Draw() {
-	// Hold OpsMu for the entire frame build so the FrameEvent
-	// goroutine can never observe a partial op list. Gio's op.Ops
-	// is an immediate-mode operation log (not a frame buffer), so
-	// we Reset it at the start of every frame and rebuild from
-	// scratch; without the whole-frame lock, FrameEvent could grab
-	// the mutex between Reset and the first PixMap.Draw and call
-	// e.Frame on an empty list, producing the white-flash artifacts
-	// reported on static elements (title background, game frame
-	// chrome).
-	//
-	// Contract: PixMap.Draw no longer takes OpsMu itself — every
-	// transitive append in this critical section runs under one
-	// lock. See pkg/jagex2/graphics/pixmap/pixmap.go for the full
-	// rationale.
-	pixmap.OpsMu.Lock()
-	defer pixmap.OpsMu.Unlock()
-	c.Ops.Reset()
-
 	if c.ErrorStarted || c.ErrorLoading || c.ErrorHost {
 		c.DrawError()
 		return
@@ -2602,13 +2579,12 @@ func (c *Client) UnloadTitle() {
 	// Java: deob/client.java:3119-3132 also nils imageTitlebox /
 	// imageTitlebutton / imageRunes / flameGradient* / flameBuffer* /
 	// imageFlamesLeft / imageFlamesRight here as a memory save. Go
-	// keeps all of them alive: title-screen lifecycle on Logout calls
-	// c.DrawTitleScreen from inside c.Draw (under OpsMu), and
-	// re-loading any of these buffers would have to go through
-	// LoadTitleImages → DrawProgress, which re-enters OpsMu and
-	// deadlocks (non-reentrant sync.Mutex). Keeping buffers alive
-	// makes LoadTitle's early-return (the `if c.ImageTitle2 != nil` guard) fire on Logout,
-	// avoiding the re-entry. Combined memory cost with the kept
+	// keeps all of them alive: keeping ImageTitle2 alive ensures
+	// LoadTitle's early-return (the `if c.ImageTitle2 != nil` guard)
+	// fires on the Logout → title transition, preventing LoadTitle from
+	// re-running LoadTitleImages → DrawProgress from mid-render. The
+	// keepalive preserves the original invariant and avoids that
+	// LoadTitle-mid-render path. Combined memory cost with the kept
 	// ImageTitleN PixMaps is well under 2 MB — negligible.
 }
 
@@ -3107,9 +3083,9 @@ func (c *Client) GetNpcPos(arg0 *io.Packet, psize int) {
 // signlink.startthread which does the same thing inside the signed jar.
 //
 // The Go translation uses goroutines directly at every call site:
-//   - client.go ~3093: `go c.Run()` for the flames thread
+//   - client.go: `go c.RunFlames()` for the flames thread
 //     (Java: `this.startThread(this, 2)` at deob/client.java:3685)
-//   - client.go ~5338: `go c.Run()` for the MIDI loader thread
+//   - client.go: `go c.RunMidi()` for the MIDI loader thread
 //     (Java: `this.startThread(this, 2)` at deob/client.java:5952)
 //   - pkg/jagex2/io/clientstream NewClientStream: `go cs.readRun()`
 //     (Java: `shell.startThread(this, 2)` from ClientStream's ctor)
@@ -3417,24 +3393,25 @@ func (c *Client) DrawTitleScreen() {
 		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
 		c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Cancel")
 	}
-	c.ImageTitle4.Draw(&c.Ops, 214, 186)
-	// Pre-Gio (Java/AWT), the back buffer retained pixels across frames,
-	// so the static background tiles only needed re-uploading on a full
-	// "dirty" redraw (c.RedrawFrame). Gio's op.Ops is immediate-mode and
-	// Reset every frame — the upload-op must re-issue each frame even
-	// when the pixel content is unchanged. Hoist the Draw calls out of
-	// the dirty-flag guard so they always run. The flame tiles 0 and 1
-	// are uploaded here too (DrawFlames now only updates their pixel
-	// buffers; this entry point owns the GPU upload).
+	c.ImageTitle4.Draw(214, 186)
+	// The back buffer used to retain pixels across frames (Java/AWT), so the
+	// static background tiles only needed re-uploading on a full "dirty"
+	// redraw (c.RedrawFrame). The upload-op must re-issue each frame. Hoist
+	// the Draw calls out of the dirty-flag guard so they always run. The
+	// flame tiles 0 and 1 are uploaded here too (DrawFlames now only updates
+	// their pixel buffers; this entry point owns the GPU upload).
 	c.RedrawFrame = false
-	c.ImageTitle0.Draw(&c.Ops, 0, 0)
-	c.ImageTitle1.Draw(&c.Ops, 661, 0)
-	c.ImageTitle2.Draw(&c.Ops, 128, 0)
-	c.ImageTitle3.Draw(&c.Ops, 214, 386)
-	c.ImageTitle5.Draw(&c.Ops, 0, 265)
-	c.ImageTitle6.Draw(&c.Ops, 574, 265)
-	c.ImageTitle7.Draw(&c.Ops, 128, 186)
-	c.ImageTitle8.Draw(&c.Ops, 574, 186)
+	// flameMu: ImageTitle0/1 buffers are written by the RunFlames goroutine.
+	c.flameMu.Lock()
+	c.ImageTitle0.Draw(0, 0)
+	c.ImageTitle1.Draw(661, 0)
+	c.flameMu.Unlock()
+	c.ImageTitle2.Draw(128, 0)
+	c.ImageTitle3.Draw(214, 386)
+	c.ImageTitle5.Draw(0, 265)
+	c.ImageTitle6.Draw(574, 265)
+	c.ImageTitle7.Draw(128, 186)
+	c.ImageTitle8.Draw(574, 186)
 }
 
 func (c *Client) PrepareGameScreen() {
@@ -3445,13 +3422,15 @@ func (c *Client) PrepareGameScreen() {
 	// Java: deob/client.java:3897-3902 nils imageTitle0..8 here for memory.
 	// Go keeps all nine alive because:
 	//   1. ImageTitle0/1 are uploaded every frame in DrawGame (the top-
-	//      corner flame regions) — Gio's op.Ops re-uploads from PixMap.Data
-	//      each frame without AWT's retained back buffer to fall back on.
+	//      corner flame regions) via PixMap.Draw → platform.Active.Blit;
+	//      pre-Gio (Java/AWT) the retained back buffer preserved them
+	//      between frames, but the current platform model re-blits each frame.
 	//   2. ImageTitle2..8 stay alive so c.DrawTitleScreen → c.LoadTitle's
-	//      early-return (the `if c.ImageTitle2 != nil` guard) fires on Logout transition. Otherwise
-	//      LoadTitle would re-run from inside c.Draw (under OpsMu), which
-	//      transitively calls DrawProgress, which tries to acquire OpsMu
-	//      again — non-reentrant deadlock that froze the client on Logout.
+	//      early-return (the `if c.ImageTitle2 != nil` guard) fires on the
+	//      Logout transition. Otherwise LoadTitle would re-run LoadTitleImages
+	//      → DrawProgress from mid-render, re-initialising title assets
+	//      while the render is in progress. The keepalive preserves the
+	//      original invariant and avoids that LoadTitle-mid-render path.
 	// Combined memory cost ~1.7 MB — negligible.
 	c.AreaChatback = pixmap.NewPixMap(479, 96)
 	c.AreaMapback = pixmap.NewPixMap(168, 160)
@@ -4183,7 +4162,7 @@ func (c *Client) UpdateSequences(arg1 *entity.PathingEntity) {
 func (c *Client) DrawGame() {
 	// Always upload the static frame-chrome tiles. Pre-Gio (Java/AWT)
 	// these were gated by c.RedrawFrame because AWT retained the back
-	// buffer; Gio's op.Ops is immediate-mode and Reset every frame.
+	// buffer; PixMap.Draw → platform.Active.Blit re-blits each frame.
 	// Flame tiles (ImageTitle0/1) too — DrawFlames now only updates
 	// their pixel buffers, this entry point uploads. The pixmaps stay
 	// alive past PrepareGameScreen so the top-left/top-right corners
@@ -4191,25 +4170,29 @@ func (c *Client) DrawGame() {
 	// back-buffer visual). Nil-guarded for the Logout → LoadTitle
 	// transition window where the buffers are briefly nil before
 	// being re-allocated.
+	//
+	// flameMu: ImageTitle0/1 buffers are written by the RunFlames goroutine.
+	c.flameMu.Lock()
 	if c.ImageTitle0 != nil {
-		c.ImageTitle0.Draw(&c.Ops, 0, 0)
+		c.ImageTitle0.Draw(0, 0)
 	}
 	if c.ImageTitle1 != nil {
-		c.ImageTitle1.Draw(&c.Ops, 661, 0)
+		c.ImageTitle1.Draw(661, 0)
 	}
-	c.AreaBackleft1.Draw(&c.Ops, 0, 11)
-	c.AreaBackleft2.Draw(&c.Ops, 0, 375)
-	c.AreaBackright1.Draw(&c.Ops, 729, 5)
-	c.AreaBackright2.Draw(&c.Ops, 752, 231)
-	c.AreaBacktop1.Draw(&c.Ops, 0, 0)
-	c.AreaBacktop2.Draw(&c.Ops, 561, 0)
-	c.AreaBackvmid1.Draw(&c.Ops, 520, 11)
-	c.AreaBackvmid2.Draw(&c.Ops, 520, 231)
-	c.AreaBackvmid3.Draw(&c.Ops, 501, 375)
-	c.AreaBackhmid2.Draw(&c.Ops, 0, 345)
+	c.flameMu.Unlock()
+	c.AreaBackleft1.Draw(0, 11)
+	c.AreaBackleft2.Draw(0, 375)
+	c.AreaBackright1.Draw(729, 5)
+	c.AreaBackright2.Draw(752, 231)
+	c.AreaBacktop1.Draw(0, 0)
+	c.AreaBacktop2.Draw(561, 0)
+	c.AreaBackvmid1.Draw(520, 11)
+	c.AreaBackvmid2.Draw(520, 231)
+	c.AreaBackvmid3.Draw(501, 375)
+	c.AreaBackhmid2.Draw(0, 345)
 	if c.SceneState != 2 {
-		c.AreaViewport.Draw(&c.Ops, 8, 11)
-		c.AreaMapback.Draw(&c.Ops, 561, 5)
+		c.AreaViewport.Draw(8, 11)
+		c.AreaMapback.Draw(561, 5)
 	}
 	if c.RedrawFrame {
 		c.RedrawFrame = false
@@ -4241,10 +4224,9 @@ func (c *Client) DrawGame() {
 	if c.ObjDragArea == 2 {
 		c.RedrawSidebar = true
 	}
-	// DrawSidebar always runs in Gio's immediate-mode model — it
-	// internally gates the expensive pixel repaint on c.RedrawSidebar
-	// but unconditionally uploads the AreaSidebar pixmap so the GPU
-	// always sees the current state.
+	// DrawSidebar always runs — it internally gates the expensive pixel
+	// repaint on c.RedrawSidebar but unconditionally blits AreaSidebar
+	// via PixMap.Draw so the GPU always sees the current state.
 	c.DrawSidebar()
 	if c.ChatInterfaceID == -1 {
 		c.ChatInterface.ScrollPosition = c.ChatScrollHeight - c.ChatScrollOffset - 77
@@ -4277,11 +4259,11 @@ func (c *Client) DrawGame() {
 	if c.MenuVisible && c.MenuArea == 2 {
 		c.RedrawChatback = true
 	}
-	// DrawChatback always runs (same rationale as DrawSidebar above).
+	// DrawChatback always runs — same rationale as DrawSidebar above.
 	c.DrawChatback()
 	if c.SceneState == 2 {
 		c.DrawMinimap()
-		c.AreaMapback.Draw(&c.Ops, 561, 5)
+		c.AreaMapback.Draw(561, 5)
 	}
 	if c.FlashingTab != -1 {
 		c.RedrawSideIcons = true
@@ -4387,8 +4369,8 @@ func (c *Client) DrawGame() {
 	// Always upload the two SideIcons pixmaps. Pixel content edits
 	// above were gated by RedrawSideIcons; the GPU upload runs every
 	// frame so they don't go white between dirty cycles.
-	c.AreaBackhmid1.Draw(&c.Ops, 520, 165)
-	c.AreaBackbase2.Draw(&c.Ops, 501, 492)
+	c.AreaBackhmid1.Draw(520, 165)
+	c.AreaBackbase2.Draw(501, 492)
 	if c.RedrawPrivacySettings {
 		c.RedrawPrivacySettings = false
 		c.AreaBackbase1.Bind()
@@ -4427,7 +4409,7 @@ func (c *Client) DrawGame() {
 	}
 	// Always upload the PrivacySettings pixmap. Pixel content edits
 	// above were gated by RedrawPrivacySettings.
-	c.AreaBackbase1.Draw(&c.Ops, 0, 471)
+	c.AreaBackbase1.Draw(0, 471)
 	c.SceneDelta = 0
 }
 
@@ -5508,12 +5490,9 @@ func (c *Client) Load() {
 		c.MidiThreadActive = true
 		// Java: this.startThread(this, 2) (deob/client.java:5952) —
 		// Thread.start() + setPriority(2) on the client Runnable. The
-		// Java Runnable's run() dispatched based on flags. Go's
-		// goroutine scheduler is asynchronous, so the dispatch in
-		// c.Run is racy: between `go c.Run()` and the goroutine
-		// actually executing, c.FlamesThread can be set by some other
-		// path, causing this MIDI-intent goroutine to mis-dispatch to
-		// RunFlames. Call RunMidi directly to make intent explicit.
+		// Java Runnable's run() dispatched based on flags; Go's goroutine
+		// scheduler is asynchronous so calling the target function
+		// directly makes intent unambiguous.
 		go c.RunMidi()
 		c.SetMidi(12345678, "scape_main", 40000)
 	}
@@ -6354,16 +6333,6 @@ func (c *Client) RunFlames() {
 	c.FlameThread = false
 }
 
-func (c *Client) Run() {
-	if c.FlamesThread {
-		c.RunFlames()
-	} else if c.StartMidiThread {
-		c.RunMidi()
-	} else {
-		c.RunGameShell()
-	}
-}
-
 func (c *Client) HandleScrollInput(arg0, arg1, arg2, arg3, arg4 int, arg5 bool, arg6 int, arg7 int, arg8 *component.Component) {
 	if c.ScrollGrabbed {
 		c.ScrollInputPadding = 32
@@ -6402,17 +6371,10 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 	if !arg2 {
 		c.LoginMessage0 = ""
 		c.LoginMessage1 = "Connecting to server..."
-		// DrawTitleScreen writes the ImageTitle* reused imgBufs and appends
-		// to c.Ops. This LoginFunc path runs on the game goroutine outside
-		// the frame lock (reached via UpdateTitle / TryReconnect), so it must
-		// hold OpsMu to not race the Gio goroutine's e.Frame upload. Safe
-		// from the DrawTitleScreen→LoadTitle→LoadTitleImages→DrawProgress
-		// re-entrant deadlock because ImageTitle2..8 are kept alive (see
-		// 3439-3448), so LoadTitle always early-returns here and never
-		// reaches DrawProgress's OpsMu.Lock.
-		pixmap.OpsMu.Lock()
-		c.DrawTitleScreen()
-		pixmap.OpsMu.Unlock()
+		// Out-of-band repaint: show "Connecting to server..." before blocking
+		// on the socket dial. Runs on the game goroutine, not the main loop
+		// iteration, so we present explicitly.
+		c.present(func() { c.DrawTitleScreen() })
 	}
 	conn, err := c.OpenSocket(clientextras.PortOffset + 43594)
 	if err != nil {
@@ -8074,9 +8036,7 @@ func (c *Client) TryReconnect() {
 	c.FontPlain12.CentreString(143, 0xFFFFFF, "Connection lost", 256)
 	c.FontPlain12.CentreString(159, 0, "Please wait - attempting to reestablish", 257)
 	c.FontPlain12.CentreString(158, 0xFFFFFF, "Please wait - attempting to reestablish", 256)
-	pixmap.OpsMu.Lock()
-	c.AreaViewport.Draw(&c.Ops, 8, 11)
-	pixmap.OpsMu.Unlock()
+	c.present(func() { c.AreaViewport.Draw(8, 11) })
 	c.FlagSceneTileX = 0
 	var2 := c.Stream
 	c.InGame = false
@@ -8482,7 +8442,7 @@ func (c *Client) DrawError() {
 		drawText(50, 150, 0xFFFFFF, "http://www.runescape.com")
 	}
 	if !c.ErrorStarted {
-		c.OverlayPixMap.Draw(&c.Ops, 0, 0)
+		c.OverlayPixMap.Draw(0, 0)
 		return
 	}
 	c.FlameActive = false
@@ -8494,7 +8454,7 @@ func (c *Client) DrawError() {
 		"1: Try closing ALL open web-browser windows, and reloading")
 	drawText(30, 165, 0xFFFFFF,
 		"2: Try rebooting your computer, and reloading")
-	c.OverlayPixMap.Draw(&c.Ops, 0, 0)
+	c.OverlayPixMap.Draw(0, 0)
 }
 
 func (c *Client) LoadTitleBackground() {
@@ -8950,7 +8910,7 @@ func (c *Client) DrawChatback() {
 	// `if RedrawChatback` at the call site, relying on Java/AWT's
 	// retained back buffer.
 	if !c.RedrawChatback {
-		c.AreaChatback.Draw(&c.Ops, 22, 375)
+		c.AreaChatback.Draw(22, 375)
 		return
 	}
 	c.RedrawChatback = false
@@ -9045,7 +9005,7 @@ func (c *Client) DrawChatback() {
 	}
 	c.AreaViewport.Bind()
 	pix3d.LineOffset = c.AreaViewportOffsets
-	c.AreaChatback.Draw(&c.Ops, 22, 375)
+	c.AreaChatback.Draw(22, 375)
 }
 
 func (c *Client) Read() (ok bool) {
@@ -9254,9 +9214,7 @@ func (c *Client) Read() (ok bool) {
 			c.AreaViewport.Bind()
 			c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
 			c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
-			pixmap.OpsMu.Lock()
-			c.AreaViewport.Draw(&c.Ops, 8, 11)
-			pixmap.OpsMu.Unlock()
+			c.present(func() { c.AreaViewport.Draw(8, 11) })
 			world.LevelBuilt = c.CurrentLevel
 			c.BuildScene()
 		}
@@ -9380,9 +9338,7 @@ func (c *Client) Read() (ok bool) {
 		c.AreaViewport.Bind()
 		c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
 		c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
-		pixmap.OpsMu.Lock()
-		c.AreaViewport.Draw(&c.Ops, 8, 11)
-		pixmap.OpsMu.Unlock()
+		c.present(func() { c.AreaViewport.Draw(8, 11) })
 		signlink.LoopRate = 5
 		var5 := (c.PacketSize - 2) / 10
 		c.SceneMapLandData = make([][]byte, var5)
@@ -9440,9 +9396,7 @@ func (c *Client) Read() (ok bool) {
 			c.FontPlain12.CentreString(166, 0, "Map area updated since last visit, so load will take longer this time only", 257)
 			c.FontPlain12.CentreString(165, 0xFFFFFF, "Map area updated since last visit, so load will take longer this time only", 256)
 		}
-		pixmap.OpsMu.Lock()
-		c.AreaViewport.Draw(&c.Ops, 8, 11)
-		pixmap.OpsMu.Unlock()
+		c.present(func() { c.AreaViewport.Draw(8, 11) })
 		var8 := c.SceneBaseTileX - c.MapLastBaseX
 		var9 := c.SceneBaseTileZ - c.MapLastBaseZ
 		c.MapLastBaseX = c.SceneBaseTileX
@@ -10231,11 +10185,11 @@ func (c *Client) Read() (ok bool) {
 
 func (c *Client) DrawSidebar() {
 	// Pixel repaint is gated on RedrawSidebar (expensive: interface
-	// tree walk + pix3d/pix2d operations). GPU upload always runs.
-	// Pre-fix this whole function was wrapped in `if RedrawSidebar`
-	// at the call site, relying on Java/AWT's retained back buffer
-	// for the no-redraw frames; Gio's op.Ops requires the upload-op
-	// each frame.
+	// tree walk + pix3d/pix2d operations). The blit via PixMap.Draw
+	// always runs. Pre-fix this whole function was wrapped in `if
+	// RedrawSidebar` at the call site, relying on Java/AWT's retained
+	// back buffer for the no-redraw frames; PixMap.Draw →
+	// platform.Active.Blit must re-issue each frame.
 	if c.RedrawSidebar {
 		c.RedrawSidebar = false
 		c.AreaSidebar.Bind()
@@ -10252,7 +10206,7 @@ func (c *Client) DrawSidebar() {
 		c.AreaViewport.Bind()
 		pix3d.LineOffset = c.AreaViewportOffsets
 	}
-	c.AreaSidebar.Draw(&c.Ops, 562, 231)
+	c.AreaSidebar.Draw(562, 231)
 }
 
 func (c *Client) IsFriend(arg1 string) bool {
@@ -10401,64 +10355,63 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 func (c *Client) DrawProgress(message string, percent int) {
 	c.LoadTitle()
 
-	// Top-level frame entry point during boot (called from RunGameShell's
-	// prologue and GetJagFile's retry loop before c.Draw() takes over).
-	// Hold OpsMu for the entire frame build so the Gio goroutine can't
-	// observe a partial op list; same rationale as c.Draw above.
-	pixmap.OpsMu.Lock()
-	defer pixmap.OpsMu.Unlock()
-	c.Ops.Reset()
-
 	if c.JagTitle == nil {
 		c.DrawProgressGameShell(message, percent)
 		return
 	}
 
-	c.ImageTitle4.Bind()
+	// Out-of-band repaint during boot (called from RunShell's prologue and
+	// GetJagFile's retry loop before the main loop takes over). Present
+	// explicitly since we're not in the per-frame Draw call.
+	c.present(func() {
+		c.ImageTitle4.Bind()
 
-	x := 360
-	y := 200
+		x := 360
+		y := 200
 
-	offsetY := 20
-	c.FontBold12.CentreString(y/2-26-offsetY, 0xFFFFFF, "RuneScape is loading - please wait...", x/2)
+		offsetY := 20
+		c.FontBold12.CentreString(y/2-26-offsetY, 0xFFFFFF, "RuneScape is loading - please wait...", x/2)
 
-	midY := y/2 - 18 - offsetY
-	pix2d.DrawRect(x/2-152, 0x8C1111, 34, midY, 304)
-	pix2d.DrawRect(x/2-151, 0, 32, midY+1, 302)
-	pix2d.FillRect(midY+2, x/2-150, 0x8C1111, percent*3, 30)
-	pix2d.FillRect(midY+2, x/2-150+percent*3, 0, 300-percent*3, 30)
-	c.FontBold12.CentreString(y/2+5-offsetY, 0xFFFFFF, message, x/2)
+		midY := y/2 - 18 - offsetY
+		pix2d.DrawRect(x/2-152, 0x8C1111, 34, midY, 304)
+		pix2d.DrawRect(x/2-151, 0, 32, midY+1, 302)
+		pix2d.FillRect(midY+2, x/2-150, 0x8C1111, percent*3, 30)
+		pix2d.FillRect(midY+2, x/2-150+percent*3, 0, 300-percent*3, 30)
+		c.FontBold12.CentreString(y/2+5-offsetY, 0xFFFFFF, message, x/2)
 
-	c.ImageTitle4.Draw(&c.Ops, 214, 186)
-	// Always upload the static title tiles + flame tiles. Pre-fix
-	// this was gated by c.RedrawFrame relying on Java/AWT's retained
-	// back buffer; Gio's op.Ops is immediate-mode and Reset every
-	// frame.
-	//
-	// ImageTitle0 / ImageTitle1 are dual-purpose: they hold the
-	// static title flame imagery when flames are inactive, and are
-	// overwritten by DrawFlames with animated pixels when active.
-	// Either way the buffer content is correct, so upload
-	// unconditionally — the prior `if !c.FlameActive` skip relied on
-	// DrawFlames also issuing the upload (which it no longer does
-	// post-refactor) and produced white rectangles at (0,0) /
-	// (661,0) during boot when FlameActive is true.
-	c.RedrawFrame = false
-	c.ImageTitle0.Draw(&c.Ops, 0, 0)
-	c.ImageTitle1.Draw(&c.Ops, 661, 0)
-	c.ImageTitle2.Draw(&c.Ops, 128, 0)
-	c.ImageTitle3.Draw(&c.Ops, 214, 386)
-	c.ImageTitle5.Draw(&c.Ops, 0, 265)
-	c.ImageTitle6.Draw(&c.Ops, 574, 265)
-	c.ImageTitle7.Draw(&c.Ops, 128, 186)
-	c.ImageTitle8.Draw(&c.Ops, 574, 186)
+		c.ImageTitle4.Draw(214, 186)
+		// Always upload the static title tiles + flame tiles.
+		//
+		// ImageTitle0 / ImageTitle1 are dual-purpose: they hold the
+		// static title flame imagery when flames are inactive, and are
+		// overwritten by DrawFlames with animated pixels when active.
+		// Either way the buffer content is correct, so upload
+		// unconditionally — the prior `if !c.FlameActive` skip relied on
+		// DrawFlames also issuing the upload (which it no longer does
+		// post-refactor) and produced white rectangles at (0,0) /
+		// (661,0) during boot when FlameActive is true.
+		c.RedrawFrame = false
+		// flameMu: ImageTitle0/1 buffers are written by the RunFlames goroutine.
+		c.flameMu.Lock()
+		c.ImageTitle0.Draw(0, 0)
+		c.ImageTitle1.Draw(661, 0)
+		c.flameMu.Unlock()
+		c.ImageTitle2.Draw(128, 0)
+		c.ImageTitle3.Draw(214, 386)
+		c.ImageTitle5.Draw(0, 265)
+		c.ImageTitle6.Draw(574, 265)
+		c.ImageTitle7.Draw(128, 186)
+		c.ImageTitle8.Draw(574, 186)
+	})
 }
 
 // ensureOverlay lazily allocates the fullscreen overlay PixMap used by
 // DrawError and DrawProgressGameShell. Lazy because ScreenWidth/Height
-// are set by GameShell.SetCanvasSize during InitApplication, which runs
-// after NewClient. If the screen size changed since the last allocation
-// (currently unreachable but cheap to guard), reallocate.
+// are set before RunShell runs (by the platform backend / caller), after
+// NewClient returns; the overlay is allocated lazily on first use because
+// NewClient runs before a backend or texture exists. If the screen size
+// changed since the last allocation (currently unreachable but cheap to
+// guard), reallocate.
 func (c *Client) ensureOverlay() {
 	if c.OverlayPixMap == nil ||
 		c.OverlayPixMap.Width != c.ScreenWidth ||

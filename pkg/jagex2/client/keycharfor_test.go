@@ -3,62 +3,36 @@ package client
 import (
 	"testing"
 
-	"gioui.org/io/key"
+	"github.com/zsrv/goscape-client/pkg/jagex2/platform"
 )
 
-// TestKeyCharFor_AppliesShiftToDigitsAndPunctuation pins the post-fix
-// US-keyboard Shift mapping. User-reported: special characters like
-// `:` and `$` could not be typed in chat / PM input. Root cause:
-// Gio's key.Event reports only the physical key name plus the
-// modifier bitmask (unlike AWT's KeyEvent.getKeyChar() which gives
-// the typed character directly). The pre-fix keyCharFor applied
-// Shift only to A-Z letters; digits and punctuation returned their
-// physical-key value regardless of Shift, so chat inputs that
-// required Shift+number or Shift+punctuation silently dropped the
-// modifier.
-func TestKeyCharFor_AppliesShiftToDigitsAndPunctuation(t *testing.T) {
-	cases := []struct {
-		name  key.Name
-		shift bool
-		want  int
-	}{
-		// Letters: shift selects case
-		{"A", false, 'a'},
-		{"A", true, 'A'},
-		{"Z", false, 'z'},
-		{"Z", true, 'Z'},
-
-		// Digits: shift selects punctuation
-		{"1", false, '1'},
-		{"1", true, '!'},
-		{"2", true, '@'},
-		{"4", true, '$'},
-		{"0", true, ')'},
-
-		// Punctuation: shift maps to upper variant
-		{";", false, ';'},
-		{";", true, ':'},
-		{"'", false, '\''},
-		{"'", true, '"'},
-		{"-", true, '_'},
-		{"=", true, '+'},
-		{",", true, '<'},
-		{".", true, '>'},
-		{"/", true, '?'},
-
-		// Multi-char names (special keys) → 0
-		{"LeftArrow", false, 0},
-		{"F1", false, 0},
+func TestAwtFor(t *testing.T) {
+	cases := map[platform.Key]int{
+		platform.KeyLeft: 37, platform.KeyRight: 39, platform.KeyUp: 38,
+		platform.KeyDown: 40, platform.KeyCtrl: 17, platform.KeyBackspace: 8,
+		platform.KeyDelete: 127, platform.KeyTab: 9, platform.KeyReturn: 10,
+		platform.KeyEnter: 10, platform.KeyHome: 36, platform.KeyEnd: 35,
+		platform.KeyPageUp: 33, platform.KeyPageDown: 34,
+		platform.KeyF1: 112, platform.KeyF12: 123, platform.KeyRune: 0,
 	}
-	for _, tc := range cases {
-		var mods key.Modifiers
-		if tc.shift {
-			mods = key.ModShift
+	for k, want := range cases {
+		if got := awtFor(k); got != want {
+			t.Errorf("awtFor(%d) = %d, want %d", k, got, want)
 		}
-		got := keyCharFor(key.Event{Name: tc.name, Modifiers: mods, State: key.Press})
-		if got != tc.want {
-			t.Errorf("keyCharFor(name=%q, shift=%v) = %d (%q); want %d (%q)",
-				tc.name, tc.shift, got, rune(got), tc.want, rune(tc.want))
-		}
+	}
+}
+
+func TestCharFor(t *testing.T) {
+	if got := charFor(platform.KeyPress{Key: platform.KeyRune, Rune: 'A'}); got != int('a') {
+		t.Errorf("'A' no shift = %d, want %d", got, int('a'))
+	}
+	if got := charFor(platform.KeyPress{Key: platform.KeyRune, Rune: 'A', Mods: platform.ModShift}); got != int('A') {
+		t.Errorf("'A' shift = %d, want %d", got, int('A'))
+	}
+	if got := charFor(platform.KeyPress{Key: platform.KeyRune, Rune: '1', Mods: platform.ModShift}); got != int('!') {
+		t.Errorf("'1' shift = %d, want %d", got, int('!'))
+	}
+	if got := charFor(platform.KeyPress{Key: platform.KeyLeft}); got != 0 {
+		t.Errorf("named key char = %d, want 0", got)
 	}
 }
