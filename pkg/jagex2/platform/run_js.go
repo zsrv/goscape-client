@@ -14,11 +14,26 @@ func Main(width, height int, title string, loop func()) {
 	select {}
 }
 
-// Yield briefly returns control to the JS event loop in the middle of a long
-// synchronous burst on the single wasm thread. Go's wasm runtime parks the
-// goroutine on a JS timer, runs other runnable goroutines (the streaming MIDI
-// synth that feeds oto/Web Audio) and the browser event loop, then resumes.
-// Call it at coarse boundaries in heavy work (e.g. BuildScene's per-region map
-// decode) so the audio buffer cannot drain and skip. No-op on native, where
-// audio runs on its own OS thread.
-func Yield() { time.Sleep(time.Millisecond) }
+// yieldInterval is how much wall time may pass between actual yields. Kept well
+// under the oto audio buffer (~100ms, see sound/audio) so the streaming MIDI
+// synth cannot fall behind and underrun between yields.
+const yieldInterval = 50 * time.Millisecond
+
+var lastYield time.Time
+
+// Yield returns control to the JS event loop — but only if at least
+// yieldInterval has elapsed since the last actual yield, so it is cheap to call
+// inside tight loops (one time check per call; a real sleep only ~20×/sec).
+// Go's wasm runtime parks the goroutine on a JS timer, runs other runnable
+// goroutines (the streaming MIDI synth that feeds oto/Web Audio) and the browser
+// event loop, then resumes. Call it inside any heavy synchronous loop reachable
+// on wasm (BuildScene's per-region decode, world.LoadLocations' per-loc model
+// loads) so the audio buffer cannot drain and skip. No-op on native, where audio
+// runs on its own OS thread. Only the single wasm goroutine calls this, so the
+// unsynchronized lastYield is race-free.
+func Yield() {
+	if time.Since(lastYield) >= yieldInterval {
+		time.Sleep(time.Millisecond)
+		lastYield = time.Now()
+	}
+}

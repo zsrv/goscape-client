@@ -15,6 +15,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix3d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/platform"
 )
 
 var (
@@ -231,6 +232,10 @@ func (w *World) LoadLocations(src []byte, scene *world3d.World3D, collision []*d
 			if deltaPos == 0 {
 				break
 			}
+			// wasm: time-gated yield so first-time loc model loads (GetModel
+			// below) can't monopolize the single thread long enough to starve
+			// the audio synth and skip the music. No-op on native.
+			platform.Yield()
 
 			locPos += deltaPos - 1
 
