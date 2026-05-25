@@ -16,24 +16,40 @@ type glTexture struct {
 }
 
 type glfwBackend struct {
-	win    *glfw.Window
-	w, h   int
-	prog   uint32
-	vbo    uint32
+	win  *glfw.Window
+	w, h int
+	prog uint32
+	vbo  uint32 // static unit-quad geometry, uploaded once
+
+	// Attribute/uniform locations, queried once after link. gl.Str + the
+	// driver round-trip make per-Blit lookups pure overhead; the per-frame
+	// Blit/BeginFrame paths use these cached handles instead.
+	aUnit   int32
+	uTex    int32
+	uScreen int32
+	uOrigin int32 // blit top-left in px
+	uSize   int32 // blit size in px
+
 	events []Event
 }
 
+// Static unit-quad geometry (two triangles, CCW). aUnit ∈ {0,1}² is both the
+// quad corner and the texture UV; the vertex shader scales/offsets it by the
+// uSize/uOrigin uniforms, so Blit uploads no geometry per call. Mirrors the
+// WebGL backend.
 const vertexShaderSrc = `
-attribute vec2 aPos;     // pixel coords
-attribute vec2 aUV;
+attribute vec2 aUnit;    // unit-quad corner (0..1), doubles as UV
 uniform vec2 uScreen;    // viewport size in pixels
+uniform vec2 uOrigin;    // blit top-left in pixels
+uniform vec2 uSize;      // blit size in pixels
 varying vec2 vUV;
 void main() {
+	vec2 px = uOrigin + aUnit * uSize;
 	// pixel space -> clip space (flip Y so (0,0) is top-left)
-	vec2 ndc = vec2(aPos.x / uScreen.x * 2.0 - 1.0,
-	                1.0 - aPos.y / uScreen.y * 2.0);
+	vec2 ndc = vec2(px.x / uScreen.x * 2.0 - 1.0,
+	                1.0 - px.y / uScreen.y * 2.0);
 	gl_Position = vec4(ndc, 0.0, 1.0);
-	vUV = aUV;
+	vUV = aUnit;
 }` + "\x00"
 
 const fragmentShaderSrc = `
@@ -65,7 +81,21 @@ func newGLFWBackend(width, height int, title string) *glfwBackend {
 	}
 	b := &glfwBackend{win: win, w: width, h: height}
 	b.prog = buildProgram()
+
+	// Cache attribute/uniform locations once (see struct comment).
+	b.aUnit = gl.GetAttribLocation(b.prog, gl.Str("aUnit\x00"))
+	b.uTex = gl.GetUniformLocation(b.prog, gl.Str("uTex\x00"))
+	b.uScreen = gl.GetUniformLocation(b.prog, gl.Str("uScreen\x00"))
+	b.uOrigin = gl.GetUniformLocation(b.prog, gl.Str("uOrigin\x00"))
+	b.uSize = gl.GetUniformLocation(b.prog, gl.Str("uSize\x00"))
+
+	// Upload the static unit quad ONCE. Blit then only sets uOrigin/uSize and
+	// draws — no per-blit BufferData or []float32 allocation.
 	gl.GenBuffers(1, &b.vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, b.vbo)
+	unit := []float32{0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1}
+	gl.BufferData(gl.ARRAY_BUFFER, len(unit)*4, gl.Ptr(unit), gl.STATIC_DRAW)
+
 	b.installCallbacks()
 	gl.Disable(gl.DEPTH_TEST)
 	gl.Disable(gl.BLEND)
@@ -137,33 +167,22 @@ func (b *glfwBackend) BeginFrame() {
 	gl.Viewport(0, 0, int32(w), int32(h))
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	gl.UseProgram(b.prog)
-	gl.Uniform2f(gl.GetUniformLocation(b.prog, gl.Str("uScreen\x00")), float32(w), float32(h))
+	gl.Uniform2f(b.uScreen, float32(w), float32(h))
+	// (Re)bind the static unit quad + attribute for the frame. Cheap, and keeps
+	// the vertex state valid regardless of intervening GL calls (UploadTexture
+	// only touches texture state). Mirrors the WebGL backend.
+	gl.BindBuffer(gl.ARRAY_BUFFER, b.vbo)
+	gl.EnableVertexAttribArray(uint32(b.aUnit))
+	gl.VertexAttribPointerWithOffset(uint32(b.aUnit), 2, gl.FLOAT, false, 0, 0)
 }
 
 func (b *glfwBackend) Blit(t Texture, x, y int) {
 	tex := t.(*glTexture)
-	x0, y0 := float32(x), float32(y)
-	x1, y1 := float32(x+tex.w), float32(y+tex.h)
-	// two triangles: pos.xy, uv.xy
-	verts := []float32{
-		x0, y0, 0, 0,
-		x1, y0, 1, 0,
-		x0, y1, 0, 1,
-		x1, y0, 1, 0,
-		x1, y1, 1, 1,
-		x0, y1, 0, 1,
-	}
-	gl.BindBuffer(gl.ARRAY_BUFFER, b.vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(verts)*4, gl.Ptr(verts), gl.DYNAMIC_DRAW)
-	aPos := uint32(gl.GetAttribLocation(b.prog, gl.Str("aPos\x00")))
-	aUV := uint32(gl.GetAttribLocation(b.prog, gl.Str("aUV\x00")))
-	gl.EnableVertexAttribArray(aPos)
-	gl.VertexAttribPointerWithOffset(aPos, 2, gl.FLOAT, false, 16, 0)
-	gl.EnableVertexAttribArray(aUV)
-	gl.VertexAttribPointerWithOffset(aUV, 2, gl.FLOAT, false, 16, 8)
+	gl.Uniform2f(b.uOrigin, float32(x), float32(y))
+	gl.Uniform2f(b.uSize, float32(tex.w), float32(tex.h))
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, tex.id)
-	gl.Uniform1i(gl.GetUniformLocation(b.prog, gl.Str("uTex\x00")), 0)
+	gl.Uniform1i(b.uTex, 0)
 	gl.DrawArrays(gl.TRIANGLES, 0, 6)
 }
 
