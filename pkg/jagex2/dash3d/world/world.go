@@ -156,6 +156,9 @@ func (w *World) LoadGround(arg0 []byte, arg1, arg3, arg4, arg5 int) {
 	var7 := io.NewPacket(arg0)
 	for i := range 4 {
 		for j := range 64 {
+			// wasm: time-gated yield so the single thread doesn't starve the
+			// audio synth during terrain decode; no-op native. See platform.Yield.
+			platform.Yield()
 			for k := range 64 {
 				var11 := j + arg4
 				var12 := k + arg3
@@ -572,6 +575,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 	var7 := 0
 	for i := range 4 {
+		platform.Yield() // wasm: yield through Build's phases so music doesn't skip; no-op native
 		for j := range 104 {
 			for k := range 104 {
 				if w.LevelTileFlags[i][j][k]&0x1 == 1 {
@@ -614,6 +618,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 		var12 = int(math.Sqrt(float64(var9*var9 + var10*var10 + var11*var11)))
 		var13 = (var8 * var12) >> 8
 		for j := 1; j < w.MaxTileZ-1; j++ {
+			platform.Yield() // wasm: per-row yield, lighting pass (time-gated)
 			for k := 1; k < w.MaxTileX-1; k++ {
 				var16 = w.LevelHeightMap[i][k+1][j] - w.LevelHeightMap[i][k-1][j]
 				var17 = w.LevelHeightMap[i][k][j+1] - w.LevelHeightMap[i][k][j-1]
@@ -641,6 +646,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 			w.BlendMagnitude[j] = 0
 		}
 		for j := -5; j < w.MaxTileX+5; j++ {
+			platform.Yield() // wasm: per-row yield, blend + tile-geometry SetTile pass (time-gated)
 			for k := range w.MaxTileZ {
 				var18 = j + 5
 				if var18 >= 0 && var18 < w.MaxTileX {
@@ -793,6 +799,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 		}
 		for j := 0; j <= i; j++ {
 			for k := 0; k <= w.MaxTileZ; k++ {
+				platform.Yield() // wasm: per-row yield, occlusion pass (time-gated)
 				for l := 0; l <= w.MaxTileX; l++ {
 					var53 := 0
 					if w.LevelOccludeMap[j][l][k]&var7 != 0 {
