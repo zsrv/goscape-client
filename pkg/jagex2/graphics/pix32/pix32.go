@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	_ "image/jpeg" // registers the JPEG decoder for image.Decode (title.dat is a JPEG)
 	"math"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
