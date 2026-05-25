@@ -1884,7 +1884,7 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *component.Comp
 											}
 										}
 									}
-									c.MenuOption[c.MenuSize] = "Examine @lre@" + var18.Name
+									c.MenuOption[c.MenuSize] = "Examine @lre@" + var18.Name + examineIDSuffix(var18.Index)
 									c.MenuAction[c.MenuSize] = 1773
 									c.MenuParamA[c.MenuSize] = var18.Index
 									c.MenuParamC[c.MenuSize] = var12.InvSlotObjCount[var23]
@@ -2149,7 +2149,7 @@ func (c *Client) AddNPCOptions(arg0 *npctype.NpcType, arg2, arg3, arg4 int) {
 				}
 			}
 		}
-		c.MenuOption[c.MenuSize] = "Examine @yel@" + var6
+		c.MenuOption[c.MenuSize] = "Examine @yel@" + var6 + examineIDSuffix(int(arg0.Index))
 		c.MenuAction[c.MenuSize] = 1607
 		c.MenuParamA[c.MenuSize] = arg4
 		c.MenuParamB[c.MenuSize] = arg3
@@ -8746,7 +8746,7 @@ func (c *Client) HandleViewportOptions() {
 							}
 						}
 					}
-					c.MenuOption[c.MenuSize] = "Examine @cya@" + var9.Name
+					c.MenuOption[c.MenuSize] = "Examine @cya@" + var9.Name + examineIDSuffix(var9.Index)
 					c.MenuAction[c.MenuSize] = 1175
 					c.MenuParamA[c.MenuSize] = var4
 					c.MenuParamB[c.MenuSize] = var5
@@ -8834,7 +8834,7 @@ func (c *Client) HandleViewportOptions() {
 									c.MenuSize++
 								}
 							}
-							c.MenuOption[c.MenuSize] = "Examine @lre@" + var18.Name
+							c.MenuOption[c.MenuSize] = "Examine @lre@" + var18.Name + examineIDSuffix(var18.Index)
 							c.MenuAction[c.MenuSize] = 1102
 							c.MenuParamA[c.MenuSize] = v.Index
 							c.MenuParamB[c.MenuSize] = var5
