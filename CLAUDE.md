@@ -15,6 +15,9 @@ go build ./...
 # Run (requires 4 args: node-id, port-offset, lowmem|highmem, free|members)
 go run ./cmd/client 10 0 highmem members
 
+# Run with developer mode (Examine menus show config-type ids)
+DEVELOPER_MODE=true go run ./cmd/client 10 0 highmem members
+
 # Run all tests
 go test ./...
 
