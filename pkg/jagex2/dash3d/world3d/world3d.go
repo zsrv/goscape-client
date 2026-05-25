@@ -11,6 +11,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/platform"
 )
 
 var (
@@ -671,6 +672,10 @@ func (w *World3D) BuildModels(arg0, arg1, arg2, lightAttenuation, arg4 int) {
 
 	for level := range w.MaxLevel {
 		for tileX := range w.MaxTileX {
+			// wasm: per-row yield (time-gated) during the vertex-normal/lighting
+			// bake; this loop is the un-yielded tail of the scene build that was
+			// starving the audio synth and skipping music. No-op on native.
+			platform.Yield()
 			for tileZ := range w.MaxTileZ {
 				tile := w.LevelTiles[level][tileX][tileZ]
 				if tile != nil {
