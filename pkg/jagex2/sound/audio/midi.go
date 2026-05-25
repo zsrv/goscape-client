@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"io"
 	"log"
-	"math"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -549,15 +548,4 @@ func clipInt16(f float32) int16 {
 		return -32768
 	}
 	return int16(v)
-}
-
-// volumeFromCentibels maps signlink.MidiVol's centibel scale (e.g. -400
-// for -4 dB, 0 for full) to a linear amplitude factor. dB = cb/100;
-// linear = 10^(dB/20). Matches the TS client's `Math.pow(10, dB / 20)`
-// in tinymidipcm.js:300.
-func volumeFromCentibels(cb int) float32 {
-	if cb >= 0 {
-		return 1.0
-	}
-	return float32(math.Pow(10, float64(cb)/100.0/20.0))
 }

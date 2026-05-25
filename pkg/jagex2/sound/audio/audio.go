@@ -31,13 +31,6 @@ import (
 	"github.com/ebitengine/oto/v3"
 )
 
-// Format constants for the shared oto context. Changing these affects
-// every player in the process; do not branch per-source.
-const (
-	SampleRate   = 22050
-	ChannelCount = 2
-)
-
 // otoCtx is the lazily-initialized, process-wide audio context. nil if
 // initialization failed (no audio device, permission denied, etc.) — in
 // which case the watcher goroutines still run but produce no sound.

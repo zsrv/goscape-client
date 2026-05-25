@@ -106,30 +106,10 @@ func playWaveBytes(ctx *oto.Context, data []byte) {
 // doesn't match: any deviation means the file wasn't produced by our own tone
 // synthesizer and we'd rather skip than play garbage.
 func wave8MonoToStereoInt16(data []byte) ([]byte, bool) {
-	if len(data) < 44 {
+	samples, ok := parseWave8Mono(data)
+	if !ok {
 		return nil, false
 	}
-	if string(data[0:4]) != "RIFF" || string(data[8:12]) != "WAVE" {
-		return nil, false
-	}
-	if string(data[12:16]) != "fmt " {
-		return nil, false
-	}
-	audioFormat := binary.LittleEndian.Uint16(data[20:22])
-	channels := binary.LittleEndian.Uint16(data[22:24])
-	sampleRate := binary.LittleEndian.Uint32(data[24:28])
-	bitsPerSample := binary.LittleEndian.Uint16(data[34:36])
-	if audioFormat != 1 || channels != 1 || sampleRate != SampleRate || bitsPerSample != 8 {
-		return nil, false
-	}
-	if string(data[36:40]) != "data" {
-		return nil, false
-	}
-	dataLen := int(binary.LittleEndian.Uint32(data[40:44]))
-	if 44+dataLen > len(data) {
-		dataLen = len(data) - 44
-	}
-	samples := data[44 : 44+dataLen]
 
 	// 8-bit unsigned PCM uses 0x80 as the silent midpoint; (s-128)<<8 maps
 	// 0x80->0, 0xFF->+32512, 0x00->-32768, preserving zero-crossings. Doubled to
