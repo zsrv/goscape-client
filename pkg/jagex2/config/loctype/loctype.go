@@ -21,7 +21,14 @@ var (
 
 func init() {
 	ModelCacheStatic = datastruct.NewLruCache[*model.Model](500)
-	ModelCacheDynamic = datastruct.NewLruCache[*model.Model](30)
+	// DEVIATION from Java's faithful LruCache(30) (LocType.java:88). 30 thrashes
+	// for a region's unique transformed-loc working set, making the miss-path
+	// builders (CalculateNormals/NewModel4/CreateLabelReferences) ~45% of
+	// scene-build allocation churn. 256 holds the working set; render-identical
+	// (the cache key encodes every transform parameter, so eviction only decides
+	// whether we rebuild, never what we render). Worst-case retained ~6 MB vs an
+	// ~82 MB live heap (profiled 2026-05-25).
+	ModelCacheDynamic = datastruct.NewLruCache[*model.Model](256)
 }
 
 type LocType struct {
