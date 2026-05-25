@@ -10,7 +10,8 @@ import (
 type NpcEntity struct {
 	PathingEntity
 
-	Type *npctype.NpcType
+	Type     *npctype.NpcType
+	seqModel *model.Model // reused per-frame transformed model (avoids per-frame alloc)
 }
 
 func NewNpcEntity() *NpcEntity {
@@ -57,13 +58,19 @@ func (e *NpcEntity) GetSequencedModel() *model.Model {
 		if e.SecondarySeqID >= 0 && e.SecondarySeqID != e.SeqStandID {
 			var4 = seqtype.Instances[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
 		}
-		return e.Type.GetSequencedModel(var2, var4, seqtype.Instances[e.PrimarySeqID].WalkMerge)
+		if e.seqModel == nil {
+			e.seqModel = &model.Model{}
+		}
+		return e.Type.GetSequencedModel(e.seqModel, var2, var4, seqtype.Instances[e.PrimarySeqID].WalkMerge)
 	}
 	var2 := -1
 	if e.SecondarySeqID >= 0 {
 		var2 = seqtype.Instances[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
 	}
-	var3 := e.Type.GetSequencedModel(var2, -1, nil)
+	if e.seqModel == nil {
+		e.seqModel = &model.Model{}
+	}
+	var3 := e.Type.GetSequencedModel(e.seqModel, var2, -1, nil)
 	e.Height = var3.MaxY
 	return var3
 }

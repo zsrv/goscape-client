@@ -39,6 +39,7 @@ type PlayerEntity struct {
 	LocOffsetY         int
 	LocOffsetZ         int
 	LocModel           *model.Model
+	seqModel           *model.Model // reused per-frame transformed model
 	MinTileX           int
 	MinTileZ           int
 	MaxTileX           int
@@ -252,7 +253,11 @@ func (e *PlayerEntity) GetSequencedModel() *model.Model {
 	if e.LowMemory {
 		return var15
 	}
-	var16 := model.NewModel6(var15, true)
+	if e.seqModel == nil {
+		e.seqModel = &model.Model{}
+	}
+	e.seqModel.ResetFromModel6(var15, true)
+	var16 := e.seqModel
 	if var4 != -1 && var5 != -1 {
 		var16.ApplyTransforms(var5, var4, seqtype.Instances[e.PrimarySeqID].WalkMerge)
 	} else if var4 != -1 {
