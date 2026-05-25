@@ -1,3 +1,7 @@
+//go:build !js
+
+package audio
+
 // Package audio is the playback half of the signlink audio protocol.
 //
 // In the original Jagex architecture, the signed-applet wrapper held a
@@ -20,7 +24,6 @@
 //     (see sound/wave.GetWave), upconversion to 16-bit stereo is cheap.
 //   - meltysynth renders stereo float32; quantizing to int16 with volume
 //     bake-in matches the TS GainNode model.
-package audio
 
 import (
 	"log"
