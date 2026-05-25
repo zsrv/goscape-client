@@ -1,25 +1,35 @@
 # Linux system build dependencies for goscape-client.
 #
-# Canonical Gio build set (https://gioui.org/doc/install/linux) plus
-# libasound2-dev for oto (audio). Required at COMPILE time, not just runtime:
-# packages like pkg/jagex2/client import gioui.org/app, so even their test
-# binaries link against these native libraries.
+# Native window/GL backend: github.com/go-gl/glfw/v3.3/glfw +
+# github.com/go-gl/gl/v2.1/gl. Required at COMPILE time, not just runtime:
+# pkg/jagex2/platform imports both, so even test binaries link against these
+# native libraries. Authoritative source: go-gl/glfw build.go cgo LDFLAGS.
+#
+# Gio is still vendored (third_party/gioui.org) pending removal; the Wayland /
+# EGL / Vulkan headers below are also harmless carry-overs from that era.
+#
+# libasound2-dev is for oto (audio).
 #
 # Single source of truth: consumed by .devcontainer/Dockerfile (the dev/CI
 # image) and the Makefile `setup` target (host install). One package per line;
 # blank lines and lines starting with '#' are ignored by both consumers.
 #
-# Package names target Debian trixie / recent Ubuntu. Note the libglvnd
-# vendor-neutral names: libgles2-mesa-dev -> libgles-dev, libegl1-mesa-dev ->
-# libegl-dev (the old Mesa names from Gio's docs are transitional dummies here).
+# Package names target Debian trixie / recent Ubuntu. Vendor-neutral GL names
+# are used throughout (libgl-dev, libgles-dev, libegl-dev) rather than the
+# legacy Mesa-specific transitional names.
 gcc
 pkg-config
 libffi-dev
+libgl-dev
 libwayland-dev
 libx11-dev
 libx11-xcb-dev
 libxkbcommon-x11-dev
 libxcursor-dev
+libxrandr-dev
+libxinerama-dev
+libxi-dev
+libxxf86vm-dev
 libgles-dev
 libegl-dev
 libvulkan-dev
