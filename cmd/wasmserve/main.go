@@ -1,4 +1,4 @@
-// Command wasmserve serves the gogio js/wasm build for local browser testing
+// Command wasmserve serves the hand-rolled wasm build (index.html, main.wasm, wasm_exec.js) for local browser testing
 // and reverse-proxies every other request — the game's cache-data fetches
 // (crc, jag archives, MIDI) — to a backend data server. This presents the
 // browser with a SINGLE origin shared by the wasm page and the cache data, so
@@ -41,7 +41,7 @@ func isWebSocketUpgrade(r *http.Request) bool {
 }
 
 // servesFromBundle reports whether reqPath should be served from the local
-// gogio bundle dir (index.html, main.wasm, wasm.js) rather than proxied to the
+// hand-rolled wasm build dir (index.html, main.wasm, wasm_exec.js) rather than proxied to the
 // data backend. "/" maps to index.html; any other path is served locally only
 // when it names a real file in dir — otherwise it is a cache-data request to
 // proxy. filepath.Clean collapses any traversal under the bundle dir, so a
@@ -56,7 +56,7 @@ func servesFromBundle(dir, reqPath string) bool {
 }
 
 func main() {
-	dir := flag.String("dir", "gio/client", "directory with the gogio js output")
+	dir := flag.String("dir", "build/web", "directory with the wasm build (index.html, main.wasm, wasm_exec.js)")
 	addr := flag.String("addr", ":8080", "listen address")
 	backend := flag.String("backend", "http://localhost:8888", "cache-data backend to proxy non-bundle requests to")
 	flag.Parse()

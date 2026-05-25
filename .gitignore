@@ -44,3 +44,4 @@ CLAUDE.local.md
 # === OS cruft ===
 .DS_Store
 Thumbs.db
+build/

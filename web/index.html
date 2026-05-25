@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Jagex</title>
+	<style>
+		html, body { margin: 0; background: #000; }
+		#app { display: block; image-rendering: pixelated; }
+	</style>
+</head>
+<body>
+	<canvas id="app"></canvas>
+	<script src="wasm_exec.js"></script>
+	<script>
+		// argv: program name + the client's CLI args, taken from ?argv=...
+		// (space-separated), defaulting to a sensible local run. wasmserve's
+		// log prints an example URL. window.location drives the WebSocket /
+		// cache origin (see signlink.ConfigureTransport, codebase_js.go).
+		const params = new URLSearchParams(window.location.search);
+		const argv = (params.get("argv") || "10 0 highmem members").split(/\s+/).filter(Boolean);
+		const go = new Go();
+		go.argv = ["client", ...argv];
+		WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject)
+			.then((res) => go.run(res.instance))
+			.catch((err) => { document.body.innerText = "load error: " + err; });
+	</script>
+</body>
+</html>

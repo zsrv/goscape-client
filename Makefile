@@ -36,11 +36,14 @@ run: ## Run the client (override args with ARGS="...")
 $(BIN): ## Build the client binary into bin/client
 	go build -o $(BIN) $(CMD)
 
-# Browser build directory (gogio js output: index.html, main.wasm, wasm.js).
-WASM_OUT := gio/client
+# Browser build directory (plain go build output: index.html, main.wasm, wasm_exec.js).
+WASM_OUT := build/web
 
-wasm: ## Build the browser (js/wasm) client into gio/client/ via gogio
-	go run gioui.org/cmd/gogio -target js -o $(WASM_OUT) $(CMD)
+wasm: ## Build the browser (js/wasm) client into build/web/
+	mkdir -p $(WASM_OUT)
+	GOOS=js GOARCH=wasm go build -o $(WASM_OUT)/main.wasm $(CMD)
+	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" $(WASM_OUT)/wasm_exec.js
+	cp web/index.html $(WASM_OUT)/index.html
 
 wasm-serve: ## Serve the browser build at http://localhost:8080 (run `make wasm` first)
 	go run ./cmd/wasmserve -dir $(WASM_OUT)

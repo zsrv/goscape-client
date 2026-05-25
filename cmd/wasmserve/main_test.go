@@ -9,7 +9,7 @@ import (
 
 func TestServesFromBundle(t *testing.T) {
 	dir := t.TempDir()
-	for _, f := range []string{"index.html", "main.wasm", "wasm.js"} {
+	for _, f := range []string{"index.html", "main.wasm", "wasm_exec.js"} {
 		if err := os.WriteFile(filepath.Join(dir, f), []byte("x"), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -19,9 +19,9 @@ func TestServesFromBundle(t *testing.T) {
 		path string
 		want bool
 	}{
-		{"/", true},          // index.html
-		{"/main.wasm", true}, // bundle asset
-		{"/wasm.js", true},   // bundle asset
+		{"/", true},             // index.html
+		{"/main.wasm", true},    // bundle asset
+		{"/wasm_exec.js", true}, // bundle asset
 		// Cache-data requests: not present in the bundle dir, must be proxied.
 		{"/crc53108508", false},
 		{"/title12345", false},
