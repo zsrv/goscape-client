@@ -3,106 +3,56 @@ package pixmap
 import (
 	"encoding/binary"
 	"image"
-	"sync"
-
-	"gioui.org/op"
-	"gioui.org/op/paint"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/platform"
 )
 
-// OpsMu serializes all access to the *op.Ops owned by Client. Both the
-// game goroutine (transitively from c.Draw → PixMap.Draw at ~44 call
-// sites in client.go) and the Gio event goroutine (via event.Op,
-// source.Event(...), and e.Frame inside the FrameEvent handler) touch
-// that op list, so every touch must happen under this mutex.
-//
-// Contract: callers of PixMap.Draw MUST already hold OpsMu. The lock
-// is held at frame-granularity by c.Draw (which Resets the op list
-// then issues all per-frame appends atomically) and by the FrameEvent
-// handler (which appends event.Op + drains inputs + presents via
-// e.Frame). This ensures the Gio goroutine never observes a partial
-// frame — without that guarantee, partial PixMap.Draws would render
-// as white-flashing artifacts on static elements (title screen,
-// game frame chrome), since e.Frame replays whatever ops are
-// currently in the buffer including a freshly-Reset empty list.
-//
-// Java had no analogue — AWT's EDT and the game thread were
-// serialized naturally through the repaint queue.
-var OpsMu sync.Mutex
-
-// PixMap is a CPU-side pixel buffer that can be efficiently uploaded to GPU.
+// PixMap is a CPU-side pixel buffer blitted to the screen via the active
+// platform Backend. Java: PixMap (drawImage per frame). The texture is created
+// once and re-uploaded in place only when the pixels change (hashPixels), so
+// there is no per-frame GPU texture churn.
 type PixMap struct {
 	Data   []int
 	Width  int
 	Height int
 
-	// imgBuf is the reusable RGBA buffer that Draw fills in place, backing a
-	// stable mutable image op (imageOp). The steady-state render path performs
-	// no image allocation and no GPU texture churn — the texture is created
-	// once and re-uploaded in place only when the pixels change.
-	imgBuf *image.RGBA
+	imgBuf *image.RGBA // reusable RGBA staging buffer written before each UploadTexture
 
-	// imageOp is one stable mutable op reused every frame. A fresh ImageOp per
-	// frame (the old approach) made Gio create+delete a GL texture per frame,
-	// which the WebGL backend never reclaimed (multi-GB wasm leak). See
-	// docs/superpowers/specs/2026-05-24-wasm-texture-leak-patched-gio-design.md.
-	imageOp  paint.MutableImageOp
+	// tex is the backend texture handle, allocated once in NewPixMap.
+	tex      platform.Texture
 	lastHash uint64
 	uploaded bool
 }
 
-// NewPixMap allocates a width*height pixel buffer.
+// NewPixMap allocates a width*height pixel buffer and its backend texture.
 func NewPixMap(width, height int) *PixMap {
 	var m PixMap
 	m.Width = width
 	m.Height = height
 	m.Data = make([]int, width*height)
 	m.imgBuf = image.NewRGBA(image.Rect(0, 0, width, height))
-	m.imageOp = paint.NewMutableImageOp(m.imgBuf)
-	m.imageOp.Filter = paint.FilterNearest
+	m.tex = platform.Active.NewTexture(width, height)
 	m.Bind()
 	return &m
 }
 
-// Bind uploads the current pixel data to GPU.
-// Call this once per frame before drawing.
+// Bind sets this PixMap as the active pix2d draw target.
 func (p *PixMap) Bind() {
 	pix2d.Bind(p.Width, p.Data, p.Height)
 }
 
-// Draw emits the GPU-upload ops for this PixMap directly into the
-// caller's op list. Caller must hold OpsMu (see OpsMu comment above).
-//
-// The prior implementation minted a fresh paint.NewImageOp every frame,
-// causing Gio to create+delete a GL texture per frame; the WebGL backend
-// never reclaimed these, producing a multi-GB memory leak in wasm builds.
-// This version reuses one stable paint.MutableImageOp and re-uploads (in
-// place, via the patched Gio) only when an FNV hash of the pixel data
-// detects a change since the last upload.
-func (p *PixMap) Draw(ops *op.Ops, x, y int) {
-	defer op.Offset(image.Point{X: x, Y: y}).Push(ops).Pop()
-	// Re-upload only when the pixel content changed since the last upload. The
-	// stable imageOp keeps one GPU texture alive across frames (no per-frame
-	// texture create/delete churn), and hashPixels detects change without any
-	// plumbing into the pix2d write paths.
-	//
-	// CONCURRENCY: callers hold OpsMu across the whole frame build, and the
-	// FrameEvent handler holds the same OpsMu across e.Frame (inside which the
-	// patched gpu.texHandle does the in-place UploadImage). So the write to
-	// imgBuf, the Invalidate, and the upload are all serialized — same invariant
-	// as before. See the OpsMu comment above.
+// Draw uploads the pixels (only if changed since last Draw) and blits the
+// texture with its top-left at (x, y). Java: Graphics.drawImage(image, x, y).
+func (p *PixMap) Draw(x, y int) {
 	h := hashPixels(p.Data)
 	if !p.uploaded || h != p.lastHash {
 		writePixmapPixels(p.imgBuf, p.Data)
-		p.imageOp.Invalidate()
+		platform.Active.UploadTexture(p.tex, p.imgBuf.Pix)
 		p.lastHash = h
 		p.uploaded = true
 	}
-	// Always add the op so the texture stays "used" this frame and is not
-	// evicted/deleted by Gio's texture cache.
-	p.imageOp.Add(ops)
-	paint.PaintOp{}.Add(ops)
+	platform.Active.Blit(p.tex, x, y)
 }
 
 // hashPixels is a fast FNV-1a-style 64-bit hash over the packed 0x00RRGGBB
