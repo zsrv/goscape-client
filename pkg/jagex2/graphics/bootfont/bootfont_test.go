@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pixmap"
+	"github.com/zsrv/goscape-client/pkg/jagex2/platform/platformtest"
 )
 
 func TestHeight(t *testing.T) {
@@ -26,6 +27,7 @@ func TestStringWidthASCII(t *testing.T) {
 }
 
 func TestDrawStringWritesPixels(t *testing.T) {
+	defer platformtest.Install()()
 	p := pixmap.NewPixMap(200, 50)
 	// Pre-fill with sentinel so we can detect any writes from DrawString.
 	for i := range p.Data {

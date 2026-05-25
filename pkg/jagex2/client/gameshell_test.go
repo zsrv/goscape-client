@@ -5,11 +5,12 @@ import (
 	"testing"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/platform/platformtest"
 )
 
 func TestDrawProgressGameShell_ClearsRefreshAndPopulatesOverlay(t *testing.T) {
 	t.Cleanup(pix2d.Reset)
-	setupTestBackend(t)
+	defer platformtest.Install()()
 
 	c := &Client{}
 	c.ScreenWidth = 789

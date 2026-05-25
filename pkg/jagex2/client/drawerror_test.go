@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/platform/platformtest"
 )
 
 // TestDrawError_RendersWithoutCacheFont covers the crash and the blank-screen
@@ -28,7 +29,7 @@ func TestDrawError_RendersWithoutCacheFont(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Cleanup(pix2d.Reset)
-			setupTestBackend(t)
+			defer platformtest.Install()()
 			c := &Client{}
 			c.ScreenWidth = 789
 			c.ScreenHeight = 532

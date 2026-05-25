@@ -4,12 +4,14 @@ import (
 	"testing"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pixmap"
+	"github.com/zsrv/goscape-client/pkg/jagex2/platform/platformtest"
 )
 
 // TestDrawString_RendersColoredPixels verifies the Go-bold face actually paints
 // glyph pixels into the PixMap: a solid-interior pixel of a bold glyph lands at
 // full coverage, so the exact text color appears over the (zeroed/black) buffer.
 func TestDrawString_RendersColoredPixels(t *testing.T) {
+	defer platformtest.Install()()
 	p := pixmap.NewPixMap(240, 40)
 	DrawString(p, 5, 28, 0xFFFFFF, "Error")
 
@@ -27,6 +29,7 @@ func TestDrawString_RendersColoredPixels(t *testing.T) {
 // TestDrawString_EmptyIsNoop confirms an empty string leaves the buffer
 // untouched (no allocation, no writes).
 func TestDrawString_EmptyIsNoop(t *testing.T) {
+	defer platformtest.Install()()
 	p := pixmap.NewPixMap(20, 20)
 	DrawString(p, 0, 10, 0xFFFFFF, "")
 	for i, px := range p.Data {
