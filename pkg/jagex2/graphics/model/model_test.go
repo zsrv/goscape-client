@@ -1,6 +1,10 @@
 package model
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/vertexnormal"
+)
 
 // TestSliceAlias_EqualValueDifferentBacking is the foundational guarantee
 // for the H4 fix in abd652c. Java compares face-priority buckets via
@@ -51,5 +55,94 @@ func TestSliceAlias_EmptySlices(t *testing.T) {
 	b := make([]int, 0, 8)
 	if sliceAlias(a, b) {
 		t.Error("sliceAlias(empty1, empty2) = true; want false (distinct backings)")
+	}
+}
+
+// sampleBaseModel builds a minimal base model with the fields NewModel6 reads.
+func sampleBaseModel(vertexCount, faceCount int) *Model {
+	m := &Model{VertexCount: vertexCount, FaceCount: faceCount, TexturedFaceCount: 0}
+	m.VertexX = make([]int, vertexCount)
+	m.VertexY = make([]int, vertexCount)
+	m.VertexZ = make([]int, vertexCount)
+	for i := range vertexCount {
+		m.VertexX[i] = i * 1
+		m.VertexY[i] = i * 2
+		m.VertexZ[i] = i * 3
+	}
+	m.FaceAlpha = make([]int, faceCount)
+	for i := range faceCount {
+		m.FaceAlpha[i] = i + 7
+	}
+	m.FaceColour = make([]int, faceCount)
+	m.FaceVertexA = make([]int, faceCount)
+	return m
+}
+
+func TestResetFromModel6CopiesVertsDeeply(t *testing.T) {
+	src := sampleBaseModel(4, 2)
+	var m Model
+	m.ResetFromModel6(src, true)
+	if m.VertexCount != 4 || m.FaceCount != 2 {
+		t.Fatalf("counts = %d/%d, want 4/2", m.VertexCount, m.FaceCount)
+	}
+	m.VertexX[0] = 999
+	if src.VertexX[0] == 999 {
+		t.Error("VertexX not deep-copied: writing target mutated src")
+	}
+}
+
+func TestResetFromModel6SharesFaceRefs(t *testing.T) {
+	src := sampleBaseModel(4, 2)
+	var m Model
+	m.ResetFromModel6(src, true)
+	src.FaceColour[0] = 1234
+	if m.FaceColour[0] != 1234 {
+		t.Error("FaceColour should share src's backing array")
+	}
+}
+
+func TestResetFromModel6AlphaShareVsOwn(t *testing.T) {
+	src := sampleBaseModel(4, 2)
+	var shared Model
+	shared.ResetFromModel6(src, true) // retainAlpha -> share
+	src.FaceAlpha[0] = 4321
+	if shared.FaceAlpha[0] != 4321 {
+		t.Error("retainAlpha=true should share src.FaceAlpha")
+	}
+	var owned Model
+	owned.ResetFromModel6(src, false) // !retainAlpha -> own copy
+	src.FaceAlpha[1] = 8888
+	if owned.FaceAlpha[1] == 8888 {
+		t.Error("retainAlpha=false should deep-copy FaceAlpha")
+	}
+}
+
+func TestResetFromModel6ReusesBuffers(t *testing.T) {
+	src := sampleBaseModel(4, 2)
+	var m Model
+	m.ResetFromModel6(src, false)
+	capX := cap(m.VertexX)
+	ptr := &m.VertexX[0]
+	m.ResetFromModel6(src, false) // same size again
+	if cap(m.VertexX) != capX || &m.VertexX[0] != ptr {
+		t.Error("same-size rebuild reallocated VertexX instead of reusing it")
+	}
+	bigger := sampleBaseModel(64, 2)
+	m.ResetFromModel6(bigger, false)
+	if len(m.VertexX) != 64 {
+		t.Fatalf("len after grow = %d, want 64", len(m.VertexX))
+	}
+}
+
+func TestResetFromModel6ClearsStaleFields(t *testing.T) {
+	src := sampleBaseModel(4, 2)
+	var m Model
+	m.Pickable = true
+	m.VertexNormal = make([]*vertexnormal.VertexNormal, 4)
+	m.MaxY = 555
+	m.ResetFromModel6(src, true)
+	if m.Pickable || m.VertexNormal != nil || m.MaxY != 0 {
+		t.Errorf("stale fields not cleared: Pickable=%v VertexNormal=%v MaxY=%d",
+			m.Pickable, m.VertexNormal != nil, m.MaxY)
 	}
 }

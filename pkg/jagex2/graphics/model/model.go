@@ -837,49 +837,78 @@ func NewModel5(arg0 *Model, arg2 bool, arg3 bool) *Model {
 	return &m
 }
 
-func NewModel6(arg1 *Model, arg2 bool) *Model {
-	var m Model
-	m.VertexCount = arg1.VertexCount
-	m.FaceCount = arg1.FaceCount
-	m.TexturedFaceCount = arg1.TexturedFaceCount
-	m.VertexX = make([]int, m.VertexCount)
-	m.VertexY = make([]int, m.VertexCount)
-	m.VertexZ = make([]int, m.VertexCount)
-	for i := range m.VertexCount {
-		m.VertexX[i] = arg1.VertexX[i]
-		m.VertexY[i] = arg1.VertexY[i]
-		m.VertexZ[i] = arg1.VertexZ[i]
+// growInts returns a length-n slice reusing s's backing array when cap allows,
+// else a fresh allocation. Used to reuse per-frame model buffers.
+func growInts(s []int, n int) []int {
+	if cap(s) >= n {
+		return s[:n]
 	}
-	if arg2 {
-		m.FaceAlpha = arg1.FaceAlpha
+	return make([]int, n)
+}
+
+// ResetFromModel6 re-initializes m as a transformable copy of src, reusing m's
+// owned vertex (and FaceAlpha) backing arrays so per-frame rebuilds don't
+// allocate. The struct is cleared first so no field carries over from a prior
+// frame (matching a fresh NewModel6), then the owned arrays are restored.
+// Shared, read-only fields are re-pointed to src on every call because the base
+// model can change frame-to-frame. retainAlpha must be constant for a given
+// reused target (it is per entity/type). Java: Model(Model, boolean).
+func (m *Model) ResetFromModel6(src *Model, retainAlpha bool) {
+	vx, vy, vz, fa := m.VertexX, m.VertexY, m.VertexZ, m.FaceAlpha
+	*m = Model{}
+
+	m.VertexCount = src.VertexCount
+	m.FaceCount = src.FaceCount
+	m.TexturedFaceCount = src.TexturedFaceCount
+
+	m.VertexX = growInts(vx, m.VertexCount)
+	m.VertexY = growInts(vy, m.VertexCount)
+	m.VertexZ = growInts(vz, m.VertexCount)
+	for i := range m.VertexCount {
+		m.VertexX[i] = src.VertexX[i]
+		m.VertexY[i] = src.VertexY[i]
+		m.VertexZ[i] = src.VertexZ[i]
+	}
+
+	if retainAlpha {
+		m.FaceAlpha = src.FaceAlpha
 	} else {
-		m.FaceAlpha = make([]int, m.FaceCount)
-		if arg1.FaceAlpha == nil {
+		fa = growInts(fa, m.FaceCount)
+		if src.FaceAlpha == nil {
 			for i := range m.FaceCount {
-				m.FaceAlpha[i] = 0
+				fa[i] = 0
 			}
 		} else {
 			for i := range m.FaceCount {
-				m.FaceAlpha[i] = arg1.FaceAlpha[i]
+				fa[i] = src.FaceAlpha[i]
 			}
 		}
+		m.FaceAlpha = fa
 	}
-	m.FaceInfo = arg1.FaceInfo
-	m.FaceColour = arg1.FaceColour
-	m.FacePriority = arg1.FacePriority
-	m.Priority = arg1.Priority
-	m.LabelFaces = arg1.LabelFaces
-	m.LabelVertices = arg1.LabelVertices
-	m.FaceVertexA = arg1.FaceVertexA
-	m.FaceVertexB = arg1.FaceVertexB
-	m.FaceVertexC = arg1.FaceVertexC
-	m.FaceColourA = arg1.FaceColourA
-	m.FaceColourB = arg1.FaceColourB
-	m.FaceColourC = arg1.FaceColourC
-	m.TexturedVertexA = arg1.TexturedVertexA
-	m.TexturedVertexB = arg1.TexturedVertexB
-	m.TexturedVertexC = arg1.TexturedVertexC
-	return &m
+
+	m.FaceInfo = src.FaceInfo
+	m.FaceColour = src.FaceColour
+	m.FacePriority = src.FacePriority
+	m.Priority = src.Priority
+	m.LabelFaces = src.LabelFaces
+	m.LabelVertices = src.LabelVertices
+	m.FaceVertexA = src.FaceVertexA
+	m.FaceVertexB = src.FaceVertexB
+	m.FaceVertexC = src.FaceVertexC
+	m.FaceColourA = src.FaceColourA
+	m.FaceColourB = src.FaceColourB
+	m.FaceColourC = src.FaceColourC
+	m.TexturedVertexA = src.TexturedVertexA
+	m.TexturedVertexB = src.TexturedVertexB
+	m.TexturedVertexC = src.TexturedVertexC
+}
+
+// NewModel6 allocates a fresh transformable copy of src. Hot paths reuse a
+// target via ResetFromModel6 instead. Java: Model(Model, boolean).
+func NewModel6(src *Model, retainAlpha bool) *Model {
+	m := &Model{}
+	m.ResetFromModel6(src, retainAlpha)
+	return m
 }
 
 func (m *Model) AddVertex(arg0 *Model, arg1 int) int {
