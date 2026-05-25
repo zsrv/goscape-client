@@ -253,7 +253,11 @@ func (p *PixFont) DrawStringTooltip(arg0 int, arg1 bool, arg3 int, arg4 int, arg
 	if arg5 == "" {
 		return
 	}
-	p.Random = rand.New(rand.NewSource(int64(arg0)))
+	if p.Random == nil {
+		p.Random = rand.New(rand.NewSource(int64(arg0)))
+	} else {
+		p.Random.Seed(int64(arg0))
+	}
 	var8 := (p.Random.Int() & 0x1F) + 192
 	var11 := arg3 - p.Height
 	runes := []rune(arg5)

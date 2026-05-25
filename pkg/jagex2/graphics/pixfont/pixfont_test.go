@@ -1,6 +1,9 @@
 package pixfont
 
-import "testing"
+import (
+	"math/rand"
+	"testing"
+)
 
 // TestStringWidthLatin1 exercises the rune-iteration fix in StringWidth: a
 // string containing '£' (UTF-8 0xC2 0xA3) must hit the '£' glyph slot once,
@@ -78,5 +81,21 @@ func TestStringWidthTagSkip(t *testing.T) {
 	// Bare "@" (no closing) — counts as a normal char (width 1).
 	if got := p.StringWidth("@"); got != 1 {
 		t.Fatalf("@ width = %d, want 1", got)
+	}
+}
+
+func TestRandReseedMatchesFreshSource(t *testing.T) {
+	// The DrawStringTooltip optimization reseeds a reused *rand.Rand instead of
+	// allocating a new source each call. This pins the stdlib guarantee that
+	// makes that behavior-preserving: Seed(seed) yields the same stream as
+	// New(NewSource(seed)).
+	const seed = int64(0x5eed)
+	fresh := rand.New(rand.NewSource(seed))
+	reused := rand.New(rand.NewSource(1))
+	reused.Seed(seed)
+	for i := 0; i < 10; i++ {
+		if a, b := fresh.Int(), reused.Int(); a != b {
+			t.Fatalf("draw %d: fresh=%d reused=%d (reseed diverges from fresh source)", i, a, b)
+		}
 	}
 }
