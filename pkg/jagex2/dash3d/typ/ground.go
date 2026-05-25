@@ -14,8 +14,8 @@ type Ground struct {
 	GroundDecor          *GroundDecor
 	GroundObj            *GroundObject
 	LocCount             int
-	Locs                 []*Location
-	LocSpan              []int
+	Locs                 [5]*Location // Java: Location[] locs = new Location[5] (Ground.java:43)
+	LocSpan              [5]int       // Java: int[] locSpan = new int[5] (Ground.java:46)
 	LocSpans             int
 	DrawLevel            int
 	Visible              bool
@@ -38,9 +38,6 @@ type Ground struct {
 
 func NewGround(level, x, z int) *Ground {
 	var g Ground
-	g.Locs = make([]*Location, 5)
-	g.LocSpan = make([]int, 5)
-
 	g.Level = level
 	g.OccludeLevel = g.Level
 	g.X = x
