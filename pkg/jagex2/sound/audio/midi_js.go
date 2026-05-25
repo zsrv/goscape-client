@@ -82,11 +82,22 @@ func (d *webMidiDriver) applyMidiVolume() {
 
 // renderToBuffer renders midData to an AudioBuffer, reusing the cache when the
 // same track is re-issued (the game's NextMusicDelay restart).
+// renderToBuffer returns the AudioBuffer for midData, reusing the one-track
+// cache on a re-issue of the same track (instant, no render). A new track is
+// synthesized via the chunked, yielding renderMidiToPCM. Runs on a background
+// goroutine (see playFromBytes); the cache fields are guarded by mu since
+// playFromBytes can be called from the game-loop goroutine while a prior
+// render goroutine is still in flight.
 func (d *webMidiDriver) renderToBuffer(midData []byte) js.Value {
 	key := string(midData)
+	d.mu.Lock()
 	if d.cacheKey == key && d.cacheBuf.Truthy() {
-		return d.cacheBuf
+		buf := d.cacheBuf
+		d.mu.Unlock()
+		return buf
 	}
+	d.mu.Unlock()
+
 	sf := d.ensureSoundFont()
 	if sf == nil {
 		return js.Undefined()
@@ -99,25 +110,35 @@ func (d *webMidiDriver) renderToBuffer(midData []byte) js.Value {
 	buf := ac.Call("createBuffer", ChannelCount, len(left), SampleRate)
 	buf.Call("copyToChannel", f32ToJSFloat32Array(left), 0)
 	buf.Call("copyToChannel", f32ToJSFloat32Array(right), 1)
+	d.mu.Lock()
 	d.cacheKey = key
 	d.cacheBuf = buf
+	d.mu.Unlock()
 	return buf
 }
 
-// playFromBytes renders + plays the track. With fade, the OLD source's fade
-// gain ramps to 0 and is stopped after fadeDuration, THEN the new source
-// starts at full — the native fade-out-then-start (no overlap), gen-guarded.
+// playFromBytes renders the track in the BACKGROUND (synthesis is 100s of ms;
+// renderMidiToPCM yields between chunks so the game loop keeps drawing instead
+// of freezing) and then swaps it in. The previous track keeps playing from its
+// static buffer throughout. gen is bumped now so a newer play/stop arriving
+// during the render makes this goroutine abandon — a rapid area change won't
+// swap in a stale track.
 func (d *webMidiDriver) playFromBytes(midData []byte, fade bool) {
 	d.applyMidiVolume()
-	buf := d.renderToBuffer(midData)
-	if !buf.Truthy() {
-		return
-	}
-	// gen is bumped AFTER renderToBuffer so the previous track keeps playing
-	// (at its current gain) during the one-time render of a new track — a long
-	// render must not be treated as superseding the playing track.
 	gen := d.gen.Add(1)
+	go func() {
+		buf := d.renderToBuffer(midData)
+		if !buf.Truthy() || d.gen.Load() != gen {
+			return
+		}
+		d.startTrack(buf, fade, gen)
+	}()
+}
 
+// startTrack swaps buf in as the current track. With fade, the OLD source's
+// fade gain ramps to 0 and is stopped after fadeDuration, THEN the new source
+// starts at full — the native fade-out-then-start (no overlap), gen-guarded.
+func (d *webMidiDriver) startTrack(buf js.Value, fade bool, gen uint64) {
 	d.mu.Lock()
 	oldSrc, oldFade := d.curSrc, d.curFade
 	d.mu.Unlock()

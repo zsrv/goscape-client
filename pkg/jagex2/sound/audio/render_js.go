@@ -4,9 +4,15 @@ package audio
 
 import (
 	"bytes"
+	"time"
 
 	"github.com/sinshu/go-meltysynth/meltysynth"
 )
+
+// renderChunkFrames is how many frames are synthesized between yields. The
+// sequencer is stateful, so rendering consecutive sub-slices continues the
+// track. ~250ms keeps each synthesis burst to roughly one frame's worth of CPU.
+const renderChunkFrames = SampleRate / 4
 
 // renderMidiToPCM synthesizes an entire MIDI track to left/right float32 PCM
 // at SampleRate (one Render call covers any length; the sequencer renders the
@@ -28,6 +34,17 @@ func renderMidiToPCM(sf *meltysynth.SoundFont, midData []byte) (left, right []fl
 	frames := renderFrameCount(midiFile.GetLength())
 	left = make([]float32, frames)
 	right = make([]float32, frames)
-	seq.Render(left, right)
+	// Render in chunks, yielding to the JS event loop between them so the game
+	// loop keeps drawing during the (100s-of-ms) synthesis instead of freezing.
+	// Audio is unaffected: it plays from the previous static buffer until this
+	// render swaps in. (Run on a background goroutine — see playFromBytes.)
+	for off := 0; off < frames; off += renderChunkFrames {
+		end := off + renderChunkFrames
+		if end > frames {
+			end = frames
+		}
+		seq.Render(left[off:end], right[off:end])
+		time.Sleep(time.Millisecond)
+	}
 	return left, right, nil
 }
