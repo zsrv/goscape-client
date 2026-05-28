@@ -356,8 +356,12 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 	pix2d.FillRect(0, 0, 0, 32, 32)
 	pix3d.Init2D()
 	var15 := var4.GetInterfaceModel(1)
-	var16 := (pix3d.SinTable[var4.Xan2D] * var4.Zoom2D) >> 16
-	var17 := (pix3d.CosTable[var4.Xan2D] * var4.Zoom2D) >> 16
+	// Java: `Pix3D.sinTable[xan2d] * zoom2d >> 16` is 32-bit int arithmetic; the
+	// product overflows/wraps at 2^31 (reachable when zoom2d > 32768). int32(...)
+	// reproduces that truncation before the arithmetic >>16, which Go's 64-bit int
+	// would otherwise skip. Same fix as DrawInterface type-6 (client.go).
+	var16 := int(int32(pix3d.SinTable[var4.Xan2D]*var4.Zoom2D)) >> 16
+	var17 := int(int32(pix3d.CosTable[var4.Xan2D]*var4.Zoom2D)) >> 16
 	var15.DrawSimple(0, var4.Yan2D, var4.Zan2D, var4.Xan2D, var4.Xof2D, var16+var15.MaxY/2+var4.Yof2D, var17+var4.Yof2D)
 	for i := 31; i >= 0; i-- {
 		for j := 31; j >= 0; j-- {

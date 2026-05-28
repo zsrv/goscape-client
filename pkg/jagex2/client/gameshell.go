@@ -286,19 +286,25 @@ func (c *Client) handleKey(e platform.KeyPress) {
 		if var3 > 0 && var3 < 128 {
 			c.ActionKey[var3] = 1
 		}
-		// Text characters (printable ASCII range, post-overrides) come
-		// in via CharInput with proper keyboard-layout / shift /
-		// dead-key resolution; only the AWT-style sentinels for
-		// non-text keys (Ctrl=5, Backspace=8, Tab=9, Enter=10,
-		// Home/End/PgUp/PgDown=1000..1003, F1..F12=1008..1019) are
-		// pushed to KeyQueue and inputtracking from KeyPress.
+		// Java (GameShell.java keyPressed): the KeyQueue push is gated by
+		// `var3 > 4`. Printable text arrives via the separate CharInput path in
+		// this port, so the only values that reach handleKey and satisfy
+		// `var3 > 4` are the AWT-style sentinels for non-text keys (Ctrl=5,
+		// Backspace=8, Tab=9, Enter=10, Home/End/PgUp/PgDown=1000..1003,
+		// F1..F12=1008..1019); arrow keys map to var3 1..4 and are correctly
+		// excluded here.
 		isSentinel := var3 == 5 || var3 == 8 || var3 == 9 || var3 == 10 || var3 >= 1000
 		if isSentinel {
 			c.KeyQueue[c.KeyQueueWritePos] = var3
 			c.KeyQueueWritePos = (c.KeyQueueWritePos + 1) & 0x7F
-			if inputtracking.Enabled {
-				inputtracking.KeyPressed(var3)
-			}
+		}
+		// Java: `if (InputTracking.enabled) InputTracking.keyPressed(var3);` runs
+		// UNCONDITIONALLY on every press (only the KeyQueue push above is gated by
+		// var3 > 4). It was previously nested inside the isSentinel branch, which
+		// dropped arrow keys (var3 1..4) and other non-text keys from the recorded
+		// input-tracking stream. Mirrors the unconditional KeyReleased call below.
+		if inputtracking.Enabled {
+			inputtracking.KeyPressed(var3)
 		}
 		return
 	}
@@ -398,7 +404,12 @@ var shiftedChar = map[rune]rune{
 
 func charFor(e platform.KeyPress) int {
 	if e.Key != platform.KeyRune {
-		return 0
+		// Java: arg0.getKeyChar() returns KeyEvent.CHAR_UNDEFINED ('￿' = 65535)
+		// for keys with no character (Shift/Alt/Caps/etc). handleKey's `var3 < 30`
+		// leaves 65535 intact and `var3 > 4` then records it in keyQueue and
+		// InputTracking exactly as Java does (arrow keys are separately remapped to
+		// 1..4 by the var2 == 37/39/38/40 overrides, so their 65535 here is moot).
+		return 65535
 	}
 	r := e.Rune
 	shift := e.Mods.Has(platform.ModShift)

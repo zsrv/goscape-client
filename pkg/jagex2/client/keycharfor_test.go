@@ -32,7 +32,9 @@ func TestCharFor(t *testing.T) {
 	if got := charFor(platform.KeyPress{Key: platform.KeyRune, Rune: '1', Mods: platform.ModShift}); got != int('!') {
 		t.Errorf("'1' shift = %d, want %d", got, int('!'))
 	}
-	if got := charFor(platform.KeyPress{Key: platform.KeyLeft}); got != 0 {
-		t.Errorf("named key char = %d, want 0", got)
+	// Java: getKeyChar() returns CHAR_UNDEFINED (65535) for keys with no character;
+	// arrow keys are remapped to 1..4 later by the var2 overrides in handleKey.
+	if got := charFor(platform.KeyPress{Key: platform.KeyLeft}); got != 65535 {
+		t.Errorf("named key char = %d, want 65535", got)
 	}
 }

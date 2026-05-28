@@ -105,7 +105,12 @@ func GetUID(arg0 string) int {
 	}
 
 	var5, err := os.ReadFile(var1)
-	if err != nil {
+	// Java: getuid reads via DataInputStream.readInt() inside try/catch; a short or
+	// corrupt uid.dat throws EOFException, which is caught and returns 0 (a benign
+	// fresh uid) — sign/signlink.java:213-220. Without the len guard,
+	// binary.BigEndian.Uint32 panics on fewer than 4 bytes (e.g. when the rewrite
+	// above failed on a read-only/full disk and was only logged).
+	if err != nil || len(var5) < 4 {
 		log.Println("signlink: couldn't read uid.dat")
 		return 0
 	}

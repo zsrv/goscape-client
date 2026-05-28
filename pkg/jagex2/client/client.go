@@ -2246,7 +2246,14 @@ func (c *Client) HandleInputKey() {
 					}
 					if var2 == 13 || var2 == 10 {
 						if len(c.ChatbackInput) > 0 {
-							var7, _ = strconv.Atoi(c.ChatbackInput)
+							// Java: var7 = 0; try { var7 = Integer.parseInt(chatbackInput); } catch {}.
+							// parseInt rejects values outside int32 range (and non-numeric), leaving
+							// var7 = 0; ParseInt with bitSize 32 errors identically. strconv.Atoi would
+							// accept a 10-digit 64-bit value and P4 a bit-truncated nonzero amount.
+							var7 = 0
+							if v, perr := strconv.ParseInt(c.ChatbackInput, 10, 32); perr == nil {
+								var7 = int(v)
+							}
 							c.Out.P1Isaac(237)
 							c.Out.P4(var7)
 						}
@@ -2263,7 +2270,15 @@ func (c *Client) HandleInputKey() {
 						c.RedrawChatback = true
 					}
 					if (var2 == 13 || var2 == 10) && len(c.ChatTyped) > 0 {
-						if c.ChatTyped == "::clientdrop" && (c.Frame != nil || strings.Contains(c.GetHost(), "192.168.1.")) {
+						// Java: `chatTyped.equals("::clientdrop") && (super.frame != null ||
+						// getHost().indexOf("192.168.1.") != -1)` (deob/client.java:2838). In
+						// Java standalone — the only mode this client runs — initApplication does
+						// `frame = new ViewBox(...)` (GameShell.java:101), so `super.frame != null`
+						// is always true and the host check never matters: ::clientdrop always
+						// reconnects. The Go port keeps c.Frame nil (ViewBox is subsumed by the
+						// platform seam), so reproduce the standalone branch directly instead of
+						// degrading to the LAN-host-only check c.Frame==nil would leave.
+						if c.ChatTyped == "::clientdrop" {
 							c.TryReconnect()
 						} else if strings.HasPrefix(c.ChatTyped, "::") {
 							c.Out.P1Isaac(4)
@@ -3693,8 +3708,12 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 					var16 = pix3d.CenterH3D
 					pix3d.CenterW3D = var25 + var14.Width/2
 					pix3d.CenterH3D = var26 + var14.Height/2
-					var17 = (pix3d.SinTable[var14.Xan] * var14.Zoom) >> 16
-					var18 = (pix3d.CosTable[var14.Xan] * var14.Zoom) >> 16
+					// Java: `Pix3D.sinTable[xan] * zoom >> 16` is 32-bit int arithmetic;
+					// the product overflows/wraps at 2^31 (reachable when zoom > 32768).
+					// int32(...) reproduces that truncation before the arithmetic >>16,
+					// which Go's 64-bit int would otherwise skip (deob/client.java:4159-4160).
+					var17 = int(int32(pix3d.SinTable[var14.Xan]*var14.Zoom)) >> 16
+					var18 = int(int32(pix3d.CosTable[var14.Xan]*var14.Zoom)) >> 16
 					var31 := c.ExecuteInterfaceScript(var14)
 					if var31 {
 						var33 = var14.ActiveAnim
@@ -4633,7 +4652,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		if var16.Desc == nil {
 			var9 = "It's a " + var16.Name + "."
 		} else {
-			var9 = string(var16.Desc)
+			var9 = io.Latin1ToUTF8(var16.Desc) // Java: new String(byte[]) — default (Latin-1) charset
 		}
 		c.AddMessage(0, var9, "")
 	}
@@ -4706,7 +4725,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		} else if var17.Desc == nil {
 			var18 = "It's a " + var17.Name + "."
 		} else {
-			var18 = string(var17.Desc)
+			var18 = io.Latin1ToUTF8(var17.Desc) // Java: new String(byte[]) — default (Latin-1) charset
 		}
 		c.AddMessage(0, var18, "")
 	}
@@ -4828,7 +4847,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			if var13.Type.Desc == nil {
 				var18 = "It's a " + var13.Type.Name + "."
 			} else {
-				var18 = string(var13.Type.Desc)
+				var18 = io.Latin1ToUTF8(var13.Type.Desc) // Java: new String(byte[]) — default (Latin-1) charset
 			}
 			c.AddMessage(0, var18, "")
 		}
@@ -4955,7 +4974,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		if var17.Desc == nil {
 			var18 = "It's a " + var17.Name + "."
 		} else {
-			var18 = string(var17.Desc)
+			var18 = io.Latin1ToUTF8(var17.Desc) // Java: new String(byte[]) — default (Latin-1) charset
 		}
 		c.AddMessage(0, var18, "")
 	}
@@ -5676,16 +5695,32 @@ func (c *Client) Load() {
 
 	c.ImageCompass = pix32.NewPix323(jagMedia, "compass", 0)
 
-	for i := range 50 {
-		c.ImageMapscene[i] = pix8.NewPix8(jagMedia, "mapscene", i)
-	}
-
-	for i := range 50 {
-		c.ImageMapFunction[i] = pix32.NewPix323(jagMedia, "mapfunction", i)
-	}
-
+	// Java: load() wraps the mapscene loop in its own try { ... } catch (Exception) {}
+	// so a media archive with fewer than 50 mapscene sprites leaves the missing
+	// entries nil and lets the rest of load() continue (deob/client.java:6049-6055).
 	func() {
 		defer RecoverPanic()
+		for i := range 50 {
+			c.ImageMapscene[i] = pix8.NewPix8(jagMedia, "mapscene", i)
+		}
+	}()
+
+	// Java: same per-loop try/catch for mapfunction (deob/client.java:6056-6062).
+	func() {
+		defer RecoverPanic()
+		for i := range 50 {
+			c.ImageMapFunction[i] = pix32.NewPix323(jagMedia, "mapfunction", i)
+		}
+	}()
+
+	func() {
+		defer func() {
+			if err := recover(); err != nil {
+				// Java: catch (Exception var30) { System.out.println("hitmarks error: " + var30); }
+				// (the only one of the four sprite loops that prints a diagnostic).
+				fmt.Println("hitmarks error: " + fmt.Sprint(err))
+			}
+		}()
 		for i := range 20 {
 			c.ImageHitmarks[i] = pix32.NewPix323(jagMedia, "hitmarks", i)
 		}

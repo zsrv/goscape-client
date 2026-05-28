@@ -304,6 +304,13 @@ func latin1ToUTF8(b []byte) string {
 	return sb.String()
 }
 
+// Latin1ToUTF8 is the exported form of latin1ToUTF8, for consumers outside this
+// package that hold a raw byte slice equivalent to Java's `new String(byte[])`
+// (default/Latin-1 charset) — e.g. examine/description text in the client.
+func Latin1ToUTF8(b []byte) string {
+	return latin1ToUTF8(b)
+}
+
 func (p *Packet) GData(len int, off int, dst []byte) {
 	for i := off; i < off+len; i++ {
 		dst[i] = p.Data[p.Pos]
