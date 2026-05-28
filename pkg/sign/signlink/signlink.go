@@ -218,7 +218,11 @@ func Run() {
 // is no longer used for caching. Retained as a faithful port of the Java
 // algorithm; remove if a future cleanup wants it gone.
 func GetHash(arg0 string) int64 {
-	var5 := strings.TrimSpace(arg0)
+	// Java: arg0.trim() strips only chars <= U+0020 (not all Unicode whitespace
+	// like strings.TrimSpace), and charAt iterates UTF-16 code units, not bytes.
+	// Iterate runes over the Java-equivalent trim so a non-ASCII resource name
+	// would hash the same as the Java client (dead today; GetHash has no callers).
+	var5 := []rune(strings.TrimFunc(arg0, func(r rune) bool { return r <= ' ' }))
 	var1 := int64(0)
 	for i := 0; i < len(var5) && i < 12; i++ {
 		var4 := var5[i]
@@ -413,7 +417,7 @@ func ReportErrorFunc(e string) {
 	if !ReportError {
 		return
 	}
-	fmt.Println("error: " + e)
+	fmt.Println("Error: " + e) // Java: System.out.println("Error: " + e) (sign/signlink.java:361)
 	var3 := strings.ReplaceAll(e, "@", "_")
 	var4 := strings.ReplaceAll(var3, "&", "_")
 	var5 := strings.ReplaceAll(var4, "#", "_")

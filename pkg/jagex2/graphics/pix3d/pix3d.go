@@ -234,6 +234,13 @@ func GetTexels(arg0 int) []int {
 	ActiveTexels[arg0] = var1
 	var6 := Textures[arg0]
 	var7 := TexturePalette[arg0]
+	// Note: var6.Pixels is []byte (Pix8, unsigned), so the palette index
+	// var7[var6.Pixels[i]] zero-extends to 0..255. Java's Pix8.pixels is a
+	// signed byte[], so a value >= 128 (a negative Java byte) would sign-extend
+	// to a negative index and throw ArrayIndexOutOfBounds. Legitimate texture
+	// data only ever stores palette indices < 128, so the two agree; the Go
+	// form is deliberately kept (it cannot crash on corrupt data) rather than
+	// reproducing Java's out-of-bounds throw — Pix3D.java:219/231/236.
 	if LowDetail {
 		TextureTranslucent[arg0] = false
 		for i := range 4096 {

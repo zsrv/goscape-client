@@ -54,21 +54,24 @@ func NewProjectileEntity(offsetY, peakPitch, srcZ, lastCycle, level, target, sta
 
 func (e *ProjectileEntity) UpdateVelocity(arg0, arg1, arg2, arg4 int) {
 	if !e.Mobile {
-		var6 := arg2 - e.SrcX
+		// Java: double var6 = arg2 - srcX — a double, so var6*var6 is a double
+		// multiply. Kept as float64 to match Java's arithmetic exactly.
+		var6 := float64(arg2 - e.SrcX)
 		var8 := float64(arg1 - e.SrcZ)
-		var10 := math.Sqrt(float64(var6*var6) + var8*var8)
-		e.X = float64(e.SrcX) + float64(var6)*float64(e.Arc)/var10
+		var10 := math.Sqrt(var6*var6 + var8*var8)
+		e.X = float64(e.SrcX) + var6*float64(e.Arc)/var10
 		e.Z = float64(e.SrcZ) + var8*float64(e.Arc)/var10
 		e.Y = float64(e.SrcY)
 	}
-	var6 := e.LastCycle + 1 - arg4
-	e.VelocityX = (float64(arg2) - e.X) / float64(var6)
-	e.VelocityZ = (float64(arg1) - e.Z) / float64(var6)
+	// Java: double var6 = lastCycle + 1 - arg4 (double, so var6*var6 below is a double multiply).
+	var6 := float64(e.LastCycle + 1 - arg4)
+	e.VelocityX = (float64(arg2) - e.X) / var6
+	e.VelocityZ = (float64(arg1) - e.Z) / var6
 	e.Velocity = math.Sqrt(e.VelocityX*e.VelocityX + e.VelocityZ*e.VelocityZ)
 	if !e.Mobile {
 		e.VelocityY = -e.Velocity * math.Tan(float64(e.PeakPitch)*0.02454369)
 	}
-	e.AccelerationY = (float64(arg0) - e.Y - e.VelocityY*float64(var6)) * 2.0 / float64(var6*var6)
+	e.AccelerationY = (float64(arg0) - e.Y - e.VelocityY*var6) * 2.0 / (var6 * var6)
 }
 
 func (e *ProjectileEntity) Update(arg1 int) {

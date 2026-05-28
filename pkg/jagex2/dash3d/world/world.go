@@ -52,15 +52,17 @@ func Reset() {
 }
 
 type World struct {
-	MaxTileX                 int
-	MaxTileZ                 int
-	LevelHeightMap           [][][]int
-	LevelTileFlags           [][][]byte
-	LevelTileUnderlayIDs     [][][]byte
-	LevelTileOverlayIDs      [][][]byte
-	LevelTileOverlayShape    [][][]byte
-	LevelTileOverlayRotation [][][]byte
-	LevelShadeMap            [][][]byte
+	MaxTileX       int
+	MaxTileZ       int
+	LevelHeightMap [][][]int
+	// Java declares these as signed byte[][][]; ported as int8 so widening to int
+	// sign-extends like Java (per the project byte->int8 mapping rule).
+	LevelTileFlags           [][][]int8
+	LevelTileUnderlayIDs     [][][]int8
+	LevelTileOverlayIDs      [][][]int8
+	LevelTileOverlayShape    [][][]int8
+	LevelTileOverlayRotation [][][]int8
+	LevelShadeMap            [][][]int8
 	LevelLightMap            [][]int
 	BlendChroma              []int
 	BlendSaturation          []int
@@ -70,38 +72,38 @@ type World struct {
 	LevelOccludeMap          [][][]int
 }
 
-func NewWorld(arg0 int, arg1 [][][]byte, arg2 int, arg3 [][][]int) *World {
+func NewWorld(arg0 int, arg1 [][][]int8, arg2 int, arg3 [][][]int) *World {
 	var w World
 	w.MaxTileX = arg2
 	w.MaxTileZ = arg0
 	w.LevelHeightMap = arg3
 	w.LevelTileFlags = arg1
-	w.LevelTileUnderlayIDs = make([][][]byte, 4)
+	w.LevelTileUnderlayIDs = make([][][]int8, 4)
 	for i := range w.LevelTileUnderlayIDs {
-		w.LevelTileUnderlayIDs[i] = make([][]byte, w.MaxTileX)
+		w.LevelTileUnderlayIDs[i] = make([][]int8, w.MaxTileX)
 		for j := range w.LevelTileUnderlayIDs[i] {
-			w.LevelTileUnderlayIDs[i][j] = make([]byte, w.MaxTileZ)
+			w.LevelTileUnderlayIDs[i][j] = make([]int8, w.MaxTileZ)
 		}
 	}
-	w.LevelTileOverlayIDs = make([][][]byte, 4)
+	w.LevelTileOverlayIDs = make([][][]int8, 4)
 	for i := range w.LevelTileOverlayIDs {
-		w.LevelTileOverlayIDs[i] = make([][]byte, w.MaxTileX)
+		w.LevelTileOverlayIDs[i] = make([][]int8, w.MaxTileX)
 		for j := range w.LevelTileOverlayIDs[i] {
-			w.LevelTileOverlayIDs[i][j] = make([]byte, w.MaxTileZ)
+			w.LevelTileOverlayIDs[i][j] = make([]int8, w.MaxTileZ)
 		}
 	}
-	w.LevelTileOverlayShape = make([][][]byte, 4)
+	w.LevelTileOverlayShape = make([][][]int8, 4)
 	for i := range w.LevelTileOverlayShape {
-		w.LevelTileOverlayShape[i] = make([][]byte, w.MaxTileX)
+		w.LevelTileOverlayShape[i] = make([][]int8, w.MaxTileX)
 		for j := range w.LevelTileOverlayShape[i] {
-			w.LevelTileOverlayShape[i][j] = make([]byte, w.MaxTileZ)
+			w.LevelTileOverlayShape[i][j] = make([]int8, w.MaxTileZ)
 		}
 	}
-	w.LevelTileOverlayRotation = make([][][]byte, 4)
+	w.LevelTileOverlayRotation = make([][][]int8, 4)
 	for i := range w.LevelTileOverlayRotation {
-		w.LevelTileOverlayRotation[i] = make([][]byte, w.MaxTileX)
+		w.LevelTileOverlayRotation[i] = make([][]int8, w.MaxTileX)
 		for j := range w.LevelTileOverlayRotation[i] {
-			w.LevelTileOverlayRotation[i][j] = make([]byte, w.MaxTileZ)
+			w.LevelTileOverlayRotation[i][j] = make([]int8, w.MaxTileZ)
 		}
 	}
 	w.LevelOccludeMap = make([][][]int, 4)
@@ -111,11 +113,11 @@ func NewWorld(arg0 int, arg1 [][][]byte, arg2 int, arg3 [][][]int) *World {
 			w.LevelOccludeMap[i][j] = make([]int, w.MaxTileZ+1)
 		}
 	}
-	w.LevelShadeMap = make([][][]byte, 4)
+	w.LevelShadeMap = make([][][]int8, 4)
 	for i := range w.LevelShadeMap {
-		w.LevelShadeMap[i] = make([][]byte, w.MaxTileX+1)
+		w.LevelShadeMap[i] = make([][]int8, w.MaxTileX+1)
 		for j := range w.LevelShadeMap[i] {
-			w.LevelShadeMap[i][j] = make([]byte, w.MaxTileZ+1)
+			w.LevelShadeMap[i][j] = make([]int8, w.MaxTileZ+1)
 		}
 	}
 	w.LevelLightMap = make([][]int, w.MaxTileX+1)
@@ -131,10 +133,10 @@ func NewWorld(arg0 int, arg1 [][][]byte, arg2 int, arg3 [][][]int) *World {
 }
 
 func (w *World) ClearLandscape(arg0, arg1, arg3, arg4 int) {
-	var6 := byte(0)
+	var6 := int8(0)
 	for i := range flotype.Count {
 		if strings.EqualFold(flotype.Instances[i].Name, "water") {
-			var6 = byte(i + 1)
+			var6 = int8(i + 1) // Java: (byte)(var3 + 1)
 			break
 		}
 	}
@@ -184,13 +186,13 @@ func (w *World) LoadGround(arg0 []byte, arg1, arg3, arg4, arg5 int) {
 							break
 						}
 						if var13 <= 49 {
-							w.LevelTileOverlayIDs[i][var11][var12] = byte(var7.G1B())
-							w.LevelTileOverlayShape[i][var11][var12] = byte((var13 - 2) / 4)
-							w.LevelTileOverlayRotation[i][var11][var12] = byte((var13 - 2) & 0x3)
+							w.LevelTileOverlayIDs[i][var11][var12] = var7.G1B() // Java: (byte) g1b
+							w.LevelTileOverlayShape[i][var11][var12] = int8((var13 - 2) / 4)
+							w.LevelTileOverlayRotation[i][var11][var12] = int8((var13 - 2) & 0x3)
 						} else if var13 <= 81 {
-							w.LevelTileFlags[i][var11][var12] = byte(var13 - 49)
+							w.LevelTileFlags[i][var11][var12] = int8(var13 - 49)
 						} else {
-							w.LevelTileUnderlayIDs[i][var11][var12] = byte(var13 - 81)
+							w.LevelTileUnderlayIDs[i][var11][var12] = int8(var13 - 81)
 						}
 					}
 				} else {
@@ -323,7 +325,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 							shade = min(shade, 30)
 
 							if shade > int(w.LevelShadeMap[level][x+dx][z+dz]) {
-								w.LevelShadeMap[level][x+dx][z+dz] = byte(shade)
+								w.LevelShadeMap[level][x+dx][z+dz] = int8(shade)
 							}
 						}
 					}
@@ -617,14 +619,12 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 				var20 = 65536 / var18
 				var21 = (var17 << 8) / var18
 				var22 = var46 + (var9*var19+var10*var20+var11*var21)/var13
-				// Java: World.java:543 — `(var45[k-1][j] >> 2) + ...`. Java `var45` is `byte[][]`
-				// (int8), so `>>` sign-extends through int. Go's LevelShadeMap is `[][]byte`
-				// (uint8); the shifts here are unsigned. Acceptable: every write to the
-				// shademap stores a non-negative small value (0, 50, or `(byte) var25` with
-				// var25 capped at 30 — see lines 281-283 in Java / 294-295 in Go and the
-				// `levelShademap[...] = 50` writes), so the sign bit is never set and the
-				// two semantics produce identical results.
-				var23 = int((var45[k-1][j] >> 2) + (var45[k+1][j] >> 3) + (var45[k][j-1] >> 2) + (var45[k][j+1] >> 3) + (var45[k][j] >> 1))
+				// Java: World.java:543 — `(var45[k-1][j] >> 2) + ...`. Java `var45` is
+				// `byte[][]`; each element is promoted byte->int (sign-extending) before the
+				// arithmetic `>>`. LevelShadeMap is now `[][]int8`, so int(...) per term
+				// reproduces that byte->int promotion exactly (values are 0..50, so the
+				// result is identical, but this now matches Java's width and signedness).
+				var23 = (int(var45[k-1][j]) >> 2) + (int(var45[k+1][j]) >> 3) + (int(var45[k][j-1]) >> 2) + (int(var45[k][j+1]) >> 3) + (int(var45[k][j]) >> 1)
 				w.LevelLightMap[k][j] = var22 - var23
 			}
 		}
@@ -639,7 +639,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 			for k := range w.MaxTileZ {
 				var18 = j + 5
 				if var18 >= 0 && var18 < w.MaxTileX {
-					var19 = int(w.LevelTileUnderlayIDs[i][var18][k] & 0xFF)
+					var19 = int(w.LevelTileUnderlayIDs[i][var18][k]) & 0xFF
 					if var19 > 0 {
 						var51 := flotype.Instances[var19-1]
 						w.BlendChroma[k] += var51.Chroma
@@ -651,7 +651,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 				}
 				var19 = j - 5
 				if var19 >= 0 && var19 < w.MaxTileX {
-					var20 = int(w.LevelTileUnderlayIDs[i][var19][k] & 0xFF)
+					var20 = int(w.LevelTileUnderlayIDs[i][var19][k]) & 0xFF
 					if var20 > 0 {
 						var52 := flotype.Instances[var20-1]
 						w.BlendChroma[k] -= var52.Chroma
@@ -686,8 +686,8 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 						var22 -= w.BlendMagnitude[var25]
 					}
 					if l >= 1 && l < w.MaxTileZ-1 && (!LowMemory || (w.LevelTileFlags[i][j][l]&0x10) == 0 && w.GetDrawLevel(i, j, l) == LevelBuilt) {
-						var26 := w.LevelTileUnderlayIDs[i][j][l] & 0xFF
-						var27 := w.LevelTileOverlayIDs[i][j][l] & 0xFF
+						var26 := int(w.LevelTileUnderlayIDs[i][j][l]) & 0xFF
+						var27 := int(w.LevelTileOverlayIDs[i][j][l]) & 0xFF
 						if var26 > 0 || var27 > 0 {
 							var28 := w.LevelHeightMap[i][j][l]
 							var29 := w.LevelHeightMap[i][j+1][l]

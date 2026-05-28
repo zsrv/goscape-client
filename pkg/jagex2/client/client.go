@@ -521,7 +521,7 @@ type Client struct {
 	FlameBuffer2                  []int
 	ImageRunes                    []*pix8.Pix8
 	SceneMapLocData               [][]byte
-	LevelTileFlags                [][][]byte
+	LevelTileFlags                [][][]int8 // Java: byte[][][] (signed) — int8 so int() sign-extends
 	LevelHeightMap                [][][]int
 }
 
@@ -676,6 +676,11 @@ func NewClient() *Client {
 }
 
 func (c *Client) SetMidi(crc int, name string, length int) {
+	// Java: `if (arg2 == null) return;`. The port models Java's null String as ""
+	// (CurrentMidi/MidiSyncName default to and are reset to ""), so this guard
+	// faithfully reproduces the null-check for the internal callers that pass
+	// CurrentMidi. The only divergence is a server packet 54 supplying a non-null
+	// EMPTY name (Java would proceed); the server never sends an empty MIDI name.
 	if name == "" {
 		return
 	}
@@ -1602,6 +1607,7 @@ func (c *Client) RunMidi() {
 	}
 }
 
+// SetLowMem is Java: setLowMemory (deob/client.java:2184).
 func SetLowMem() {
 	world3d.LowMemory = true
 	pix3d.LowDetail = true
@@ -5656,11 +5662,11 @@ func (c *Client) Load() {
 	jagWordEnc := c.GetJagFile("chat system", c.JagChecksum[7], "wordenc", 65)
 	jagSounds := c.GetJagFile("sound effects", c.JagChecksum[8], "sounds", 70)
 
-	c.LevelTileFlags = make([][][]byte, 4)
+	c.LevelTileFlags = make([][][]int8, 4)
 	for level := range c.LevelTileFlags {
-		c.LevelTileFlags[level] = make([][]byte, 104)
+		c.LevelTileFlags[level] = make([][]int8, 104)
 		for x := range c.LevelTileFlags[level] {
-			c.LevelTileFlags[level][x] = make([]byte, 104)
+			c.LevelTileFlags[level][x] = make([]int8, 104)
 		}
 	}
 
@@ -7342,6 +7348,7 @@ func (c *Client) GetCodeBase() string {
 	return codeBaseURL()
 }
 
+// SetHighMem is Java: setHighMemory (deob/client.java:7632).
 func SetHighMem() {
 	world3d.LowMemory = false
 	pix3d.LowDetail = false

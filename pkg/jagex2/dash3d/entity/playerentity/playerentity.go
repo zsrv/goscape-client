@@ -203,11 +203,14 @@ func (e *PlayerEntity) GetSequencedModel() *model.Model {
 		}
 		if var8.RightHand >= 0 {
 			var6 = var8.RightHand
-			var2 += int64((var6 - e.Appearances[5]) << 8)
+			// Java: `var2 += var6 - appearances[5] << 8` is 32-bit int arithmetic,
+			// sign-extended into the long var2. int32(...) reproduces that wrap; Go's
+			// 64-bit int would otherwise diverge for high righthand/lefthand values.
+			var2 += int64(int32((var6 - e.Appearances[5]) << 8))
 		}
 		if var8.LeftHand >= 0 {
 			var7 = var8.LeftHand
-			var2 += int64((var7 - e.Appearances[3]) << 16)
+			var2 += int64(int32((var7 - e.Appearances[3]) << 16))
 		}
 	} else if e.SecondarySeqID >= 0 {
 		var4 = seqtype.Instances[e.SecondarySeqID].Frames[e.SecondarySeqFrame]

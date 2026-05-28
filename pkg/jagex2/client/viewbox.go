@@ -10,44 +10,40 @@ package client
 //      in client-area coordinates without thinking about the chrome inset.
 //   3. Forward update(Graphics) / paint(Graphics) to GameShell.
 //
-// Every one of those responsibilities is already handled by Gio's app.Window
-// in gameshell.go (InitApplication creates the window with the correct Title
-// and fixed Size/MinSize/MaxSize, and Gio's coordinate system is already
-// content-area-relative, so the (4, 24) AWT-inset translation is a no-op).
-// A literal port would just be a thin wrapper around app.Window contributing
-// nothing the gameshell.go path doesn't already provide.
+// Every one of those responsibilities is already handled by the `platform`
+// windowing seam (native: GLFW + go-gl; browser: syscall/js + WebGL): the OS
+// window is created with the correct title and fixed size during boot, and the
+// platform backend's coordinate system is already content-area-relative, so the
+// (4, 24) AWT-inset translation is a no-op. A literal port would just be a thin
+// wrapper contributing nothing the platform seam doesn't already provide.
 //
-// We therefore keep ViewBox only as the Go type for the Client.Frame field,
-// which is the structural 1:1 mapping of Java's GameShell.frame (a ViewBox
-// reference). NewViewBox is never called, so c.Frame is always nil — and that
-// is the correct, consistent choice for this port: Go always behaves as Java's
-// "frame == null" (applet/embedded) case. GetHost already returns the
-// configured host unconditionally instead of Java's standalone "runescape.com"
-// branch, so the field's only live consumer is the "::clientdrop" debug gate,
-// where `c.Frame != nil` is always false. That leaves the command gated purely
-// on a 192.168.1.x LAN host — a deliberate, harmless deviation from Java's
-// standalone path (where frame != null would also allow it).
+// IMPORTANT — which Java case the Go port emulates: the Go client always
+// launches STANDALONE (the 4-arg main path). In Java standalone,
+// initApplication does `frame = new ViewBox(...)` (GameShell.java:101), so
+// `super.frame != null` is TRUE; only the applet path (initApplet) leaves frame
+// null. NewViewBox is never called here, so c.Frame is always nil — which means
+// the Go port must reproduce Java's STANDALONE (frame != null) behavior
+// EXPLICITLY at each site rather than let a `c.Frame != nil` test silently
+// select Java's applet (frame == null) branch:
+//   - GetHost (client.go) returns the configured host — Java standalone
+//     getHost(), not the applet document-base host.
+//   - GetCodeBase (client.go) returns http://<host>:<portOffset+8888> — Java
+//     standalone getCodeBase(), not the applet doc-base URL.
+//   - The "::clientdrop" debug gate (client.go) always reconnects — Java
+//     standalone, where `super.frame != null` is always true. It no longer
+//     consults c.Frame (deob/client.java:2838).
 //
-// Caveat: the "always frame == null" generalization holds for clientdrop and
-// GetHost, but NOT for GetCodeBase (client.go GetCodeBase), which returns
-// http://<host>:<portOffset+8888> — structurally Java's frame != null STANDALONE
-// branch (http://127.0.0.1:<portOffset+8888>), not the frame == null applet
-// document-base branch. Using the configured host instead of literal 127.0.0.1
-// is the right standalone choice; only the blanket "frame == null" framing above
-// is imprecise for that one method.
+// As a result c.Frame now has NO live consumer; it is retained only as the
+// structural 1:1 mapping of Java's GameShell.frame.
 //
 // Deferred cleanup (intentionally NOT done — PORTING.md §2 rule 4, "don't
 // refactor opportunistically"): the tidier long-term shape is to delete this
-// file, drop the Client.Frame *ViewBox field, and reduce the clientdrop gate
-// to the host check alone (behavior-preserving, since c.Frame is always nil).
-// That edits the Client struct layout and erases the Java `super.frame`
-// mapping, so it is left for a dedicated pass rather than folded into
-// unrelated work.
+// file and drop the now-vestigial Client.Frame *ViewBox field. That edits the
+// Client struct layout and erases the Java `super.frame` mapping, so it is left
+// for a dedicated pass rather than folded into unrelated work.
 //
 // Java source: jagex2/client/ViewBox.java
-// Go callers:
-//   - pkg/jagex2/client/client.go (Client.Frame field, ~line 134)
-//   - pkg/jagex2/client/client.go (c.Frame != nil check, ~line 2266)
+// Go callers: none live — Client.Frame (client.go ~line 136) is vestigial.
 
 // ViewBox is an intentional stub. See file-header comment for the decision
 // rationale; do not flesh this out as a literal AWT port.

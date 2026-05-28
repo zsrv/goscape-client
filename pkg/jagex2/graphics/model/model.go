@@ -345,7 +345,8 @@ func NewModel1(arg1 int) *Model {
 	}
 	var3 := Metadata[arg1]
 	if var3 == nil {
-		fmt.Println("Error model", arg1, "not found!")
+		// Java: System.out.println("Error model:" + arg1 + " not found!") — colon, no spaces.
+		fmt.Printf("Error model:%d not found!\n", arg1)
 		return &m
 	}
 	m.VertexCount = var3.VertexCount
