@@ -17,7 +17,7 @@
 		// log prints an example URL. window.location drives the WebSocket /
 		// cache origin (see signlink.ConfigureTransport, codebase_js.go).
 		const params = new URLSearchParams(window.location.search);
-		const argv = (params.get("argv") || "10 0 highmem members").split(/\s+/).filter(Boolean);
+		const argv = (params.get("argv") || "-node-id 10 -mem high -world-type members").split(/\s+/).filter(Boolean);
 		const go = new Go();
 		go.argv = ["client", ...argv];
 		WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject)
