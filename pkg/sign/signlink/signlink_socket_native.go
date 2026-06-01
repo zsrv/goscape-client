@@ -15,5 +15,5 @@ func dialTCP(host string, port int, timeout time.Duration) (net.Conn, error) {
 }
 
 // ConfigureTransport is a no-op on native: the transport/host are set by the
-// command-line host-arg parsing in cmd/client/main.go.
+// -world-server flag parsing in cmd/client/main.go.
 func ConfigureTransport() {}

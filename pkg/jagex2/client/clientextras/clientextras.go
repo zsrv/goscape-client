@@ -14,7 +14,7 @@ var LoopCycle int
 var Host = "127.0.0.1"
 
 // Transport selects the game-server connection transport. It is set once at
-// startup from the host CLI argument's URL scheme and read by
+// startup from the -world-server flag's URL scheme and read by
 // signlink.OpenSocket. The WS path is a Go-original standalone extension (the
 // original Java applet used raw sockets only); see
 // docs/superpowers/specs/2026-05-24-websocket-transport-design.md.
@@ -35,7 +35,7 @@ var Transport TransportKind = TransportTCP
 // openSocket(portOffset + 43594), deob/client.java:6786).
 var WorldPort = 43594
 
-// WSPath is an explicit path parsed from a ws[s]:// host argument.
+// WSPath is an explicit path parsed from a ws[s]:// -world-server flag.
 // "" means "/".
 var WSPath string
 
