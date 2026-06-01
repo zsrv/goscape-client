@@ -7,8 +7,6 @@ var Field1438 []int = []int{9104, 10275, 7595, 3610, 7975, 8526, 918, 38802, 244
 
 var LoopCycle int
 
-var PortOffset int
-
 // Java: getHost() (deob/client.java:5508-5514) and the socket path
 // getCodeBase().getHost() (deob/client.java:7244). With no signed applet and no
 // frame, those resolve to the document-base/loopback host; "127.0.0.1" is the
@@ -31,7 +29,7 @@ const (
 var Transport TransportKind = TransportTCP
 
 // WSPort is an explicit WebSocket port parsed from a ws[s]:// host argument.
-// 0 means "use the default game port the dial site supplies (PortOffset+43594)".
+// 0 means "use the default game port the dial site supplies (43594)".
 var WSPort int
 
 // WSPath is an explicit path parsed from a ws[s]:// host argument.

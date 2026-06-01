@@ -6469,7 +6469,10 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		// iteration, so we present explicitly.
 		c.present(func() { c.DrawTitleScreen() })
 	}
-	conn, err := c.OpenSocket(clientextras.PortOffset + 43594)
+	// Java: openSocket(portOffset + 43594) (deob/client.java:6786). The port
+	// offset is intentionally not ported (see cmd/client/main.go); the game
+	// always dials the base port 43594.
+	conn, err := c.OpenSocket(43594)
 	if err != nil {
 		c.LoginMessage0 = ""
 		c.LoginMessage1 = "Error connecting to server."
@@ -7339,7 +7342,7 @@ func (c *Client) PushSpotanims() {
 func (c *Client) GetCodeBase() string {
 	// Java: getCodeBase() (deob/client.java:7618-7628) — applet API. The URL is
 	// platform-specific (see codebase_native.go / codebase_js.go): the native
-	// standalone build synthesizes http://<host>:<portOffset+8888> (Java's
+	// standalone build synthesizes http://<host>:8888 (Java's
 	// frame!=null STANDALONE branch), while the js/wasm browser build returns
 	// the page's own origin so cache fetches are same-origin — matching the
 	// applet's document-base semantics (frame==null branch) and the Client-TS

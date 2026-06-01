@@ -16,8 +16,8 @@ make wasm
 make wasm-serve
 
 # 3. Open the client, passing the non-host args via the ?argv= query parameter:
-#    node-id port-offset lowmem|highmem free|members
-#    http://localhost:8080/?argv=10 0 highmem members
+#    node-id lowmem|highmem free|members
+#    http://localhost:8080/?argv=10 highmem members
 ```
 
 Notes:

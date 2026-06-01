@@ -84,6 +84,6 @@ func main() {
 	})
 
 	log.Printf("wasmserve: serving %s on http://localhost%s (cache data + WebSocket proxied to %s)", *dir, *addr, *backend)
-	log.Printf("wasmserve: launch with e.g. http://localhost%s/?argv=10 0 highmem members", *addr)
+	log.Printf("wasmserve: launch with e.g. http://localhost%s/?argv=10 highmem members", *addr)
 	log.Fatal(http.ListenAndServe(*addr, handler))
 }

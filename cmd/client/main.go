@@ -16,8 +16,8 @@ import (
 
 func main() {
 	fmt.Println("RS2 user client - release #" + strconv.Itoa(225))
-	if len(os.Args) < 5 || len(os.Args) > 6 {
-		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members], [host|ws://host[:port][/path]|wss://host[:port][/path]]")
+	if len(os.Args) < 4 || len(os.Args) > 5 {
+		fmt.Println("Usage: node-id, [lowmem/highmem], [free/members], [host|ws://host[:port][/path]|wss://host[:port][/path]]")
 		os.Exit(1)
 	}
 	var err error
@@ -26,38 +26,42 @@ func main() {
 		fmt.Printf("invalid node-id: %v\n", err)
 		os.Exit(1)
 	}
-	clientextras.PortOffset, err = strconv.Atoi(os.Args[2])
-	if err != nil {
-		fmt.Printf("invalid port-offset: %v\n", err)
-		os.Exit(1)
-	}
-	switch os.Args[3] {
+	// Intentional deviation from the Java client: the `port-offset` argument
+	// (Java's arg0[1], parsed into the static `portOffset`; deob/client.java:10601)
+	// is not ported. In Java that offset was added to BOTH the data-server HTTP
+	// port (portOffset + 8888; client.java:7624) and the game socket port
+	// (portOffset + 43594; client.java:6786) so a developer could run several
+	// applet instances against different local server port ranges. This Go
+	// standalone build always uses the base ports (8888 / 43594) and instead
+	// points at a configurable host (the optional host arg below), so the offset
+	// is dropped entirely and the remaining args shift down by one.
+	switch os.Args[2] {
 	case "lowmem":
 		client.SetLowMem()
 	case "highmem":
 		client.SetHighMem()
 	default:
-		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members], [host|ws://host[:port][/path]|wss://host[:port][/path]]")
+		fmt.Println("Usage: node-id, [lowmem/highmem], [free/members], [host|ws://host[:port][/path]|wss://host[:port][/path]]")
 		os.Exit(1)
 	}
-	switch os.Args[4] {
+	switch os.Args[3] {
 	case "free":
 		client.MembersWorld = false
 	case "members":
 		client.MembersWorld = true
 	default:
-		fmt.Println("Usage: node-id, port-offset, [lowmem/highmem], [free/members], [host|ws://host[:port][/path]|wss://host[:port][/path]]")
+		fmt.Println("Usage: node-id, [lowmem/highmem], [free/members], [host|ws://host[:port][/path]|wss://host[:port][/path]]")
 		os.Exit(1)
 	}
 	// Java main accepts exactly 4 args (deob/client.java:10599); the applet host
-	// came from getCodeBase().getHost(). This optional 5th `host` arg is a
+	// came from getCodeBase().getHost(). This optional 4th `host` arg is a
 	// Go-original standalone extension (no browser codebase exists here) that
 	// lets the operator point the binary at a non-localhost server. A ws:// or
 	// wss:// scheme additionally selects the WebSocket transport (for a future
 	// js/wasm build); a bare host keeps the TCP default. The parsed bare
 	// hostname is stored in clientextras.Host so GetHost/GetCodeBase stay valid.
-	if len(os.Args) == 6 {
-		tk, host, wsPort, wsPath, err := parseHostArg(os.Args[5])
+	if len(os.Args) == 5 {
+		tk, host, wsPort, wsPath, err := parseHostArg(os.Args[4])
 		if err != nil {
 			fmt.Printf("invalid host: %v\n", err)
 			os.Exit(1)

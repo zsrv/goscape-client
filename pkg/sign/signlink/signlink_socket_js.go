@@ -21,7 +21,7 @@ func dialTCP(host string, port int, timeout time.Duration) (net.Conn, error) {
 // ConfigureTransport derives the WebSocket target from window.location and
 // points the existing WS transport at the serving origin. Called once from
 // cmd/client/main.go before any connection attempt. Connecting back to the
-// origin (rather than a PortOffset+43594 TCP port) matches Client-TS and avoids
+// origin (rather than a 43594 TCP port) matches Client-TS and avoids
 // mixed-content under HTTPS.
 func ConfigureTransport() {
 	// window.location is spec-guaranteed in a browser window; hostname, port,

@@ -5,17 +5,13 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
 )
 
 // TestSignlinkConcurrentStress exercises CacheLoad, CacheSave, and
@@ -45,9 +41,9 @@ func TestSignlinkConcurrentStress(t *testing.T) {
 		}
 	}
 
-	// HTTP server that echoes the request path. OpenURL builds a URL
-	// from clientextras.PortOffset, so we override PortOffset to point
-	// at our test server.
+	// HTTP server that echoes the request path. OpenURL fetches against
+	// dataServerURL, so we redirect that at our test server (its port is
+	// assigned dynamically by httptest).
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Strip leading slash. The path is the URL fragment OpenURL
 		// passed in, so the echoed body identifies the caller's request.
@@ -55,17 +51,9 @@ func TestSignlinkConcurrentStress(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	u, err := url.Parse(srv.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	port, err := strconv.Atoi(u.Port())
-	if err != nil {
-		t.Fatal(err)
-	}
-	prev := clientextras.PortOffset
-	clientextras.PortOffset = port - 8888
-	t.Cleanup(func() { clientextras.PortOffset = prev })
+	prev := dataServerURL
+	dataServerURL = srv.URL
+	t.Cleanup(func() { dataServerURL = prev })
 
 	// Polling goroutine. Mirrors Run's logic but bounded by stop and
 	// rooted at our temp dir.

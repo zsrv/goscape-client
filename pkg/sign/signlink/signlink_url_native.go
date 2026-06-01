@@ -2,16 +2,16 @@
 
 package signlink
 
-import (
-	"strconv"
-
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
-)
+// dataServerURL is the scheme://host[:port] that signlink.OpenURL fetches
+// against on the native standalone build. It mirrors Java's literal
+// http://127.0.0.1:8888 (deob/client.java:7624). The Java port offset
+// (portOffset+8888) is intentionally not ported — see cmd/client/main.go for
+// the rationale. This is a var rather than a const only so tests can redirect
+// it at an httptest server; production never reassigns it.
+var dataServerURL = "http://127.0.0.1:8888"
 
 // urlBase is the scheme://host[:port] that signlink.OpenURL fetches against.
-// Native standalone uses the loopback data server (Java's literal
-// http://127.0.0.1:<portOffset+8888>); see signlink_url_js.go for the browser
-// origin-derived variant.
+// See signlink_url_js.go for the browser origin-derived variant.
 func urlBase() string {
-	return "http://127.0.0.1:" + strconv.Itoa(clientextras.PortOffset+8888)
+	return dataServerURL
 }
