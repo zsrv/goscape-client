@@ -12,12 +12,19 @@ This is a Go port of the RuneScape 2 (release #225) Java client. The codebase is
 # Build
 go build ./...
 
-# Run (requires 3 args: node-id, lowmem|highmem, free|members; optional 4th host arg)
-# NOTE: Java's `port-offset` arg is intentionally not ported (see cmd/client/main.go).
-go run ./cmd/client 10 highmem members
+# Run (all flags optional; defaults shown). Java's `port-offset` arg is not
+# ported — -world-server / -ondemand-server take a full scheme://host:port each.
+go run ./cmd/client -node-id 10 -mem high -world-type members \
+    -world-server tcp://127.0.0.1:43594 -ondemand-server http://127.0.0.1:8888
+
+# Minimal (defaults are localhost):
+go run ./cmd/client
+
+# WebSocket world server (for a future browser build):
+go run ./cmd/client -world-server wss://play.example.com:443/ws
 
 # Run with developer mode (Examine menus show config-type ids)
-DEVELOPER_MODE=true go run ./cmd/client 10 highmem members
+DEVELOPER_MODE=true go run ./cmd/client -mem high -world-type members
 
 # Run all tests
 go test ./...
