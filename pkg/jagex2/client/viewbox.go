@@ -27,9 +27,10 @@ package client
 // select Java's applet (frame == null) branch:
 //   - GetHost (client.go) returns the configured host — Java standalone
 //     getHost(), not the applet document-base host.
-//   - GetCodeBase (client.go) returns http://<host>:8888 — Java standalone
-//     getCodeBase(), not the applet doc-base URL. (The Java port offset is
-//     intentionally not ported; see cmd/client/main.go.)
+//   - GetCodeBase (client.go) returns the configured cache-server base URL
+//     (clientextras.OndemandBaseURL; default http://127.0.0.1:8888) — Java
+//     standalone getCodeBase(), not the applet doc-base URL. (The Java port
+//     offset is intentionally not ported; see cmd/client/main.go.)
 //   - The "::clientdrop" debug gate (client.go) always reconnects — Java
 //     standalone, where `super.frame != null` is always true. It no longer
 //     consults c.Frame (deob/client.java:2838).

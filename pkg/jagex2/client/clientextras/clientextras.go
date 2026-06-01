@@ -38,3 +38,11 @@ var WorldPort = 43594
 // WSPath is an explicit path parsed from a ws[s]:// host argument.
 // "" means "/".
 var WSPath string
+
+// OndemandBaseURL is the scheme://host:port the native build fetches cache/data
+// resources against — read by both signlink.OpenURL (signlink_url_native.go)
+// and client.GetCodeBase (codebase_native.go). Set from the -ondemand-server
+// flag; the http://127.0.0.1:8888 default mirrors Java's literal data-server URL
+// (deob/client.java:7624). The js/wasm build ignores this and derives the origin
+// from window.location instead.
+var OndemandBaseURL = "http://127.0.0.1:8888"

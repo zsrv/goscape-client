@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
 )
 
 // TestSignlinkConcurrentStress exercises CacheLoad, CacheSave, and
@@ -42,8 +44,8 @@ func TestSignlinkConcurrentStress(t *testing.T) {
 	}
 
 	// HTTP server that echoes the request path. OpenURL fetches against
-	// dataServerURL, so we redirect that at our test server (its port is
-	// assigned dynamically by httptest).
+	// clientextras.OndemandBaseURL, so we redirect that at our test server (its
+	// port is assigned dynamically by httptest).
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Strip leading slash. The path is the URL fragment OpenURL
 		// passed in, so the echoed body identifies the caller's request.
@@ -51,9 +53,9 @@ func TestSignlinkConcurrentStress(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	prev := dataServerURL
-	dataServerURL = srv.URL
-	t.Cleanup(func() { dataServerURL = prev })
+	prev := clientextras.OndemandBaseURL
+	clientextras.OndemandBaseURL = srv.URL
+	t.Cleanup(func() { clientextras.OndemandBaseURL = prev })
 
 	// Polling goroutine. Mirrors Run's logic but bounded by stop and
 	// rooted at our temp dir.
