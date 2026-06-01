@@ -6470,9 +6470,10 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.present(func() { c.DrawTitleScreen() })
 	}
 	// Java: openSocket(portOffset + 43594) (deob/client.java:6786). The port
-	// offset is intentionally not ported (see cmd/client/main.go); the game
-	// always dials the base port 43594.
-	conn, err := c.OpenSocket(43594)
+	// offset is not ported; instead the full game-server port comes from the
+	// -world-server flag via clientextras.WorldPort (default 43594). See
+	// cmd/client/main.go.
+	conn, err := c.OpenSocket(clientextras.WorldPort)
 	if err != nil {
 		c.LoginMessage0 = ""
 		c.LoginMessage1 = "Error connecting to server."

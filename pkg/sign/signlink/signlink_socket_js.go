@@ -35,6 +35,6 @@ func ConfigureTransport() {
 	kind, host, port := resolveWSTarget(hostname, portStr, protocol)
 	clientextras.Transport = kind
 	clientextras.Host = host
-	clientextras.WSPort = port
+	clientextras.WorldPort = port
 	clientextras.WSPath = "/"
 }

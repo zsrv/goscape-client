@@ -10,19 +10,14 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
 )
 
-// buildWSURL assembles the WebSocket dial URL. overridePort is the explicit
-// port from the host argument (<= 0 -> use defaultPort); overridePath is the
-// explicit path ("" -> "/"). Pure (no globals) so it is unit-tested directly.
-func buildWSURL(kind clientextras.TransportKind, host string, defaultPort, overridePort int, overridePath string) string {
+// buildWSURL assembles the WebSocket dial URL from the authoritative world
+// port and path. path "" defaults to "/". Pure (no globals) so it is
+// unit-tested directly.
+func buildWSURL(kind clientextras.TransportKind, host string, port int, path string) string {
 	scheme := "ws"
 	if kind == clientextras.TransportWSS {
 		scheme = "wss"
 	}
-	port := defaultPort
-	if overridePort > 0 {
-		port = overridePort
-	}
-	path := overridePath
 	if path == "" {
 		path = "/"
 	}
@@ -37,7 +32,7 @@ func buildWSURL(kind clientextras.TransportKind, host string, defaultPort, overr
 // Java: no equivalent — the original applet used raw sockets only. This is a
 // Go-original standalone extension; see the design spec.
 func openWebSocket(kind clientextras.TransportKind, host string, port int, timeout time.Duration) (net.Conn, error) {
-	url := buildWSURL(kind, host, port, clientextras.WSPort, clientextras.WSPath)
+	url := buildWSURL(kind, host, port, clientextras.WSPath)
 
 	// CRITICAL: the dial-timeout context must NOT be the context passed to
 	// NetConn. NetConn ties the connection's lifetime to its context, so

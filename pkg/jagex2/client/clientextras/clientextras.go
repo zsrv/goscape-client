@@ -28,9 +28,12 @@ const (
 
 var Transport TransportKind = TransportTCP
 
-// WSPort is an explicit WebSocket port parsed from a ws[s]:// host argument.
-// 0 means "use the default game port the dial site supplies (43594)".
-var WSPort int
+// WorldPort is the authoritative game-server port for every transport (TCP,
+// ws, wss). On the native build it is parsed from the -world-server flag; the
+// js/wasm build derives it from the page origin in signlink.ConfigureTransport.
+// The 43594 default matches the Java client's base game port (the literal in
+// openSocket(portOffset + 43594), deob/client.java:6786).
+var WorldPort = 43594
 
 // WSPath is an explicit path parsed from a ws[s]:// host argument.
 // "" means "/".

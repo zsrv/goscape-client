@@ -68,7 +68,14 @@ func main() {
 		}
 		clientextras.Host = host
 		clientextras.Transport = tk
-		clientextras.WSPort = wsPort
+		// An explicit ws[s]://host:port overrides the authoritative game port;
+		// wsPort == 0 is parseHostArg's "no explicit port" sentinel, which
+		// leaves clientextras.WorldPort at its 43594 default. (A dedicated
+		// -world-server flag supersedes this positional-arg path in a later
+		// task; see docs/superpowers/specs/2026-06-01-cli-flags-design.md.)
+		if wsPort != 0 {
+			clientextras.WorldPort = wsPort
+		}
 		clientextras.WSPath = wsPath
 	}
 
