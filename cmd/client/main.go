@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -16,71 +17,70 @@ import (
 
 func main() {
 	fmt.Println("RS2 user client - release #" + strconv.Itoa(225))
-	if len(os.Args) < 4 || len(os.Args) > 5 {
-		fmt.Println("Usage: node-id, [lowmem/highmem], [free/members], [host|ws://host[:port][/path]|wss://host[:port][/path]]")
-		os.Exit(1)
-	}
-	var err error
-	client.NodeID, err = strconv.Atoi(os.Args[1])
-	if err != nil {
-		fmt.Printf("invalid node-id: %v\n", err)
-		os.Exit(1)
-	}
-	// Intentional deviation from the Java client: the `port-offset` argument
-	// (Java's arg0[1], parsed into the static `portOffset`; deob/client.java:10601)
-	// is not ported. In Java that offset was added to BOTH the data-server HTTP
-	// port (portOffset + 8888; client.java:7624) and the game socket port
-	// (portOffset + 43594; client.java:6786) so a developer could run several
-	// applet instances against different local server port ranges. This Go
-	// standalone build always uses the base ports (8888 / 43594) and instead
-	// points at a configurable host (the optional host arg below), so the offset
-	// is dropped entirely and the remaining args shift down by one.
-	switch os.Args[2] {
-	case "lowmem":
-		client.SetLowMem()
-	case "highmem":
+
+	// Startup configuration comes from flags. This is a Go-original standalone
+	// interface: the Java applet read positional args plus a getCodeBase() host.
+	// The Java `port-offset` arg (arg0[1] -> portOffset, deob/client.java:10601),
+	// which it added to BOTH the data-server port (portOffset + 8888;
+	// client.java:7624) and the game socket port (portOffset + 43594;
+	// client.java:6786), is not ported: instead of one offset over fixed base
+	// ports, -world-server and -ondemand-server take the full scheme://host:port
+	// for each endpoint.
+	nodeID := flag.Int("node-id", 10, "server node id")
+	mem := flag.String("mem", "high", "memory mode: high|low")
+	worldType := flag.String("world-type", "members", "world type: free|members")
+	worldServer := flag.String("world-server", "tcp://127.0.0.1:43594",
+		"game server as [tcp|ws|wss]://host:port")
+	ondemandServer := flag.String("ondemand-server", "http://127.0.0.1:8888",
+		"on-demand/cache server as [http|https]://host:port")
+	flag.Parse()
+
+	client.NodeID = *nodeID
+
+	switch *mem {
+	case "high":
 		client.SetHighMem()
+	case "low":
+		client.SetLowMem()
 	default:
-		fmt.Println("Usage: node-id, [lowmem/highmem], [free/members], [host|ws://host[:port][/path]|wss://host[:port][/path]]")
+		fmt.Printf("invalid -mem %q (want high|low)\n", *mem)
 		os.Exit(1)
 	}
-	switch os.Args[3] {
+
+	switch *worldType {
 	case "free":
 		client.MembersWorld = false
 	case "members":
 		client.MembersWorld = true
 	default:
-		fmt.Println("Usage: node-id, [lowmem/highmem], [free/members], [host|ws://host[:port][/path]|wss://host[:port][/path]]")
+		fmt.Printf("invalid -world-type %q (want free|members)\n", *worldType)
 		os.Exit(1)
 	}
-	// Java main accepts exactly 4 args (deob/client.java:10599); the applet host
-	// came from getCodeBase().getHost(). This optional 4th `host` arg is a
-	// Go-original standalone extension (no browser codebase exists here) that
-	// lets the operator point the binary at a non-localhost server. A ws:// or
-	// wss:// scheme additionally selects the WebSocket transport (for a future
-	// js/wasm build); a bare host keeps the TCP default. The parsed bare
-	// hostname is stored in clientextras.Host so GetHost/GetCodeBase stay valid.
-	if len(os.Args) == 5 {
-		tk, host, wsPort, wsPath, err := parseHostArg(os.Args[4])
-		if err != nil {
-			fmt.Printf("invalid host: %v\n", err)
-			os.Exit(1)
-		}
-		clientextras.Host = host
-		clientextras.Transport = tk
-		// An explicit ws[s]://host:port overrides the authoritative game port;
-		// wsPort == 0 is parseHostArg's "no explicit port" sentinel, which
-		// leaves clientextras.WorldPort at its 43594 default. (A dedicated
-		// -world-server flag supersedes this positional-arg path in a later
-		// task; see docs/superpowers/specs/2026-06-01-cli-flags-design.md.)
-		if wsPort != 0 {
-			clientextras.WorldPort = wsPort
-		}
-		clientextras.WSPath = wsPath
+
+	// -world-server selects the game-server transport, host, port, and (for
+	// ws/wss) path. The parsed bare hostname is stored in clientextras.Host so
+	// GetHost/GetCodeBase stay valid; WorldPort/WSPath/Transport drive OpenSocket.
+	kind, host, port, path, err := parseWorldServer(*worldServer)
+	if err != nil {
+		fmt.Printf("invalid -world-server: %v\n", err)
+		os.Exit(1)
 	}
+	clientextras.Host = host
+	clientextras.Transport = kind
+	clientextras.WorldPort = port
+	clientextras.WSPath = path
+
+	// -ondemand-server selects the cache/asset server base URL that
+	// signlink.OpenURL and client.GetCodeBase fetch against (native build).
+	base, err := parseOndemandServer(*ondemandServer)
+	if err != nil {
+		fmt.Printf("invalid -ondemand-server: %v\n", err)
+		os.Exit(1)
+	}
+	clientextras.OndemandBaseURL = base
 
 	// Browser builds derive the WebSocket target from window.location here;
-	// no-op on native, where the transport comes from the host arg above.
+	// no-op on native, where the transport comes from the flags above.
 	signlink.ConfigureTransport()
 
 	// Register SIGUSR1 profile-capture handler. Non-blocking; returns
