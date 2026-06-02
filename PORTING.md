@@ -78,6 +78,35 @@ Severity legend:
 - **⚪ cosmetic** — applet-only code, dead code, error-reporting niceties, or
   pure verification-style TODOs left over from the translation pass.
 
+> **Architecture note (updated 2026-06-02) — two refactors postdate most of the
+> completed (struck-through) items in §4 and §5.** Those items faithfully record
+> *how the work was done at the time*; they are kept as an audit trail, but the
+> mechanisms they describe have since been replaced. Current reality:
+>
+> 1. **Windowing/rendering — Gio removed (commit `56d8b31`, 2026-05-25).** The
+>    client no longer uses Gio. Every reference below to `gioui.org/app`,
+>    `app.Window`, `app.Main()`, `FrameEvent`, the `Ops` op-list, `c.Ops`,
+>    `OpsMu`/`DrawMu`, `event.Op`, or `e.Source.Event(...)` is **historical**.
+>    Rendering now goes through the `platform` seam (see `CLAUDE.md`): native =
+>    GLFW + go-gl, browser = syscall/js + WebGL. `pixmap.PixMap.Draw(x, y)` blits
+>    via the active `platform` backend's texture upload, on the loop goroutine;
+>    out-of-band repaints go through `Client.present(draw func())`
+>    (`gameshell.go`). `OpsMu` is gone — the only surviving lock from that area is
+>    `Client.flameMu` (`client.go:154`), which guards the `ImageTitle0/1`
+>    title-flame buffers between the `RunFlames` writer goroutine and the
+>    render-loop readers. So §4.4 and Phase 2's input/pixmap descriptions reflect
+>    a since-deleted backend; the *behavior* they ported (event draining,
+>    per-frame blit, flame-buffer locking) survives, only the Gio plumbing changed.
+> 2. **Client invocation — positional args → named flags (merged to `rev-225` at
+>    `339d3ab`, 2026-06-01).** Any "optional Nth positional arg" wording below —
+>    notably the `host` arg in Phase 1 step 8 — is superseded by five named flags:
+>    `-node-id`, `-mem`, `-world-type`, `-world-server [tcp|ws|wss]://host:port`,
+>    and `-ondemand-server [http|https]://host:port`. `clientextras.Host` still
+>    exists, now alongside `clientextras.WorldPort`, `OndemandBaseURL`, `WSPath`,
+>    and `Transport`. `parseHostArg`/`hostarg.go` were deleted in favour of
+>    `parseWorldServer`/`parseOndemandServer`. Design:
+>    `docs/superpowers/specs/2026-06-01-cli-flags-design.md`.
+
 ### 4.1 Whole files / packages missing
 
 | Java source | Expected Go location | Severity | Notes |
@@ -142,6 +171,11 @@ All blockers in this section depend on §5.1 (ClientStream port) and §5.2
 | ~~8731~~ | ~~`GetPlayerExtended2`~~ | ~~`// TODO: try/catch`.~~ **Ported 2026-05-21** in `a237414`. Java's `catch (Exception) { signlink.reporterror("cde2"); }` applet-diagnostic deleted; Go panics propagate. Also bonus-deleted the parallel marker in `Read`'s opcode-4 case (`signlink.reporterror("cde1")`). | ~~⚪~~ |
 
 ### 4.4 GameShell / input / pixmap gaps
+
+> ⚠️ Gio/`OpsMu`/`app.Window`/`FrameEvent` mentions in this section are
+> **historical** — see the Architecture note at the top of §4 (Gio was removed
+> 2026-05-25; rendering is now the `platform` seam, the surviving lock is
+> `Client.flameMu`).
 
 | File:Line | Function | Gap | Severity |
 |---|---|---|---|
@@ -300,6 +334,12 @@ Phases run in dependency order. Each phase ends with `go build ./...` and
    `clientextras.go:13`. **Phase 1 (networking transport) complete.**
 
 ### Phase 2 — Input wiring (unblocks playable UI)
+
+> ⚠️ The Gio specifics below (`event.Op`, `e.Source.Event`, `pointer.Filter`,
+> `key.Filter`, `OpsMu`) are **historical** — Gio was removed 2026-05-25. The
+> ported *behavior* (per-frame event draining into `inputtracking`, `PollKey`
+> ring buffer) is current; the backend is now the `platform` seam. See the
+> Architecture note at the top of §4.
 
 1. ~~Port `gameshell.go:86` event listeners — Gio key/mouse events → the existing
    `inputtracking` package.~~ **Done 2026-05-21.** Gio's modern (post-2024-02)
