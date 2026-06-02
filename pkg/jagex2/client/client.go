@@ -525,6 +525,8 @@ type Client struct {
 	FlameBuffer2        []int
 	ImageRunes          []*pix8.Pix8
 	SceneMapLocData     [][]byte
+	SceneMapLandFile    []int      // Java: sceneMapLandFile[]; allocated/filled by WS2 opcode 165 (REBUILD_NORMAL, Client.java:7744) — nil until then
+	SceneMapLocFile     []int      // Java: sceneMapLocFile[];  allocated/filled by WS2 opcode 165 (Client.java:7745) — nil until then
 	LevelTileFlags      [][][]int8 // Java: byte[][][] (signed) — int8 so int() sign-extends
 	LevelHeightMap      [][][]int
 }
@@ -5914,6 +5916,34 @@ func (c *Client) Load() {
 		c.UpdateOnDemand()
 	}
 
+	// Boot map prefetch block.
+	// Java: Client.load (Client.java:1662-1690), gated if (fileStreams[0] != null).
+	// Client-TS: load (Client.ts:677-704).
+	if c.OnDemand.HasCache() {
+		c.DrawProgress("Requesting maps", 75)
+		// tutorial-island + Lumbridge spawn regions
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 47, 0))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 47, 1))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 48, 0))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 48, 1))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 49, 0))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 49, 1))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(47, 47, 0))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(47, 47, 1))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(47, 48, 0))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(47, 48, 1))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(148, 48, 0))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(148, 48, 1))
+		mapPrefetch := c.OnDemand.Remaining()
+		for c.OnDemand.Remaining() > 0 {
+			progress := mapPrefetch - c.OnDemand.Remaining()
+			if progress > 0 {
+				c.DrawProgress("Loading maps - "+strconv.Itoa(progress*100/mapPrefetch)+"%", 75)
+			}
+			c.UpdateOnDemand()
+		}
+	}
+
 	// Background model-priority prefetch.
 	// Java: Client.load (Client.java:1698–1736).
 	// Client-TS: load (Client.ts:706–745).
@@ -5944,7 +5974,8 @@ func (c *Client) Load() {
 			c.OnDemand.PrefetchPriority(0, i, priority)
 		}
 	}
-	// WS1 Inc 4: PrefetchMaps + map request block go here.
+	// Java: Client.load (Client.java:1728).
+	c.OnDemand.PrefetchMaps(MembersWorld)
 	if !LowMemory {
 		midiCount := c.OnDemand.GetFileCount(2)
 		for i := 1; i < midiCount; i++ {
@@ -6951,6 +6982,8 @@ func (c *Client) Unload() {
 	c.SceneMapIndex = nil
 	c.SceneMapLandData = nil
 	c.SceneMapLocData = nil
+	c.SceneMapLandFile = nil
+	c.SceneMapLocFile = nil
 	c.LevelHeightMap = nil
 	c.LevelTileFlags = nil
 	c.Scene = nil
@@ -8479,8 +8512,28 @@ func (c *Client) UpdateOnDemand() {
 			animframe.Unpack(req.Data)
 		case req.Archive == 2 && c.MidiSong == req.File && req.Data != nil:
 			c.SaveMidi(req.Data, len(req.Data), c.MidiFading)
+		case req.Archive == 3 && c.SceneState == 1:
+			// Java: Client.updateOnDemand (Client.java:2448-2467).
+			for i := range len(c.SceneMapLandData) {
+				if c.SceneMapLandFile[i] == req.File {
+					c.SceneMapLandData[i] = req.Data
+					if req.Data == nil {
+						c.SceneMapLandFile[i] = -1
+					}
+					break
+				}
+				if c.SceneMapLocFile[i] == req.File {
+					c.SceneMapLocData[i] = req.Data
+					if req.Data == nil {
+						c.SceneMapLocFile[i] = -1
+					}
+					break
+				}
+			}
+		case req.Archive == 93 && c.OnDemand.HasMapLocFile(req.File):
+			// Java: Client.updateOnDemand (Client.java:2469).
+			world.PrefetchLocations(io.NewPacket(req.Data), c.OnDemand)
 		}
-		// Archives 3 and 93 (map tiles) are handled in WS1 Inc 4.
 	}
 }
 

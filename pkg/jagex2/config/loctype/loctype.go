@@ -6,6 +6,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io/ondemand"
 )
 
 var (
@@ -368,5 +369,63 @@ func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *mode
 			var12.CalculateBoundsY()
 		}
 		return var12
+	}
+}
+
+// CheckModel reports whether the model for the given shape is loaded.
+// Java: LocType.checkModel(int shape) (ec.a(II)Z), lines 336-354.
+// Sole caller is World.CheckLocations (WS2 scene-readiness path).
+func (t *LocType) CheckModel(shape int) bool {
+	index := -1
+	for i := range len(t.Shapes) {
+		if t.Shapes[i] == shape {
+			index = i
+			break
+		}
+	}
+	if index == -1 {
+		return true
+	}
+	if t.Models == nil {
+		return true
+	}
+	m := t.Models[index]
+	return m == -1 || model.Request(m&0xFFFF)
+}
+
+// CheckModelAll reports whether all models for this loc are loaded.
+// Java: LocType.checkModelAll() (ec.b(I)Z), lines 357-371.
+//
+// NOTE: Java uses ready &= Model.request(...) — a bitwise AND that is
+// NON-short-circuit, ensuring request() is called for every model even
+// after ready becomes false (request has the side effect of queuing a
+// network fetch on a miss). Ported as: always call model.Request, then
+// clear ready if it returns false. Do NOT use ready = ready && model.Request
+// (short-circuits, silently drops side effects on later models).
+func (t *LocType) CheckModelAll() bool {
+	ready := true
+	if t.Models == nil {
+		return true
+	}
+	for _, m := range t.Models {
+		if m != -1 {
+			if !model.Request(m & 0xFFFF) {
+				ready = false
+			}
+		}
+	}
+	return ready
+}
+
+// Prefetch queues all models for this loc as low-priority on-demand prefetches.
+// Java: LocType.prefetch(OnDemand od) (ec.a(ILvb;)V), lines 374-384.
+func (t *LocType) Prefetch(od *ondemand.OnDemand) {
+	if t.Models == nil {
+		return
+	}
+	for _, m := range t.Models {
+		if m != -1 {
+			od.Prefetch(0, m&0xFFFF)
+		}
 	}
 }

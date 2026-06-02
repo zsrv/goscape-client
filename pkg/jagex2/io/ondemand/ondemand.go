@@ -286,6 +286,12 @@ func (od *OnDemand) Unpack(versionlist Archive) {
 
 // ---- getters ---------------------------------------------------------------
 
+// HasCache reports whether a persistent cache is available.
+// Java: fileStreams[0] != null cache-presence gate (Client.java:~1662).
+func (od *OnDemand) HasCache() bool {
+	return od.cache != nil
+}
+
 // GetFileCount returns the number of files in archive.
 // Java: OnDemand.getFileCount(int) (vb.a(II)I), ~line 223.
 func (od *OnDemand) GetFileCount(archive int) int {

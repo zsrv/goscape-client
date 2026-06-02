@@ -13,6 +13,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/world3d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix3d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io/ondemand"
 )
 
 var (
@@ -1110,6 +1111,88 @@ func AddLoc(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [
 		case 8:
 			modelSrc := buildModel(4, 0)
 			scene.SetWallDecoration(y, z, 0, var18, angle, 768, 0, x, modelSrc, var19, arg7)
+		}
+	}
+}
+
+// CheckLocations checks whether all models needed to render the locs encoded
+// in src are loaded, requesting any missing models as a side effect.
+// Returns true when every visible loc model is ready.
+// Java: World.checkLocations(int xOffset, int zOffset, byte[] src) (c.a(II[B)Z), lines 197-246.
+// Called by the WS2 scene-readiness check (Java: Client.java:3277).
+func CheckLocations(xOffset, zOffset int, src []byte) bool {
+	ready := true
+	buf := io.NewPacket(src)
+	locId := -1
+
+outer:
+	for {
+		deltaId := buf.GSmartS()
+		if deltaId == 0 {
+			return ready
+		}
+		locId += deltaId
+
+		locPos := 0
+		// skip: set once a visible loc for this position has been model-checked; the inner loop then drains the remaining position deltas.
+		skip := false
+		for {
+			for !skip {
+				deltaPos := buf.GSmartS()
+				if deltaPos == 0 {
+					continue outer // Java: continue label54
+				}
+				locPos += deltaPos - 1
+
+				z := locPos & 0x3F
+				x := locPos >> 6 & 0x3F
+
+				shape := buf.G1() >> 2
+				stx := xOffset + x
+				stz := zOffset + z
+
+				if stx > 0 && stz > 0 && stx < 103 && stz < 103 {
+					loc := loctype.Get(locId)
+					if shape != 22 || !LowMemory || loc.Active || loc.ForceDecor {
+						// Java: ready &= loc.checkModelAll() — non-short-circuit bitwise AND.
+						// CheckModelAll always invokes model.Request for every model (side effect).
+						if !loc.CheckModelAll() {
+							ready = false
+						}
+						skip = true
+					}
+				}
+			}
+
+			deltaPos := buf.GSmartS()
+			if deltaPos == 0 {
+				break
+			}
+			buf.G1()
+		}
+	}
+}
+
+// PrefetchLocations queues model prefetches for all locs encoded in buf.
+// Java: World.prefetchLocations(Packet buf, OnDemand od) (c.a(ILmb;Lvb;)V), lines 248-270.
+func PrefetchLocations(buf *io.Packet, od *ondemand.OnDemand) {
+	locId := -1
+	for {
+		deltaId := buf.GSmartS()
+		if deltaId == 0 {
+			return
+		}
+		locId += deltaId
+
+		loc := loctype.Get(locId)
+		loc.Prefetch(od)
+
+		for {
+			deltaPos := buf.GSmartS()
+			if deltaPos == 0 {
+				break
+			}
+			buf.G1()
 		}
 	}
 }
