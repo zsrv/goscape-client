@@ -2,41 +2,35 @@ package animbase
 
 import "github.com/zsrv/goscape-client/pkg/jagex2/io"
 
-var Instances []*AnimBase
-
 type AnimBase struct {
 	Length int
 	Types  []int
 	Labels [][]int
 }
 
-func NewAnimBase() *AnimBase {
-	return &AnimBase{}
-}
+// NewAnimBase ports Java's AnimBase(Packet) (rev-244). In 244 the animation
+// base is embedded per-anim blob and decoded straight from a Packet, so there
+// is no longer a shared base archive (the 225 base_head/base_type/base_label
+// streams and the package-level Instances slice are gone).
+// Java: AnimBase.AnimBase(Packet).
+func NewAnimBase(buf *io.Packet) *AnimBase {
+	size := buf.G1()
 
-func Unpack(arg1 *io.Jagfile) {
-	var2 := io.NewPacket(arg1.Read("base_head.dat", nil))
-	var3 := io.NewPacket(arg1.Read("base_type.dat", nil))
-	var4 := io.NewPacket(arg1.Read("base_label.dat", nil))
-	var5 := var2.G2()
-	var6 := var2.G2()
-	Instances = make([]*AnimBase, var6+1)
-	for range var5 {
-		var8 := var2.G2()
-		var9 := var2.G1()
-		var10 := make([]int, var9)
-		var11 := make([][]int, var9)
-		for i := range var9 {
-			var10[i] = var3.G1()
-			var13 := var4.G1()
-			var11[i] = make([]int, var13)
-			for j := range var13 {
-				var11[i][j] = var4.G1()
-			}
-		}
-		Instances[var8] = NewAnimBase()
-		Instances[var8].Length = var9
-		Instances[var8].Types = var10
-		Instances[var8].Labels = var11
+	types := make([]int, size)
+	labels := make([][]int, size)
+
+	for i := range size {
+		types[i] = buf.G1()
 	}
+
+	for i := range size {
+		count := buf.G1()
+		labels[i] = make([]int, count)
+
+		for j := range count {
+			labels[i][j] = buf.G1()
+		}
+	}
+
+	return &AnimBase{Length: size, Types: types, Labels: labels}
 }

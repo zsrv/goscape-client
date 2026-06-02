@@ -6,6 +6,12 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/vertexnormal"
 )
 
+// stubProvider is a no-op io.OnDemandProvider for tests: it records nothing and
+// never faults in data, so TryGet/Request behave deterministically.
+type stubProvider struct{}
+
+func (stubProvider) RequestModel(id int) {}
+
 // TestSliceAlias_EqualValueDifferentBacking is the foundational guarantee
 // for the H4 fix in abd652c. Java compares face-priority buckets via
 // reference identity (`var14 != TmpPriorityFaces[11]`), which is a pointer
@@ -205,5 +211,82 @@ func TestCalculateNormalsSingleFace(t *testing.T) {
 		if o != n {
 			t.Errorf("VertexNormalOriginal[%d] = %+v, want %+v", i, o, n)
 		}
+	}
+}
+
+// TestUnpackBlobRoundTrip synthesizes a minimal valid rev-244 per-id model blob
+// (2 vertices, 1 face, 0 textured faces, all optional flags off), unpacks its
+// metadata, decodes it via NewModel1, and asserts the decoded geometry matches
+// what was encoded. This exercises the 244 blob format end-to-end including the
+// 18-byte trailer and the front-to-back section offset walk.
+//
+// GSmart encodes a value v in [-64,63] as the single byte v+64 (decode is
+// G1()-64). All deltas below stay in that range so each consumes one byte.
+func TestUnpackBlobRoundTrip(t *testing.T) {
+	// Encoded geometry:
+	//   vertex 0: dx=10  dy=20  dz=5   -> X=10, Y=20, Z=5
+	//   vertex 1: dx=3   dy=4   dz=6   -> X=13, Y=24, Z=11
+	//   face 0: orientation 1, a=0 b=1 c=0, colour 0x1234
+	gs := func(v int) byte { return byte(v + 64) } // GSmart single-byte encoding
+
+	data := []byte{
+		// vertexFlags (offset 0, len = vertexCount = 2)
+		0x07, 0x07,
+		// faceOrientations (len = faceCount = 1)
+		0x01,
+		// faceVertices (len = dataLengthFaceOrientations = 3): a=0, b-a=1, c-b=-1
+		gs(0), gs(1), gs(-1),
+		// faceColours (len = faceCount*2 = 2): 0x1234
+		0x12, 0x34,
+		// (faceTextureAxis: len 0)
+		// vertexX (len dataLengthX = 2)
+		gs(10), gs(3),
+		// vertexY (len dataLengthY = 2)
+		gs(20), gs(4),
+		// vertexZ (len dataLengthZ = 2)
+		gs(5), gs(6),
+		// ---- 18-byte trailer ----
+		0x00, 0x02, // vertexCount = 2 (g2)
+		0x00, 0x01, // faceCount = 1 (g2)
+		0x00,       // texturedFaceCount = 0 (g1)
+		0x00,       // hasInfo = 0 (g1)
+		0x00,       // priority = 0 (g1)
+		0x00,       // hasAlpha = 0 (g1)
+		0x00,       // hasFaceLabels = 0 (g1)
+		0x00,       // hasVertexLabels = 0 (g1)
+		0x00, 0x02, // dataLengthX = 2 (g2)
+		0x00, 0x02, // dataLengthY = 2 (g2)
+		0x00, 0x02, // dataLengthZ = 2 (g2)
+		0x00, 0x03, // dataLengthFaceOrientations = 3 (g2)
+	}
+
+	Reset()
+	Init(1, stubProvider{})
+	Unpack(0, data)
+
+	m := NewModel1(0)
+	if m.VertexCount != 2 || m.FaceCount != 1 {
+		t.Fatalf("counts = %d/%d, want 2/1", m.VertexCount, m.FaceCount)
+	}
+	if m.TexturedFaceCount != 0 {
+		t.Fatalf("TexturedFaceCount = %d, want 0", m.TexturedFaceCount)
+	}
+
+	wantX := []int{10, 13}
+	wantY := []int{20, 24}
+	wantZ := []int{5, 11}
+	for i := range 2 {
+		if m.VertexX[i] != wantX[i] || m.VertexY[i] != wantY[i] || m.VertexZ[i] != wantZ[i] {
+			t.Errorf("vertex %d = (%d,%d,%d), want (%d,%d,%d)",
+				i, m.VertexX[i], m.VertexY[i], m.VertexZ[i], wantX[i], wantY[i], wantZ[i])
+		}
+	}
+
+	if m.FaceVertexA[0] != 0 || m.FaceVertexB[0] != 1 || m.FaceVertexC[0] != 0 {
+		t.Errorf("face verts = (%d,%d,%d), want (0,1,0)",
+			m.FaceVertexA[0], m.FaceVertexB[0], m.FaceVertexC[0])
+	}
+	if m.FaceColour[0] != 0x1234 {
+		t.Errorf("FaceColour[0] = %#x, want 0x1234", m.FaceColour[0])
 	}
 }

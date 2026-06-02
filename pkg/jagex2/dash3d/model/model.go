@@ -14,19 +14,6 @@ import (
 )
 
 var (
-	Face1                  *io.Packet
-	Face2                  *io.Packet
-	Face3                  *io.Packet
-	Face4                  *io.Packet
-	Face5                  *io.Packet
-	Point1                 *io.Packet
-	Point2                 *io.Packet
-	Point3                 *io.Packet
-	Point4                 *io.Packet
-	Point5                 *io.Packet
-	Vertex1                *io.Packet
-	Vertex2                *io.Packet
-	Axis                   *io.Packet
 	FaceClippedX           []bool  = make([]bool, 4096)
 	FaceNearClipped        []bool  = make([]bool, 4096)
 	VertexScreenX          []int   = make([]int, 4096)
@@ -56,9 +43,13 @@ var (
 	MouseX                 int
 	MouseZ                 int
 	PickedCount            int
-	Head                   *io.Packet
 	CheckHover             bool
 	Metadata               []*metadata.Metadata
+	// Loaded counts every Model(int) decode. Java: Model.loaded.
+	Loaded int
+	// Provider is the on-demand hook used by TryGet/Request to fault in a model
+	// blob that has not arrived yet. Java: Model.provider (OnDemandProvider).
+	Provider io.OnDemandProvider
 )
 
 // sliceAlias reports whether a and b refer to the same backing array,
@@ -95,19 +86,6 @@ func Reset() {
 	for i := range TmpPriorityFaces {
 		TmpPriorityFaces[i] = make([]int, 2000)
 	}
-	Face1 = nil
-	Face2 = nil
-	Face3 = nil
-	Face4 = nil
-	Face5 = nil
-	Point1 = nil
-	Point2 = nil
-	Point3 = nil
-	Point4 = nil
-	Point5 = nil
-	Vertex1 = nil
-	Vertex2 = nil
-	Axis = nil
 	FaceClippedX = make([]bool, 4096)
 	FaceNearClipped = make([]bool, 4096)
 	VertexScreenX = make([]int, 4096)
@@ -135,9 +113,10 @@ func Reset() {
 	MouseX = 0
 	MouseZ = 0
 	PickedCount = 0
-	Head = nil
 	CheckHover = false
 	Metadata = nil
+	Loaded = 0
+	Provider = nil
 }
 
 type Model struct {
@@ -197,20 +176,6 @@ func (m *Model) GetModel() *Model {
 
 func Unload() {
 	Metadata = nil
-	Head = nil
-	Face1 = nil
-	Face2 = nil
-	Face3 = nil
-	Face4 = nil
-	Face5 = nil
-	Point1 = nil
-	Point2 = nil
-	Point3 = nil
-	Point4 = nil
-	Point5 = nil
-	Vertex1 = nil
-	Vertex2 = nil
-	Axis = nil
 	FaceClippedX = nil
 	FaceNearClipped = nil
 	VertexScreenX = nil
@@ -232,127 +197,151 @@ func Unload() {
 	Reciprocal16 = nil
 }
 
-func Unpack(arg1 *io.Jagfile) {
-	// Java: unpack() wraps its whole body in
-	//   try { ... } catch (Exception var21) {
-	//     System.out.println("Error loading model index"); var21.printStackTrace(); }
-	// (Model.java:296-403) — a corrupt/missing model archive is logged and
-	// swallowed rather than crashing the caller. The System.out.println is a
-	// faithful port (kept as fmt per the logging convention); printing the
-	// recovered value stands in for printStackTrace().
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Error loading model index")
-			fmt.Println(r)
-		}
-	}()
-	Head = io.NewPacket(arg1.Read("ob_head.dat", nil))
-	Face1 = io.NewPacket(arg1.Read("ob_face1.dat", nil))
-	Face2 = io.NewPacket(arg1.Read("ob_face2.dat", nil))
-	Face3 = io.NewPacket(arg1.Read("ob_face3.dat", nil))
-	Face4 = io.NewPacket(arg1.Read("ob_face4.dat", nil))
-	Face5 = io.NewPacket(arg1.Read("ob_face5.dat", nil))
-	Point1 = io.NewPacket(arg1.Read("ob_point1.dat", nil))
-	Point2 = io.NewPacket(arg1.Read("ob_point2.dat", nil))
-	Point3 = io.NewPacket(arg1.Read("ob_point3.dat", nil))
-	Point4 = io.NewPacket(arg1.Read("ob_point4.dat", nil))
-	Point5 = io.NewPacket(arg1.Read("ob_point5.dat", nil))
-	Vertex1 = io.NewPacket(arg1.Read("ob_vertex1.dat", nil))
-	Vertex2 = io.NewPacket(arg1.Read("ob_vertex2.dat", nil))
-	Axis = io.NewPacket(arg1.Read("ob_axis.dat", nil))
-	Head.Pos = 0
-	Point1.Pos = 0
-	Point2.Pos = 0
-	Point3.Pos = 0
-	Point4.Pos = 0
-	Vertex1.Pos = 0
-	Vertex2.Pos = 0
-	var2 := Head.G2()
-	Metadata = make([]*metadata.Metadata, var2+100)
-	var3 := 0
-	var4 := 0
-	var5 := 0
-	var6 := 0
-	var7 := 0
-	var8 := 0
-	var9 := 0
-	for range var2 {
-		var11 := Head.G2()
-		Metadata[var11] = metadata.NewMetadata()
-		var12 := Metadata[var11]
-		var12.VertexCount = Head.G2()
-		var12.FaceCount = Head.G2()
-		var12.TexturedFaceCount = Head.G1()
-		var12.VertexFlagsOffset = Point1.Pos
-		var12.VertexXOffset = Point2.Pos
-		var12.VertexYOffset = Point3.Pos
-		var12.VertexZOffset = Point4.Pos
-		var12.FaceVerticesOffset = Vertex1.Pos
-		var12.FaceOrientationsOffset = Vertex2.Pos
-		var13 := Head.G1()
-		var14 := Head.G1()
-		var15 := Head.G1()
-		var16 := Head.G1()
-		var17 := Head.G1()
-		var19 := 0
-		for range var12.VertexCount {
-			var19 = Point1.G1()
-			if var19&0x1 != 0 {
-				Point2.GSmart()
-			}
-			if var19&0x2 != 0 {
-				Point3.GSmart()
-			}
-			if var19&0x4 != 0 {
-				Point4.GSmart()
-			}
-		}
-		for range var12.FaceCount {
-			var20 := Vertex2.G1()
-			if var20 == 1 {
-				Vertex1.GSmart()
-				Vertex1.GSmart()
-			}
-			Vertex1.GSmart()
-		}
-		var12.FaceColoursOffset = var5
-		var5 += var12.FaceCount * 2
-		if var13 == 1 {
-			var12.FaceInfosOffset = var6
-			var6 += var12.FaceCount
-		} else {
-			var12.FaceInfosOffset = -1
-		}
-		if var14 == 0xFF {
-			var12.FacePrioritiesOffset = var7
-			var7 += var12.FaceCount
-		} else {
-			var12.FacePrioritiesOffset = int(-var14 - 1)
-		}
-		if var15 == 1 {
-			var12.FaceAlphasOffset = var8
-			var8 += var12.FaceCount
-		} else {
-			var12.FaceAlphasOffset = -1
-		}
-		if var16 == 1 {
-			var12.FaceLabelsOffset = var9
-			var9 += var12.FaceCount
-		} else {
-			var12.FaceLabelsOffset = -1
-		}
-		if var17 == 1 {
-			var12.VertexLabelsOffset = var4
-			var4 += var12.VertexCount
-		} else {
-			var12.VertexLabelsOffset = -1
-		}
-		var12.FaceTextureAxisOffset = var3
-		var3 += var12.TexturedFaceCount
+// Init allocates the per-id metadata table and wires the on-demand provider.
+// Java: Model.init(int, OnDemandProvider).
+func Init(count int, provider io.OnDemandProvider) {
+	Metadata = make([]*metadata.Metadata, count)
+	Provider = provider
+}
+
+// Unpack decodes a single per-id model blob's metadata (rev-244). The 18-byte
+// trailer at the tail of data holds the section counts and lengths; the section
+// offsets are walked from the front. The raw data is retained on the Metadata
+// so NewModel1 can re-read the vertex/face sections lazily.
+// Java: Model.unpack(int, byte[]).
+func Unpack(id int, data []byte) {
+	if data == nil {
+		info := metadata.NewMetadata()
+		Metadata[id] = info
+		info.VertexCount = 0
+		info.FaceCount = 0
+		info.TexturedFaceCount = 0
+		return
 	}
+
+	buf := io.NewPacket(data)
+	buf.Pos = len(data) - 18
+
+	info := metadata.NewMetadata()
+	Metadata[id] = info
+	info.Data = data
+	info.VertexCount = buf.G2()
+	info.FaceCount = buf.G2()
+	info.TexturedFaceCount = buf.G1()
+
+	hasInfo := buf.G1()
+	priority := buf.G1()
+	hasAlpha := buf.G1()
+	hasFaceLabels := buf.G1()
+	hasVertexLabels := buf.G1()
+	dataLengthX := buf.G2()
+	dataLengthY := buf.G2()
+	dataLengthZ := buf.G2()
+	dataLengthFaceOrientations := buf.G2()
+
+	pos := 0
+	info.VertexFlagsOffset = pos
+	pos += info.VertexCount
+
+	info.FaceOrientationsOffset = pos
+	pos += info.FaceCount
+
+	info.FacePrioritiesOffset = pos
+	if priority == 255 {
+		pos += info.FaceCount
+	} else {
+		info.FacePrioritiesOffset = -priority - 1
+	}
+
+	info.FaceLabelsOffset = pos
+	if hasFaceLabels == 1 {
+		pos += info.FaceCount
+	} else {
+		info.FaceLabelsOffset = -1
+	}
+
+	info.FaceInfosOffset = pos
+	if hasInfo == 1 {
+		pos += info.FaceCount
+	} else {
+		info.FaceInfosOffset = -1
+	}
+
+	info.VertexLabelsOffset = pos
+	if hasVertexLabels == 1 {
+		pos += info.VertexCount
+	} else {
+		info.VertexLabelsOffset = -1
+	}
+
+	info.FaceAlphasOffset = pos
+	if hasAlpha == 1 {
+		pos += info.FaceCount
+	} else {
+		info.FaceAlphasOffset = -1
+	}
+
+	info.FaceVerticesOffset = pos
+	pos += dataLengthFaceOrientations
+
+	info.FaceColoursOffset = pos
+	pos += info.FaceCount * 2
+
+	info.FaceTextureAxisOffset = pos
+	pos += info.TexturedFaceCount * 6
+
+	info.VertexXOffset = pos
+	pos += dataLengthX
+
+	info.VertexYOffset = pos
+	pos += dataLengthY
+
+	info.VertexZOffset = pos
+	// Java: Model.unpack ends with `pos += dataLengthZ` even though pos is never
+	// read again; kept verbatim for bug-for-bug fidelity.
+	pos += dataLengthZ //nolint:ineffassign,staticcheck // faithful port of Java Model.unpack
+}
+
+// UnloadOne drops one model's metadata. Java: Model.unload(int).
+func UnloadOne(id int) {
+	Metadata[id] = nil
+}
+
+// TryGet returns the decoded model for id, or nil while it is still being
+// faulted in via the provider. Java: Model.tryGet(int).
+func TryGet(id int) *Model {
+	if Metadata == nil {
+		return nil
+	}
+
+	info := Metadata[id]
+	if info == nil {
+		Provider.RequestModel(id)
+		return nil
+	}
+
+	return NewModel1(id)
+}
+
+// Request reports whether id's metadata is present, requesting it otherwise.
+// Java: Model.request(int).
+func Request(id int) bool {
+	if Metadata == nil {
+		return false
+	}
+
+	info := Metadata[id]
+	if info == nil {
+		Provider.RequestModel(id)
+		return false
+	}
+
+	return true
 }
 
 func NewModel1(arg1 int) *Model {
+	// Java: Model(int):loaded++ — the very first statement of the constructor.
+	Loaded++
 	var m Model
 	if Metadata == nil {
 		return &m
@@ -393,11 +382,18 @@ func NewModel1(arg1 int) *Model {
 		m.FaceLabel = make([]int, m.FaceCount)
 	}
 	m.FaceColour = make([]int, m.FaceCount)
-	Point1.Pos = var3.VertexFlagsOffset
-	Point2.Pos = var3.VertexXOffset
-	Point3.Pos = var3.VertexYOffset
-	Point4.Pos = var3.VertexZOffset
-	Point5.Pos = var3.VertexLabelsOffset
+	// Java: rev-244 builds every decode cursor as a LOCAL Packet over
+	// info.data (no shared package streams as in 225).
+	point1 := io.NewPacket(var3.Data)
+	point1.Pos = var3.VertexFlagsOffset
+	point2 := io.NewPacket(var3.Data)
+	point2.Pos = var3.VertexXOffset
+	point3 := io.NewPacket(var3.Data)
+	point3.Pos = var3.VertexYOffset
+	point4 := io.NewPacket(var3.Data)
+	point4.Pos = var3.VertexZOffset
+	point5 := io.NewPacket(var3.Data)
+	point5.Pos = var3.VertexLabelsOffset
 	var4 := 0
 	var5 := 0
 	var6 := 0
@@ -405,18 +401,18 @@ func NewModel1(arg1 int) *Model {
 	var10 := 0
 	var11 := 0
 	for i := range m.VertexCount {
-		var8 := Point1.G1()
+		var8 := point1.G1()
 		var9 = 0
 		if var8&0x1 != 0 {
-			var9 = Point2.GSmart()
+			var9 = point2.GSmart()
 		}
 		var10 = 0
 		if var8&0x2 != 0 {
-			var10 = Point3.GSmart()
+			var10 = point3.GSmart()
 		}
 		var11 = 0
 		if var8&0x4 != 0 {
-			var11 = Point4.GSmart()
+			var11 = point4.GSmart()
 		}
 		m.VertexX[i] = var4 + var9
 		m.VertexY[i] = var5 + var10
@@ -425,42 +421,49 @@ func NewModel1(arg1 int) *Model {
 		var5 = m.VertexY[i]
 		var6 = m.VertexZ[i]
 		if m.VertexLabel != nil {
-			m.VertexLabel[i] = Point5.G1()
+			m.VertexLabel[i] = point5.G1()
 		}
 	}
-	Face1.Pos = var3.FaceColoursOffset
-	Face2.Pos = var3.FaceInfosOffset
-	Face3.Pos = var3.FacePrioritiesOffset
-	Face4.Pos = var3.FaceAlphasOffset
-	Face5.Pos = var3.FaceLabelsOffset
+	face1 := io.NewPacket(var3.Data)
+	face1.Pos = var3.FaceColoursOffset
+	face2 := io.NewPacket(var3.Data)
+	face2.Pos = var3.FaceInfosOffset
+	face3 := io.NewPacket(var3.Data)
+	face3.Pos = var3.FacePrioritiesOffset
+	face4 := io.NewPacket(var3.Data)
+	face4.Pos = var3.FaceAlphasOffset
+	face5 := io.NewPacket(var3.Data)
+	face5.Pos = var3.FaceLabelsOffset
 	for i := range m.FaceCount {
-		m.FaceColour[i] = Face1.G2()
+		m.FaceColour[i] = face1.G2()
 		if m.FaceInfo != nil {
-			m.FaceInfo[i] = Face2.G1()
+			m.FaceInfo[i] = face2.G1()
 		}
 		if m.FacePriority != nil {
-			m.FacePriority[i] = Face3.G1()
+			m.FacePriority[i] = face3.G1()
 		}
 		if m.FaceAlpha != nil {
-			m.FaceAlpha[i] = Face4.G1()
+			m.FaceAlpha[i] = face4.G1()
 		}
 		if m.FaceLabel != nil {
-			m.FaceLabel[i] = Face5.G1()
+			m.FaceLabel[i] = face5.G1()
 		}
 	}
-	Vertex1.Pos = var3.FaceVerticesOffset
-	Vertex2.Pos = var3.FaceOrientationsOffset
+	vertex1 := io.NewPacket(var3.Data)
+	vertex1.Pos = var3.FaceVerticesOffset
+	vertex2 := io.NewPacket(var3.Data)
+	vertex2.Pos = var3.FaceOrientationsOffset
 	var9 = 0
 	var10 = 0
 	var11 = 0
 	var12 := 0
 	var14 := 0
 	for i := range m.FaceCount {
-		var14 = Vertex2.G1()
+		var14 = vertex2.G1()
 		if var14 == 1 {
-			var9 = Vertex1.GSmart() + var12
-			var10 = Vertex1.GSmart() + var9
-			var11 = Vertex1.GSmart() + var10
+			var9 = vertex1.GSmart() + var12
+			var10 = vertex1.GSmart() + var9
+			var11 = vertex1.GSmart() + var10
 			var12 = var11
 			m.FaceVertexA[i] = var9
 			m.FaceVertexB[i] = var10
@@ -468,7 +471,7 @@ func NewModel1(arg1 int) *Model {
 		}
 		if var14 == 2 {
 			var10 = var11
-			var11 = Vertex1.GSmart() + var12
+			var11 = vertex1.GSmart() + var12
 			var12 = var11
 			m.FaceVertexA[i] = var9
 			m.FaceVertexB[i] = var10
@@ -476,7 +479,7 @@ func NewModel1(arg1 int) *Model {
 		}
 		if var14 == 3 {
 			var9 = var11
-			var11 = Vertex1.GSmart() + var12
+			var11 = vertex1.GSmart() + var12
 			var12 = var11
 			m.FaceVertexA[i] = var9
 			m.FaceVertexB[i] = var10
@@ -486,18 +489,21 @@ func NewModel1(arg1 int) *Model {
 			var15 := var9
 			var9 = var10
 			var10 = var15
-			var11 = Vertex1.GSmart() + var12
+			var11 = vertex1.GSmart() + var12
 			var12 = var11
 			m.FaceVertexA[i] = var9
 			m.FaceVertexB[i] = var15
 			m.FaceVertexC[i] = var11
 		}
 	}
-	Axis.Pos = var3.FaceTextureAxisOffset * 6
+	axis := io.NewPacket(var3.Data)
+	// Java: rev-244 stores FaceTextureAxisOffset as a byte offset directly —
+	// NO `* 6` (225 stored a texture-face count and multiplied at use).
+	axis.Pos = var3.FaceTextureAxisOffset
 	for i := range m.TexturedFaceCount {
-		m.TexturedVertexA[i] = Axis.G2()
-		m.TexturedVertexB[i] = Axis.G2()
-		m.TexturedVertexC[i] = Axis.G2()
+		m.TexturedVertexA[i] = axis.G2()
+		m.TexturedVertexB[i] = axis.G2()
+		m.TexturedVertexC[i] = axis.G2()
 	}
 	return &m
 }

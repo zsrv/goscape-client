@@ -29,7 +29,6 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/varptype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
-	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animbase"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity/playerentity"
@@ -48,6 +47,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io/bzip2"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io/clientstream"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io/ondemand"
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/audio"
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/wave"
 	"github.com/zsrv/goscape-client/pkg/jagex2/wordenc/wordfilter"
@@ -500,28 +500,31 @@ type Client struct {
 	AreaViewport                  *pixmap.PixMap
 	AreaChatback                  *pixmap.PixMap
 	JagTitle                      *io.Jagfile
-	Stream                        *clientstream.ClientStream
-	ModalMessage                  string
-	ObjSelectedName               string
-	SpellCaption                  string
-	MidiSyncName                  string
-	CurrentMidi                   string
-	AreaChatbackOffsets           []int
-	AreaSidebarOffsets            []int
-	AreaViewportOffsets           []int
-	FlameBuffer0                  []int
-	FlameBuffer1                  []int
-	FlameGradient                 []int
-	FlameGradient0                []int
-	FlameGradient1                []int
-	FlameGradient2                []int
-	SceneMapIndex                 []int
-	FlameBuffer3                  []int
-	FlameBuffer2                  []int
-	ImageRunes                    []*pix8.Pix8
-	SceneMapLocData               [][]byte
-	LevelTileFlags                [][][]int8 // Java: byte[][][] (signed) — int8 so int() sign-extends
-	LevelHeightMap                [][][]int
+	// OnDemand is the rev-244 model/anim/map on-demand loader, created from the
+	// versionlist archive at boot. Java: client.onDemand (OnDemand).
+	OnDemand            *ondemand.OnDemand
+	Stream              *clientstream.ClientStream
+	ModalMessage        string
+	ObjSelectedName     string
+	SpellCaption        string
+	MidiSyncName        string
+	CurrentMidi         string
+	AreaChatbackOffsets []int
+	AreaSidebarOffsets  []int
+	AreaViewportOffsets []int
+	FlameBuffer0        []int
+	FlameBuffer1        []int
+	FlameGradient       []int
+	FlameGradient0      []int
+	FlameGradient1      []int
+	FlameGradient2      []int
+	SceneMapIndex       []int
+	FlameBuffer3        []int
+	FlameBuffer2        []int
+	ImageRunes          []*pix8.Pix8
+	SceneMapLocData     [][]byte
+	LevelTileFlags      [][][]int8 // Java: byte[][][] (signed) — int8 so int() sign-extends
+	LevelHeightMap      [][][]int
 }
 
 func NewClient() *Client {
@@ -5675,7 +5678,7 @@ func (c *Client) Load() {
 	jagConfig := c.GetJagFile("config", c.JagChecksum[2], "config", 15)
 	jagInterface := c.GetJagFile("interface", c.JagChecksum[3], "interface", 20)
 	jagMedia := c.GetJagFile("2d graphics", c.JagChecksum[4], "media", 30)
-	jagModels := c.GetJagFile("3d graphics", c.JagChecksum[5], "models", 40)
+	jagVersionList := c.GetJagFile("update list", c.JagChecksum[5], "versionlist", 60)
 	jagTextures := c.GetJagFile("textures", c.JagChecksum[6], "textures", 60)
 	jagWordEnc := c.GetJagFile("chat system", c.JagChecksum[7], "wordenc", 65)
 	jagSounds := c.GetJagFile("sound effects", c.JagChecksum[8], "sounds", 70)
@@ -5857,9 +5860,13 @@ func (c *Client) Load() {
 	pix3d.SetBrightness(0.8)
 	pix3d.InitPool(20)
 	c.DrawProgress("Unpacking models", 83)
-	model.Unpack(jagModels)
-	animbase.Unpack(jagModels)
-	animframe.Unpack(jagModels)
+	// Java: rev-244 replaces the 225 bulk model/anim archives with an on-demand
+	// versionlist + per-id blobs. The OnDemand is created here and the model/anim
+	// index tables are sized from it; the actual blobs are faulted in at runtime
+	// by the request loops (WS1 Inc 3b).
+	c.OnDemand = ondemand.New(jagVersionList, onDemandDownloader{c}, nil)
+	animframe.Init(c.OnDemand.GetAnimCount())
+	model.Init(c.OnDemand.GetFileCount(0), c.OnDemand)
 	c.DrawProgress("Unpacking config", 86)
 	seqtype.Unpack(jagConfig)
 	loctype.Unpack(jagConfig)
@@ -6347,6 +6354,18 @@ func (c *Client) OpenURL(arg0 string) (*bytes.Reader, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 	return bytes.NewReader(b), nil
+}
+
+// onDemandDownloader adapts the client's OpenURL to ondemand.Downloader.
+// Client-TS: downloadUrl('/ondemand.zip'). OpenURL prepends the codebase + "/".
+type onDemandDownloader struct{ c *Client }
+
+func (d onDemandDownloader) Get(path string) ([]byte, error) {
+	r, err := d.c.OpenURL(strings.TrimPrefix(path, "/"))
+	if err != nil {
+		return nil, err
+	}
+	return io2.ReadAll(r)
 }
 
 func (c *Client) LoadTitle() {
@@ -6952,7 +6971,6 @@ func (c *Client) Unload() {
 	pix3d.Unload()
 	world3d.Unload()
 	model.Unload()
-	animbase.Instances = nil
 	animframe.Instances = nil
 }
 

@@ -1,6 +1,9 @@
 package metadata
 
 type Metadata struct {
+	// Data is the raw per-id model blob; NewModel1 reads vertex/face sections
+	// out of it via offsets stored below. Java: Metadata.data (rev-244).
+	Data                   []byte
 	VertexCount            int
 	FaceCount              int
 	TexturedFaceCount      int
