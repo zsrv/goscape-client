@@ -12,9 +12,11 @@ SHELL := /usr/bin/env bash -o pipefail
 CMD := ./cmd/client
 BIN := bin/client
 
-# Default args for `make run`: node-id port-offset lowmem|highmem free|members [host].
-# Override like: make run ARGS="10 0 lowmem free"
-ARGS ?= 10 0 highmem members
+# Default args for `make run`. The client now reads flags (not positional args):
+# -node-id N -mem high|low -world-type free|members, plus optional
+# -world-server / -ondemand-server URLs (see cmd/client/main.go).
+# Override like: make run ARGS="-node-id 10 -mem low -world-type free"
+ARGS ?= -node-id 10 -mem high -world-type members
 
 # System build dependencies, shared with the devcontainer image. Evaluated
 # lazily (recursive '=') so non-setup targets don't shell out to grep.
