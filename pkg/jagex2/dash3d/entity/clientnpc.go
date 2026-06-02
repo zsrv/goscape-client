@@ -7,20 +7,20 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 )
 
-type NpcEntity struct {
-	PathingEntity
+type ClientNpc struct {
+	ClientEntity
 
 	Type     *npctype.NpcType
 	seqModel *model.Model // reused per-frame transformed model (avoids per-frame alloc)
 }
 
-func NewNpcEntity() *NpcEntity {
-	e := new(NpcEntity)
-	e.PathingEntity = *NewPathingEntity()
+func NewClientNpc() *ClientNpc {
+	e := new(ClientNpc)
+	e.ClientEntity = *NewClientEntity()
 	return e
 }
 
-func (e *NpcEntity) Draw() *model.Model {
+func (e *ClientNpc) Draw() *model.Model {
 	if e.Type == nil {
 		return nil
 	}
@@ -40,7 +40,7 @@ func (e *NpcEntity) Draw() *model.Model {
 	}
 	var4.CalculateNormals(var3.Ambient+64, var3.Contrast+850, -30, -50, -30, true)
 	var5 := []*model.Model{var2, var4}
-	// Java: NpcEntity.java:35 — `new Model(var5, (byte) -31, 2)`.
+	// Java: ClientNpc.java:35 — `new Model(var5, (byte) -31, 2)`.
 	// Java's `(byte) -31` is a deobfuscator overload disambiguator
 	// that NewModel3 never reads; dropped per the deob-artifact
 	// exclusion policy.
@@ -51,7 +51,7 @@ func (e *NpcEntity) Draw() *model.Model {
 	return var6
 }
 
-func (e *NpcEntity) GetSequencedModel() *model.Model {
+func (e *ClientNpc) GetSequencedModel() *model.Model {
 	if e.PrimarySeqID >= 0 && e.PrimarySeqDelay == 0 {
 		var2 := seqtype.Instances[e.PrimarySeqID].Frames[e.PrimarySeqFrame]
 		var4 := -1
@@ -75,6 +75,6 @@ func (e *NpcEntity) GetSequencedModel() *model.Model {
 	return var3
 }
 
-func (e *NpcEntity) IsVisible() bool {
+func (e *ClientNpc) IsVisible() bool {
 	return e.Type != nil
 }

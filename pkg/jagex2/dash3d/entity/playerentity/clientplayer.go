@@ -21,8 +21,8 @@ func init() {
 	ModelCache = datastruct.NewLruCache[*model.Model](200)
 }
 
-type PlayerEntity struct {
-	entity.PathingEntity
+type ClientPlayer struct {
+	entity.ClientEntity
 
 	Name               string
 	Visible            bool
@@ -47,16 +47,16 @@ type PlayerEntity struct {
 	MaxTileZ           int
 }
 
-func NewPlayerEntity() *PlayerEntity {
-	return &PlayerEntity{
-		PathingEntity: *entity.NewPathingEntity(),
+func NewClientPlayer() *ClientPlayer {
+	return &ClientPlayer{
+		ClientEntity: *entity.NewClientEntity(),
 
 		Appearances: make([]int, 12),
 		Colors:      make([]int, 5),
 	}
 }
 
-func (e *PlayerEntity) Read(arg1 *io.Packet) {
+func (e *ClientPlayer) Read(arg1 *io.Packet) {
 	arg1.Pos = 0
 	e.Gender = arg1.G1()
 	e.HeadIcons = arg1.G1()
@@ -128,7 +128,7 @@ func (e *PlayerEntity) Read(arg1 *io.Packet) {
 	e.AppearanceHashCode += int64(e.Gender)
 }
 
-func (e *PlayerEntity) Draw() *model.Model {
+func (e *ClientPlayer) Draw() *model.Model {
 	if !e.Visible {
 		return nil
 	}
@@ -189,7 +189,7 @@ func (e *PlayerEntity) Draw() *model.Model {
 	return var2
 }
 
-func (e *PlayerEntity) GetSequencedModel() *model.Model {
+func (e *ClientPlayer) GetSequencedModel() *model.Model {
 	var2 := e.AppearanceHashCode
 	var4 := -1
 	var5 := -1
@@ -272,7 +272,7 @@ func (e *PlayerEntity) GetSequencedModel() *model.Model {
 	return var16
 }
 
-func (e *PlayerEntity) GetHeadModel() *model.Model {
+func (e *ClientPlayer) GetHeadModel() *model.Model {
 	if !e.Visible {
 		return nil
 	}
@@ -304,6 +304,6 @@ func (e *PlayerEntity) GetHeadModel() *model.Model {
 	return var7
 }
 
-func (e *PlayerEntity) IsVisible() bool {
+func (e *ClientPlayer) IsVisible() bool {
 	return e.Visible
 }

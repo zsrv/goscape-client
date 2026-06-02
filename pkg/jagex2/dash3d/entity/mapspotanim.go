@@ -6,7 +6,7 @@ import (
 )
 
 // MapSpotAnim
-type SpotAnimEntity struct {
+type MapSpotAnim struct {
 	Type        *spotanimtype.SpotAnimType
 	StartCycle  int
 	Level       int
@@ -18,8 +18,8 @@ type SpotAnimEntity struct {
 	SeqComplete bool
 }
 
-func NewSpotAnimEntity(x, arg1, z, arg4, y, level, arg7 int) *SpotAnimEntity {
-	return &SpotAnimEntity{
+func NewMapSpotAnim(x, arg1, z, arg4, y, level, arg7 int) *MapSpotAnim {
+	return &MapSpotAnim{
 		Type:        spotanimtype.Instances[arg1],
 		Level:       level,
 		X:           x,
@@ -30,7 +30,7 @@ func NewSpotAnimEntity(x, arg1, z, arg4, y, level, arg7 int) *SpotAnimEntity {
 	}
 }
 
-func (e *SpotAnimEntity) Update(arg0 int) {
+func (e *MapSpotAnim) Update(arg0 int) {
 	e.SeqCycle += arg0
 	for {
 		for ok := true; ok; ok = e.SeqFrame >= 0 && e.SeqFrame < e.Type.Seq.FrameCount {
@@ -48,7 +48,7 @@ func (e *SpotAnimEntity) Update(arg0 int) {
 }
 
 // GetModel
-func (e *SpotAnimEntity) Draw() *model.Model {
+func (e *MapSpotAnim) Draw() *model.Model {
 	mdl := e.Type.GetModel()
 
 	spot := model.NewModel4(mdl, true, !e.Type.AnimHasAlpha, false)

@@ -1,6 +1,6 @@
 package entity
 
-type LocAddEntity struct {
+type LocChange struct {
 	Plane        int
 	Layer        int
 	X            int
@@ -13,6 +13,6 @@ type LocAddEntity struct {
 	LastShape    int
 }
 
-func NewLocAddEntity() *LocAddEntity {
-	return new(LocAddEntity)
+func NewLocChange() *LocChange {
+	return new(LocChange)
 }

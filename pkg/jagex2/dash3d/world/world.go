@@ -215,7 +215,7 @@ func (w *World) LoadGround(arg0 []byte, arg1, arg3, arg4, arg5 int) {
 	}
 }
 
-func (w *World) LoadLocations(src []byte, scene *world3d.World3D, collision []*dash3d.CollisionMap, arg3 *datastruct.LinkList[*entity.LocEntity], zOffset int, xOffset int) {
+func (w *World) LoadLocations(src []byte, scene *world3d.World3D, collision []*dash3d.CollisionMap, arg3 *datastruct.LinkList[*entity.ClientLocAnim], zOffset int, xOffset int) {
 	buf := io.NewPacket(src)
 	locId := -1
 
@@ -263,7 +263,7 @@ func (w *World) LoadLocations(src []byte, scene *world3d.World3D, collision []*d
 	}
 }
 
-func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape int, scene *world3d.World3D, arg7 *datastruct.LinkList[*entity.LocEntity], locId, x int) {
+func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape int, scene *world3d.World3D, arg7 *datastruct.LinkList[*entity.ClientLocAnim], locId, x int) {
 	if LowMemory {
 		if w.LevelTileFlags[level][x][z]&0x10 != 0 {
 			return
@@ -336,7 +336,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				collision.AddLoc(angle, loc.Length, loc.Width, x, z, loc.BlockRange)
 			}
 			if loc.Anim != -1 {
-				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 2, seqtype.Instances[loc.Anim], z, x)))
+				arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 2, seqtype.Instances[loc.Anim], z, x)))
 			}
 		} else if shape >= 12 {
 			mdl := loc.GetModel(shape, angle, heightSW, heightSE, heightNE, heightNW, -1)
@@ -352,7 +352,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 			}
 
 			if loc.Anim != -1 {
-				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 2, seqtype.Instances[loc.Anim], z, x)))
+				arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 2, seqtype.Instances[loc.Anim], z, x)))
 			}
 		} else if shape == 0 {
 			mdl := loc.GetModel(0, angle, heightSW, heightSE, heightNE, heightNW, -1)
@@ -399,7 +399,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 			}
 
 			if loc.Anim != -1 {
-				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
+				arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
 			}
 
 			if loc.WallWidth != 16 {
@@ -428,7 +428,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 			}
 
 			if loc.Anim != -1 {
-				arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
+				arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
 			}
 		} else {
 			switch shape {
@@ -462,7 +462,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				}
 
 				if loc.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
 				}
 
 				if loc.WallWidth != 16 {
@@ -491,7 +491,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				}
 
 				if loc.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 0, seqtype.Instances[loc.Anim], z, x)))
 				}
 			case 9:
 				mdl := loc.GetModel(shape, angle, heightSW, heightSE, heightNE, heightNW, -1)
@@ -503,7 +503,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				}
 
 				if loc.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 2, seqtype.Instances[loc.Anim], z, x)))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 2, seqtype.Instances[loc.Anim], z, x)))
 				}
 			case 4:
 				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
@@ -511,7 +511,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				scene.SetWallDecoration(y, z, 0, typeCode, angle*512, ROTATION_WALL_TYPE[angle], 0, x, mdl, info, level)
 
 				if loc.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
 			case 5:
 				wallWidth := 16
@@ -526,7 +526,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				scene.SetWallDecoration(y, z, WALL_DECORATION_ROTATION_FORWARD_Z[angle]*wallWidth, typeCode, angle*512, ROTATION_WALL_TYPE[angle], WALL_DECORATION_ROTATION_FORWARD_X[angle]*wallWidth, x, mdl, info, level)
 
 				if loc.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
 			case 6:
 				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
@@ -534,7 +534,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				scene.SetWallDecoration(y, z, 0, typeCode, angle, 256, 0, x, mdl, info, level)
 
 				if loc.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
 			case 7:
 				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
@@ -542,7 +542,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				scene.SetWallDecoration(y, z, 0, typeCode, angle, 512, 0, x, mdl, info, level)
 
 				if loc.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
 			case 8:
 				mdl := loc.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
@@ -550,7 +550,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				scene.SetWallDecoration(y, z, 0, typeCode, angle, 768, 0, x, mdl, info, level)
 
 				if loc.Anim != -1 {
-					arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
+					arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 1, seqtype.Instances[loc.Anim], z, x)))
 				}
 			}
 		}
@@ -561,7 +561,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 			collision.SetBlocked(z, x)
 		}
 		if loc.Anim != -1 {
-			arg7.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, locId, level, 3, seqtype.Instances[loc.Anim], z, x)))
+			arg7.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, locId, level, 3, seqtype.Instances[loc.Anim], z, x)))
 		}
 	}
 }
@@ -1023,7 +1023,7 @@ func (w *World) HSL24To16(arg0, arg1, arg2 int) int {
 	return ((arg0 / 4) << 10) + ((arg1 / 32) << 7) + arg2/2
 }
 
-func AddLoc(x int, arg1 *datastruct.LinkList[*entity.LocEntity], collision *dash3d.CollisionMap, z int, angle int, heightMap [][][]int, arg7 int, arg8 int, shape int, scene *world3d.World3D, level int) {
+func AddLoc(x int, arg1 *datastruct.LinkList[*entity.ClientLocAnim], collision *dash3d.CollisionMap, z int, angle int, heightMap [][][]int, arg7 int, arg8 int, shape int, scene *world3d.World3D, level int) {
 	heightSW := heightMap[level][x][z]
 	heightSE := heightMap[level][x+1][z]
 	heightNE := heightMap[level][x+1][z+1]
@@ -1047,7 +1047,7 @@ func AddLoc(x int, arg1 *datastruct.LinkList[*entity.LocEntity], collision *dash
 			collision.SetBlocked(z, x)
 		}
 		if locType.Anim != -1 {
-			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 3, seqtype.Instances[locType.Anim], z, x)))
+			arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 3, seqtype.Instances[locType.Anim], z, x)))
 		}
 		return
 	}
@@ -1073,7 +1073,7 @@ func AddLoc(x int, arg1 *datastruct.LinkList[*entity.LocEntity], collision *dash
 			collision.AddLoc(angle, locType.Length, locType.Width, x, z, locType.BlockRange)
 		}
 		if locType.Anim != -1 {
-			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[locType.Anim], z, x)))
+			arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 2, seqtype.Instances[locType.Anim], z, x)))
 		}
 	} else if shape >= 12 {
 		mdl := locType.GetModel(shape, angle, heightSW, heightSE, heightNE, heightNW, -1)
@@ -1082,7 +1082,7 @@ func AddLoc(x int, arg1 *datastruct.LinkList[*entity.LocEntity], collision *dash
 			collision.AddLoc(angle, locType.Length, locType.Width, x, z, locType.BlockRange)
 		}
 		if locType.Anim != -1 {
-			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[locType.Anim], z, x)))
+			arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 2, seqtype.Instances[locType.Anim], z, x)))
 		}
 	} else if shape == 0 {
 		mdl := locType.GetModel(0, angle, heightSW, heightSE, heightNE, heightNW, -1)
@@ -1091,7 +1091,7 @@ func AddLoc(x int, arg1 *datastruct.LinkList[*entity.LocEntity], collision *dash
 			collision.AddWall(angle, z, x, locType.BlockRange, shape)
 		}
 		if locType.Anim != -1 {
-			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[locType.Anim], z, x)))
+			arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 0, seqtype.Instances[locType.Anim], z, x)))
 		}
 	} else if shape == 1 {
 		mdl := locType.GetModel(1, angle, heightSW, heightSE, heightNE, heightNW, -1)
@@ -1100,7 +1100,7 @@ func AddLoc(x int, arg1 *datastruct.LinkList[*entity.LocEntity], collision *dash
 			collision.AddWall(angle, z, x, locType.BlockRange, shape)
 		}
 		if locType.Anim != -1 {
-			arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[locType.Anim], z, x)))
+			arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 0, seqtype.Instances[locType.Anim], z, x)))
 		}
 	} else {
 		var24 := 0
@@ -1115,7 +1115,7 @@ func AddLoc(x int, arg1 *datastruct.LinkList[*entity.LocEntity], collision *dash
 				collision.AddWall(angle, z, x, locType.BlockRange, shape)
 			}
 			if locType.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[locType.Anim], z, x)))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 0, seqtype.Instances[locType.Anim], z, x)))
 			}
 		case 3:
 			mdl := locType.GetModel(3, angle, heightSW, heightSE, heightNE, heightNW, -1)
@@ -1124,7 +1124,7 @@ func AddLoc(x int, arg1 *datastruct.LinkList[*entity.LocEntity], collision *dash
 				collision.AddWall(angle, z, x, locType.BlockRange, shape)
 			}
 			if locType.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 0, seqtype.Instances[locType.Anim], z, x)))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 0, seqtype.Instances[locType.Anim], z, x)))
 			}
 		case 9:
 			mdl := locType.GetModel(shape, angle, heightSW, heightSE, heightNE, heightNW, -1)
@@ -1133,13 +1133,13 @@ func AddLoc(x int, arg1 *datastruct.LinkList[*entity.LocEntity], collision *dash
 				collision.AddLoc(angle, locType.Length, locType.Width, x, z, locType.BlockRange)
 			}
 			if locType.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 2, seqtype.Instances[locType.Anim], z, x)))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 2, seqtype.Instances[locType.Anim], z, x)))
 			}
 		case 4:
 			mdl := locType.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
 			scene.SetWallDecoration(y, z, 0, var18, angle*512, ROTATION_WALL_TYPE[angle], 0, x, mdl, var19, arg7)
 			if locType.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
 			}
 		case 5:
 			var24 = 16
@@ -1150,25 +1150,25 @@ func AddLoc(x int, arg1 *datastruct.LinkList[*entity.LocEntity], collision *dash
 			var26 = locType.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
 			scene.SetWallDecoration(y, z, WALL_DECORATION_ROTATION_FORWARD_Z[angle]*var24, var18, angle*512, ROTATION_WALL_TYPE[angle], WALL_DECORATION_ROTATION_FORWARD_X[angle]*var24, x, var26, var19, arg7)
 			if locType.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
 			}
 		case 6:
 			mdl := locType.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
 			scene.SetWallDecoration(y, z, 0, var18, angle, 256, 0, x, mdl, var19, arg7)
 			if locType.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
 			}
 		case 7:
 			mdl := locType.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
 			scene.SetWallDecoration(y, z, 0, var18, angle, 512, 0, x, mdl, var19, arg7)
 			if locType.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
 			}
 		case 8:
 			mdl := locType.GetModel(4, 0, heightSW, heightSE, heightNE, heightNW, -1)
 			scene.SetWallDecoration(y, z, 0, var18, angle, 768, 0, x, mdl, var19, arg7)
 			if locType.Anim != -1 {
-				arg1.AddTail(datastruct.NewLinkable(entity.NewLocEntity(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
+				arg1.AddTail(datastruct.NewLinkable(entity.NewClientLocAnim(true, arg8, arg7, 1, seqtype.Instances[locType.Anim], z, x)))
 			}
 		}
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
 )
 
-type LocEntity struct {
+type ClientLocAnim struct {
 	Level    int
 	Type     int
 	X        int
@@ -17,8 +17,8 @@ type LocEntity struct {
 	SeqCycle int
 }
 
-func NewLocEntity(arg0 bool, index int, level int, typ int, seq *seqtype.SeqType, z int, x int) *LocEntity {
-	var e LocEntity
+func NewClientLocAnim(arg0 bool, index int, level int, typ int, seq *seqtype.SeqType, z int, x int) *ClientLocAnim {
+	var e ClientLocAnim
 	e.Level = level
 	e.Type = typ
 	e.X = x

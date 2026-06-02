@@ -11,7 +11,7 @@ type Location struct {
 	X             int
 	Z             int
 	Model         *model.Model
-	Entity        entity.Entity
+	Entity        entity.ModelSource
 	Yaw           int
 	MinSceneTileX int
 	MaxSceneTileX int

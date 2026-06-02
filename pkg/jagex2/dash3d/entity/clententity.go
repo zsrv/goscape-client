@@ -2,7 +2,7 @@ package entity
 
 import "github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
 
-type PathingEntity struct {
+type ClientEntity struct {
 	X                        int
 	Z                        int
 	Yaw                      int
@@ -57,8 +57,8 @@ type PathingEntity struct {
 	Height                   int
 }
 
-func NewPathingEntity() *PathingEntity {
-	return &PathingEntity{
+func NewClientEntity() *ClientEntity {
+	return &ClientEntity{
 		Size:            1,
 		SeqStandID:      -1,
 		SeqTurnID:       -1,
@@ -79,7 +79,7 @@ func NewPathingEntity() *PathingEntity {
 	}
 }
 
-func (e *PathingEntity) Teleport(arg1 bool, arg2 int, arg3 int) {
+func (e *ClientEntity) Teleport(arg1 bool, arg2 int, arg3 int) {
 	if e.PrimarySeqID != -1 && seqtype.Instances[e.PrimarySeqID].Priority <= 1 {
 		e.PrimarySeqID = -1
 	}
@@ -109,7 +109,7 @@ func (e *PathingEntity) Teleport(arg1 bool, arg2 int, arg3 int) {
 	e.Z = e.PathTileZ[0]*128 + e.Size*64
 }
 
-func (e *PathingEntity) MoveAlongRoute(arg0 bool, arg1 int) {
+func (e *ClientEntity) MoveAlongRoute(arg0 bool, arg1 int) {
 	var4 := e.PathTileX[0]
 	var5 := e.PathTileZ[0]
 	switch arg1 {
@@ -150,19 +150,19 @@ func (e *PathingEntity) MoveAlongRoute(arg0 bool, arg1 int) {
 	e.PathRunning[0] = arg0
 }
 
-// IsVisible is the default implementation; NpcEntity and PlayerEntity
+// IsVisible is the default implementation; ClientNpc and ClientPlayer
 // override it. Callers reach it via the PathableEntity interface, which
 // dispatches to the concrete type's method.
-func (e *PathingEntity) IsVisible() bool {
+func (e *ClientEntity) IsVisible() bool {
 	return false
 }
 
-// Pathing exposes the embedded *PathingEntity through the PathableEntity
-// interface. Both NpcEntity and PlayerEntity embed PathingEntity by value,
-// so Go's method promotion makes (*NpcEntity).Pathing() and
-// (*PlayerEntity).Pathing() return a pointer to their embedded base — the
-// Go equivalent of Java treating the reference as its PathingEntity parent.
-func (e *PathingEntity) Pathing() *PathingEntity {
+// Pathing exposes the embedded *ClientEntity through the PathableEntity
+// interface. Both ClientNpc and ClientPlayer embed ClientEntity by value,
+// so Go's method promotion makes (*ClientNpc).Pathing() and
+// (*ClientPlayer).Pathing() return a pointer to their embedded base — the
+// Go equivalent of Java treating the reference as its ClientEntity parent.
+func (e *ClientEntity) Pathing() *ClientEntity {
 	return e
 }
 
@@ -170,5 +170,5 @@ type PathableEntity interface {
 	Teleport(bool, int, int)
 	MoveAlongRoute(bool, int)
 	IsVisible() bool
-	Pathing() *PathingEntity
+	Pathing() *ClientEntity
 }

@@ -326,7 +326,7 @@ func (w *World3D) SetWallDecoration(y, z, zOffset, typecode, angle2, angle1, xOf
 	w.LevelTiles[level][x][z].Decor = decor
 }
 
-func (w *World3D) AddLoc1(arg0 int, arg2 int, arg3 entity.Entity, arg4, arg5, arg6, arg7 int, arg8 byte, arg9 *model.Model, arg10, arg11 int) bool {
+func (w *World3D) AddLoc1(arg0 int, arg2 int, arg3 entity.ModelSource, arg4, arg5, arg6, arg7 int, arg8 byte, arg9 *model.Model, arg10, arg11 int) bool {
 	if arg9 == nil && arg3 == nil {
 		return true
 	}
@@ -335,7 +335,7 @@ func (w *World3D) AddLoc1(arg0 int, arg2 int, arg3 entity.Entity, arg4, arg5, ar
 	return w.AddLoc2(arg2, arg6, arg5, arg7, arg11, var13, var14, arg0, arg9, arg3, arg10, false, arg4, arg8)
 }
 
-func (w *World3D) AddTemporary1(arg1, arg2, yaw, arg4, arg5 int, forwardPadding bool, arg7 *model.Model, arg8 entity.Entity, arg9, arg10 int) bool {
+func (w *World3D) AddTemporary1(arg1, arg2, yaw, arg4, arg5 int, forwardPadding bool, arg7 *model.Model, arg8 entity.ModelSource, arg9, arg10 int) bool {
 	if arg7 == nil && arg8 == nil {
 		return true
 	}
@@ -371,14 +371,14 @@ func (w *World3D) AddTemporary1(arg1, arg2, yaw, arg4, arg5 int, forwardPadding 
 	return w.AddLoc2(arg10, x0, z0, x1-x0+1, z1-z0+1, arg4, arg1, arg9, arg7, arg8, yaw, true, arg5, byte(0))
 }
 
-func (w *World3D) AddTemporary2(arg0 int, arg2 *model.Model, arg3, arg4, arg5, arg6, arg7, arg8 int, arg9 entity.Entity, arg11, arg12, arg13 int) bool {
+func (w *World3D) AddTemporary2(arg0 int, arg2 *model.Model, arg3, arg4, arg5, arg6, arg7, arg8 int, arg9 entity.ModelSource, arg11, arg12, arg13 int) bool {
 	if arg2 == nil && arg9 == nil {
 		return true
 	}
 	return w.AddLoc2(arg11, arg8, arg7, arg0-arg8+1, arg12-arg7+1, arg13, arg3, arg4, arg2, arg9, arg6, true, arg5, byte(0))
 }
 
-func (w *World3D) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, arg8 *model.Model, arg9 entity.Entity, arg10 int, arg11 bool, arg12 int, arg13 byte) bool {
+func (w *World3D) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, arg8 *model.Model, arg9 entity.ModelSource, arg10 int, arg11 bool, arg12 int, arg13 byte) bool {
 	if arg8 == nil && arg9 == nil {
 		return false
 	}

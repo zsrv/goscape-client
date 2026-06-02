@@ -17,7 +17,7 @@ func linkListLen[T any](l *LinkList[T]) int {
 // already-linked entity in a fresh *Linkable via NewLinkable(value),
 // which had prev==nil, so AddHead's unlink-on-add guard never fired
 // and every call leaked a duplicate node. See deob/client.java:8490
-// (Java's `ObjStackEntity extends Linkable`, so addHead(var5) moves
+// (Java's `ClientObj extends Linkable`, so addHead(var5) moves
 // the existing node).
 func TestLinkListAddHeadMovesExistingNode(t *testing.T) {
 	l := NewLinkList[int]()

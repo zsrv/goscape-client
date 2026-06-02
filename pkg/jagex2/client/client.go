@@ -160,7 +160,7 @@ type Client struct {
 	HintOffsetZ                   int
 	MinimapOffsetCycle            int
 	RedrawFrame                   bool // Java: redrawBackground (deob/client.java:74)
-	LocList                       *datastruct.LinkList[*entity.LocEntity]
+	LocList                       *datastruct.LinkList[*entity.ClientLocAnim]
 	RandomIn                      *io.Isaac
 	CameraModifierEnabled         []bool
 	PrivateChatSetting            int
@@ -205,11 +205,11 @@ type Client struct {
 	OrbitCameraPitch              int
 	MAX_PLAYER_COUNT              int
 	LOCAL_PLAYER_INDEX            int
-	Players                       []*playerentity.PlayerEntity
+	Players                       []*playerentity.ClientPlayer
 	PlayerIDs                     []int
 	EntityUpdateIDs               []int
 	PlayerAppearanceBuffer        []*io.Packet
-	Projectiles                   *datastruct.LinkList[*entity.ProjectileEntity]
+	Projectiles                   *datastruct.LinkList[*entity.ClientProj]
 	MenuOption                    []string
 	MidiActive                    bool
 	DesignGenderMale              bool
@@ -223,7 +223,7 @@ type Client struct {
 	MessageIDs                    []int
 	MenuVisible                   bool
 	ReportAbuseMuteOption         bool
-	SpawnedLocations              *datastruct.LinkList[*entity.LocAddEntity]
+	SpawnedLocations              *datastruct.LinkList[*entity.LocChange]
 	MessageType                   []int
 	MessageSender                 []string
 	MessageText                   []string
@@ -235,7 +235,7 @@ type Client struct {
 	RedrawPrivacySettings         bool
 	ErrorHost                     bool
 	SkillBaseLevel                []int
-	NPCs                          []*entity.NpcEntity
+	NPCs                          []*entity.ClientNpc
 	NPCIDs                        []int
 	MinimapZoomModifier           int
 	Varps                         []int
@@ -268,7 +268,7 @@ type Client struct {
 	CHAT_COLORS                   []int
 	SCROLLBAR_TRACK               int
 	ChatbackInputOpen             bool
-	Spotanims                     *datastruct.LinkList[*entity.SpotAnimEntity]
+	Spotanims                     *datastruct.LinkList[*entity.MapSpotAnim]
 	LastWaveLoops                 int
 	Username                      string
 	Password                      string
@@ -311,7 +311,7 @@ type Client struct {
 	MenuParamA                    []int
 	ScrollGrabbed                 bool
 	WaveEnabled                   bool
-	LevelObjStacks                [][][]*datastruct.LinkList[*entity.ObjStackEntity]
+	LevelObjStacks                [][][]*datastruct.LinkList[*entity.ClientObj]
 	SCROLLBAR_GRIP_FOREGROUND     int
 	CameraModifierWobbleSpeed     []int
 	MidiSyncLen                   int
@@ -438,7 +438,7 @@ type Client struct {
 	SocialName37                  int64
 	ServerSeed                    int64
 	Scene                         *world3d.World3D
-	LocalPlayer                   *playerentity.PlayerEntity
+	LocalPlayer                   *playerentity.ClientPlayer
 	GenderButtonImage0            *pix32.Pix32
 	GenderButtonImage1            *pix32.Pix32
 	ImageFlamesLeft               *pix32.Pix32
@@ -537,7 +537,7 @@ func NewClient() *Client {
 		KeyQueue:  make([]int, 128),
 		// END GameShell
 
-		LocList:               datastruct.NewLinkList[*entity.LocEntity](),
+		LocList:               datastruct.NewLinkList[*entity.ClientLocAnim](),
 		CameraModifierEnabled: make([]bool, 5),
 		MergedLocations:       datastruct.NewLinkList[*entity.LocMergeEntity](),
 		IgnoreName37:          make([]int64, 100),
@@ -568,7 +568,7 @@ func NewClient() *Client {
 		SelectedTab:               3,
 		MAX_PLAYER_COUNT:          2048,
 		LOCAL_PLAYER_INDEX:        2047,
-		Projectiles:               datastruct.NewLinkList[*entity.ProjectileEntity](),
+		Projectiles:               datastruct.NewLinkList[*entity.ClientProj](),
 		MenuOption:                make([]string, 500),
 		MidiActive:                true,
 		DesignGenderMale:          true,
@@ -577,7 +577,7 @@ func NewClient() *Client {
 		WaveDelay:                 make([]int, 50),
 		TabInterfaceID:            []int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 		MessageIDs:                make([]int, 100),
-		SpawnedLocations:          datastruct.NewLinkList[*entity.LocAddEntity](),
+		SpawnedLocations:          datastruct.NewLinkList[*entity.LocChange](),
 		MessageType:               make([]int, 100),
 		MessageSender:             make([]string, 100),
 		MessageText:               make([]string, 100),
@@ -585,7 +585,7 @@ func NewClient() *Client {
 		ActiveMapFunctionX:        make([]int, 1000),
 		ActiveMapFunctionZ:        make([]int, 1000),
 		SkillBaseLevel:            make([]int, 50),
-		NPCs:                      make([]*entity.NpcEntity, 8192),
+		NPCs:                      make([]*entity.ClientNpc, 8192),
 		NPCIDs:                    make([]int, 8192),
 		MinimapZoomModifier:       1,
 		Varps:                     make([]int, 2000),
@@ -609,7 +609,7 @@ func NewClient() *Client {
 		ImageMapscene:             make([]*pix8.Pix8, 50),
 		CHAT_COLORS:               []int{0xFFFF00, 0xFF0000, 0xFF00, 0xFFFF, 0xFF00FF, 0xFFFFFF},
 		SCROLLBAR_TRACK:           2301979,
-		Spotanims:                 datastruct.NewLinkList[*entity.SpotAnimEntity](),
+		Spotanims:                 datastruct.NewLinkList[*entity.MapSpotAnim](),
 		LastWaveLoops:             -1,
 		TextureBuffer:             make([]byte, 16384),
 		VarCache:                  make([]int, 2000),
@@ -640,7 +640,7 @@ func NewClient() *Client {
 	for i := range c.BFSCost {
 		c.BFSCost[i] = make([]int, 104)
 	}
-	c.Players = make([]*playerentity.PlayerEntity, c.MAX_PLAYER_COUNT)
+	c.Players = make([]*playerentity.ClientPlayer, c.MAX_PLAYER_COUNT)
 	c.PlayerIDs = make([]int, c.MAX_PLAYER_COUNT)
 	c.EntityUpdateIDs = make([]int, c.MAX_PLAYER_COUNT)
 	c.PlayerAppearanceBuffer = make([]*io.Packet, c.MAX_PLAYER_COUNT)
@@ -664,11 +664,11 @@ func NewClient() *Client {
 		c.BFSDirection[i] = make([]int, 104)
 	}
 
-	c.LevelObjStacks = make([][][]*datastruct.LinkList[*entity.ObjStackEntity], 4)
+	c.LevelObjStacks = make([][][]*datastruct.LinkList[*entity.ClientObj], 4)
 	for i := range c.LevelObjStacks {
-		c.LevelObjStacks[i] = make([][]*datastruct.LinkList[*entity.ObjStackEntity], 104)
+		c.LevelObjStacks[i] = make([][]*datastruct.LinkList[*entity.ClientObj], 104)
 		for j := range c.LevelObjStacks[i] {
-			c.LevelObjStacks[i][j] = make([]*datastruct.LinkList[*entity.ObjStackEntity], 104)
+			c.LevelObjStacks[i][j] = make([]*datastruct.LinkList[*entity.ClientObj], 104)
 		}
 	}
 
@@ -706,7 +706,7 @@ func (c *Client) Draw2DEntityElements() {
 		if var3 != nil && var3.IsVisible() {
 			pe := var3.Pathing()
 			if i < c.PlayerCount {
-				var5 := var3.(*playerentity.PlayerEntity)
+				var5 := var3.(*playerentity.ClientPlayer)
 				var4 = 30
 				if var5.HeadIcons != 0 {
 					c.ProjectFromGround1(pe.Height+15, pe)
@@ -731,7 +731,7 @@ func (c *Client) Draw2DEntityElements() {
 					c.ImageHeadIcons[2].PlotSprite(c.ProjectY-28, c.ProjectX-12)
 				}
 			}
-			if pe.Chat != "" && (i >= c.PlayerCount || c.PublicChatSetting == 0 || c.PublicChatSetting == 3 || c.PublicChatSetting == 1 && c.IsFriend(var3.(*playerentity.PlayerEntity).Name)) {
+			if pe.Chat != "" && (i >= c.PlayerCount || c.PublicChatSetting == 0 || c.PublicChatSetting == 3 || c.PublicChatSetting == 1 && c.IsFriend(var3.(*playerentity.ClientPlayer).Name)) {
 				c.ProjectFromGround1(pe.Height, pe)
 				if c.ProjectX > -1 && c.ChatCount < c.MAX_CHATS {
 					c.ChatWidth[c.ChatCount] = c.FontBold12.StringWidth(pe.Chat) / 2
@@ -1106,7 +1106,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 			var11 = arg1.G2()
 		}
 		if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
-			var var12 *entity.LocAddEntity
+			var var12 *entity.LocChange
 			for var13 := c.SpawnedLocations.Head(); var13 != nil; var13 = c.SpawnedLocations.Next() {
 				v := var13.Value
 				if v.Plane == c.CurrentLevel && v.X == var5 && v.Z == var6 && v.Layer == var10 {
@@ -1137,7 +1137,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 					var16 = var18 & 0x1F
 					var17 = var18 >> 6
 				}
-				var12 = entity.NewLocAddEntity()
+				var12 = entity.NewLocChange()
 				var12.Plane = c.CurrentLevel
 				var12.Layer = var10
 				var12.X = var5
@@ -1175,7 +1175,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 				var11 = c.Scene.GetGroundDecorationBitSet(c.CurrentLevel, var5, var6)
 			}
 			if var11 != 0 {
-				var38 := entity.NewLocEntity(false, (var11>>14)&0x7FFF, c.CurrentLevel, var9, seqtype.Instances[var10], var6, var5)
+				var38 := entity.NewClientLocAnim(false, (var11>>14)&0x7FFF, c.CurrentLevel, var9, seqtype.Instances[var10], var6, var5)
 				c.LocList.AddTail(datastruct.NewLinkable(var38))
 			}
 		}
@@ -1187,11 +1187,11 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 			var7 = arg1.G2()
 			var8 = arg1.G2()
 			if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
-				var32 := entity.NewObjStackEntity()
+				var32 := entity.NewClientObj()
 				var32.Index = var7
 				var32.Count = var8
 				if c.LevelObjStacks[c.CurrentLevel][var5][var6] == nil {
-					c.LevelObjStacks[c.CurrentLevel][var5][var6] = datastruct.NewLinkList[*entity.ObjStackEntity]()
+					c.LevelObjStacks[c.CurrentLevel][var5][var6] = datastruct.NewLinkList[*entity.ClientObj]()
 				}
 				c.LevelObjStacks[c.CurrentLevel][var5][var6].AddTail(datastruct.NewLinkable(var32))
 				c.SortObjStacks(var5, var6)
@@ -1239,7 +1239,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 					var6 = var6*128 + 64
 					var7 = var7*128 + 64
 					var8 = var8*128 + 64
-					var43 := entity.NewProjectileEntity(var36, var15, var6, var14+clientextras.LoopCycle, c.CurrentLevel, var9, var37+clientextras.LoopCycle, var16, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var11, var10, var5)
+					var43 := entity.NewClientProj(var36, var15, var6, var14+clientextras.LoopCycle, c.CurrentLevel, var9, var37+clientextras.LoopCycle, var16, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var11, var10, var5)
 					var43.UpdateVelocity(c.GetHeightMapY(c.CurrentLevel, var7, var8)-var36, var8, var7, var37+clientextras.LoopCycle)
 					c.Projectiles.AddTail(datastruct.NewLinkable(var43))
 				}
@@ -1253,7 +1253,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 				if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
 					var5 = var5*128 + 64
 					var6 = var6*128 + 64
-					var34 := entity.NewSpotAnimEntity(var5, var7, var6, var9, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var8, c.CurrentLevel, clientextras.LoopCycle)
+					var34 := entity.NewMapSpotAnim(var5, var7, var6, var9, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var8, c.CurrentLevel, clientextras.LoopCycle)
 					c.Spotanims.AddTail(datastruct.NewLinkable(var34))
 				}
 			} else if arg2 == 50 {
@@ -1264,11 +1264,11 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 				var8 = arg1.G2()
 				var9 = arg1.G2()
 				if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 && var9 != c.LocalPID {
-					var33 := entity.NewObjStackEntity()
+					var33 := entity.NewClientObj()
 					var33.Index = var7
 					var33.Count = var8
 					if c.LevelObjStacks[c.CurrentLevel][var5][var6] == nil {
-						c.LevelObjStacks[c.CurrentLevel][var5][var6] = datastruct.NewLinkList[*entity.ObjStackEntity]()
+						c.LevelObjStacks[c.CurrentLevel][var5][var6] = datastruct.NewLinkList[*entity.ClientObj]()
 					}
 					c.LevelObjStacks[c.CurrentLevel][var5][var6].AddTail(datastruct.NewLinkable(var33))
 					c.SortObjStacks(var5, var6)
@@ -1290,7 +1290,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 					var40 := arg1.G1B()
 					var41 := arg1.G1B()
 					var42 := arg1.G1B()
-					var var19 *playerentity.PlayerEntity
+					var var19 *playerentity.ClientPlayer
 					if var14 == c.LocalPID {
 						var19 = c.LocalPlayer
 					} else {
@@ -2033,7 +2033,7 @@ func (c *Client) PushPlayers() {
 		c.FlagSceneTileX = 0
 	}
 	for i := -1; i < c.PlayerCount; i++ {
-		var var3 *playerentity.PlayerEntity
+		var var3 *playerentity.ClientPlayer
 		var4 := 0
 		if i == -1 {
 			var3 = c.LocalPlayer
@@ -3477,7 +3477,7 @@ func (c *Client) GetPlayerNewVis(arg1 int, arg2 *io.Packet) {
 			break
 		}
 		if c.Players[var4] == nil {
-			c.Players[var4] = playerentity.NewPlayerEntity()
+			c.Players[var4] = playerentity.NewClientPlayer()
 			if c.PlayerAppearanceBuffer[var4] != nil {
 				c.Players[var4].Read(c.PlayerAppearanceBuffer[var4])
 			}
@@ -3865,12 +3865,12 @@ func (c *Client) UpdateNpcs() {
 		var3 := c.NPCIDs[i]
 		var4 := c.NPCs[var3]
 		if var4 != nil {
-			c.UpdateNpcEntity(var4)
+			c.UpdateClientNpc(var4)
 		}
 	}
 }
 
-func (c *Client) UpdatePlayerEntity(arg0 *playerentity.PlayerEntity) {
+func (c *Client) UpdateClientPlayer(arg0 *playerentity.ClientPlayer) {
 	if arg0.X < 128 || arg0.Z < 128 || arg0.X >= 13184 || arg0.Z >= 13184 {
 		arg0.PrimarySeqID = -1
 		arg0.SpotanimID = -1
@@ -3890,17 +3890,17 @@ func (c *Client) UpdatePlayerEntity(arg0 *playerentity.PlayerEntity) {
 		arg0.PathLength = 0
 	}
 	if arg0.ForceMoveEndCycle > clientextras.LoopCycle {
-		c.UpdateForceMovement(&arg0.PathingEntity)
+		c.UpdateForceMovement(&arg0.ClientEntity)
 	} else if arg0.ForceMoveStartCycle >= clientextras.LoopCycle {
-		c.StartForceMovement(&arg0.PathingEntity, 0)
+		c.StartForceMovement(&arg0.ClientEntity, 0)
 	} else {
-		c.UpdateMovement(&arg0.PathingEntity)
+		c.UpdateMovement(&arg0.ClientEntity)
 	}
-	c.UpdateFacingDirection(&arg0.PathingEntity)
-	c.UpdateSequences(&arg0.PathingEntity)
+	c.UpdateFacingDirection(&arg0.ClientEntity)
+	c.UpdateSequences(&arg0.ClientEntity)
 }
 
-func (c *Client) UpdateNpcEntity(arg0 *entity.NpcEntity) {
+func (c *Client) UpdateClientNpc(arg0 *entity.ClientNpc) {
 	if arg0.X < 128 || arg0.Z < 128 || arg0.X >= 13184 || arg0.Z >= 13184 {
 		arg0.PrimarySeqID = -1
 		arg0.SpotanimID = -1
@@ -3911,17 +3911,17 @@ func (c *Client) UpdateNpcEntity(arg0 *entity.NpcEntity) {
 		arg0.PathLength = 0
 	}
 	if arg0.ForceMoveEndCycle > clientextras.LoopCycle {
-		c.UpdateForceMovement(&arg0.PathingEntity)
+		c.UpdateForceMovement(&arg0.ClientEntity)
 	} else if arg0.ForceMoveStartCycle >= clientextras.LoopCycle {
-		c.StartForceMovement(&arg0.PathingEntity, 0)
+		c.StartForceMovement(&arg0.ClientEntity, 0)
 	} else {
-		c.UpdateMovement(&arg0.PathingEntity)
+		c.UpdateMovement(&arg0.ClientEntity)
 	}
-	c.UpdateFacingDirection(&arg0.PathingEntity)
-	c.UpdateSequences(&arg0.PathingEntity)
+	c.UpdateFacingDirection(&arg0.ClientEntity)
+	c.UpdateSequences(&arg0.ClientEntity)
 }
 
-func (c *Client) UpdateForceMovement(arg0 *entity.PathingEntity) {
+func (c *Client) UpdateForceMovement(arg0 *entity.ClientEntity) {
 	var3 := arg0.ForceMoveEndCycle - clientextras.LoopCycle
 	var4 := arg0.ForceMoveStartSceneTileX*128 + arg0.Size*64
 	var5 := arg0.ForceMoveStartSceneTileZ*128 + arg0.Size*64
@@ -3940,7 +3940,7 @@ func (c *Client) UpdateForceMovement(arg0 *entity.PathingEntity) {
 	}
 }
 
-func (c *Client) StartForceMovement(arg0 *entity.PathingEntity, arg1 int) {
+func (c *Client) StartForceMovement(arg0 *entity.ClientEntity, arg1 int) {
 	c.PacketSize += arg1
 	if arg0.ForceMoveStartCycle == clientextras.LoopCycle || arg0.PrimarySeqID == -1 || arg0.PrimarySeqDelay != 0 || arg0.PrimarySeqCycle+1 > seqtype.Instances[arg0.PrimarySeqID].Delay[arg0.PrimarySeqFrame] {
 		var3 := arg0.ForceMoveStartCycle - arg0.ForceMoveEndCycle
@@ -3966,7 +3966,7 @@ func (c *Client) StartForceMovement(arg0 *entity.PathingEntity, arg1 int) {
 	arg0.Yaw = arg0.DstYaw
 }
 
-func (c *Client) UpdateMovement(arg1 *entity.PathingEntity) {
+func (c *Client) UpdateMovement(arg1 *entity.ClientEntity) {
 	arg1.SecondarySeqID = arg1.SeqStandID
 	if arg1.PathLength == 0 {
 		arg1.SeqTrigger = 0
@@ -4072,7 +4072,7 @@ func (c *Client) UpdateMovement(arg1 *entity.PathingEntity) {
 	}
 }
 
-func (c *Client) UpdateFacingDirection(arg0 *entity.PathingEntity) {
+func (c *Client) UpdateFacingDirection(arg0 *entity.ClientEntity) {
 	var4 := 0
 	var5 := 0
 	if arg0.TargetID != -1 && arg0.TargetID < 32768 {
@@ -4131,7 +4131,7 @@ func (c *Client) UpdateFacingDirection(arg0 *entity.PathingEntity) {
 	arg0.SecondarySeqID = arg0.SeqWalkID
 }
 
-func (c *Client) UpdateSequences(arg1 *entity.PathingEntity) {
+func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 	arg1.SeqStretches = false
 	var var3 *seqtype.SeqType
 	if arg1.SecondarySeqID != -1 {
@@ -4593,7 +4593,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.SelectedArea = 3
 		}
 	}
-	var var13 *entity.NpcEntity
+	var var13 *entity.ClientNpc
 	if var5 == 728 || var5 == 542 || var5 == 6 || var5 == 963 || var5 == 245 {
 		var13 = c.NPCs[var6]
 		if var13 != nil {
@@ -4750,7 +4750,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.Out.P2(c.ObjSelectedInterface)
 		}
 	}
-	var var19 *playerentity.PlayerEntity
+	var var19 *playerentity.ClientPlayer
 	if var5 == 1373 || var5 == 1544 || var5 == 151 || var5 == 1101 {
 		var19 = c.Players[var6]
 		if var19 != nil {
@@ -5397,7 +5397,7 @@ func (c *Client) GetNpcPosNewVis(arg1 *io.Packet, arg2 int) {
 			break
 		}
 		if c.NPCs[var4] == nil {
-			c.NPCs[var4] = entity.NewNpcEntity()
+			c.NPCs[var4] = entity.NewClientNpc()
 		}
 		var5 := c.NPCs[var4]
 		c.NPCIDs[c.NPCCount] = var4
@@ -6116,7 +6116,7 @@ func (c *Client) PushProjectiles() {
 			}
 			if v.Target < 0 {
 				var4 := -v.Target - 1
-				var var5 *playerentity.PlayerEntity
+				var var5 *playerentity.ClientPlayer
 				if var4 == c.LocalPID {
 					var5 = c.LocalPlayer
 				} else {
@@ -6167,7 +6167,7 @@ func (c *Client) GetIntString(arg0 int) string {
 	return "*"
 }
 
-func (c *Client) ProjectFromGround1(arg0 int, arg2 *entity.PathingEntity) {
+func (c *Client) ProjectFromGround1(arg0 int, arg2 *entity.ClientEntity) {
 	c.ProjectFromGround2(arg2.Z, arg2.X, arg0)
 }
 
@@ -6583,7 +6583,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		for i := range 8192 {
 			c.NPCs[i] = nil
 		}
-		c.Players[c.LOCAL_PLAYER_INDEX] = playerentity.NewPlayerEntity()
+		c.Players[c.LOCAL_PLAYER_INDEX] = playerentity.NewClientPlayer()
 		c.LocalPlayer = c.Players[c.LOCAL_PLAYER_INDEX]
 		c.Projectiles.Clear()
 		c.Spotanims.Clear()
@@ -6595,7 +6595,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 				}
 			}
 		}
-		c.SpawnedLocations = datastruct.NewLinkList[*entity.LocAddEntity]()
+		c.SpawnedLocations = datastruct.NewLinkList[*entity.LocChange]()
 		c.FriendCount = 0
 		c.StickyChatInterfaceID = -1
 		c.ChatInterfaceID = -1
@@ -6950,7 +6950,7 @@ func (c *Client) OpenSocket(port int) (net.Conn, error) {
 	return signlink.OpenSocket(port)
 }
 
-func (c *Client) AddPlayerOptions(arg1 int, arg2 int, arg3 *playerentity.PlayerEntity, arg4 int) {
+func (c *Client) AddPlayerOptions(arg1 int, arg2 int, arg3 *playerentity.ClientPlayer, arg4 int) {
 	if arg3 == c.LocalPlayer || c.MenuSize >= 400 {
 		return
 	}
@@ -8200,12 +8200,12 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 		return
 	}
 	var4 := -99999999
-	var var5 *entity.ObjStackEntity
-	// Java: ObjStackEntity extends Linkable, so addHead(var5) moves the
+	var var5 *entity.ClientObj
+	// Java: ClientObj extends Linkable, so addHead(var5) moves the
 	// existing list node. In Go, *Linkable is a wrapper around the entity
 	// pointer; track the wrapper from the iteration so we re-add it rather
 	// than allocating a duplicate. See deob/client.java:8490.
-	var var5Link *datastruct.Linkable[*entity.ObjStackEntity]
+	var var5Link *datastruct.Linkable[*entity.ClientObj]
 	for var6 := var3.Head(); var6 != nil; var6 = var3.Next() {
 		v := var6.Value
 		var7 := objtype.Get(v.Index)
@@ -8808,7 +8808,7 @@ func (c *Client) HandleViewportOptions() {
 					c.MenuSize++
 				}
 			}
-			var var11 *entity.NpcEntity
+			var var11 *entity.ClientNpc
 			if var7 == 1 {
 				var13 := c.NPCs[var8]
 				if var13.Type.Size == 1 && var13.X&0x7F == 64 && var13.Z&0x7F == 64 {
@@ -8912,7 +8912,7 @@ func (c *Client) UpdatePlayers() {
 		}
 		var4 := c.Players[var3]
 		if var4 != nil {
-			c.UpdatePlayerEntity(var4)
+			c.UpdateClientPlayer(var4)
 		}
 	}
 	CycleLogic6++
@@ -10325,7 +10325,7 @@ func (c *Client) IsFriend(arg1 string) bool {
 
 // MISSING: init() only used by java applets
 
-func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *playerentity.PlayerEntity) {
+func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *playerentity.ClientPlayer) {
 	var6 := 0
 	if arg2&0x1 == 1 {
 		var6 = arg3.G1()

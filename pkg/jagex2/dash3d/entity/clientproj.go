@@ -8,7 +8,7 @@ import (
 )
 
 // ClientProj
-type ProjectileEntity struct {
+type ClientProj struct {
 	SpotAnim      *spotanimtype.SpotAnimType
 	Level         int
 	SrcX          int
@@ -35,8 +35,8 @@ type ProjectileEntity struct {
 	SeqCycle      int
 }
 
-func NewProjectileEntity(offsetY, peakPitch, srcZ, lastCycle, level, target, startCycle, arc, srcY, arg10, srcX int) *ProjectileEntity {
-	return &ProjectileEntity{
+func NewClientProj(offsetY, peakPitch, srcZ, lastCycle, level, target, startCycle, arc, srcY, arg10, srcX int) *ClientProj {
+	return &ClientProj{
 		SpotAnim:   spotanimtype.Instances[arg10],
 		Level:      level,
 		SrcX:       srcX,
@@ -52,7 +52,7 @@ func NewProjectileEntity(offsetY, peakPitch, srcZ, lastCycle, level, target, sta
 	}
 }
 
-func (e *ProjectileEntity) UpdateVelocity(arg0, arg1, arg2, arg4 int) {
+func (e *ClientProj) UpdateVelocity(arg0, arg1, arg2, arg4 int) {
 	if !e.Mobile {
 		// Java: double var6 = arg2 - srcX — a double, so var6*var6 is a double
 		// multiply. Kept as float64 to match Java's arithmetic exactly.
@@ -74,7 +74,7 @@ func (e *ProjectileEntity) UpdateVelocity(arg0, arg1, arg2, arg4 int) {
 	e.AccelerationY = (float64(arg0) - e.Y - e.VelocityY*var6) * 2.0 / (var6 * var6)
 }
 
-func (e *ProjectileEntity) Update(arg1 int) {
+func (e *ClientProj) Update(arg1 int) {
 	e.Mobile = true
 	e.X += e.VelocityX * float64(arg1)
 	e.Z += e.VelocityZ * float64(arg1)
@@ -95,7 +95,7 @@ func (e *ProjectileEntity) Update(arg1 int) {
 	}
 }
 
-func (e *ProjectileEntity) Draw() *model.Model {
+func (e *ClientProj) Draw() *model.Model {
 	var2 := e.SpotAnim.GetModel()
 	var3 := model.NewModel4(var2, true, !e.SpotAnim.AnimHasAlpha, false)
 	if e.SpotAnim.Seq != nil {
