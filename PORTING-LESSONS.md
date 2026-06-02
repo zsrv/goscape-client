@@ -97,13 +97,27 @@ against the Java source before "fixing" anything a linter flags.
   OS-buffered bytes; `bufio` is lazy and returns 0 until a read fills it. A naive
   port reads 0 forever.
 
-### Rendering (Gio specifics)
-- **AWT retained-back-buffer guards port wrong to Gio's immediate mode.** Java
-  `if (redraw) { …; pixmap.draw() }` gates *both* repaint and blit. In Gio the
-  GPU upload must re-issue **every** frame (the op list is rebuilt per frame);
-  only the CPU pixel repaint stays gated by the dirty flag.
-- **Emit `*image.RGBA` for GPU upload.** Gio's `paint.NewImageOp` fast-paths only
-  `*image.RGBA`; other image types cost a per-frame `draw.Draw` conversion.
+### Rendering (host-shell / `platform` seam specifics)
+The renderer is toolkit-neutral behind the `platform.Backend` seam (GLFW+go-gl
+native, syscall/js+WebGL browser) — there is **no Gio** and no retained op list;
+drawing is immediate-mode (one textured-quad `Blit` per `PixMap`, mirroring Java
+`Graphics.drawImage` / TS `putImageData`). The earlier "Gio" framing of these
+lessons is obsolete, but the invariants survived the rewrite:
+- **Don't gate the blit on the AWT retained-back-buffer flag.** Java
+  `if (redraw) { …; pixmap.draw() }` gates *both* repaint and blit. Here the
+  `Blit` must re-issue **every** frame; only the CPU pixel repaint **and** its
+  GPU upload (`UploadTexture`) are gated — by a content hash (`hashPixels`), not
+  the Java redraw flag. See `pixmap.PixMap.Draw`.
+- **Re-upload in place; never re-create the texture per frame.** The texture is
+  allocated once (`NewTexture`) and refreshed via `glTexSubImage2D` /
+  `texSubImage2D` (`UploadTexture`). Re-creating it each upload leaks GPU memory
+  in the browser — this was the wasm leak fix. For pixmaps that change almost
+  every frame (the 3D viewport) set `AlwaysUpload` to skip the whole-buffer hash;
+  in-place upload means unconditional upload is safe.
+- **Stage into a reusable `*image.RGBA`.** Pack `0x00RRGGBB` Java pixels into one
+  caller-owned RGBA buffer (one wide big-endian store per pixel) to avoid a
+  per-frame allocation. Java's `DirectColorModel` has no alpha mask, so every
+  pixel is opaque and premultiplied RGBA equals straight NRGBA byte-for-byte.
 
 ### Things intentionally NOT ported
 - **Deobfuscation artifacts** — empty placeholder classes, dead-write fields —
@@ -141,7 +155,10 @@ against the Java source before "fixing" anything a linter flags.
   constructs that mirror Java. British spellings in faithful `System.out.println`
   ports (`"unrecognised"`, `"RANDOMISED"`) are intentional; don't let a spell
   linter "fix" them.
-- **Gates:** `go build ./...`, `go vet ./...`, `go test -race ./...`. The race
-  detector matters — the AWT-EDT/game-thread split ports to goroutines.
+- **Gates:** `go build ./...`, `go vet ./...`, `go test -race ./...`, and
+  `golangci-lint` (the `standard` set). The race detector matters — the
+  AWT-EDT/game-thread split ports to goroutines. Lint policy: fix findings in
+  *new* code, but a faithful port that trips a lint keeps a per-line
+  `//nolint:<linter>` with a `// Java:` reference rather than being rewritten.
 - The live game window can't run headless (no display in CI/sandbox); pre-window
   boot and in-process machinery are still observable via the real binary.
