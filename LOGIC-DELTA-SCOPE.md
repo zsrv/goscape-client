@@ -30,17 +30,25 @@ The substantive work falls into **five workstreams** plus UI/render polish:
   packets and menu actions. **Every one must be re-derived from the 244 target**
   (`io/Protocol.java` arrays + the `Client` handler switch). This is pervasive,
   not a localized change.
-- **OnDemand transport divergence (KEY DECISION).** The Go port already fetches
-  cache assets over **HTTP** (`-ondemand-server`, `signlink.OpenURL`,
-  `clientextras.OndemandBaseURL`) with 225's `signlink.CacheLoad/CacheSave`.
-  244-Java's `OnDemand` uses a **socket** protocol (byte `15` handshake on
-  `port+43594`, 4-byte requests, 6-byte response headers, gzip payloads,
-  `.idx`/`.dat` sector store). **Decide before starting workstream 1** whether to
-  (a) port 244's socket protocol faithfully, or (b) keep the Go HTTP transport
-  and adopt only 244's higher-level *API* (load by numeric file index;
-  prefetch/priority; per-model `unpack(byte[])`). The answer depends on what the
-  **target 244 server speaks** — verify against the Go server (`zsrv/goscape`)
-  / LostCity `Server` before writing socket code that may be dead on arrival.
+- **OnDemand transport — DECIDED (2026-06-02): keep HTTP/WebSocket; do NOT port
+  the Java socket subsystem.** Evidence from the target 244 server (`Engine-TS`
+  @9aadcec, branch 244) `src/web.ts`: cache is served over **HTTP** as the 8
+  named archives (`/title`,`/config`,`/interface`,`/media`,`/versionlist`,
+  `/textures`,`/wordenc`,`/sounds`), plus `/crc` and a single `/ondemand.zip`
+  bundle; per-file on-demand otherwise rides the game **WebSocket** (state 2,
+  `NODE_WS_ONDEMAND`). The raw-TCP byte-`15` socket `OnDemand` is the **Java
+  applet-only** path (served via `/rs2.cgi`). The reference browser client
+  `Client-TS` 244 uses WebSocket for the game stream + HTTP for cache (browsers
+  can't do raw TCP). The Go port's existing HTTP fetch already requests
+  Engine-TS's exact route names (`OpenURL("title"+crc)`→`/title`, `"crc"`,
+  `"config"`, …). **So 244-Java's `OnDemand`/`OnDemandRequest`/`FileStream`
+  (.idx/.dat sector store, byte-15 framing, gzip-over-socket, priority queues)
+  are applet artifacts → mark "intentionally not ported."** WS1 keeps the
+  HTTP/WS transport and ports only the *format* changes (see WS1, now ~M not XL).
+  Open sub-question (WS1 impl, not a blocker): per-file HTTP requests vs the
+  `/ondemand.zip` bundle vs WS state-2 — pick based on the actual 244 server the
+  Go client targets (Engine-TS serves bundle+WS; a future goscape-244 may add
+  per-file routes like goscape-225 had).
 - **The game cannot run headless** (no display in sandbox/CI). Build/vet/test/
   golangci-lint gate every increment; behavioural verification needs host runs
   at milestones (a real 244 server connection is possible only after workstream
@@ -48,19 +56,18 @@ The substantive work falls into **five workstreams** plus UI/render polish:
 
 ## Risk-tiered subsystem inventory
 
-### Workstream 1 — On-demand cache + Model loader  [XL, critical path]
-- **NEW io classes** (in 225 this logic lived inline in `client`/`signlink`):
-  - `OnDemandRequest` — DTO: `archive, file, data, cycle, urgent`.
-  - `OnDemandProvider` — abstract base with `requestModel(int)`.
-  - `FileStream` — `.idx`/`.dat` sector store: 520-byte sectors, 8-byte sector
-    header (`file:u16, part:u16, next:u24, archive:u8`), 6-byte idx entry
-    (`size:u24, sector:u24`); shared `static temp[520]` → **needs a mutex in Go**.
-  - `OnDemand` (Runnable worker): `unpack(versionlist, Client)` parses
-    `model/anim/midi/map` version+crc tables and indices; socket protocol per the
-    KEY DECISION above; `cycle()` **gzip**-decompresses payloads (vs Jagfile's
-    BZip2); `validate(src,crc,version)` (trailing 2-byte version + CRC32). Rich
-    API: `getMapFile, request, prefetch, prefetchMaps, prefetchPriority,
-    getModelFlags, getAnimCount, hasMapLocFile, cycle, remaining, unpack, ...`.
+### Workstream 1 — On-demand cache + Model loader  [~M, critical path]
+**Transport DECIDED: keep Go HTTP/WS** (see cross-cutting hazards). Port only the
+*format/semantic* changes below; the Java socket subsystem is NOT ported.
+- **DO NOT PORT (applet-only socket artifacts — mark "intentionally not ported"):**
+  `OnDemand` (byte-15 socket worker), `OnDemandRequest` (socket DTO), `FileStream`
+  (.idx/.dat 520-byte sector store), gzip-over-socket, the urgent/prefetch socket
+  priority queues. The Go port fetches over HTTP/WS instead.
+- **PORT — versionlist + validation semantics [M]:** the `OnDemand.unpack(
+  versionlist, Client)` logic — parse the `model/anim/midi/map` version+CRC tables
+  and indices from the `/versionlist` archive — and `validate(src, crc, version)`
+  (trailing 2-byte version + CRC32). Transport-independent; needed to know which
+  files exist and to verify them however they're fetched.
 - **`Model` loader change [H]:** bulk `unpack(Jagfile)` (15 split streams) →
   per-id `unpack(int, byte[])` of a self-contained blob with an 18-byte trailer
   header (`vtxCount g2, faceCount g2, texFaces g1, flags g1×5, 4×g2 stream lens`)
@@ -179,8 +186,8 @@ The substantive work falls into **five workstreams** plus UI/render polish:
 
 ```
 WS4 Config opcodes ──┐  (independent, low-risk warm-up; testable vs cache files)
-WS3 ModelSource/scene┤─→ WS1 OnDemand + Model loader ─→ WS2 Protocol/login/REBUILD ─→ host smoke test
-                     │        (needs the transport DECISION first)
+WS3 ModelSource/scene┤─→ WS1 Model loader + versionlist/CRC ─→ WS2 Protocol/login/REBUILD ─→ host smoke test
+                     │        (transport DECIDED: keep HTTP/WS)
 WS5 Audio ───────────┘  (independent)
 UI/render polish ───────  (independent; any time)
 ```
@@ -189,7 +196,8 @@ UI/render polish ───────  (independent; any time)
    without a server. Good first increment to validate the cache-format approach.
 2. **WS3 ModelSource + scene hierarchy** — structural, no protocol; can land
    before OnDemand. Introduces the `getModel()`/`draw()` polymorphism WS1 needs.
-3. **Resolve the OnDemand transport DECISION**, then **WS1** (the spine).
+3. **WS1** — transport already decided (keep HTTP/WS); port the `Model` blob
+   format + versionlist/CRC validation + REBUILD re-encode. No socket subsystem.
 4. **WS2 Protocol/login/REBUILD** — REBUILD depends on WS1; opcode renumbering
    can proceed in parallel once the 244 numbers are extracted.
 5. **WS5 Audio** and **UI/render polish** — independent; slot anywhere.
@@ -199,7 +207,10 @@ Each increment: keep faithful-port discipline + build/vet/test/golangci-lint
 gate; commit small.
 
 ## Open questions to resolve during the port
-- **OnDemand transport** (socket vs keep-HTTP) — see KEY DECISION; gate WS1 on it.
+- ~~OnDemand transport~~ — **RESOLVED 2026-06-02: keep HTTP/WS** (Engine-TS 244
+  serves HTTP archives + `/ondemand.zip` + WS; Java socket path is applet-only).
+  Remaining WS1 impl sub-question: per-file HTTP vs `/ondemand.zip` bundle vs WS
+  state-2 — pick per the actual target server.
 - `ClientProj.getModel`: the renamed 244 `Model` ctor/`scale` arg order vs 225 —
   confirm it's a compensating reorder, not a behaviour change.
 - `ClientEntity` `move`/`step` bodies — gameplay-sensitive movement; body-level diff.
