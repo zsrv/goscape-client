@@ -63,8 +63,7 @@ type ObjType struct {
 	Op               []string
 	IOp              []string
 	// Java: ObjType resizex/resizey/resizez/ambient/contrast (rev-244 opcodes
-	// 110-114). Read here; consumed by the world getModel (scale +
-	// calculateNormals) once the model loader lands — see Decode TODO.
+	// 110-114). Consumed by Scale + CalculateNormals in GetInterfaceModel.
 	ResizeX  int
 	ResizeY  int
 	ResizeZ  int
@@ -266,10 +265,7 @@ func (t *ObjType) Decode(arg1 *io.Packet) {
 			}
 			t.CountObj[var3-100] = arg1.G2()
 			t.CountCo[var3-100] = arg1.G2()
-		// Java: ObjType.decode opcodes 110-114 (rev-244). TODO(rev-244 model
-		// phase): wire ResizeX/Y/Z into the world getModel as
-		// model.Scale(ResizeY, ResizeZ, ResizeX) when any != 128, and use
-		// CalculateNormals(Ambient+64, Contrast+768, ...).
+		// Java: ObjType.decode opcodes 110-114 (rev-244).
 		case 110:
 			t.ResizeX = arg1.G2()
 		case 111:
@@ -328,13 +324,18 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 	if var4 != nil {
 		return var4
 	}
+	// TODO(WS follow-up): Java getModel uses Model.tryGet for on-demand lazy loading; Go keeps NewModel1 pending the config-getter→TryGet sweep.
 	var4 = model.NewModel1(t.Model)
+	if t.ResizeX != 128 || t.ResizeY != 128 || t.ResizeZ != 128 {
+		// Java: ObjType.getModel scale(resizey, resizez, resizex); Scale(arg0=z, arg2=y, arg3=x)
+		var4.Scale(t.ResizeZ, t.ResizeY, t.ResizeX)
+	}
 	if t.RecolS != nil {
 		for i := range len(t.RecolS) {
 			var4.Recolor(t.RecolS[i], t.RecolD[i])
 		}
 	}
-	var4.CalculateNormals(64, 768, -50, -10, -50, true)
+	var4.CalculateNormals(t.Ambient+64, t.Contrast+768, -50, -10, -50, true)
 	var4.Pickable = true
 	ModelCache.Put(int64(t.Index), var4)
 	return var4

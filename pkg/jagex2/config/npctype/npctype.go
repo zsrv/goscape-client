@@ -43,8 +43,7 @@ type NpcType struct {
 	ResizeH  int
 	ResizeV  int
 	// Java: NpcType alwaysontop/headicon/ambient/contrast (rev-244 opcodes
-	// 99-102). Read here; Ambient/Contrast consumed by the model build
-	// (calculateNormals) once the model phase lands — see Decode TODO.
+	// 99-102). Ambient/Contrast are consumed by CalculateNormals in GetSequencedModel.
 	AlwaysOnTop bool
 	HeadIcon    int
 	Ambient     int
@@ -175,9 +174,7 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 			t.ResizeH = arg1.G2()
 		case 98:
 			t.ResizeV = arg1.G2()
-		// Java: NpcType.decode opcodes 99-102 (rev-244). TODO(rev-244 model
-		// phase): use CalculateNormals(Ambient+64, Contrast+850, ...) in the
-		// model build instead of the constant (64, 850).
+		// Java: NpcType.decode opcodes 99-102 (rev-244).
 		case 99:
 			t.AlwaysOnTop = true
 		case 100:
@@ -208,7 +205,7 @@ func (t *NpcType) GetSequencedModel(target *model.Model, arg0 int, arg1 int, arg
 			}
 		}
 		var5.CreateLabelReferences()
-		var5.CalculateNormals(64, 850, -30, -50, -30, true)
+		var5.CalculateNormals(t.Ambient+64, t.Contrast+850, -30, -50, -30, true)
 		ModelCache.Put(t.Index, var5)
 	}
 	target.ResetFromModel6(var5, !t.AnimHasAlpha)
@@ -219,6 +216,8 @@ func (t *NpcType) GetSequencedModel(target *model.Model, arg0 int, arg1 int, arg
 		var4.ApplyTransform(arg0)
 	}
 	if t.ResizeH != 128 || t.ResizeV != 128 {
+		// Java: NpcType.getModel scale(resizev, resizeh, resizeh); Go Scale(arg0=z, arg2=y, arg3=x).
+		// So z=resizeh=ResizeH, y=resizev=ResizeV, x=resizeh=ResizeH → Scale(ResizeH, ResizeV, ResizeH).
 		var4.Scale(t.ResizeH, t.ResizeV, t.ResizeH)
 	}
 	var4.CalculateBoundsCylinder()
