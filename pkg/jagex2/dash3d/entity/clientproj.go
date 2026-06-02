@@ -95,7 +95,7 @@ func (e *ClientProj) Update(arg1 int) {
 	}
 }
 
-func (e *ClientProj) Draw() *model.Model {
+func (e *ClientProj) GetModel() *model.Model {
 	var2 := e.SpotAnim.GetModel()
 	var3 := model.NewModel4(var2, true, !e.SpotAnim.AnimHasAlpha, false)
 	if e.SpotAnim.Seq != nil {

@@ -48,7 +48,7 @@ func (e *MapSpotAnim) Update(arg0 int) {
 }
 
 // GetModel
-func (e *MapSpotAnim) Draw() *model.Model {
+func (e *MapSpotAnim) GetModel() *model.Model {
 	mdl := e.Type.GetModel()
 
 	spot := model.NewModel4(mdl, true, !e.Type.AnimHasAlpha, false)

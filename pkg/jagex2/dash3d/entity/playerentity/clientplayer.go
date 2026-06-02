@@ -128,7 +128,7 @@ func (e *ClientPlayer) Read(arg1 *io.Packet) {
 	e.AppearanceHashCode += int64(e.Gender)
 }
 
-func (e *ClientPlayer) Draw() *model.Model {
+func (e *ClientPlayer) GetModel() *model.Model {
 	if !e.Visible {
 		return nil
 	}

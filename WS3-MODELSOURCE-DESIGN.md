@@ -18,41 +18,49 @@ smoke test deferred to after WS1+WS2.
 | `ModelSource` iface | `Draw() *model.Model` (returns the model; caller draws) — entity path only | base class: `vertexNormal[]`, `minY=1000`, virtual `getModel()`, concrete `draw(9)` = `getModel()`→cache minY→`model.draw(9)` |
 | Entity base | `Entity`→renamed interface; entities have `Draw() *Model` | `ModelSource` class; `ClientEntity/ClientObj/ClientProj/MapSpotAnim/ClientLocAnim extend ModelSource`; `Model extends ModelSource` |
 
-## The Go mapping decision
+## The Go mapping decision (revised during 3a)
 
-**`ModelSource` becomes a Go interface `{ Draw1(angle, sinPitch, cosPitch, sinYaw,
-cosYaw, x, y, z, bitset int) }`** — i.e. 244's 9-arg `draw`. Rationale:
-- `*model.Model` **already implements `Draw1`** (the rasterizer) → satisfies the
-  interface with zero changes. (Mirrors `Model extends ModelSource` + Model
-  overriding `draw`.)
-- Animated/entity nodes implement `Draw1` as: `m := <getModel-logic>; if m != nil
-  { e.MinY = m.MinY; m.Draw1(args) }` (mirrors the inherited `ModelSource.draw`
-  calling the virtual `getModel`). Go has no base-method-calls-virtual dispatch,
-  so the `getModel`+delegate is written into each node's `Draw1` (or a shared
-  helper takes a `func() *Model`).
-- Base state (`vertexNormal`, `minY`): add `MinY int` (default 1000) and, where a
-  node needs it, `VertexNormal []*vertexnormal.VertexNormal` to each implementer
-  (Go has no shared base fields without embedding; embedding a `modelSourceBase`
-  struct is optional sugar — decide at impl time, prefer plain fields if few).
-- **`instanceof Model` → Go type assertion.** Where `World3D` reads
-  `model.VertexNormal`/`MinY` directly off a scene field (normal-merge, lighting,
-  obj-raise), the field is now the interface, so guard with
-  `if m, ok := field.(*model.Model); ok && m.VertexNormal != nil { ... }` —
-  exactly 244's `instanceof Model` guards. Known sites: `world3d.go:678/680/685`
-  (MergeLocNormals/ApplyLighting on `ModelA/ModelB.VertexNormal`), `:751/754`, the
-  `addGroundObject` obj-raise, and any `.MinY` reads.
+**`ModelSource` stays a Go interface, with its virtual method renamed
+`Draw() *model.Model` → `GetModel() *model.Model`** (244's `getModel`). World3D
+keeps its existing **resolve-the-model-then-draw** structure (`m := node.GetModel();
+m.Draw1(args)`) rather than pushing a void `draw()` into the node.
+
+Why NOT the void `Draw1(9-arg)` interface (the earlier plan): the loc/sprite draw
+sites read the resolved model's Y-extent for the visibility cull *before* drawing
+(`world3d.go:1530` reads `farthestModel.MaxY` for `LocVisible`; 244 line 1457 reads
+`farthest.model.minY`). A void `Draw1` would lose that model reference. Keeping
+`GetModel` + call-site draw is behaviourally equivalent to 244's `node.draw`
+(which internally calls `getModel`), supports the Y-extent read naturally, and
+preserves World3D's structure — lower risk than inverting the draw path.
+
+Consequences for later sub-increments:
+- `*model.Model` must satisfy `ModelSource` for the field merge (3c) — but 244
+  `Model.getModel()` returns **null** (Model is drawn via its overridden `draw`,
+  not `getModel`). So static `*Model` fields are NOT resolved via `GetModel`; the
+  merged scene field stays drawable directly. Pin the exact Go shape in 3c: most
+  likely the scene field is `ModelSource` and the call site does
+  `if m, ok := field.(*model.Model); ok { m.Draw1(args) } else { field.GetModel()?.Draw1(args) }`,
+  or `*Model` gets a `GetModel()` returning itself (diverges from Java but is the
+  clean Go unification — decide in 3c against the draw loop).
+- **244's cached `minY` on `ModelSource`** (set in its `draw`, read for
+  visibility) is the mechanism behind the `minY` visibility arg. Port it where a
+  site needs it (3c/3d), adding `MinY int` (default 1000) to the nodes. Verify the
+  225-vs-244 visibility arg per site: Go-225 passes the resolved model's `MaxY`,
+  244 passes the source's cached `minY` — confirm whether that's a real delta or
+  deob-renamed field before changing it.
+- **`instanceof Model` → Go type assertion** at `World3D` sites that read
+  `model.VertexNormal`/`MinY` off a scene field once it's the interface type
+  (normal-merge/lighting `world3d.go:678/680/685/751/754`, `addGroundObject`
+  obj-raise): `if m, ok := field.(*model.Model); ok && m.VertexNormal != nil {…}`.
 
 ## Ordered sub-increments (each build/vet/test/lint-gated)
 
-1. **3a — Reshape the `ModelSource` interface to `Draw1(9 args)`.**
-   - Change `entity.ModelSource` from `Draw() *model.Model` to the 9-arg `Draw1`.
-   - `*model.Model` already satisfies it. Update the current implementers
-     (`ClientNpc`, `ClientPlayer`, `ClientProj`, `MapSpotAnim`): rename their
-     `Draw()`-returns-model to an unexported `getModel()` helper and add `Draw1`
-     = `m := e.getModel(); if m != nil { e.MinY = m.MinY; m.Draw1(args) }`.
-   - Update the 2 entity-path call sites that do `x.Entity.Draw()` then rasterize
-     (`world3d.go:1268`, `:1530`) to call `x.Entity.Draw1(args)` directly.
-   - Add `MinY` (default 1000) to those entity structs.
+1. **3a — Rename the `ModelSource` virtual `Draw()` → `GetModel()`.** ✅ DONE.
+   Interface + 4 implementers (`ClientNpc`, `ClientPlayer`, `ClientProj`,
+   `MapSpotAnim`) + the 2 call sites (`world3d.go:1268`, `:1530`). Pure rename,
+   zero behaviour change (build/vet/test/golangci-lint green). World3D keeps
+   resolve-then-draw; the `Draw1`-polymorphism + `minY`-caching were intentionally
+   NOT adopted here (see revised mapping decision) — deferred to 3c/3d.
 2. **3b — Re-parent `ClientObj` and `ClientLocAnim` onto `ModelSource`.**
    - Give each a `Draw1` (+ `getModel`): `ClientObj.getModel()` = `objType.GetModel(count)`;
      `ClientLocAnim.getModel()` = advance seq vs `LoopCycle`, return

@@ -20,7 +20,7 @@ func NewClientNpc() *ClientNpc {
 	return e
 }
 
-func (e *ClientNpc) Draw() *model.Model {
+func (e *ClientNpc) GetModel() *model.Model {
 	if e.Type == nil {
 		return nil
 	}

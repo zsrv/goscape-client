@@ -1265,7 +1265,7 @@ func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 												if var12 != nil {
 													var13 := var12.Model
 													if var13 == nil {
-														var13 = var12.Entity.Draw()
+														var13 = var12.Entity.GetModel()
 													}
 													var13.Draw1(var12.Yaw, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var12.X-EyeX, var12.Y-EyeY, var12.Z-EyeZ, var12.BitSet)
 												}
@@ -1527,7 +1527,7 @@ func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 
 										farthestModel := farthest.Model
 										if farthestModel == nil {
-											farthestModel = farthest.Entity.Draw()
+											farthestModel = farthest.Entity.GetModel()
 										}
 
 										if !w.LocVisible(originalLevel, farthest.MinSceneTileX, farthest.MaxSceneTileX, farthest.MinSceneTileZ, farthest.MaxSceneTileZ, farthestModel.MaxY) {
