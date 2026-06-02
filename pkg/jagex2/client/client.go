@@ -293,6 +293,8 @@ type Client struct {
 	BFSDirection                  [][]int
 	ImageCrosses                  []*pix32.Pix32
 	FlameThread                   bool
+	MidiSong                      int        // Java: midiSong — on-demand archive-2 file id of the currently requested track
+	MidiFading                    bool       // Java: midiFading — whether the MIDI request was issued with fade-in
 	MidiSyncMu                    sync.Mutex // Java: midiSync (deob/client.java:491) — dedicated lock for the MidiSyncName/CRC/Len handoff between SetMidi and RunMidi
 	WaveIDs                       []int
 	CameraOffsetXModifier         int
@@ -5867,6 +5869,91 @@ func (c *Client) Load() {
 	c.OnDemand = ondemand.New(jagVersionList, onDemandDownloader{c}, nil)
 	animframe.Init(c.OnDemand.GetAnimCount())
 	model.Init(c.OnDemand.GetFileCount(0), c.OnDemand)
+
+	// Boot on-demand request loops: MIDI, animations, flagged models.
+	// Java: Client.load (Client.java:1599–1660).
+	// Client-TS: load (Client.ts:624–675). Thread.sleep() calls are omitted —
+	// Run() drives I/O directly (no worker thread) and is called inside
+	// UpdateOnDemand(), so a bare loop is correct and faithful.
+
+	if !LowMemory {
+		c.MidiSong = 0
+		c.MidiFading = false
+		c.OnDemand.Request(2, c.MidiSong)
+		for c.OnDemand.Remaining() > 0 {
+			c.UpdateOnDemand()
+		}
+	}
+
+	c.DrawProgress("Requesting animations", 65)
+	animCount := c.OnDemand.GetFileCount(1)
+	for i := range animCount {
+		c.OnDemand.Request(1, i)
+	}
+	for c.OnDemand.Remaining() > 0 {
+		progress := animCount - c.OnDemand.Remaining()
+		if progress > 0 {
+			c.DrawProgress("Loading animations - "+strconv.Itoa(progress*100/animCount)+"%", 65)
+		}
+		c.UpdateOnDemand()
+	}
+
+	c.DrawProgress("Requesting models", 70)
+	modelCount := c.OnDemand.GetFileCount(0)
+	for i := range modelCount {
+		if c.OnDemand.GetModelFlags(i)&0x1 != 0 {
+			c.OnDemand.Request(0, i)
+		}
+	}
+	modelPrefetch := c.OnDemand.Remaining()
+	for c.OnDemand.Remaining() > 0 {
+		progress := modelPrefetch - c.OnDemand.Remaining()
+		if progress > 0 {
+			c.DrawProgress("Loading models - "+strconv.Itoa(progress*100/modelPrefetch)+"%", 70)
+		}
+		c.UpdateOnDemand()
+	}
+
+	// Background model-priority prefetch.
+	// Java: Client.load (Client.java:1698–1736).
+	// Client-TS: load (Client.ts:706–745).
+	// PrefetchPriority is a no-op when cache==nil (bundle-only) — faithful.
+	modelCount2 := c.OnDemand.GetFileCount(0)
+	for i := range modelCount2 {
+		flags := c.OnDemand.GetModelFlags(i)
+		var priority byte
+		if flags&0x8 != 0 {
+			priority = 10
+		} else if flags&0x20 != 0 {
+			priority = 9
+		} else if flags&0x10 != 0 {
+			priority = 8
+		} else if flags&0x40 != 0 {
+			priority = 7
+		} else if flags&0x80 != 0 {
+			priority = 6
+		} else if flags&0x2 != 0 {
+			priority = 5
+		} else if flags&0x4 != 0 {
+			priority = 4
+		}
+		if flags&0x1 != 0 {
+			priority = 3
+		}
+		if priority != 0 {
+			c.OnDemand.PrefetchPriority(0, i, priority)
+		}
+	}
+	// WS1 Inc 4: PrefetchMaps + map request block go here.
+	if !LowMemory {
+		midiCount := c.OnDemand.GetFileCount(2)
+		for i := 1; i < midiCount; i++ {
+			if c.OnDemand.ShouldPrefetchMidi(i) {
+				c.OnDemand.PrefetchPriority(2, i, 1)
+			}
+		}
+	}
+
 	c.DrawProgress("Unpacking config", 86)
 	seqtype.Unpack(jagConfig)
 	loctype.Unpack(jagConfig)
@@ -8361,6 +8448,42 @@ func (c *Client) BuildScene() {
 	pix3d.InitPool(20)
 }
 
+// UpdateOnDemand dispatches completed on-demand responses for archives 0
+// (models), 1 (anim frames), and 2 (MIDI). Archives 3 and 93 (map tiles) are
+// handled in WS1 Inc 4.
+//
+// Client-TS: updateOnDemand (Client.ts:1223). The TS path calls onDemand.run()
+// first because there is no worker thread; Java's worker thread calls cycle()
+// after its own internal I/O — we mirror the TS ordering.
+// Java: Client.updateOnDemand (Client.java:2425).
+func (c *Client) UpdateOnDemand() {
+	if c.OnDemand == nil {
+		return
+	}
+	c.OnDemand.Run()
+	for {
+		req := c.OnDemand.Cycle()
+		if req == nil {
+			return
+		}
+		switch {
+		case req.Archive == 0:
+			model.Unpack(req.File, req.Data)
+			if c.OnDemand.GetModelFlags(req.File)&0x62 != 0 {
+				c.RedrawSidebar = true
+				if c.ChatInterfaceID != -1 {
+					c.RedrawChatback = true
+				}
+			}
+		case req.Archive == 1 && req.Data != nil:
+			animframe.Unpack(req.Data)
+		case req.Archive == 2 && c.MidiSong == req.File && req.Data != nil:
+			c.SaveMidi(req.Data, len(req.Data), c.MidiFading)
+		}
+		// Archives 3 and 93 (map tiles) are handled in WS1 Inc 4.
+	}
+}
+
 func (c *Client) Update() {
 	if c.ErrorStarted || c.ErrorLoading || c.ErrorHost {
 		return
@@ -8371,6 +8494,7 @@ func (c *Client) Update() {
 	} else {
 		c.UpdateTitle()
 	}
+	c.UpdateOnDemand() // Java: Client.update (Client.java:1997). Client-TS: update (Client.ts:~775).
 }
 
 func (c *Client) UpdateEntityChats() {
