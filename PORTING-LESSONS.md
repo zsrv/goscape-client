@@ -39,6 +39,40 @@ delta). That makes it a branch operation:
 5. Each revision branch is self-contained (its own code, tooling, CI). Do **not**
    share code packages across revisions — independent faithful translations.
 
+### When deob lineages diverge (the diff is *not* a clean work list)
+
+Step 2 assumes the two reference commits share a deobfuscation lineage. The
+LostCityRS `Client-Java` repo keeps **one branch per game revision** (`225`,
+`225-clean`, `244`, `254`, `274`, …), and these are *independent deob efforts*,
+not a linear history. When the new revision's branch was deobfuscated by a
+different hand (or to a different stage), a raw `prev..new` diff is dominated by
+non-behavioural churn and is **useless as a literal work list**. First observed
+porting **rev-244** (`225-clean` → `244`): ~42 000 changed lines, of which the
+real game-logic delta was a minority. The churn breaks down as:
+
+- **Reassigned `@ObfuscatedName` keys** — the obfuscator hands every class new
+  short names per build (`NpcType` `bc`→`gc`). Mechanical, behaviourless.
+- **Divergent human deob names + package moves** — `PathingEntity`→`ClientEntity`,
+  `Wall`→`Sprite`, `Location`→`QuickGround`, `graphics/Model`→`dash3d/Model`,
+  the `dash3d/entity/` and `dash3d/type/` sub-packages flattened.
+- **Name *reuse* traps** — 244 renamed `type/Wall`→`Sprite` **and** added a *new,
+  unrelated* class also called `Wall`. "244 `Wall`" ≠ "225 `Wall`". Never pair
+  classes by name alone across a divergent lineage.
+
+Workflow when this happens:
+
+1. **Recover the real delta** with rename detection and obfuscation filtering:
+   `git -C Client-Java diff -M20% -w <prev>..<new>` and ignore `@ObfuscatedName`-only
+   hunks. Treat git's low-% rename pairings (and the ADD/DELETE lists) as *hints*
+   to verify by reading both trees + the TS client — not as truth.
+2. **Pick a naming policy and record it in `REFERENCES.md`.** The rev-244 choice
+   was to **adopt the new revision's names/structure** in the Go branch: do a
+   mechanical rename/restructure pass *first* (Go realigns to match the new
+   primary reference), *then* apply the game-logic delta on top. This keeps the
+   Go↔Java mapping 1:1 going forward at the cost of one large up-front rename.
+   The alternative (keep the prior names and maintain a mapping table) trades
+   rename churn for a permanently skewed Go↔Java diff.
+
 ---
 
 ## 3. Java → Go translation gotchas

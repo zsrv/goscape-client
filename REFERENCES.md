@@ -54,9 +54,17 @@ rev-225 pins remain the last-known reference.)
 > Consequence: the standard "Java diff = change-for-change Go work list" step in
 > `PORTING-LESSONS.md` §2 cannot be applied mechanically here. Pair files with
 > rename detection (`git diff -M20% -w`) and filter `@ObfuscatedName` churn to
-> recover the real delta, and expect to re-map 244's vocabulary onto the Go
-> port's (225-clean) names as you translate. See the session handoff for the
-> agreed porting strategy.
+> recover the real delta. Git's low-% rename pairings are unreliable — verify by
+> reading both trees + Client-TS — and beware **name reuse** (`type/Wall`→`Sprite`
+> while a *new, unrelated* `Wall` is added; same for `Ground`).
+>
+> **Agreed strategy (2026-06-02): adopt 244's names/structure.** The Go `rev-244`
+> branch does a mechanical rename/restructure pass *first* — realigning to the
+> Java/TS-244 vocabulary (`ClientEntity`, `Sprite`, `dash3d/Model`, flattened
+> `dash3d` packages, monolith split into `jagex2/client/Client.java`) — and only
+> *then* applies the 225→244 game-logic delta on top. The Go↔Java mapping stays
+> 1:1 for this and later revisions. See `PORTING-LESSONS.md` §2 "When deob
+> lineages diverge".
 
 ## Future revisions
 
