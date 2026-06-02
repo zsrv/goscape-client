@@ -24,6 +24,40 @@ Local working-copy paths are machine-specific and live in `CLAUDE.local.md`
 the pinned commit is what the rev-225 port corresponds to, regardless of where
 those branches have since moved.)
 
+## rev-244 — Go branch `rev-244`
+
+| Repo | Role | URL | Branch | Pinned commit |
+|---|---|---|---|---|
+| Client-Java | **primary** — authoritative translation source; every Go change maps to a Java function | https://github.com/LostCityRS/Client-Java | `244` | `01f1608842acb12901f7e4f3df25553f641cc86e` |
+| Client-TS | secondary cross-check for ambiguous Java→Go translations | https://github.com/LostCityRS/Client-TS | `244` | `1cfb57bff1a4a5dc9ca36cdbe76a302fed4fa532` |
+| Engine-TS | engine reference (TypeScript) | https://github.com/LostCityRS/Engine-TS | `244` | `9aadcec4e9560b810b5e5eee31aadc67f3b206cd` |
+| Content | game content reference | https://github.com/LostCityRS/Content | `244` | `e5d0282e03b383efd3b2a81e63090e703ffb5399` |
+
+(Commits captured 2026-06-02. Go branch `rev-244` is cut from `rev-225`.
+Engine (Java) and Server — pinned at `main` for rev-225 — were **not** supplied
+for rev-244; record them here if/when a 244-specific need arises, otherwise the
+rev-225 pins remain the last-known reference.)
+
+> **⚠ Deob-lineage divergence — read before treating the diff as the work list.**
+> The `244` branch is a *different deobfuscation lineage* from `225-clean`, not a
+> linear continuation. A raw `git diff cc3781de..01f16088` is ~42 000 changed
+> lines that are mostly **not** the 225→244 game delta:
+> - Every `@ObfuscatedName` key was reassigned by the obfuscator (e.g. `NpcType`
+>   `bc`→`gc`) — mechanical, behaviourally irrelevant (~3 800 lines).
+> - Classes are renamed and the `dash3d/entity/` + `dash3d/type/` sub-packages
+>   are flattened: `PathingEntity`→`ClientEntity`, `SpotAnimEntity`→`MapSpotAnim`,
+>   `GroundObject`→`GroundDecor`, `Location`→`QuickGround`, `Wall`→`Sprite`,
+>   `graphics/Model`→`dash3d/Model`, `deob/client.java`→`jagex2/client/Client.java`.
+> - **The `225-clean` names that the Go rev-225 port mirrors do not exist in the
+>   `244` tree**, and Client-TS `244` uses the *same new convention* as Java `244`.
+>
+> Consequence: the standard "Java diff = change-for-change Go work list" step in
+> `PORTING-LESSONS.md` §2 cannot be applied mechanically here. Pair files with
+> rename detection (`git diff -M20% -w`) and filter `@ObfuscatedName` churn to
+> recover the real delta, and expect to re-map 244's vocabulary onto the Go
+> port's (225-clean) names as you translate. See the session handoff for the
+> agreed porting strategy.
+
 ## Future revisions
 
 When porting revision *N*:
