@@ -7,27 +7,27 @@ import (
 )
 
 // TestGroundDrawQueueNodeIdentity locks in the World3D.DrawTile parity fix.
-// Because Java's `Ground extends Linkable`, enqueuing an already-queued tile
-// MOVES it to the tail (addTail unlinks first) and a Ground can appear in
-// drawTileQueue at most once. The Go Ground owns one reusable node
+// Because Java's `Square extends Linkable`, enqueuing an already-queued tile
+// MOVES it to the tail (addTail unlinks first) and a Square can appear in
+// drawTileQueue at most once. The Go Square owns one reusable node
 // (DrawQueueNode), so re-adding it must move the existing entry rather than
 // create a duplicate — the pre-fix behavior allocated a fresh wrapper per add,
 // which left duplicates in the queue and never moved the original.
 func TestGroundDrawQueueNodeIdentity(t *testing.T) {
-	a := NewGround(0, 1, 1)
-	b := NewGround(0, 2, 2)
+	a := NewSquare(0, 1, 1)
+	b := NewSquare(0, 2, 2)
 
-	// The node's Value must point back at its owning Ground.
+	// The node's Value must point back at its owning Square.
 	if a.DrawQueueNode.Value != a {
-		t.Fatal("DrawQueueNode.Value should point back at its Ground")
+		t.Fatal("DrawQueueNode.Value should point back at its Square")
 	}
 
-	q := datastruct.NewLinkList[*Ground]()
+	q := datastruct.NewLinkList[*Square]()
 	q.AddTail(a.DrawQueueNode)
 	q.AddTail(b.DrawQueueNode)
 	q.AddTail(a.DrawQueueNode) // re-add A: must MOVE to tail, not duplicate
 
-	var order []*Ground
+	var order []*Square
 	for {
 		n := q.RemoveHead()
 		if n == nil {

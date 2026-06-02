@@ -1,6 +1,6 @@
 package typ
 
-type TileUnderlay struct {
+type QuickGround struct {
 	SouthwestColor int
 	SoutheastColor int
 	NortheastColor int
@@ -10,8 +10,8 @@ type TileUnderlay struct {
 	RGB            int
 }
 
-func NewTileUnderlay(southwestColor, southeastColor, northeastColor, northwestColor, textureID, rgb int, flat bool) *TileUnderlay {
-	return &TileUnderlay{
+func NewQuickGround(southwestColor, southeastColor, northeastColor, northwestColor, textureID, rgb int, flat bool) *QuickGround {
+	return &QuickGround{
 		SouthwestColor: southwestColor,
 		SoutheastColor: southeastColor,
 		NortheastColor: northeastColor,

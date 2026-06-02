@@ -5,7 +5,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 )
 
-type Location struct {
+type Sprite struct {
 	Level         int
 	Y             int
 	X             int
@@ -23,6 +23,6 @@ type Location struct {
 	Info          int8 // Java: byte (signed); always read as int(Info)&0xFF
 }
 
-func NewLocation() *Location {
-	return new(Location)
+func NewSprite() *Sprite {
+	return new(Sprite)
 }

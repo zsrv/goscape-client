@@ -37,18 +37,18 @@ var (
 	ViewportTop                          int
 	ViewportRight                        int
 	ViewportBottom                       int
-	LocBuffer                            []*typ.Location = make([]*typ.Location, 100)
-	WALL_DECORATION_INSET_X                              = []int{53, -53, -53, 53}
-	WALL_DECORATION_INSET_Z                              = []int{-53, -53, 53, 53}
-	WALL_DECORATION_OUTSET_X                             = []int{-45, 45, 45, -45}
-	WALL_DECORATION_OUTSET_Z                             = []int{45, 45, -45, -45}
-	ClickTileX                           int             = -1
-	ClickTileZ                           int             = -1
-	LEVEL_COUNT                          int             = 4
-	LevelOccluderCount                   []int           = make([]int, LEVEL_COUNT)
+	LocBuffer                            []*typ.Sprite = make([]*typ.Sprite, 100)
+	WALL_DECORATION_INSET_X                            = []int{53, -53, -53, 53}
+	WALL_DECORATION_INSET_Z                            = []int{-53, -53, 53, 53}
+	WALL_DECORATION_OUTSET_X                           = []int{-45, 45, 45, -45}
+	WALL_DECORATION_OUTSET_Z                           = []int{45, 45, -45, -45}
+	ClickTileX                           int           = -1
+	ClickTileZ                           int           = -1
+	LEVEL_COUNT                          int           = 4
+	LevelOccluderCount                   []int         = make([]int, LEVEL_COUNT)
 	LevelOccluders                       [][]*dash3d.Occlude
 	ActiveOccluders                      []*dash3d.Occlude = make([]*dash3d.Occlude, 500)
-	DrawTileQueue                                          = datastruct.NewLinkList[*typ.Ground]()
+	DrawTileQueue                                          = datastruct.NewLinkList[*typ.Square]()
 	FRONT_WALL_TYPES                                       = []int{19, 55, 38, 155, 0xFF, 110, 137, 205, 76}
 	DIRECTION_ALLOW_WALL_CORNER_TYPE                       = []int{160, 192, 80, 96, 0, 144, 80, 48, 160}
 	BACK_WALL_TYPES                                        = []int{76, 8, 137, 4, 0, 1, 38, 2, 19}
@@ -88,10 +88,10 @@ type World3D struct {
 	MaxTileX                 int
 	MaxTileZ                 int
 	LevelHeightMaps          [][][]int
-	LevelTiles               [][][]*typ.Ground
+	LevelTiles               [][][]*typ.Square
 	Minlevel                 int
 	TemporaryLocCount        int
-	TemporaryLocs            []*typ.Location
+	TemporaryLocs            []*typ.Sprite
 	LevelTileOcclusionCycles [][][]int
 	MergeIndexA              []int
 	MergeIndexB              []int
@@ -102,7 +102,7 @@ type World3D struct {
 
 func NewWorld3D(LevelHeightMaps [][][]int, maxTileZ, maxLevel, maxTileX int) *World3D {
 	var w World3D
-	w.TemporaryLocs = make([]*typ.Location, 5000)
+	w.TemporaryLocs = make([]*typ.Sprite, 5000)
 	w.MergeIndexA = make([]int, 10000)
 	w.MergeIndexB = make([]int, 10000)
 	w.MINIMAP_OVERLAY_SHAPE = [][]int{make([]int, 16), {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1}, {1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1}, {0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0}, {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1}, {1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1}}
@@ -111,11 +111,11 @@ func NewWorld3D(LevelHeightMaps [][][]int, maxTileZ, maxLevel, maxTileX int) *Wo
 	w.MaxLevel = maxLevel
 	w.MaxTileX = maxTileX
 	w.MaxTileZ = maxTileZ
-	w.LevelTiles = make([][][]*typ.Ground, maxLevel)
+	w.LevelTiles = make([][][]*typ.Square, maxLevel)
 	for i := range w.LevelTiles {
-		w.LevelTiles[i] = make([][]*typ.Ground, maxTileX)
+		w.LevelTiles[i] = make([][]*typ.Square, maxTileX)
 		for j := range w.LevelTiles[i] {
-			w.LevelTiles[i][j] = make([]*typ.Ground, maxTileZ)
+			w.LevelTiles[i][j] = make([]*typ.Square, maxTileZ)
 		}
 	}
 	w.LevelTileOcclusionCycles = make([][][]int, maxLevel)
@@ -166,7 +166,7 @@ func (w *World3D) SetMinLevel(level int) {
 	w.Minlevel = level
 	for i := range w.MaxTileX {
 		for j := range w.MaxTileZ {
-			w.LevelTiles[level][i][j] = typ.NewGround(level, i, j)
+			w.LevelTiles[level][i][j] = typ.NewSquare(level, i, j)
 		}
 	}
 }
@@ -180,7 +180,7 @@ func (w *World3D) SetBridge(arg0, arg1 int) {
 		}
 	}
 	if w.LevelTiles[0][arg1][arg0] == nil {
-		w.LevelTiles[0][arg1][arg0] = typ.NewGround(0, arg1, arg0)
+		w.LevelTiles[0][arg1][arg0] = typ.NewSquare(0, arg1, arg0)
 	}
 	w.LevelTiles[0][arg1][arg0].Bridge = var4
 	w.LevelTiles[3][arg1][arg0] = nil
@@ -213,26 +213,26 @@ func (w *World3D) SetDrawLevel(arg0, arg1, arg2, arg3 int) {
 func (w *World3D) SetTile(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19 int) {
 	switch arg3 {
 	case 0:
-		var21 := typ.NewTileUnderlay(arg10, arg11, arg12, arg13, -1, arg18, false)
+		var21 := typ.NewQuickGround(arg10, arg11, arg12, arg13, -1, arg18, false)
 		for i := arg0; i >= 0; i-- {
 			if w.LevelTiles[i][arg1][arg2] == nil {
-				w.LevelTiles[i][arg1][arg2] = typ.NewGround(i, arg1, arg2)
+				w.LevelTiles[i][arg1][arg2] = typ.NewSquare(i, arg1, arg2)
 			}
 		}
 		w.LevelTiles[arg0][arg1][arg2].Underlay = var21
 	case 1:
-		var21 := typ.NewTileUnderlay(arg14, arg15, arg16, arg17, arg5, arg19, arg6 == arg7 && arg6 == arg8 && arg6 == arg9)
+		var21 := typ.NewQuickGround(arg14, arg15, arg16, arg17, arg5, arg19, arg6 == arg7 && arg6 == arg8 && arg6 == arg9)
 		for i := arg0; i >= 0; i-- {
 			if w.LevelTiles[i][arg1][arg2] == nil {
-				w.LevelTiles[i][arg1][arg2] = typ.NewGround(i, arg1, arg2)
+				w.LevelTiles[i][arg1][arg2] = typ.NewSquare(i, arg1, arg2)
 			}
 		}
 		w.LevelTiles[arg0][arg1][arg2].Underlay = var21
 	default:
-		var23 := typ.NewTileOverlay(arg1, arg3, arg15, arg7, arg12, arg4, arg10, arg9, arg19, arg14, arg5, arg17, arg18, arg8, arg16, arg13, arg6, arg2, arg11)
+		var23 := typ.NewGround(arg1, arg3, arg15, arg7, arg12, arg4, arg10, arg9, arg19, arg14, arg5, arg17, arg18, arg8, arg16, arg13, arg6, arg2, arg11)
 		for i := arg0; i >= 0; i-- {
 			if w.LevelTiles[i][arg1][arg2] == nil {
-				w.LevelTiles[i][arg1][arg2] = typ.NewGround(i, arg1, arg2)
+				w.LevelTiles[i][arg1][arg2] = typ.NewSquare(i, arg1, arg2)
 			}
 		}
 		w.LevelTiles[arg0][arg1][arg2].Overlay = var23
@@ -248,7 +248,7 @@ func (w *World3D) AddGroundDecoration(arg0 *model.Model, arg2, arg3, arg4, arg5 
 	var9.BitSet = arg3
 	var9.Info = int8(arg6) // Java: byte field; (byte) reinterpret of the typecode
 	if w.LevelTiles[arg5][arg2][arg4] == nil {
-		w.LevelTiles[arg5][arg2][arg4] = typ.NewGround(arg5, arg2, arg4)
+		w.LevelTiles[arg5][arg2][arg4] = typ.NewSquare(arg5, arg2, arg4)
 	}
 	w.LevelTiles[arg5][arg2][arg4].GroundDecor = var9
 }
@@ -273,7 +273,7 @@ func (w *World3D) AddObjStack(arg0, arg1 *model.Model, arg2, arg3, arg4, arg5, a
 	}
 	var10.Offset = var11
 	if w.LevelTiles[arg3][arg6][arg5] == nil {
-		w.LevelTiles[arg3][arg6][arg5] = typ.NewGround(arg3, arg6, arg5)
+		w.LevelTiles[arg3][arg6][arg5] = typ.NewSquare(arg3, arg6, arg5)
 	}
 	w.LevelTiles[arg3][arg6][arg5].GroundObj = var10
 }
@@ -296,7 +296,7 @@ func (w *World3D) AddWall(angle2, y, level, angle1 int, model1 *model.Model, mod
 
 	for i := level; i >= 0; i-- {
 		if w.LevelTiles[i][tileX][tileZ] == nil {
-			w.LevelTiles[i][tileX][tileZ] = typ.NewGround(i, tileX, tileZ)
+			w.LevelTiles[i][tileX][tileZ] = typ.NewSquare(i, tileX, tileZ)
 		}
 	}
 
@@ -320,7 +320,7 @@ func (w *World3D) SetWallDecoration(y, z, zOffset, typecode, angle2, angle1, xOf
 	decor.Angle = angle2
 	for l := level; l >= 0; l-- {
 		if w.LevelTiles[l][x][z] == nil {
-			w.LevelTiles[l][x][z] = typ.NewGround(l, x, z)
+			w.LevelTiles[l][x][z] = typ.NewSquare(l, x, z)
 		}
 	}
 	w.LevelTiles[level][x][z].Decor = decor
@@ -393,7 +393,7 @@ func (w *World3D) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, ar
 			}
 		}
 	}
-	var22 := typ.NewLocation()
+	var22 := typ.NewSprite()
 	var22.BitSet = arg12
 	var22.Info = int8(arg13)
 	var22.Level = arg0
@@ -424,7 +424,7 @@ func (w *World3D) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, ar
 			}
 			for k := arg0; k >= 0; k-- {
 				if w.LevelTiles[k][i][j] == nil {
-					w.LevelTiles[k][i][j] = typ.NewGround(k, i, j)
+					w.LevelTiles[k][i][j] = typ.NewSquare(k, i, j)
 				}
 			}
 			var21 := w.LevelTiles[arg0][i][j]
@@ -452,7 +452,7 @@ func (w *World3D) ClearTemporaryLocs() {
 	w.TemporaryLocCount = 0
 }
 
-func (w *World3D) RemoveLoc1(arg0 *typ.Location) {
+func (w *World3D) RemoveLoc1(arg0 *typ.Sprite) {
 	for i := arg0.MinSceneTileX; i <= arg0.MaxSceneTileX; i++ {
 		for j := arg0.MinSceneTileZ; j <= arg0.MaxSceneTileZ; j++ {
 			var5 := w.LevelTiles[arg0.Level][i][j]
@@ -1080,7 +1080,7 @@ func (w *World3D) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 				for k := -25; k <= 0; k++ {
 					var15 := EyeTileZ + k
 					var16 := EyeTileZ - k
-					var var17 *typ.Ground
+					var var17 *typ.Square
 					if var22 >= MinDrawTileX {
 						if var15 >= MinDrawTileZ {
 							var17 = var20[var22][var15]
@@ -1126,7 +1126,7 @@ func (w *World3D) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 				for k := -25; k <= 0; k++ {
 					var16 := EyeTileZ + k
 					var23 := EyeTileZ - k
-					var var18 *typ.Ground
+					var var18 *typ.Square
 					if var13 >= MinDrawTileX {
 						if var16 >= MinDrawTileZ {
 							var18 = var21[var13][var16]
@@ -1165,17 +1165,17 @@ func (w *World3D) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 	}
 }
 
-func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
+func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 	DrawTileQueue.AddTail(next.DrawQueueNode)
 
 	for {
-		var tile *typ.Ground
+		var tile *typ.Square
 		tileX := 0
 		tileZ := 0
 		level := 0
 		originalLevel := 0
-		var tiles [][]*typ.Ground
-		var var9 *typ.Ground
+		var tiles [][]*typ.Square
+		var var9 *typ.Square
 
 		for ok1 := true; ok1; ok1 = var9 != nil && var9.Update {
 			for ok2 := true; ok2; ok2 = var9 != nil && var9.Update {
@@ -1184,12 +1184,12 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 						for ok5 := true; ok5; ok5 = tile.CheckLocSpans != 0 {
 							for ok6 := true; ok6; ok6 = !tile.Update {
 								for {
-									var var12 *typ.Location
+									var var12 *typ.Sprite
 									for {
 										for ok7 := true; ok7; ok7 = !tile.Update {
-											// Java: `Ground extends Linkable`, so `removeHead()`
-											// returns a Ground (or null on empty queue). In Go the
-											// Linkable wraps the Ground, so the nil check belongs on
+											// Java: `Square extends Linkable`, so `removeHead()`
+											// returns a Square (or null on empty queue). In Go the
+											// Linkable wraps the Square, so the nil check belongs on
 											// the *Linkable — `.Value` on a nil Linkable would panic
 											// before the existing tile-nil check below could fire.
 											linkable := DrawTileQueue.RemoveHead()
@@ -1679,7 +1679,7 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 	}
 }
 
-func (w *World3D) DrawTileUnderlay(arg0 *typ.TileUnderlay, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int) {
+func (w *World3D) DrawTileUnderlay(arg0 *typ.QuickGround, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int) {
 	var9 := (arg6 << 7) - EyeX
 	var10 := var9
 	var11 := (arg7 << 7) - EyeZ
@@ -1782,7 +1782,7 @@ func (w *World3D) DrawTileUnderlay(arg0 *typ.TileUnderlay, arg1, arg2, arg3, arg
 	}
 }
 
-func (w *World3D) DrawTileOverlay(arg0 int, arg1 int, arg2 *typ.TileOverlay, arg3, arg4, arg5, arg6 int) {
+func (w *World3D) DrawTileOverlay(arg0 int, arg1 int, arg2 *typ.Ground, arg3, arg4, arg5, arg6 int) {
 	var9 := len(arg2.VertexX)
 	for i := range var9 {
 		var11 := arg2.VertexX[i] - EyeX
