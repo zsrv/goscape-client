@@ -31,7 +31,7 @@ go test ./...
 
 # Run a single test
 go test ./pkg/jagex2/io/... -run TestIsaac
-go test ./pkg/sign/signlink/... -run TestStartPriv
+go test ./pkg/jagex2/client/sign/signlink/... -run TestStartPriv
 ```
 
 ## Architecture
@@ -51,23 +51,24 @@ The `main` goroutine flow (from `main.go`):
 | `dash3d/` | Global scene variables for 3D rendering |
 | `dash3d/world/` | Scene/tile building; converts cache data into a renderable `World3d` scene |
 | `dash3d/world3d/` | The scene graph (tiles, entities, occlusion) |
-| `dash3d/entity/` | Entity types: `PathingEntity`, `NpcEntity`, `PlayerEntity`, `LocEntity`, `ObjStackEntity`, `ProjectileEntity`, `SpotAnimEntity` |
-| `graphics/model/` | 3D model data and rasterization |
+| `dash3d/entity/` | Entity types (244 names): `ClientEntity`, `ClientNpc`, `ClientPlayer`, `ClientLocAnim`, `ClientObj`, `ClientProj`, `MapSpotAnim`, `LocChange`, `ModelSource` (interface). `LocMergeEntity` is still present pending its logic-delta merge into `LocChange` |
+| `dash3d/typ/` | Per-tile scene types (244 names): `Square` (tile aggregate), `Sprite` (loc), `Ground` (overlay mesh), `QuickGround` (underlay), `Wall`, `Decor`, `GroundDecor`, `GroundObject` |
+| `dash3d/model/` | 3D model data and rasterization (moved from `graphics/` in rev-244) |
+| `dash3d/animbase/` & `animframe/` | Skeletal animation base/frame data (moved from `graphics/`) |
+| `dash3d/metadata/` | Model metadata (moved from `graphics/`) |
+| `dash3d/vertexnormal/` | Vertex normal smoothing (moved from `graphics/`) |
 | `graphics/pix2d/` | 2D pixel operations (line drawing, fill) |
 | `graphics/pix3d/` | 3D rasterizer (triangle fill, texture mapping, sin/cos tables) |
 | `graphics/pix8/` | 8-bit indexed-color pixel buffer |
 | `graphics/pix32/` | 32-bit RGBA pixel buffer |
 | `graphics/pixfont/` | Bitmap font rendering |
 | `graphics/pixmap/` | CPU-side pixel buffer bridging the game renderer to GPU upload (via the `platform` backend) |
-| `graphics/animbase/` & `animframe/` | Skeletal animation base/frame data |
-| `graphics/metadata/` | Model metadata |
-| `graphics/vertexnormal/` | Vertex normal smoothing |
 | `datastruct/` | Generic `LruCache[T]`, doubly-linked list, `JString` |
 | `io/` | `Packet` (binary reader/writer), `Jagfile` (JAG archive), ISAAC CSPRNG, `bzip2` decompressor, network protocol constants |
 | `sound/wave/` | PCM wave audio |
 | `sound/envelope/` & `tone/` | MIDI-style sound envelope/tone synthesis |
 | `wordenc/wordfilter/` & `wordpack/` | Chat word filter and word packing |
-| `sign/signlink/` | Filesystem/network bridge originally for the signed Java applet; handles cache directory, HTTP downloads, DNS, and audio requests |
+| `client/sign/signlink/` | Filesystem/network bridge originally for the signed Java applet; handles cache directory, HTTP downloads, DNS, and audio requests (moved under `client/sign/` in rev-244 per Java `jagex2.client.sign`) |
 
 ### Key Java→Go Translation Notes (from README.md)
 

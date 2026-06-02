@@ -6,7 +6,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/zsrv/goscape-client/pkg/sign/signlink"
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/sign/signlink"
 )
 
 var (

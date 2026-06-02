@@ -12,7 +12,7 @@ import (
 
 	"github.com/sinshu/go-meltysynth/meltysynth"
 
-	"github.com/zsrv/goscape-client/pkg/sign/signlink"
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/sign/signlink"
 )
 
 // fadeDuration matches the native 2s fade-out window.

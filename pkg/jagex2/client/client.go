@@ -18,6 +18,7 @@ import (
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/inputtracking"
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/sign/signlink"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/component"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/flotype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/idktype"
@@ -51,7 +52,6 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/wave"
 	"github.com/zsrv/goscape-client/pkg/jagex2/wordenc/wordfilter"
 	"github.com/zsrv/goscape-client/pkg/jagex2/wordenc/wordpack"
-	"github.com/zsrv/goscape-client/pkg/sign/signlink"
 )
 
 func RecoverPanic() {

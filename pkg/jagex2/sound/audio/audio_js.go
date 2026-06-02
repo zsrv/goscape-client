@@ -8,7 +8,7 @@ import (
 	"syscall/js"
 	"time"
 
-	"github.com/zsrv/goscape-client/pkg/sign/signlink"
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/sign/signlink"
 )
 
 // One AudioContext for the process. Created in Start; resumed on the first
