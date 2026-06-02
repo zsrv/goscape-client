@@ -62,6 +62,14 @@ type ObjType struct {
 	CountCo          []int
 	Op               []string
 	IOp              []string
+	// Java: ObjType resizex/resizey/resizez/ambient/contrast (rev-244 opcodes
+	// 110-114). Read here; consumed by the world getModel (scale +
+	// calculateNormals) once the model loader lands — see Decode TODO.
+	ResizeX  int
+	ResizeY  int
+	ResizeZ  int
+	Ambient  int
+	Contrast int
 }
 
 func NewObjType() *ObjType {
@@ -151,6 +159,12 @@ func (t *ObjType) Reset() {
 	t.CountCo = nil
 	t.CertLink = -1
 	t.CertTemplate = -1
+	// Java: ObjType.reset (rev-244)
+	t.ResizeX = 128
+	t.ResizeY = 128
+	t.ResizeZ = 128
+	t.Ambient = 0
+	t.Contrast = 0
 }
 
 func (t *ObjType) Decode(arg1 *io.Packet) {
@@ -252,6 +266,20 @@ func (t *ObjType) Decode(arg1 *io.Packet) {
 			}
 			t.CountObj[var3-100] = arg1.G2()
 			t.CountCo[var3-100] = arg1.G2()
+		// Java: ObjType.decode opcodes 110-114 (rev-244). TODO(rev-244 model
+		// phase): wire ResizeX/Y/Z into the world getModel as
+		// model.Scale(ResizeY, ResizeZ, ResizeX) when any != 128, and use
+		// CalculateNormals(Ambient+64, Contrast+768, ...).
+		case 110:
+			t.ResizeX = arg1.G2()
+		case 111:
+			t.ResizeY = arg1.G2()
+		case 112:
+			t.ResizeZ = arg1.G2()
+		case 113:
+			t.Ambient = int(arg1.G1B())
+		case 114:
+			t.Contrast = int(arg1.G1B()) * 5
 		}
 	}
 }

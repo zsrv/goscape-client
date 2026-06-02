@@ -24,6 +24,12 @@ type SeqType struct {
 	RightHand   int
 	LeftHand    int
 	ReplayCount int
+	// Java: SeqType preanim_move/postanim_mode/duplicatebehavior (rev-244
+	// opcodes 9/10/11). ReplayCount above is rev-244's maxloops (opcode 8,
+	// same g1 read, default 99) under its rev-225 name.
+	PreanimMove       int
+	PostanimMode      int
+	DuplicateBehavior int
 }
 
 func NewSeqType() *SeqType {
@@ -34,6 +40,10 @@ func NewSeqType() *SeqType {
 		RightHand:   -1,
 		LeftHand:    -1,
 		ReplayCount: 99,
+		// Java: SeqType field initializers (rev-244): preanim_move = -1,
+		// postanim_mode = -1, duplicatebehavior = 0.
+		PreanimMove:  -1,
+		PostanimMode: -1,
 	}
 }
 
@@ -64,7 +74,22 @@ func (t *SeqType) Decode(arg1 *io.Packet) {
 				t.IFrames[0] = -1
 				t.Delay = make([]int, 1)
 				t.Delay[0] = -1
-				return
+			}
+			// Java: SeqType.decode post-loop defaulting (rev-244). preanim_move
+			// and postanim_mode default by whether walkmerge is present.
+			if t.PreanimMove == -1 {
+				if t.WalkMerge == nil {
+					t.PreanimMove = 0
+				} else {
+					t.PreanimMove = 2
+				}
+			}
+			if t.PostanimMode == -1 {
+				if t.WalkMerge == nil {
+					t.PostanimMode = 0
+				} else {
+					t.PostanimMode = 2
+				}
 			}
 			return
 		case 1:
@@ -79,6 +104,11 @@ func (t *SeqType) Decode(arg1 *io.Packet) {
 					t.IFrames[i] = -1
 				}
 				t.Delay[i] = arg1.G2()
+				// Java: rev-244 moved this delay==0 fallback OUT of decode into
+				// a lazy getFrameDuration(frame). Kept here for now (identical
+				// resolved values, current load order has AnimFrame ready at
+				// decode). TODO(rev-244 WS3): extract to GetFrameDuration and
+				// call it at the entity-anim read sites.
 				if t.Delay[i] == 0 {
 					t.Delay[i] = animframe.Instances[t.Frames[i]].Delay
 				}
@@ -104,7 +134,14 @@ func (t *SeqType) Decode(arg1 *io.Packet) {
 		case 7:
 			t.LeftHand = arg1.G2()
 		case 8:
-			t.ReplayCount = arg1.G1()
+			t.ReplayCount = arg1.G1() // Java: maxloops (rev-244)
+		// Java: SeqType.decode opcodes 9/10/11 (rev-244).
+		case 9:
+			t.PreanimMove = arg1.G1()
+		case 10:
+			t.PostanimMode = arg1.G1()
+		case 11:
+			t.DuplicateBehavior = arg1.G1()
 		default:
 			fmt.Println("Error unrecognised seq config code:", var3)
 		}

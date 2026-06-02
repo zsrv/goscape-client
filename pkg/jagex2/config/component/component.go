@@ -19,17 +19,20 @@ var (
 )
 
 type Component struct {
-	InvSlotObjId     []int
-	InvSlotObjCount  []int
-	SeqFrame         int
-	SeqCycle         int
-	Id               int
-	Layer            int
-	Type             int
-	ButtonType       int
-	ClientCode       int
-	Width            int
-	Height           int
+	InvSlotObjId    []int
+	InvSlotObjCount []int
+	SeqFrame        int
+	SeqCycle        int
+	Id              int
+	Layer           int
+	Type            int
+	ButtonType      int
+	ClientCode      int
+	Width           int
+	Height          int
+	// Java: Component.alpha (byte) — rev-244 header field read between height
+	// and overlayer. int8 to match Java's signed-byte sign extension.
+	Alpha            int8
 	X                int
 	Y                int
 	Scripts          [][]int
@@ -112,6 +115,9 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 			var8.ClientCode = var4.G2()
 			var8.Width = var4.G2()
 			var8.Height = var4.G2()
+			// Java: com.alpha = (byte) data.g1() — rev-244 inserts this read
+			// between height and overlayer; shifts every following field.
+			var8.Alpha = int8(var4.G1())
 			var8.OverLayer = var4.G1()
 			if var8.OverLayer == 0 {
 				var8.OverLayer = -1

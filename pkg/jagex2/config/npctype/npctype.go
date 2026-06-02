@@ -42,6 +42,13 @@ type NpcType struct {
 	VisLevel int
 	ResizeH  int
 	ResizeV  int
+	// Java: NpcType alwaysontop/headicon/ambient/contrast (rev-244 opcodes
+	// 99-102). Read here; Ambient/Contrast consumed by the model build
+	// (calculateNormals) once the model phase lands — see Decode TODO.
+	AlwaysOnTop bool
+	HeadIcon    int
+	Ambient     int
+	Contrast    int
 }
 
 func NewNpcType() *NpcType {
@@ -58,6 +65,9 @@ func NewNpcType() *NpcType {
 		VisLevel:     -1,
 		ResizeH:      128,
 		ResizeV:      128,
+		// Java: NpcType field initializers (rev-244). AlwaysOnTop/Ambient/
+		// Contrast default to the zero value; HeadIcon defaults to -1.
+		HeadIcon: -1,
 	}
 }
 
@@ -165,6 +175,17 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 			t.ResizeH = arg1.G2()
 		case 98:
 			t.ResizeV = arg1.G2()
+		// Java: NpcType.decode opcodes 99-102 (rev-244). TODO(rev-244 model
+		// phase): use CalculateNormals(Ambient+64, Contrast+850, ...) in the
+		// model build instead of the constant (64, 850).
+		case 99:
+			t.AlwaysOnTop = true
+		case 100:
+			t.Ambient = int(arg1.G1B())
+		case 101:
+			t.Contrast = int(arg1.G1B()) * 5
+		case 102:
+			t.HeadIcon = arg1.G2()
 		}
 	}
 }

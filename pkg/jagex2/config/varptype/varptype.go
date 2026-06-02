@@ -63,9 +63,13 @@ func (t *VarpType) Decode(arg1 int, arg2 *io.Packet) {
 		case 7:
 			arg2.G4() // Java: this.code7 = arg2.g4() — dead-write field omitted
 		case 8:
-			// Java: this.code8 = true — dead-write field omitted
+			// Java: this.code8 = true; this.code11 = true (rev-244 sets both) —
+			// both dead-write fields, omitted. No wire payload.
 		case 10:
 			arg2.GJStr() // Java: this.code10 = arg2.gjstr() — dead-write field omitted
+		case 11:
+			// Java: this.code11 = true (rev-244) — dead-write field omitted. No
+			// wire payload; handled so the default error branch is not hit.
 		default:
 			fmt.Println("Error unrecognised config code:", var4)
 		}
