@@ -236,12 +236,18 @@ type Cache interface {
   `ingame func() bool` (Client sets it; replaces Java `app.ingame`). The Java
   `app.fileStreams[0] != null` cache gate ⇒ `od.cache != nil`.
 
-- [ ] **Step 4 — `Unpack(versionlist *io.Jagfile)`.** Faithful port of
+- [ ] **Step 4 — `Unpack(versionlist Archive)`.** Faithful port of
   `OnDemand.java:135-216` (the loop reads `model/anim/midi/map_version` g2,
   `*_crc` g4, `model_index` bytes, `map_index` 7-byte records (g2 idx, g2 land,
   g2 loc, g1 members), `anim_index` g2, `midi_index` g1). **Drop** the trailing
-  `app.startThread(this,2)` (socket). Signature takes only the Jagfile (the
-  Client/seam wiring is set by the constructor, below).
+  `app.startThread(this,2)` (socket). **Test seam:** instead of `*io.Jagfile`
+  the param is a consumer-defined interface `type Archive interface { Read(name
+  string, dst []byte) []byte }` — `*io.Jagfile` satisfies it structurally
+  (unchanged), and tests pass a fake map-backed reader. (A `Jagfile`'s members
+  are bzip2-compressed and the port has no bzip2 *encoder*, so a real synthetic
+  Jagfile can't be built in a unit test; the interface is the minimal faithful
+  adaptation — comment it `// Java: OnDemand.unpack(Jagfile, Client); the Jagfile
+  is taken as a reader interface so the parse is unit-testable`.)
 
 - [ ] **Step 5 — `New(versionlist, dl, cache, ingame)`** constructor: calls
   `Unpack(versionlist)`, stores seams, `running=true`.
@@ -276,10 +282,11 @@ func Validate(src []byte, expectedCrc, expectedVersion int) bool {
 - [ ] **Step 8 — tests** (`ondemand_test.go`, pure):
   - `Validate`: build `payload + crc32(payload) + 2-byte version`; assert true;
     flip a version/crc byte → false; `len<2` → false.
-  - `Unpack`: build a synthetic `versionlist` Jagfile in memory (use
-    `io.Jagfile` / `io.Packet` writers) with tiny `*_version/*_crc/*_index`
-    members; assert `GetFileCount`, `GetMapFile`, `GetModelFlags`,
-    `ShouldPrefetchMidi` return the encoded values.
+  - `Unpack`: a fake `Archive` whose `Read(name,_)` returns in-memory member
+    bytes built with `io.Packet` writers (`P2/P4/P1`) for tiny
+    `*_version/*_crc/model_index/map_index/anim_index/midi_index` members;
+    assert `GetFileCount`, `GetMapFile`, `GetModelFlags`, `ShouldPrefetchMidi`
+    return the encoded values.
 - [ ] **Step 9 — gate + commit.** Green. `git commit --no-gpg-sign -m
   "feat(rev-244): OnDemand types, versionlist parse, validate (WS1)"`
 
