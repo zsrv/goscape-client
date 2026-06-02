@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+WIP=$(git diff --quiet || echo '-WIP')
+BRANCH=$(git rev-parse --abbrev-ref HEAD | sed 's#/#-#g')
+SHA=$(git rev-parse --short HEAD)
+
+# If not a tag, use branch-hash else use tag
+TAG=$(git describe --tags --exact-match 2> /dev/null || echo "")
+
+if [ -z "$TAG" ]
+then
+      echo "${BRANCH}"-"${SHA}""${WIP}"
+else
+      echo "${TAG}"
+fi

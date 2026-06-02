@@ -44,4 +44,8 @@ CLAUDE.local.md
 # === OS cruft ===
 .DS_Store
 Thumbs.db
-build/
+
+# === Build output ===
+# Anchored to the repo root so it matches only the top-level `make wasm`
+# output dir (WASM_OUT := build/web), NOT the pkg/util/build source package.
+/build/

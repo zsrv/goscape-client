@@ -13,11 +13,10 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/audio"
 	"github.com/zsrv/goscape-client/pkg/profiling"
 	"github.com/zsrv/goscape-client/pkg/sign/signlink"
+	"github.com/zsrv/goscape-client/pkg/util/build"
 )
 
 func main() {
-	fmt.Println("RS2 user client - release #" + strconv.Itoa(225))
-
 	// Startup configuration comes from flags. This is a Go-original standalone
 	// interface: the Java applet read positional args plus a getCodeBase() host.
 	// The Java `port-offset` arg (arg0[1] -> portOffset, deob/client.java:10601),
@@ -33,7 +32,19 @@ func main() {
 		"game server as [tcp|ws|wss]://host:port")
 	ondemandServer := flag.String("ondemand-server", "http://127.0.0.1:8888",
 		"on-demand/cache server as [http|https]://host:port")
+	showVersion := flag.Bool("version", false, "print build version information and exit")
 	flag.Parse()
+
+	// -version prints the build metadata stamped in by the Makefile's -ldflags
+	// (see pkg/util/build) and exits before any window/network/audio setup, so
+	// it works headlessly. Handled before the startup banner so the output is
+	// clean and machine-parseable.
+	if *showVersion {
+		fmt.Println(build.Info())
+		return
+	}
+
+	fmt.Println("RS2 user client - release #" + strconv.Itoa(225))
 
 	client.NodeID = *nodeID
 

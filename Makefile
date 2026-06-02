@@ -8,6 +8,20 @@
 
 SHELL := /usr/bin/env bash -o pipefail
 
+BUILD_TAG    ?= $(shell ./tools/build-tag)
+GIT_REVISION := $(shell git rev-parse --short HEAD)
+GIT_BRANCH   := $(shell git rev-parse --abbrev-ref HEAD)
+
+# Build flags
+VPREFIX      := github.com/zsrv/goscape-client/pkg/util/build
+GO_LDFLAGS   := -X $(VPREFIX).Branch=$(GIT_BRANCH) \
+                -X $(VPREFIX).Version=$(BUILD_TAG) \
+                -X $(VPREFIX).Revision=$(GIT_REVISION) \
+                -X $(VPREFIX).BuildUser=$(shell whoami)@$(shell hostname) \
+                -X $(VPREFIX).BuildDate=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+GO_FLAGS     := -ldflags "-s -w $(GO_LDFLAGS)"
+
 # The one client binary.
 CMD := ./cmd/client
 BIN := bin/client
@@ -30,34 +44,34 @@ help: ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 build: ## Build all packages
-	go build ./...
+	go build $(GO_FLAGS) ./...
 
 run: ## Run the client (override args with ARGS="...")
-	go run $(CMD) $(ARGS)
+	go run $(GO_FLAGS) $(CMD) $(ARGS)
 
 $(BIN): ## Build the client binary into bin/client
-	go build -o $(BIN) $(CMD)
+	go build $(GO_FLAGS) -o $(BIN) $(CMD)
 
 # Browser build directory (plain go build output: index.html, main.wasm, wasm_exec.js).
 WASM_OUT := build/web
 
 wasm: ## Build the browser (js/wasm) client into build/web/
 	mkdir -p $(WASM_OUT)
-	GOOS=js GOARCH=wasm go build -o $(WASM_OUT)/main.wasm $(CMD)
+	GOOS=js GOARCH=wasm go build $(GO_FLAGS) -o $(WASM_OUT)/main.wasm $(CMD)
 	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" $(WASM_OUT)/wasm_exec.js
 	cp web/index.html $(WASM_OUT)/index.html
 
 wasm-serve: ## Serve the browser build at http://localhost:8080 (run `make wasm` first)
-	go run ./cmd/wasmserve -dir $(WASM_OUT)
+	go run $(GO_FLAGS) ./cmd/wasmserve -dir $(WASM_OUT)
 
 test: ## Run unit tests
-	go test ./...
+	go test $(GO_FLAGS) ./...
 
 test-race: ## Run unit tests under the race detector
-	go test -race ./...
+	go test $(GO_FLAGS) -race ./...
 
 vet: ## Run go vet
-	go vet ./...
+	go vet $(GO_FLAGS) ./...
 
 lint: ## Run golangci-lint (config: .golangci.yml)
 	golangci-lint run
