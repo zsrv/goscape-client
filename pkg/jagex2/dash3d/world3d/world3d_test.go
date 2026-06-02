@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/vertexnormal"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/vertexnormal"
 )
 
 // TestOccludedMode5_UsesZDeltaForZProjection is a regression test for the

@@ -3,7 +3,7 @@ package idktype
 import (
 	"fmt"
 
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 

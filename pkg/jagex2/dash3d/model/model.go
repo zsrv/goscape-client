@@ -5,11 +5,11 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/animframe"
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/metadata"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/metadata"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/vertexnormal"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix3d"
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/vertexnormal"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 

@@ -7,9 +7,9 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct/jstring"
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 

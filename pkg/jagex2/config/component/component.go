@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct/jstring"
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix32"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pixfont"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"

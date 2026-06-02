@@ -3,8 +3,8 @@ package objtype
 import (
 	"strings"
 
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix32"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix3d"

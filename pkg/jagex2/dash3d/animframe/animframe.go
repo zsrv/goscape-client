@@ -1,7 +1,7 @@
 package animframe
 
 import (
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/animbase"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animbase"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 

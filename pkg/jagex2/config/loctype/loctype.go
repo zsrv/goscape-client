@@ -3,8 +3,8 @@ package loctype
 import (
 	"strings"
 
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 

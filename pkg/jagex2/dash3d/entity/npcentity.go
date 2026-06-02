@@ -4,7 +4,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/npctype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 )
 
 type NpcEntity struct {

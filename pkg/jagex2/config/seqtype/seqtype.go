@@ -3,7 +3,7 @@ package seqtype
 import (
 	"fmt"
 
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/animframe"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 

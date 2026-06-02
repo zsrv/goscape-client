@@ -3,7 +3,7 @@ package model
 import (
 	"testing"
 
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/vertexnormal"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/vertexnormal"
 )
 
 // TestSliceAlias_EqualValueDifferentBacking is the foundational guarantee

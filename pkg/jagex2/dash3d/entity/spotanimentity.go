@@ -2,7 +2,7 @@ package entity
 
 import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
-	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/model"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 )
 
 // MapSpotAnim
