@@ -181,6 +181,20 @@ type Model struct {
 	seqAlphaBuf          []int // owned FaceAlpha reuse pool for ResetFromModel6; never aliases a shared/src slice
 }
 
+// GetModel makes *Model satisfy the entity.ModelSource interface (rev-244:
+// Model extends ModelSource). It returns the receiver itself so World3D's
+// resolve-then-draw path (m := node.GetModel(); m.Draw1(...)) works uniformly
+// for both static models and self-animating sources (ClientLocAnim).
+//
+// Java: rev-244 Model.getModel() returns null — Model is drawn via its own
+// overridden draw(), so its getModel() is never invoked. Go has no virtual
+// draw() dispatch, so returning the receiver here unifies the field-resolution
+// without changing observable behaviour (see WS3-MODELSOURCE-DESIGN.md). Safe on
+// a nil receiver: it simply returns nil.
+func (m *Model) GetModel() *Model {
+	return m
+}
+
 func Unload() {
 	Metadata = nil
 	Head = nil

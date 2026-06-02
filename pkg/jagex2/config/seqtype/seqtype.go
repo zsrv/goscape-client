@@ -32,6 +32,17 @@ type SeqType struct {
 	DuplicateBehavior int
 }
 
+// GetFrameDuration returns the duration (in client cycles) of animation frame
+// `frame`. Java: rev-244 SeqType.getFrameDuration (it lazily resolves a zero
+// delay from the frame's AnimFrame, caching into delay[], then falls back to 1).
+// The Go decode (below) already resolves that fallback eagerly into Delay[], so
+// the resolved value is identical and this getter simply returns it. Callers
+// (e.g. ClientLocAnim.GetModel) use this rather than indexing Delay directly, to
+// match the rev-244 call shape.
+func (t *SeqType) GetFrameDuration(frame int) int {
+	return t.Delay[frame]
+}
+
 func NewSeqType() *SeqType {
 	return &SeqType{
 		ReplayOff:   -1,
@@ -104,11 +115,11 @@ func (t *SeqType) Decode(arg1 *io.Packet) {
 					t.IFrames[i] = -1
 				}
 				t.Delay[i] = arg1.G2()
-				// Java: rev-244 moved this delay==0 fallback OUT of decode into
-				// a lazy getFrameDuration(frame). Kept here for now (identical
-				// resolved values, current load order has AnimFrame ready at
-				// decode). TODO(rev-244 WS3): extract to GetFrameDuration and
-				// call it at the entity-anim read sites.
+				// Java: rev-244 moved this delay==0 fallback OUT of decode into a
+				// lazy getFrameDuration(frame) (now exposed as GetFrameDuration
+				// above). Resolving eagerly here is kept (identical resolved
+				// values; current load order has AnimFrame ready at decode), so
+				// GetFrameDuration just returns the already-resolved Delay[frame].
 				if t.Delay[i] == 0 {
 					t.Delay[i] = animframe.Instances[t.Frames[i]].Delay
 				}

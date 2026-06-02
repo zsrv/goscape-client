@@ -239,7 +239,10 @@ func (w *World3D) SetTile(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, 
 	}
 }
 
-func (w *World3D) AddGroundDecoration(arg0 *model.Model, arg2, arg3, arg4, arg5 int, arg6 byte, arg7 int) {
+func (w *World3D) AddGroundDecoration(arg0 entity.ModelSource, arg2, arg3, arg4, arg5 int, arg6 byte, arg7 int) {
+	if arg0 == nil {
+		return
+	}
 	var9 := typ.NewGroundDecor()
 	var9.Model = arg0
 	var9.X = arg2*128 + 64
@@ -253,7 +256,7 @@ func (w *World3D) AddGroundDecoration(arg0 *model.Model, arg2, arg3, arg4, arg5 
 	w.LevelTiles[arg5][arg2][arg4].GroundDecor = var9
 }
 
-func (w *World3D) AddObjStack(arg0, arg1 *model.Model, arg2, arg3, arg4, arg5, arg6 int, arg7 *model.Model) {
+func (w *World3D) AddObjStack(arg0, arg1 entity.ModelSource, arg2, arg3, arg4, arg5, arg6 int, arg7 entity.ModelSource) {
 	var10 := typ.NewGroundObject()
 	var10.TopObj = arg0
 	var10.X = arg6*128 + 64
@@ -267,8 +270,13 @@ func (w *World3D) AddObjStack(arg0, arg1 *model.Model, arg2, arg3, arg4, arg5, a
 	var12 := w.LevelTiles[arg3][arg6][arg5]
 	if var12 != nil {
 		for i := range var12.LocCount {
-			var14 := var12.Locs[i].Model.ObjRaise
-			var11 = max(var14, var11)
+			// Java: rev-244 addGroundObject — only static loc models (instanceof
+			// Model) contribute objRaise; self-animating ClientLocAnim locs are
+			// skipped by the type assertion.
+			if m, ok := var12.Locs[i].Model.(*model.Model); ok {
+				var14 := m.ObjRaise
+				var11 = max(var14, var11)
+			}
 		}
 	}
 	var10.Offset = var11
@@ -278,7 +286,7 @@ func (w *World3D) AddObjStack(arg0, arg1 *model.Model, arg2, arg3, arg4, arg5, a
 	w.LevelTiles[arg3][arg6][arg5].GroundObj = var10
 }
 
-func (w *World3D) AddWall(angle2, y, level, angle1 int, model1 *model.Model, model2 *model.Model, tileX, typecode1, tileZ int, typecode2 byte) {
+func (w *World3D) AddWall(angle2, y, level, angle1 int, model1 entity.ModelSource, model2 entity.ModelSource, tileX, typecode1, tileZ int, typecode2 byte) {
 	if model1 == nil && model2 == nil {
 		return
 	}
@@ -304,8 +312,8 @@ func (w *World3D) AddWall(angle2, y, level, angle1 int, model1 *model.Model, mod
 }
 
 // AddDecor
-func (w *World3D) SetWallDecoration(y, z, zOffset, typecode, angle2, angle1, xOffset, x int, model *model.Model, typecode2 byte, level int) {
-	if model == nil {
+func (w *World3D) SetWallDecoration(y, z, zOffset, typecode, angle2, angle1, xOffset, x int, modelSrc entity.ModelSource, typecode2 byte, level int) {
+	if modelSrc == nil {
 		return
 	}
 
@@ -315,7 +323,13 @@ func (w *World3D) SetWallDecoration(y, z, zOffset, typecode, angle2, angle1, xOf
 	decor.X = x*128 + 64 + xOffset
 	decor.Z = z*128 + 64 + zOffset
 	decor.Y = y
-	decor.Model = model
+	decor.Model = modelSrc
+	// Seed the cached MinY from a static model immediately (rev-244 reads
+	// ModelSource.minY for the decor visibility cull). Animated ClientLocAnim
+	// nodes keep the ctor default 1000 until first drawn.
+	if m, ok := modelSrc.(*model.Model); ok {
+		decor.MinY = m.MinY
+	}
 	decor.Type = angle1
 	decor.Angle = angle2
 	for l := level; l >= 0; l-- {
@@ -326,17 +340,17 @@ func (w *World3D) SetWallDecoration(y, z, zOffset, typecode, angle2, angle1, xOf
 	w.LevelTiles[level][x][z].Decor = decor
 }
 
-func (w *World3D) AddLoc1(arg0 int, arg2 int, arg3 entity.ModelSource, arg4, arg5, arg6, arg7 int, arg8 byte, arg9 *model.Model, arg10, arg11 int) bool {
-	if arg9 == nil && arg3 == nil {
+func (w *World3D) AddLoc1(arg0 int, arg2 int, arg4, arg5, arg6, arg7 int, arg8 byte, arg9 entity.ModelSource, arg10, arg11 int) bool {
+	if arg9 == nil {
 		return true
 	}
 	var13 := arg6*128 + arg7*64
 	var14 := arg5*128 + arg11*64
-	return w.AddLoc2(arg2, arg6, arg5, arg7, arg11, var13, var14, arg0, arg9, arg3, arg10, false, arg4, arg8)
+	return w.AddLoc2(arg2, arg6, arg5, arg7, arg11, var13, var14, arg0, arg9, arg10, false, arg4, arg8)
 }
 
-func (w *World3D) AddTemporary1(arg1, arg2, yaw, arg4, arg5 int, forwardPadding bool, arg7 *model.Model, arg8 entity.ModelSource, arg9, arg10 int) bool {
-	if arg7 == nil && arg8 == nil {
+func (w *World3D) AddTemporary1(arg1, arg2, yaw, arg4, arg5 int, forwardPadding bool, arg8 entity.ModelSource, arg9, arg10 int) bool {
+	if arg8 == nil {
 		return true
 	}
 
@@ -368,18 +382,18 @@ func (w *World3D) AddTemporary1(arg1, arg2, yaw, arg4, arg5 int, forwardPadding 
 	x1 /= 128
 	z1 /= 128
 
-	return w.AddLoc2(arg10, x0, z0, x1-x0+1, z1-z0+1, arg4, arg1, arg9, arg7, arg8, yaw, true, arg5, byte(0))
+	return w.AddLoc2(arg10, x0, z0, x1-x0+1, z1-z0+1, arg4, arg1, arg9, arg8, yaw, true, arg5, byte(0))
 }
 
-func (w *World3D) AddTemporary2(arg0 int, arg2 *model.Model, arg3, arg4, arg5, arg6, arg7, arg8 int, arg9 entity.ModelSource, arg11, arg12, arg13 int) bool {
-	if arg2 == nil && arg9 == nil {
+func (w *World3D) AddTemporary2(arg0 int, arg3, arg4, arg5, arg6, arg7, arg8 int, arg9 entity.ModelSource, arg11, arg12, arg13 int) bool {
+	if arg9 == nil {
 		return true
 	}
-	return w.AddLoc2(arg11, arg8, arg7, arg0-arg8+1, arg12-arg7+1, arg13, arg3, arg4, arg2, arg9, arg6, true, arg5, byte(0))
+	return w.AddLoc2(arg11, arg8, arg7, arg0-arg8+1, arg12-arg7+1, arg13, arg3, arg4, arg9, arg6, true, arg5, byte(0))
 }
 
-func (w *World3D) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, arg8 *model.Model, arg9 entity.ModelSource, arg10 int, arg11 bool, arg12 int, arg13 byte) bool {
-	if arg8 == nil && arg9 == nil {
+func (w *World3D) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, arg8 entity.ModelSource, arg10 int, arg11 bool, arg12 int, arg13 byte) bool {
+	if arg8 == nil {
 		return false
 	}
 	for i := arg1; i < arg1+arg3; i++ {
@@ -401,7 +415,12 @@ func (w *World3D) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, ar
 	var22.Z = arg6
 	var22.Y = arg7
 	var22.Model = arg8
-	var22.Entity = arg9
+	// Seed the cached MinY from a static model immediately (rev-244 reads
+	// ModelSource.minY for the loc visibility cull). Animated ClientLocAnim
+	// nodes keep the ctor default 1000 until first drawn.
+	if m, ok := arg8.(*model.Model); ok {
+		var22.MinY = m.MinY
+	}
 	var22.Yaw = arg10
 	var22.MinSceneTileX = arg1
 	var22.MinSceneTileZ = arg2
@@ -477,23 +496,6 @@ func (w *World3D) RemoveLoc1(arg0 *typ.Sprite) {
 	}
 }
 
-func (w *World3D) SetLocModel(arg0 int, arg1 *model.Model, arg3 int, arg4 int) {
-	if arg1 == nil {
-		return
-	}
-	var6 := w.LevelTiles[arg3][arg0][arg4]
-	if var6 == nil {
-		return
-	}
-	for i := range var6.LocCount {
-		var8 := var6.Locs[i]
-		if (var8.BitSet>>29)&0x3 == 2 {
-			var8.Model = arg1
-			return
-		}
-	}
-}
-
 func (w *World3D) SetWallDecorationOffset(arg0, arg1, arg2, arg3 int) {
 	var6 := w.LevelTiles[arg0][arg2][arg1]
 	if var6 == nil {
@@ -506,61 +508,6 @@ func (w *World3D) SetWallDecorationOffset(arg0, arg1, arg2, arg3 int) {
 		var10.X = var8 + (var10.X-var8)*arg3/16
 		var10.Z = var9 + (var10.Z-var9)*arg3/16
 	}
-}
-
-func (w *World3D) SetWallDecorationModel(arg1 int, arg2 int, arg3 *model.Model, arg4 int) {
-	if arg3 == nil {
-		return
-	}
-	var6 := w.LevelTiles[arg4][arg2][arg1]
-	if var6 != nil {
-		var7 := var6.Decor
-		if var7 != nil {
-			var7.Model = arg3
-		}
-	}
-}
-
-func (w *World3D) SetGroundDecorationModel(arg0 *model.Model, arg1, arg3, arg4 int) {
-	if arg0 == nil {
-		return
-	}
-	var6 := w.LevelTiles[arg4][arg3][arg1]
-	if var6 != nil {
-		var7 := var6.GroundDecor
-		if var7 != nil {
-			var7.Model = arg0
-		}
-	}
-}
-
-func (w *World3D) SetWallModel(arg1 *model.Model, arg2, arg3, arg4 int) {
-	if arg1 == nil {
-		return
-	}
-	var8 := w.LevelTiles[arg4][arg3][arg2]
-	if var8 != nil {
-		var7 := var8.Wall
-		if var7 != nil {
-			var7.ModelA = arg1
-		}
-	}
-}
-
-func (w *World3D) SetWallModels(arg0, arg1 *model.Model, arg2, arg4, arg5 int) {
-	if arg0 == nil {
-		return
-	}
-	var7 := w.LevelTiles[arg5][arg4][arg2]
-	if var7 == nil {
-		return
-	}
-	var8 := var7.Wall
-	if var8 == nil {
-		return
-	}
-	var8.ModelA = arg0
-	var8.ModelB = arg1
 }
 
 func (w *World3D) RemoveWall(arg0, arg1, arg2 int) {
@@ -603,6 +550,53 @@ func (w *World3D) RemoveObjStack(arg0, arg1, arg2 int) {
 	if var4 != nil {
 		var4.GroundObj = nil
 	}
+}
+
+// GetWall returns the wall node at (arg2=level, arg0, arg1), or nil. Java:
+// rev-244 World3D.getWall — used by the dynamic loc-anim / loc-change apply path
+// to retarget a node's ModelSource.
+func (w *World3D) GetWall(arg0, arg1, arg2 int) *typ.Wall {
+	var6 := w.LevelTiles[arg2][arg0][arg1]
+	if var6 == nil {
+		return nil
+	}
+	return var6.Wall
+}
+
+// GetDecor returns the decor node at (arg1=level, arg0, arg3), or nil. Java:
+// rev-244 World3D.getDecor.
+func (w *World3D) GetDecor(arg0, arg1, arg3 int) *typ.Decor {
+	var5 := w.LevelTiles[arg1][arg0][arg3]
+	if var5 == nil {
+		return nil
+	}
+	return var5.Decor
+}
+
+// GetSprite returns the layer-2 loc sprite at (arg0=level, arg3, arg1), or nil.
+// Java: rev-244 World3D.getSprite.
+func (w *World3D) GetSprite(arg0, arg1, arg3 int) *typ.Sprite {
+	var5 := w.LevelTiles[arg0][arg3][arg1]
+	if var5 == nil {
+		return nil
+	}
+	for i := range var5.LocCount {
+		var7 := var5.Locs[i]
+		if (var7.BitSet>>29)&0x3 == 2 && var7.MinSceneTileX == arg3 && var7.MinSceneTileZ == arg1 {
+			return var7
+		}
+	}
+	return nil
+}
+
+// GetGroundDecor returns the ground-decor node at (arg3=level, arg1, arg2), or
+// nil. Java: rev-244 World3D.getGroundDecor.
+func (w *World3D) GetGroundDecor(arg1, arg2, arg3 int) *typ.GroundDecor {
+	var5 := w.LevelTiles[arg3][arg1][arg2]
+	if var5 == nil || var5.GroundDecor == nil {
+		return nil
+	}
+	return var5.GroundDecor
 }
 
 func (w *World3D) GetWallBitSet(arg0, arg1, arg2 int) int {
@@ -674,29 +668,40 @@ func (w *World3D) BuildModels(arg0, arg1, arg2, lightAttenuation, arg4 int) {
 			for tileZ := range w.MaxTileZ {
 				tile := w.LevelTiles[level][tileX][tileZ]
 				if tile != nil {
+					// Java: rev-244 reads vertexNormal off the ModelSource base
+					// field then casts (Model); only static models populate
+					// vertexNormal, so the (*model.Model) type assertion both
+					// gates on "is a static Model" and skips self-animating
+					// ClientLocAnim locs (instanceof Model).
 					var13 := tile.Wall
-					if var13 != nil && var13.ModelA != nil && var13.ModelA.VertexNormal != nil {
-						w.MergeLocNormals(tileX, 1, 1, level, var13.ModelA, tileZ)
-						if var13.ModelB != nil && var13.ModelB.VertexNormal != nil {
-							w.MergeLocNormals(tileX, 1, 1, level, var13.ModelB, tileZ)
-							w.MergeNormals(var13.ModelA, var13.ModelB, 0, 0, 0, false)
-							var13.ModelB.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
+					if var13 != nil {
+						if mA, ok := var13.ModelA.(*model.Model); ok && mA.VertexNormal != nil {
+							w.MergeLocNormals(tileX, 1, 1, level, mA, tileZ)
+							if mB, ok := var13.ModelB.(*model.Model); ok && mB.VertexNormal != nil {
+								w.MergeLocNormals(tileX, 1, 1, level, mB, tileZ)
+								w.MergeNormals(mA, mB, 0, 0, 0, false)
+								mB.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
+							}
+							mA.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
 						}
-						var13.ModelA.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
 					}
 
 					for l := range tile.LocCount {
 						loc := tile.Locs[l]
-						if loc != nil && loc.Model != nil && loc.Model.VertexNormal != nil {
-							w.MergeLocNormals(tileX, loc.MaxSceneTileX-loc.MinSceneTileX+1, loc.MaxSceneTileZ-loc.MinSceneTileZ+1, level, loc.Model, tileZ)
-							loc.Model.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
+						if loc != nil {
+							if m, ok := loc.Model.(*model.Model); ok && m.VertexNormal != nil {
+								w.MergeLocNormals(tileX, loc.MaxSceneTileX-loc.MinSceneTileX+1, loc.MaxSceneTileZ-loc.MinSceneTileZ+1, level, m, tileZ)
+								m.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
+							}
 						}
 					}
 
 					decor := tile.GroundDecor
-					if decor != nil && decor.Model.VertexNormal != nil {
-						w.MergeGroundDecorationNormals(level, tileZ, decor.Model, tileX)
-						decor.Model.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
+					if decor != nil {
+						if m, ok := decor.Model.(*model.Model); ok && m.VertexNormal != nil {
+							w.MergeGroundDecorationNormals(level, tileZ, m, tileX)
+							m.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
+						}
 					}
 				}
 			}
@@ -705,30 +710,41 @@ func (w *World3D) BuildModels(arg0, arg1, arg2, lightAttenuation, arg4 int) {
 }
 
 func (w *World3D) MergeGroundDecorationNormals(arg1 int, arg2 int, arg3 *model.Model, arg4 int) {
+	// Java: rev-244 reads groundDecor.model.vertexNormal off the ModelSource
+	// then casts (Model); the (*model.Model) assertion below gates on a static
+	// model and skips self-animating ClientLocAnim ground decor.
 	if arg4 < w.MaxTileX {
 		var6 := w.LevelTiles[arg1][arg4+1][arg2]
-		if var6 != nil && var6.GroundDecor != nil && var6.GroundDecor.Model.VertexNormal != nil {
-			w.MergeNormals(arg3, var6.GroundDecor.Model, 128, 0, 0, true)
+		if var6 != nil && var6.GroundDecor != nil {
+			if m, ok := var6.GroundDecor.Model.(*model.Model); ok && m.VertexNormal != nil {
+				w.MergeNormals(arg3, m, 128, 0, 0, true)
+			}
 		}
 	}
 	if arg2 < w.MaxTileX {
 		var6 := w.LevelTiles[arg1][arg4][arg2+1]
-		if var6 != nil && var6.GroundDecor != nil && var6.GroundDecor.Model.VertexNormal != nil {
-			w.MergeNormals(arg3, var6.GroundDecor.Model, 0, 0, 128, true)
+		if var6 != nil && var6.GroundDecor != nil {
+			if m, ok := var6.GroundDecor.Model.(*model.Model); ok && m.VertexNormal != nil {
+				w.MergeNormals(arg3, m, 0, 0, 128, true)
+			}
 		}
 	}
 	if arg4 < w.MaxTileX && arg2 < w.MaxTileZ {
 		var6 := w.LevelTiles[arg1][arg4+1][arg2+1]
-		if var6 != nil && var6.GroundDecor != nil && var6.GroundDecor.Model.VertexNormal != nil {
-			w.MergeNormals(arg3, var6.GroundDecor.Model, 128, 0, 128, true)
+		if var6 != nil && var6.GroundDecor != nil {
+			if m, ok := var6.GroundDecor.Model.(*model.Model); ok && m.VertexNormal != nil {
+				w.MergeNormals(arg3, m, 128, 0, 128, true)
+			}
 		}
 	}
 	if arg4 >= w.MaxTileX || arg2 <= 0 {
 		return
 	}
 	var6 := w.LevelTiles[arg1][arg4+1][arg2-1]
-	if var6 != nil && var6.GroundDecor != nil && var6.GroundDecor.Model.VertexNormal != nil {
-		w.MergeNormals(arg3, var6.GroundDecor.Model, 128, 0, -128, true)
+	if var6 != nil && var6.GroundDecor != nil {
+		if m, ok := var6.GroundDecor.Model.(*model.Model); ok && m.VertexNormal != nil {
+			w.MergeNormals(arg3, m, 128, 0, -128, true)
+		}
 	}
 }
 
@@ -748,18 +764,22 @@ func (w *World3D) MergeLocNormals(arg0, arg1, arg2, arg3 int, arg5 *model.Model,
 							if var16 != nil {
 								var17 := (w.LevelHeightMaps[i][j][k]+w.LevelHeightMaps[i][j+1][k]+w.LevelHeightMaps[i][j][k+1]+w.LevelHeightMaps[i][j+1][k+1])/4 - (w.LevelHeightMaps[arg3][arg0][arg6]+w.LevelHeightMaps[arg3][arg0+1][arg6]+w.LevelHeightMaps[arg3][arg0][arg6+1]+w.LevelHeightMaps[arg3][arg0+1][arg6+1])/4
 								var18 := var16.Wall
-								if var18 != nil && var18.ModelA != nil && var18.ModelA.VertexNormal != nil {
-									w.MergeNormals(arg5, var18.ModelA, (j-arg0)*128+(1-arg1)*64, var17, (k-arg6)*128+(1-arg2)*64, var8)
-								}
-								if var18 != nil && var18.ModelB != nil && var18.ModelB.VertexNormal != nil {
-									w.MergeNormals(arg5, var18.ModelB, (j-arg0)*128+(1-arg1)*64, var17, (k-arg6)*128+(1-arg2)*64, var8)
+								if var18 != nil {
+									if m, ok := var18.ModelA.(*model.Model); ok && m.VertexNormal != nil {
+										w.MergeNormals(arg5, m, (j-arg0)*128+(1-arg1)*64, var17, (k-arg6)*128+(1-arg2)*64, var8)
+									}
+									if m, ok := var18.ModelB.(*model.Model); ok && m.VertexNormal != nil {
+										w.MergeNormals(arg5, m, (j-arg0)*128+(1-arg1)*64, var17, (k-arg6)*128+(1-arg2)*64, var8)
+									}
 								}
 								for l := range var16.LocCount {
 									var20 := var16.Locs[l]
-									if var20 != nil && var20.Model != nil && var20.Model.VertexNormal != nil {
-										var21 := var20.MaxSceneTileX - var20.MinSceneTileX + 1
-										var22 := var20.MaxSceneTileZ - var20.MinSceneTileZ + 1
-										w.MergeNormals(arg5, var20.Model, (var20.MinSceneTileX-arg0)*128+(var21-arg1)*64, var17, (var20.MinSceneTileZ-arg6)*128+(var22-arg2)*64, var8)
+									if var20 != nil {
+										if m, ok := var20.Model.(*model.Model); ok && m.VertexNormal != nil {
+											var21 := var20.MaxSceneTileX - var20.MinSceneTileX + 1
+											var22 := var20.MaxSceneTileZ - var20.MinSceneTileZ + 1
+											w.MergeNormals(arg5, m, (var20.MinSceneTileX-arg0)*128+(var21-arg1)*64, var17, (var20.MinSceneTileZ-arg6)*128+(var22-arg2)*64, var8)
+										}
 									}
 								}
 							}
@@ -1258,16 +1278,17 @@ func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 											}
 											var10 := var9.Wall
 											if var10 != nil {
-												var10.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var10.X-EyeX, var10.Y-EyeY, var10.Z-EyeZ, var10.BitSet)
+												if m := var10.ModelA.GetModel(); m != nil {
+													m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var10.X-EyeX, var10.Y-EyeY, var10.Z-EyeZ, var10.BitSet)
+												}
 											}
 											for i := range var9.LocCount {
 												var12 = var9.Locs[i]
 												if var12 != nil {
-													var13 := var12.Model
-													if var13 == nil {
-														var13 = var12.Entity.GetModel()
+													if m := var12.Model.GetModel(); m != nil {
+														var12.MinY = m.MinY
+														m.Draw1(var12.Yaw, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var12.X-EyeX, var12.Y-EyeY, var12.Z-EyeZ, var12.BitSet)
 													}
-													var13.Draw1(var12.Yaw, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var12.X-EyeX, var12.Y-EyeY, var12.Z-EyeZ, var12.BitSet)
 												}
 											}
 										}
@@ -1326,16 +1347,26 @@ func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 												tile.InverseBlockLocSpans = 9 - tile.BlockLocSpans
 											}
 											if wall.TypeA&frontWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeA) {
-												wall.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
+												if m := wall.ModelA.GetModel(); m != nil {
+													m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
+												}
 											}
 											if wall.TypeB&frontWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeB) {
-												wall.ModelB.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
+												if m := wall.ModelB.GetModel(); m != nil {
+													m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
+												}
 											}
 										}
 
-										if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.Model.MaxY) {
+										// rev-244 visibility cull reads the source's cached minY
+										// (set when this decor was last drawn / seeded from a
+										// static model), not the resolved model's maxY (rev-225).
+										if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.MinY) {
 											if decor.Type&frontWallTypes != 0 {
-												decor.Model.Draw1(decor.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, decor.X-EyeX, decor.Y-EyeY, decor.Z-EyeZ, decor.BitSet)
+												if m := decor.Model.GetModel(); m != nil {
+													decor.MinY = m.MinY
+													m.Draw1(decor.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, decor.X-EyeX, decor.Y-EyeY, decor.Z-EyeZ, decor.BitSet)
+												}
 											} else if decor.Type&0x300 != 0 {
 												x := decor.X - EyeX
 												y := decor.Y - EyeY
@@ -1359,12 +1390,18 @@ func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 												if decor.Type&0x100 != 0 && nearestZ < nearestX {
 													drawX := x + WALL_DECORATION_INSET_X[angle]
 													drawZ := z + WALL_DECORATION_INSET_Z[angle]
-													decor.Model.Draw1(angle*512+256, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
+													if m := decor.Model.GetModel(); m != nil {
+														decor.MinY = m.MinY
+														m.Draw1(angle*512+256, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
+													}
 												}
 												if decor.Type&0x200 != 0 && nearestZ > nearestX {
 													drawX := x + WALL_DECORATION_OUTSET_X[angle]
 													drawZ := z + WALL_DECORATION_OUTSET_Z[angle]
-													decor.Model.Draw1((angle*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
+													if m := decor.Model.GetModel(); m != nil {
+														decor.MinY = m.MinY
+														m.Draw1((angle*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
+													}
 												}
 											}
 										}
@@ -1372,19 +1409,27 @@ func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 										if tileDrawn {
 											groundDecor := tile.GroundDecor
 											if groundDecor != nil {
-												groundDecor.Model.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, groundDecor.X-EyeX, groundDecor.Y-EyeY, groundDecor.Z-EyeZ, groundDecor.BitSet)
+												if m := groundDecor.Model.GetModel(); m != nil {
+													m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, groundDecor.X-EyeX, groundDecor.Y-EyeY, groundDecor.Z-EyeZ, groundDecor.BitSet)
+												}
 											}
 
 											objs := tile.GroundObj
 											if objs != nil && objs.Offset == 0 {
 												if objs.BottomObj != nil {
-													objs.BottomObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY, objs.Z-EyeZ, objs.BitSet)
+													if m := objs.BottomObj.GetModel(); m != nil {
+														m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY, objs.Z-EyeZ, objs.BitSet)
+													}
 												}
 												if objs.MiddleObj != nil {
-													objs.MiddleObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY, objs.Z-EyeZ, objs.BitSet)
+													if m := objs.MiddleObj.GetModel(); m != nil {
+														m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY, objs.Z-EyeZ, objs.BitSet)
+													}
 												}
 												if objs.TopObj != nil {
-													objs.TopObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY, objs.Z-EyeZ, objs.BitSet)
+													if m := objs.TopObj.GetModel(); m != nil {
+														m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY, objs.Z-EyeZ, objs.BitSet)
+													}
 												}
 											}
 										}
@@ -1435,7 +1480,9 @@ func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 											wall := tile.Wall
 
 											if !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeA) {
-												wall.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
+												if m := wall.ModelA.GetModel(); m != nil {
+													m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
+												}
 											}
 
 											tile.CheckLocSpans = 0
@@ -1525,13 +1572,14 @@ func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 										farthest := LocBuffer[farthestIndex]
 										farthest.Cycle = Cycle
 
-										farthestModel := farthest.Model
-										if farthestModel == nil {
-											farthestModel = farthest.Entity.GetModel()
-										}
-
-										if !w.LocVisible(originalLevel, farthest.MinSceneTileX, farthest.MaxSceneTileX, farthest.MinSceneTileZ, farthest.MaxSceneTileZ, farthestModel.MaxY) {
-											farthestModel.Draw1(farthest.Yaw, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, farthest.X-EyeX, farthest.Y-EyeY, farthest.Z-EyeZ, farthest.BitSet)
+										// rev-244 culls on the source's cached minY (seeded from a
+										// static model / updated when last drawn), then resolves
+										// and draws — vs rev-225's resolved model.maxY.
+										if !w.LocVisible(originalLevel, farthest.MinSceneTileX, farthest.MaxSceneTileX, farthest.MinSceneTileZ, farthest.MaxSceneTileZ, farthest.MinY) {
+											if m := farthest.Model.GetModel(); m != nil {
+												farthest.MinY = m.MinY
+												m.Draw1(farthest.Yaw, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, farthest.X-EyeX, farthest.Y-EyeY, farthest.Z-EyeZ, farthest.BitSet)
+											}
 										}
 
 										for x := farthest.MinSceneTileX; x <= farthest.MaxSceneTileX; x++ {
@@ -1580,23 +1628,32 @@ func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 		objs := tile.GroundObj
 		if objs != nil && objs.Offset != 0 {
 			if objs.BottomObj != nil {
-				objs.BottomObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY-objs.Offset, objs.Z-EyeZ, objs.BitSet)
+				if m := objs.BottomObj.GetModel(); m != nil {
+					m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY-objs.Offset, objs.Z-EyeZ, objs.BitSet)
+				}
 			}
 
 			if objs.MiddleObj != nil {
-				objs.MiddleObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY-objs.Offset, objs.Z-EyeZ, objs.BitSet)
+				if m := objs.MiddleObj.GetModel(); m != nil {
+					m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY-objs.Offset, objs.Z-EyeZ, objs.BitSet)
+				}
 			}
 
 			if objs.TopObj != nil {
-				objs.TopObj.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY-objs.Offset, objs.Z-EyeZ, objs.BitSet)
+				if m := objs.TopObj.GetModel(); m != nil {
+					m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY-objs.Offset, objs.Z-EyeZ, objs.BitSet)
+				}
 			}
 		}
 
 		if tile.BackWallTypes != 0 {
 			decor := tile.Decor
-			if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.Model.MaxY) {
+			if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.MinY) {
 				if decor.Type&tile.BackWallTypes != 0 {
-					decor.Model.Draw1(decor.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, decor.X-EyeX, decor.Y-EyeY, decor.Z-EyeZ, decor.BitSet)
+					if m := decor.Model.GetModel(); m != nil {
+						decor.MinY = m.MinY
+						m.Draw1(decor.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, decor.X-EyeX, decor.Y-EyeY, decor.Z-EyeZ, decor.BitSet)
+					}
 				} else if decor.Type&0x300 != 0 {
 					x := decor.X - EyeX
 					y := decor.Y - EyeY
@@ -1620,12 +1677,18 @@ func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 					if decor.Type&0x100 != 0 && nearestZ >= nearestX {
 						drawX := x + WALL_DECORATION_INSET_X[angle]
 						drawZ := z + WALL_DECORATION_INSET_Z[angle]
-						decor.Model.Draw1(angle*512+256, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
+						if m := decor.Model.GetModel(); m != nil {
+							decor.MinY = m.MinY
+							m.Draw1(angle*512+256, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
+						}
 					}
 					if decor.Type&0x200 != 0 && nearestZ <= nearestX {
 						drawX := x + WALL_DECORATION_OUTSET_X[angle]
 						drawZ := z + WALL_DECORATION_OUTSET_Z[angle]
-						decor.Model.Draw1((angle*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
+						if m := decor.Model.GetModel(); m != nil {
+							decor.MinY = m.MinY
+							m.Draw1((angle*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
+						}
 					}
 				}
 			}
@@ -1633,11 +1696,15 @@ func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 			wall := tile.Wall
 			if wall != nil {
 				if wall.TypeB&tile.BackWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeB) {
-					wall.ModelB.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
+					if m := wall.ModelB.GetModel(); m != nil {
+						m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
+					}
 				}
 
 				if wall.TypeA&tile.BackWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeA) {
-					wall.ModelA.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
+					if m := wall.ModelA.GetModel(); m != nil {
+						m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
+					}
 				}
 			}
 		}

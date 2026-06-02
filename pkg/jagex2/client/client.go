@@ -160,7 +160,6 @@ type Client struct {
 	HintOffsetZ                   int
 	MinimapOffsetCycle            int
 	RedrawFrame                   bool // Java: redrawBackground (deob/client.java:74)
-	LocList                       *datastruct.LinkList[*entity.ClientLocAnim]
 	RandomIn                      *io.Isaac
 	CameraModifierEnabled         []bool
 	PrivateChatSetting            int
@@ -537,7 +536,6 @@ func NewClient() *Client {
 		KeyQueue:  make([]int, 128),
 		// END GameShell
 
-		LocList:               datastruct.NewLinkList[*entity.ClientLocAnim](),
 		CameraModifierEnabled: make([]bool, 5),
 		MergedLocations:       datastruct.NewLinkList[*entity.LocMergeEntity](),
 		IgnoreName37:          make([]int64, 100),
@@ -1153,30 +1151,51 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 			c.AddLoc(var9, var5, var6, var10, var11, var8, c.CurrentLevel)
 		}
 	} else if arg2 == 42 {
+		// LOC_ANIM. Java: rev-244 readZonePacket LOC_ANIM — instead of the
+		// rev-225 LocList + PushLocs per-frame swap, fetch the scene node and
+		// point its ModelSource field at a fresh self-animating ClientLocAnim.
 		var4 = arg1.G1()
 		var5 = c.BaseX + ((var4 >> 4) & 0x7)
 		var6 = c.BaseZ + (var4 & 0x7)
 		var7 = arg1.G1()
 		var8 = var7 >> 2
+		angle := var7 & 0x3
 		var9 = c.LOC_SHAPE_TO_LAYER[var8]
 		var10 = arg1.G2()
-		if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
-			var11 = 0
+		if var5 >= 0 && var6 >= 0 && var5 < 103 && var6 < 103 {
+			heightSW := c.LevelHeightMap[c.CurrentLevel][var5][var6]
+			heightSE := c.LevelHeightMap[c.CurrentLevel][var5+1][var6]
+			heightNE := c.LevelHeightMap[c.CurrentLevel][var5+1][var6+1]
+			heightNW := c.LevelHeightMap[c.CurrentLevel][var5][var6+1]
 			if var9 == 0 {
-				var11 = c.Scene.GetWallBitSet(c.CurrentLevel, var5, var6)
-			}
-			if var9 == 1 {
-				var11 = c.Scene.GetWallDecorationBitSet(c.CurrentLevel, var6, var5)
-			}
-			if var9 == 2 {
-				var11 = c.Scene.GetLocBitSet(c.CurrentLevel, var5, var6)
-			}
-			if var9 == 3 {
-				var11 = c.Scene.GetGroundDecorationBitSet(c.CurrentLevel, var5, var6)
-			}
-			if var11 != 0 {
-				var38 := entity.NewClientLocAnim(false, (var11>>14)&0x7FFF, c.CurrentLevel, var9, seqtype.Instances[var10], var6, var5)
-				c.LocList.AddTail(datastruct.NewLinkable(var38))
+				wall := c.Scene.GetWall(var5, var6, c.CurrentLevel)
+				if wall != nil {
+					locId := (wall.BitSet >> 14) & 0x7FFF
+					if var8 == 2 {
+						wall.ModelA = entity.NewClientLocAnim(heightNW, heightNE, heightSW, 2, angle+4, false, heightSE, locId, var10)
+						wall.ModelB = entity.NewClientLocAnim(heightNW, heightNE, heightSW, 2, (angle+1)&0x3, false, heightSE, locId, var10)
+					} else {
+						wall.ModelA = entity.NewClientLocAnim(heightNW, heightNE, heightSW, var8, angle, false, heightSE, locId, var10)
+					}
+				}
+			} else if var9 == 1 {
+				decor := c.Scene.GetDecor(var5, c.CurrentLevel, var6)
+				if decor != nil {
+					decor.Model = entity.NewClientLocAnim(heightNW, heightNE, heightSW, 4, 0, false, heightSE, (decor.BitSet>>14)&0x7FFF, var10)
+				}
+			} else if var9 == 2 {
+				sprite := c.Scene.GetSprite(c.CurrentLevel, var6, var5)
+				if var8 == 11 {
+					var8 = 10
+				}
+				if sprite != nil {
+					sprite.Model = entity.NewClientLocAnim(heightNW, heightNE, heightSW, var8, angle, false, heightSE, (sprite.BitSet>>14)&0x7FFF, var10)
+				}
+			} else if var9 == 3 {
+				decor := c.Scene.GetGroundDecor(var5, var6, c.CurrentLevel)
+				if decor != nil {
+					decor.Model = entity.NewClientLocAnim(heightNW, heightNE, heightSW, 22, angle, false, heightSE, (decor.BitSet>>14)&0x7FFF, var10)
+				}
 			}
 		}
 	} else {
@@ -1462,7 +1481,6 @@ func (c *Client) DrawScene(arg0 int) {
 	c.PacketSize += arg0
 	c.PushProjectiles()
 	c.PushSpotanims()
-	c.PushLocs()
 	var2 := 0
 	var3 := 0
 	var4 := 0
@@ -2058,11 +2076,11 @@ func (c *Client) PushPlayers() {
 						c.TileLastOccupiedCycle[var5][var6] = c.SceneCycle
 					}
 					var3.Y = c.GetHeightMapY(c.CurrentLevel, var3.X, var3.Z)
-					c.Scene.AddTemporary1(var3.Z, 60, var3.Yaw, var3.X, var4, var3.SeqStretches, nil, var3, var3.Y, c.CurrentLevel)
+					c.Scene.AddTemporary1(var3.Z, 60, var3.Yaw, var3.X, var4, var3.SeqStretches, var3, var3.Y, c.CurrentLevel)
 				} else {
 					var3.LowMemory = false
 					var3.Y = c.GetHeightMapY(c.CurrentLevel, var3.X, var3.Z)
-					c.Scene.AddTemporary2(var3.MaxTileX, nil, var3.Z, var3.Y, var4, var3.Yaw, var3.MinTileZ, var3.MinTileX, var3, c.CurrentLevel, var3.MaxTileZ, var3.X)
+					c.Scene.AddTemporary2(var3.MaxTileX, var3.Z, var3.Y, var4, var3.Yaw, var3.MinTileZ, var3.MinTileX, var3, c.CurrentLevel, var3.MaxTileZ, var3.X)
 				}
 			}
 		}
@@ -3333,7 +3351,7 @@ func (c *Client) PushNPCs() {
 					}
 					c.TileLastOccupiedCycle[var5][var6] = c.SceneCycle
 				}
-				c.Scene.AddTemporary1(var3.Z, (var3.Size-1)*64+60, var3.Yaw, var3.X, var4, var3.SeqStretches, nil, var3, c.GetHeightMapY(c.CurrentLevel, var3.X, var3.Z), c.CurrentLevel)
+				c.Scene.AddTemporary1(var3.Z, (var3.Size-1)*64+60, var3.Yaw, var3.X, var4, var3.SeqStretches, var3, c.GetHeightMapY(c.CurrentLevel, var3.X, var3.Z), c.CurrentLevel)
 			}
 		}
 	}
@@ -6127,7 +6145,7 @@ func (c *Client) PushProjectiles() {
 				}
 			}
 			v.Update(c.SceneDelta)
-			c.Scene.AddTemporary1(int(v.Z), 60, v.Yaw, int(v.X), -1, false, nil, v, int(v.Y), c.CurrentLevel)
+			c.Scene.AddTemporary1(int(v.Z), 60, v.Yaw, int(v.X), -1, false, v, int(v.Y), c.CurrentLevel)
 		}
 	}
 }
@@ -6777,7 +6795,7 @@ func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
 	if arg7 < 3 && c.LevelTileFlags[1][arg1][arg2]&0x2 == 2 {
 		var13 = arg7 + 1
 	}
-	world.AddLoc(arg1, c.LocList, c.LevelCollisionMap[arg7], arg2, arg0, c.LevelHeightMap, arg7, arg4, arg5, c.Scene, var13)
+	world.AddLoc(arg1, c.LevelCollisionMap[arg7], arg2, arg0, c.LevelHeightMap, arg7, arg4, arg5, c.Scene, var13)
 }
 
 func (c *Client) AddFriend(arg0 int64) {
@@ -6893,7 +6911,6 @@ func (c *Client) Unload() {
 	c.MergedLocations = nil
 	c.Projectiles = nil
 	c.Spotanims = nil
-	c.LocList = nil
 	c.MenuParamB = nil
 	c.MenuParamC = nil
 	c.MenuAction = nil
@@ -7334,7 +7351,7 @@ func (c *Client) PushSpotanims() {
 			if v.SeqComplete {
 				var2.Unlink()
 			} else {
-				c.Scene.AddTemporary1(v.Z, 60, 0, v.X, -1, false, nil, v, v.Y, v.Level)
+				c.Scene.AddTemporary1(v.Z, 60, 0, v.X, -1, false, v, v.Y, v.Level)
 			}
 		}
 	}
@@ -8245,7 +8262,7 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 	}
 	var13 := arg0 + (arg1 << 7) + 1610612736
 	var14 := objtype.Get(var5.Index)
-	c.Scene.AddObjStack(var14.GetInterfaceModel(var5.Count), var11, c.GetHeightMapY(c.CurrentLevel, arg0*128+64, arg1*128+64), c.CurrentLevel, var13, arg1, arg0, var12)
+	c.Scene.AddObjStack(entity.ModelSourceOf(var14.GetInterfaceModel(var5.Count)), entity.ModelSourceOf(var11), c.GetHeightMapY(c.CurrentLevel, arg0*128+64, arg1*128+64), c.CurrentLevel, var13, arg1, arg0, entity.ModelSourceOf(var12))
 }
 
 func (c *Client) BuildScene() {
@@ -8256,7 +8273,6 @@ func (c *Client) BuildScene() {
 	// propagates naturally.
 	c.MinimapLevel = -1
 	c.MergedLocations.Clear()
-	c.LocList.Clear()
 	c.Spotanims.Clear()
 	c.Projectiles.Clear()
 	pix3d.ClearTexels()
@@ -8303,22 +8319,17 @@ func (c *Client) BuildScene() {
 			bzip2.Read(var4, var16, var14, len(var14)-4, 4)
 			var11 := (c.SceneMapIndex[i]>>8)*64 - c.SceneBaseTileX
 			var12 := (c.SceneMapIndex[i]&0xFF)*64 - c.SceneBaseTileZ
-			var3.LoadLocations(var4, c.Scene, c.LevelCollisionMap, c.LocList, var12, var11)
+			var3.LoadLocations(var4, c.Scene, c.LevelCollisionMap, var12, var11)
 		}
 	}
 	c.Out.P1Isaac(108)
 	var3.Build(c.Scene, c.LevelCollisionMap)
 	c.AreaViewport.Bind()
 	c.Out.P1Isaac(108)
-	for var15 := c.LocList.Head(); var15 != nil; var15 = c.LocList.Next() {
-		v := var15.Value
-		if c.LevelTileFlags[1][v.X][v.Z]&0x2 == 2 {
-			v.Level--
-			if v.Level < 0 {
-				var15.Unlink()
-			}
-		}
-	}
+	// Java: rev-244 buildScene has no LocList bridge-level post-pass — animated
+	// locs are stored directly as scene-node ModelSources (self-animating
+	// ClientLocAnim) at the level World.build placed them; the rev-225 list pass
+	// that demoted loc levels on bridge tiles is removed.
 	for i := range 104 {
 		for j := range 104 {
 			c.SortObjStacks(i, j)
@@ -8629,99 +8640,6 @@ func (c *Client) LoadTitleBackground() {
 	logo := pix32.NewPix323(c.JagTitle, "logo", 0)
 	c.ImageTitle2.Bind()
 	logo.PlotSprite(18, c.ScreenWidth/2-logo.Wi/2-128)
-}
-
-func (c *Client) PushLocs() {
-	for var2 := c.LocList.Head(); var2 != nil; var2 = c.LocList.Next() {
-		v := var2.Value
-		var3 := false
-		v.SeqCycle += c.SceneDelta
-		if v.SeqFrame == -1 {
-			v.SeqFrame = 0
-			var3 = true
-		}
-		for ok := true; ok; ok = v.SeqFrame >= 0 && v.SeqFrame < v.Seq.FrameCount {
-			for ok2 := true; ok2; ok2 = v.SeqFrame < v.Seq.FrameCount {
-				if v.SeqCycle <= v.Seq.Delay[v.SeqFrame] {
-					goto afterLabel67
-				}
-				v.SeqCycle -= v.Seq.Delay[v.SeqFrame] + 1
-				v.SeqFrame++
-				var3 = true
-			}
-			v.SeqFrame -= v.Seq.ReplayOff
-		}
-		var2.Unlink()
-		var3 = false
-	afterLabel67:
-		if var3 {
-			var4 := v.Level
-			var5 := v.X
-			var6 := v.Z
-			var7 := 0
-			if v.Type == 0 {
-				var7 = c.Scene.GetWallBitSet(var4, var5, var6)
-			}
-			if v.Type == 1 {
-				var7 = c.Scene.GetWallDecorationBitSet(var4, var6, var5)
-			}
-			if v.Type == 2 {
-				var7 = c.Scene.GetLocBitSet(var4, var5, var6)
-			}
-			if v.Type == 3 {
-				var7 = c.Scene.GetGroundDecorationBitSet(var4, var5, var6)
-			}
-			if var7 != 0 && ((var7>>14)&0x7FFF) == v.Index {
-				var8 := c.LevelHeightMap[var4][var5][var6]
-				var9 := c.LevelHeightMap[var4][var5+1][var6]
-				var10 := c.LevelHeightMap[var4][var5+1][var6+1]
-				var11 := c.LevelHeightMap[var4][var5][var6+1]
-				var12 := loctype.Get(v.Index)
-				var13 := -1
-				if v.SeqFrame != -1 {
-					var13 = v.Seq.Frames[v.SeqFrame]
-				}
-				var14 := 0
-				var15 := 0
-				var16 := 0
-				var var17 *model.Model
-				switch v.Type {
-				case 2:
-					var14 = c.Scene.GetInfo(var4, var5, var6, var7)
-					var15 = var14 & 0x1F
-					var16 = var14 >> 6
-					if var15 == 11 {
-						var15 = 10
-					}
-					var17 = var12.GetModel(var15, var16, var8, var9, var10, var11, var13)
-					c.Scene.SetLocModel(var5, var17, var4, var6)
-				case 1:
-					var21 := var12.GetModel(4, 0, var8, var9, var10, var11, var13)
-					c.Scene.SetWallDecorationModel(var6, var5, var21, var4)
-				case 0:
-					var14 = c.Scene.GetInfo(var4, var5, var6, var7)
-					var15 = var14 & 0x1F
-					var16 = var14 >> 6
-					if var15 == 2 {
-						var23 := (var16 + 1) & 0x3
-						var18 := var12.GetModel(2, var16+4, var8, var9, var10, var11, var13)
-						var19 := var12.GetModel(2, var23, var8, var9, var10, var11, var13)
-						c.Scene.SetWallModels(var18, var19, var6, var5, var4)
-					} else {
-						var17 = var12.GetModel(var15, var16, var8, var9, var10, var11, var13)
-						c.Scene.SetWallModel(var17, var6, var5, var4)
-					}
-				case 3:
-					var14 = c.Scene.GetInfo(var4, var5, var6, var7)
-					var15 = var14 >> 6
-					var22 := var12.GetModel(22, var15, var8, var9, var10, var11, var13)
-					c.Scene.SetGroundDecorationModel(var22, var6, var5, var4)
-				}
-			} else {
-				var2.Unlink()
-			}
-		}
-	}
 }
 
 func (c *Client) RemoveIgnore(arg1 int64) {
