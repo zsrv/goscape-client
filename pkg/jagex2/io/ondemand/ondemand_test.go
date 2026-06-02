@@ -147,7 +147,7 @@ func TestValidate_Nil(t *testing.T) {
 // TestUnpack_GetFileCount verifies that Unpack reads model_version correctly
 // and GetFileCount returns the right count.
 func TestUnpack_GetFileCount(t *testing.T) {
-	od := ondemand.New(buildVersionlist(), nil, nil, nil)
+	od := ondemand.New(buildVersionlist(), nil, nil)
 	if got := od.GetFileCount(0); got != 3 {
 		t.Fatalf("GetFileCount(0) = %d, want 3", got)
 	}
@@ -158,7 +158,7 @@ func TestUnpack_GetFileCount(t *testing.T) {
 
 // TestUnpack_GetAnimCount verifies anim_index parse.
 func TestUnpack_GetAnimCount(t *testing.T) {
-	od := ondemand.New(buildVersionlist(), nil, nil, nil)
+	od := ondemand.New(buildVersionlist(), nil, nil)
 	if got := od.GetAnimCount(); got != 2 {
 		t.Fatalf("GetAnimCount() = %d, want 2", got)
 	}
@@ -167,7 +167,7 @@ func TestUnpack_GetAnimCount(t *testing.T) {
 // TestUnpack_GetMapFile verifies map_index parse and GetMapFile lookup.
 // Encoded: x=5, z=3 → mapID=1283, land=42, loc=43.
 func TestUnpack_GetMapFile(t *testing.T) {
-	od := ondemand.New(buildVersionlist(), nil, nil, nil)
+	od := ondemand.New(buildVersionlist(), nil, nil)
 
 	// type==0 → land file
 	if got := od.GetMapFile(3, 5, 0); got != 42 {
@@ -185,7 +185,7 @@ func TestUnpack_GetMapFile(t *testing.T) {
 
 // TestUnpack_GetModelFlags verifies model_index parse and the & 0xFF mask.
 func TestUnpack_GetModelFlags(t *testing.T) {
-	od := ondemand.New(buildVersionlist(), nil, nil, nil)
+	od := ondemand.New(buildVersionlist(), nil, nil)
 	for i, want := range []int{0x01, 0x02, 0x03} {
 		if got := od.GetModelFlags(i); got != want {
 			t.Fatalf("GetModelFlags(%d) = %d, want %d", i, got, want)
@@ -199,7 +199,7 @@ func TestUnpack_GetModelFlags_SignExtension(t *testing.T) {
 	// Build a custom versionlist with a 0xFF model_index flag.
 	a := buildVersionlist()
 	a["model_index"] = []byte{0xFF, 0x00, 0x00}
-	od := ondemand.New(a, nil, nil, nil)
+	od := ondemand.New(a, nil, nil)
 	if got := od.GetModelFlags(0); got != 0xFF {
 		t.Fatalf("GetModelFlags(0) = %d (0x%02X), want 255 (0xFF)", got, got)
 	}
@@ -208,7 +208,7 @@ func TestUnpack_GetModelFlags_SignExtension(t *testing.T) {
 // TestUnpack_ShouldPrefetchMidi verifies midi_index parse.
 // Encoded: [0, 1, 0] → only index 1 should prefetch.
 func TestUnpack_ShouldPrefetchMidi(t *testing.T) {
-	od := ondemand.New(buildVersionlist(), nil, nil, nil)
+	od := ondemand.New(buildVersionlist(), nil, nil)
 	cases := []struct {
 		id   int
 		want bool
@@ -226,7 +226,7 @@ func TestUnpack_ShouldPrefetchMidi(t *testing.T) {
 
 // TestUnpack_HasMapLocFile verifies HasMapLocFile using the encoded loc=43.
 func TestUnpack_HasMapLocFile(t *testing.T) {
-	od := ondemand.New(buildVersionlist(), nil, nil, nil)
+	od := ondemand.New(buildVersionlist(), nil, nil)
 	if !od.HasMapLocFile(43) {
 		t.Fatal("HasMapLocFile(43) = false, want true")
 	}
