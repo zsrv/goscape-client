@@ -61,12 +61,19 @@ Consequences for later sub-increments:
    zero behaviour change (build/vet/test/golangci-lint green). World3D keeps
    resolve-then-draw; the `Draw1`-polymorphism + `minY`-caching were intentionally
    NOT adopted here (see revised mapping decision) — deferred to 3c/3d.
-2. **3b — Re-parent `ClientObj` and `ClientLocAnim` onto `ModelSource`.**
-   - Give each a `Draw1` (+ `getModel`): `ClientObj.getModel()` = `objType.GetModel(count)`;
-     `ClientLocAnim.getModel()` = advance seq vs `LoopCycle`, return
-     `locType.GetModel(shape, angle, heightmaps, transformId)`. Port
-     `ClientLocAnim.getModel` from 244 `ClientLocAnim.java` (frame-advance, cap
-     delta 100 for looping seqs, `seq.getFrameDuration`/`loops`/`numFrames`).
+2. **3b — Re-parent `ClientObj` onto `ModelSource`.** ✅ DONE.
+   Added `ClientObj.GetModel()` = `objtype.Get(index).GetInterfaceModel(count)`
+   (Go's count-aware world model == 244 `ObjType.getModel(count)`). `*ClientObj`
+   now satisfies `ModelSource` (compile-asserted). Currently dormant — wired into
+   the scene in 3c/3d. Build/vet/test/golangci-lint green.
+   **`ClientLocAnim` re-parent MOVED to 3c/3d:** unlike `ClientObj` (fields already
+   match 244), the Go `ClientLocAnim` (renamed `LocEntity`) has the rev-225 fields
+   `Level/Type/X/Z`; 244 needs `shape/angle/heightmapSW/SE/NE/NW` + a new
+   constructor — which changes `World.addLoc`'s call signature. So `ClientLocAnim`'s
+   field restructure + `GetModel` (frame-advance vs `LoopCycle`: cap delta 100 for
+   looping seqs, `seq.getFrameDuration`/`loops`/`numFrames`, then
+   `LocType.Get(index).getModel(shape, angle, heightmaps, transformId)`) lands with
+   the `World.addLoc` rework (3d), where its constructor call site changes.
 3. **3c — Retype scene fields `*model.Model → entity.ModelSource`** in
    `typ.{Wall(ModelA/B→model1/2), Sprite(model), Decor(model), GroundDecor(model),
    GroundObject(top/bottom/middle)}`. Assigning a `*Model` still works (it
