@@ -120,7 +120,14 @@ The substantive work falls into **five workstreams** plus UI/render polish:
   `old*/new*` from LocAdd + `startTime/endTime=-1` from LocMerge's `lastCycle`).
   `LocMergeEntity` does not exist in 244 — consolidate the two Go types into one.
 
-### Workstream 4 — Config cache-format opcodes  [S–M, independently testable]
+### Workstream 4 — Config cache-format opcodes  [DONE 2026-06-02, commit 9b4253c]
+**Status:** decode/format changes ported for all 5 types (build/vet/test/lint
+green). Scoped to DECODE only; model-build usage deferred (carry-forward TODOs in
+code): ObjType/NpcType `scale` + `CalculateNormals(Ambient+64, Contrast+768/+850)`
+→ model phase; SeqType `getFrameDuration` extraction → WS3 (anim read-sites);
+Component type-6 deferred-model ints → WS1. Field-name alignment to 244
+(`ReplayOff`→`Loops`, `ReplayCount`→`MaxLoops`, `FrameCount`→`NumFrames`) left as
+an optional later cosmetic pass — existing names parse 244 correctly.
 - **`Component` [H]:** NEW `alpha` byte (`g1`) read **between `height` and
   `overlayer`** in the header — shifts all following bytes; port at the exact
   position. type-6 model fields become deferred int ids (no wire change).
@@ -192,8 +199,8 @@ WS5 Audio ───────────┘  (independent)
 UI/render polish ───────  (independent; any time)
 ```
 
-1. **WS4 Config opcodes** — small, self-contained, verifiable against a 244 cache
-   without a server. Good first increment to validate the cache-format approach.
+1. **WS4 Config opcodes** — ✅ DONE (commit 9b4253c). Decode/format ported for all
+   5 types; model-build usage deferred to WS1/WS3 via TODOs.
 2. **WS3 ModelSource + scene hierarchy** — structural, no protocol; can land
    before OnDemand. Introduces the `getModel()`/`draw()` polymorphism WS1 needs.
 3. **WS1** — transport already decided (keep HTTP/WS); port the `Model` blob
