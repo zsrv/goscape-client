@@ -19,6 +19,41 @@ Each row was confirmed by comparing field declarations in
 
 ---
 
+## Progress
+
+Rename-pass increments landed on `rev-244` (each build+vet+test+gofmt+golangci-lint
+green, zero behavioural change vs the rev-225 baseline):
+
+- [x] **§B graphics → dash3d package moves** — `b7700fd`. Moved as Go sub-packages
+  of `dash3d/` (not flattened into one package; directory move + import rewrite).
+- [x] **§C entity type renames** — `f0c75f0`. `PathingEntity→ClientEntity`, …,
+  `Entity→ModelSource` (type only). Includes `New<Type>`/`Update<Type>` compounds.
+- [x] **§D scene/tile type renames (trap table)** — `15640ed`. `Location→Sprite`,
+  `Ground→Square`, `TileOverlay→Ground`, `TileUnderlay→QuickGround`, ordered to
+  avoid the `Ground` name collision.
+
+Decision: dash3d sub-packages (`entity`, `typ`, `model`, …) are **kept**, not
+flattened into one `dash3d` package — a flatten would reintroduce import cycles
+(Go's import graph, not class identity). Class names match 244; package
+boundaries follow what compiles.
+
+**Not done (intentionally out of the zero-behaviour rename pass):**
+- [ ] §E `sign/signlink` → `client/sign` — optional, low value (name already
+  matches conceptually). Defer or skip.
+- [ ] §F new classes (`ModelSource` members, `MouseTracking`, `UnkType`,
+  `OnDemand*`, `FileStream`) — these add behaviour → **logic-delta phase**.
+- [ ] Field renames (`underlay→quickGround`, `locs→sprite`, model field type
+  `Model→ModelSource`, `bitset→typecode`, `info→typecode2`), the
+  `ModelSource`/`DoublyLinkable` hierarchy rework, and the
+  `LocMergeEntity→LocChange` consolidation — all **logic-delta phase** (they
+  overlap with the 225→244 field-level changes anyway). `LocMergeEntity` is
+  intentionally still present.
+- [ ] Helper-method/data names that reference the floor concept, not the renamed
+  scene type, are intentionally kept: `DrawTileOverlay`, `DrawTileUnderlay`,
+  `LevelTileOverlay*`, `LevelTileUnderlay*`.
+
+---
+
 ## ⚠ Name-reuse traps — read first
 
 The 244 deob **reuses names for different classes**. Mapping by filename would
