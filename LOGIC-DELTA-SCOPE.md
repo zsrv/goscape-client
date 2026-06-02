@@ -97,6 +97,9 @@ The substantive work falls into **five workstreams** plus UI/render polish:
   (no wire change; the staffModLevel byte already existed in 225).
 
 ### Workstream 3 — ModelSource base + scene hierarchy  [L]
+> **Execution plan: `WS3-MODELSOURCE-DESIGN.md`** (rev-244). The Go mapping is a
+> `Draw1(9-arg)` interface that `*model.Model` already satisfies; 6 ordered
+> build-gated sub-increments (3a interface reshape is the keystone). Not started.
 - **NEW `ModelSource extends DoublyLinkable`**: `vertexNormal[]`, `minY=1000`,
   virtual `getModel()` (null), concrete `draw(...)` that calls `getModel()`,
   caches `minY`, delegates to `model.draw(...)`. **Inverts** the old contract
