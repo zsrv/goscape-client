@@ -64,32 +64,6 @@ func TestMidiSourceShortBufferReturnsZero(t *testing.T) {
 	}
 }
 
-func TestVolumeFromCentibels(t *testing.T) {
-	// Matches the TS client's Math.pow(10, dB / 20) in tinymidipcm.js:300.
-	// Centibels are 1/100 dB, so the exponent is cb / 100 / 20 = cb / 2000.
-	cases := []struct {
-		cb   int
-		want float32
-	}{
-		{0, 1.0},
-		{100, 1.0},     // positive clamped to unity (signlink range is 0..-1200)
-		{-400, 0.6310}, // -4 dB ≈ 0.631
-		{-1200, 0.251}, // -12 dB ≈ 0.251
-	}
-	for _, c := range cases {
-		got := volumeFromCentibels(c.cb)
-		// Tolerance is 1e-3 — we're not asserting bit-exact, just that
-		// the dB→linear conversion is in the right ballpark.
-		diff := got - c.want
-		if diff < 0 {
-			diff = -diff
-		}
-		if diff > 1e-3 {
-			t.Errorf("volumeFromCentibels(%d) = %v, want ~%v", c.cb, got, c.want)
-		}
-	}
-}
-
 func TestClipInt16Saturates(t *testing.T) {
 	// meltysynth's float32 output is nominally -1..1 but transient peaks
 	// can exceed the rails. clipInt16 must hard-clip rather than

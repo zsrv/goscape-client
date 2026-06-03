@@ -3456,10 +3456,13 @@ func (c *Client) PushNPCs(alwaysOnTop bool) {
 	}
 }
 
-func (c *Client) SetMidiVolume(arg0 int, arg1 int, arg2 bool) {
-	signlink.SetMidiVol(arg1)
-	c.PacketSize += arg0
-	if arg2 {
+// SetMidiVolume publishes the music volume (244 linear scale: 128/96/64/32)
+// and, when music is active, tells the consumer to re-read it.
+// Java: setMidiVolume(int volume, boolean active) (Client.java:1459-1464).
+// 244 drops the 225-deob dummy first arg and its packetSize side effect.
+func (c *Client) SetMidiVolume(volume int, active bool) {
+	signlink.SetMidiVol(volume)
+	if active {
 		signlink.SetMidiCommand("voladjust")
 	}
 }
@@ -3985,16 +3988,16 @@ func (c *Client) UpdateVarp(arg0 int) {
 		var5 := c.MidiActive
 		switch var4 {
 		case 0:
-			c.SetMidiVolume(0, 0, c.MidiActive)
+			c.SetMidiVolume(128, c.MidiActive)
 			c.MidiActive = true
 		case 1:
-			c.SetMidiVolume(0, -400, c.MidiActive)
+			c.SetMidiVolume(96, c.MidiActive)
 			c.MidiActive = true
 		case 2:
-			c.SetMidiVolume(0, -800, c.MidiActive)
+			c.SetMidiVolume(64, c.MidiActive)
 			c.MidiActive = true
 		case 3:
-			c.SetMidiVolume(0, -1200, c.MidiActive)
+			c.SetMidiVolume(32, c.MidiActive)
 			c.MidiActive = true
 		case 4:
 			c.MidiActive = false
@@ -4016,16 +4019,16 @@ func (c *Client) UpdateVarp(arg0 int) {
 		switch var4 {
 		case 0:
 			c.WaveEnabled = true
-			c.SetWaveVolume(0)
+			c.SetWaveVolume(128)
 		case 1:
 			c.WaveEnabled = true
-			c.SetWaveVolume(-400)
+			c.SetWaveVolume(96)
 		case 2:
 			c.WaveEnabled = true
-			c.SetWaveVolume(-800)
+			c.SetWaveVolume(64)
 		case 3:
 			c.WaveEnabled = true
-			c.SetWaveVolume(-1200)
+			c.SetWaveVolume(32)
 		case 4:
 			c.WaveEnabled = false
 		}

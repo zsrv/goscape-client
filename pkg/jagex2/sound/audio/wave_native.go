@@ -87,10 +87,13 @@ func playWaveBytes(ctx *oto.Context, data []byte) {
 		return
 	}
 	p := ctx.NewPlayer(&byteSliceReader{b: stereo})
-	// SFX volume is per-Player (each clip is short; the slider only affects new
-	// sounds). Reading WaveVol once at spawn matches the slider dispatch
-	// (client.go:3823-3833).
-	p.SetVolume(float64(volumeFromCentibels(signlink.ReadWaveVol())))
+	// DEVIATION: Java 244's wavevol is dead — SignLink.audioLoop's wave
+	// branch applies no gain at all (SignLink.java:427-475), so the in-game
+	// SFX slider does nothing there. The Go port keeps the slider working,
+	// mapping the 244 linear scale (128/96/64/32, default 96) through the
+	// same vol/256 curve as music. Per-Player so only new sounds pick it up,
+	// matching the slider dispatch (UpdateVarp clientCode 4).
+	p.SetVolume(linearVolume(signlink.ReadWaveVol()))
 	p.Play()
 	// Hold the only strong reference until the reader EOFs and oto stops, so the
 	// finalizer can't close the Player mid-playback. Unbounded by design (SFX

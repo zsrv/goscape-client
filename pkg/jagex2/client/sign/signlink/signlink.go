@@ -370,6 +370,7 @@ func ClearMidi() {
 // `midi` field. Java: midisave → run loop → midi = cachedir + savereq
 // (SignLink.java:179-182, 327-337); the Go port hands the bytes over
 // in-memory instead of via jingle<pos>.mid.
+// The caller must not mutate data after publishing (the slot aliases it).
 func SetMidiTrack(data []byte) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -386,17 +387,20 @@ func SetMidiCommand(s string) {
 	MidiData = nil
 }
 
-// SetMidiFade publishes the fade flag (0 = immediate, 1 = crossfade) that
-// the audio driver reads when honoring the next "stop" or track change.
+// SetMidiFade publishes the fade flag (0 = immediate, 1 = fade + loop)
+// read by the consumer's playMidi at dispatch time. In 244 the flag
+// doubles as the loop flag (MidiPlayer.play's setLoopCount). Java:
+// midifade (SignLink.java:55).
 func SetMidiFade(v int) {
 	mu.Lock()
 	defer mu.Unlock()
 	MidiFade = v
 }
 
-// SetMidiVol publishes the music volume in centibels (negative = quieter,
-// 0 = full). The audio driver applies it on the next "voladjust" or
-// track change.
+// SetMidiVol publishes the music volume on the 244 linear scale (the
+// client sends 128/96/64/32; default 96; gain = vol/256 — see
+// audio.linearVolume). The consumer applies it on the next "voladjust",
+// track change, or fade step. Java: midivol (SignLink.java:59).
 func SetMidiVol(v int) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -410,17 +414,18 @@ func ReadMidiFade() int {
 	return MidiFade
 }
 
-// ReadMidiVol snapshots MidiVol for the audio driver.
+// ReadMidiVol snapshots MidiVol for the audio consumer.
 func ReadMidiVol() int {
 	mu.Lock()
 	defer mu.Unlock()
 	return MidiVol
 }
 
-// SetWaveVol publishes the SFX volume in centibels (negative =
-// quieter, 0 = full). The audio driver reads it when spawning a
-// per-SFX Player so the slider in the in-game audio options affects
-// freshly-triggered sound effects.
+// SetWaveVol publishes the SFX volume on the 244 linear scale (see
+// SetMidiVol). The audio driver reads it when spawning a per-SFX player
+// so the in-game slider affects freshly-triggered sound effects.
+// Java: wavevol (SignLink.java:71) — dead there; see the DEVIATION note
+// in audio/wave_native.go.
 func SetWaveVol(v int) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -428,8 +433,7 @@ func SetWaveVol(v int) {
 }
 
 // ReadWaveVol snapshots WaveVol for the audio driver. Race-free
-// counterpart to the bare `signlink.WaveVol` field reads that used
-// to be in client code.
+// counterpart to direct field reads.
 func ReadWaveVol() int {
 	mu.Lock()
 	defer mu.Unlock()
