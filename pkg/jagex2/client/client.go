@@ -180,7 +180,11 @@ type Client struct {
 	ChatEffects           int
 	// Java: bankArrangeMode (client.Nh, Client.java:426) — new in 244; set by
 	// SET_VARC clientCode 9 and read at the obj-drag INV_BUTTOND send site.
-	BankArrangeMode               int
+	BankArrangeMode int
+	// Java: field1264 (client.lc, Client.java:563) — new in 244; set to 255 by
+	// opcode 192, decremented by 2 per cycle, drives the yellow sine-modulated
+	// viewport flash overlay (and is reset on login).
+	Field1264                     int
 	HintNPC                       int
 	OverrideChat                  int
 	SkillLevel                    []int
@@ -6255,6 +6259,16 @@ func (c *Client) Draw3DEntityElements() {
 	if c.CrossMode == 2 {
 		c.ImageCrosses[c.CrossCycle/100+4].PlotSprite(c.CrossY-8-11, c.CrossX-8-8)
 	}
+	// Java: Client.java:6560-6565 (new in 244) — yellow sine-modulated
+	// translucent flash band near the viewport bottom while field1264 > 0
+	// (alpha fades as the counter decays).
+	if c.Field1264 > 0 {
+		var17 := 302 - int(math.Abs(math.Sin(float64(c.Field1264)/10.0)*10.0))
+		for i := range 30 {
+			var19 := (30 - i) * 16
+			pix2d.HLineTrans(var17+i, var19, 16776960, 256-var19/2, c.Field1264)
+		}
+	}
 	if c.ViewportInterfaceID != -1 {
 		c.UpdateInterfaceAnimation(c.ViewportInterfaceID, c.SceneDelta)
 		c.DrawInterface(0, 0, component.Instances[c.ViewportInterfaceID], 0)
@@ -6883,6 +6897,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.SystemUpdateTimer = 0
 		c.IdleTimeout = 0
 		c.HintType = 0
+		c.Field1264 = 0 // Java: Client.java:2692
 		c.MenuSize = 0
 		c.MenuVisible = false
 		c.IdleCycles = 0
@@ -7423,6 +7438,9 @@ func (c *Client) UpdateGame() {
 	}
 	if c.IdleTimeout > 0 {
 		c.IdleTimeout--
+	}
+	if c.Field1264 > 0 { // Java: Client.java:2935-2936
+		c.Field1264 -= 2
 	}
 	for i := 0; i < 5 && c.Read(); i++ {
 	}
@@ -9772,6 +9790,12 @@ func (c *Client) Read() (ok bool) {
 				c.RedrawChatback = true
 			}
 		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 192 — zero-length viewport-flash trigger (Client.java:7377-7382)
+	if c.PacketType == io.SERVERPROT_VIEWPORT_FLASH {
+		c.Field1264 = 255
 		c.PacketType = -1
 		return true
 	}
