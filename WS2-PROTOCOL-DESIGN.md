@@ -53,9 +53,14 @@ deferred model (B2).
    definition). Both Java (`Packet.pIsaac: data[pos++] = ptype + random.nextInt()`)
    and TS write the RAW opcode + ISAAC, no table indirection. **Do NOT port the
    lookup** — mark it a deob artifact. Port only `SERVERPROT_LENGTH`.
-2. **`SERVERPROT_LENGTH` (Java, authoritative):** 256 ints (inlined in Inc 1).
-   Differs from TS `ServerProtSizes` at index 242 (`RESET_ANIMS`): Java=`6`, TS=`0`.
-   **Use the Java value (`6`).**
+2. **`SERVERPROT_LENGTH` (Java `01f16088`, authoritative):** **257 ints**
+   (indices 0–256; inlined + verified in Inc 1). Key sizes (self-validating against
+   packet bodies): `[165]=4` (REBUILD_NORMAL: 2×g2), `[29]=14` (LOC_MERGE),
+   `[242]=0` (RESET_ANIMS: no payload), `[244]=-2` (NPC_INFO var-len 2-byte size),
+   `[95]=-1` (MESSAGE_GAME var-len 1-byte size), `[158]=2` (IF_OPENOVERLAY: g2b).
+   (A prior draft mis-stated 256 ints / index 242=6 — corrected after parsing the
+   real array; `01f16088` is the tip of branch `244-GOSCAPE` and the two are
+   identical. **Read via `git show`, never the working tree.**)
 3. **Scene build trigger moved out of the opcode handlers.** 225 inlined
    `sceneState=2 + BuildScene` in opcode 184. 244 splits it: REBUILD_NORMAL (165)
    sets `sceneState=1` + `awaitingSync=true`; PLAYER_INFO (86) *clears*
@@ -87,7 +92,7 @@ deferred model (B2).
 ### A. Opcodes / framing
 | Aspect | Go 225 (current) | 244 (target) |
 |---|---|---|
-| Incoming sizes | `io/protocol.go` `SERVERPROT_SIZES` (225 values) | 244 `SERVERPROT_LENGTH` values (re-derive verbatim; index 242=6) |
+| Incoming sizes | `io/protocol.go` `SERVERPROT_SIZES` (225 values) | 244 `SERVERPROT_LENGTH` values (257 ints, re-derive verbatim from `01f16088`) |
 | Incoming dispatch | `if c.PacketType == N` cascade, magic numbers (`client.go:9316+`) | same shape, 244 numbers, named `SERVERPROT_*` |
 | Outgoing opcodes | scattered `P1Isaac(N)`/`P1(N)` | named `CLIENTPROT_*` (raw, no scramble) |
 | Zone opcodes | 59/76/42/23/… | 232/125/155/29/… |
@@ -312,7 +317,7 @@ const (
 
 - [ ] **Step 3 — update `SERVERPROT_SIZES` to the 244 array.** In
   `pkg/jagex2/io/protocol.go`, replace the array VALUES with the Java
-  `SERVERPROT_LENGTH` (256 ints, verbatim — note index 242 = `6`):
+  `SERVERPROT_LENGTH` (**257 ints**, indices 0–256, verbatim from `01f16088`):
 
 ```go
 var SERVERPROT_SIZES = []int{
@@ -331,12 +336,12 @@ var SERVERPROT_SIZES = []int{
   (If `protocol.go` has a `// Java:` comment, update it to cite
   `Protocol.SERVERPROT_LENGTH (Protocol.java)`.)
 
-- [ ] **Step 4 — test.** In `protocol_test.go`: assert `len(SERVERPROT_SIZES) == 256`;
+- [ ] **Step 4 — test.** In `protocol_test.go`: assert `len(SERVERPROT_SIZES) == 257`;
   assert spot values that pin the renumber against the named consts:
-  `SERVERPROT_SIZES[SERVERPROT_REBUILD_NORMAL]` (165) `== 0`,
-  `SERVERPROT_SIZES[29]` (LOC_MERGE) `== 14`, `SERVERPROT_SIZES[242]` (RESET_ANIMS) `== 6`,
-  `SERVERPROT_SIZES[SERVERPROT_NPC_INFO]` (244) `== 0`,
-  `SERVERPROT_SIZES[SERVERPROT_MESSAGE_GAME]` (95) `== -2` (var-length).
+  `SERVERPROT_SIZES[SERVERPROT_REBUILD_NORMAL]` (165) `== 4`,
+  `SERVERPROT_SIZES[SERVERPROT_LOC_MERGE]` (29) `== 14`, `SERVERPROT_SIZES[242]` (RESET_ANIMS) `== 0`,
+  `SERVERPROT_SIZES[SERVERPROT_NPC_INFO]` (244) `== -2`,
+  `SERVERPROT_SIZES[SERVERPROT_MESSAGE_GAME]` (95) `== -1` (var-length).
   Run: `… go test ./pkg/jagex2/io/...` → PASS.
 - [ ] **Step 5 — independent cross-check (review gate).** A second agent
   re-derives `SERVERPROT_LENGTH` + the two enums fresh from `01f16088`/`1cfb57b`
@@ -1146,7 +1151,7 @@ scene builds → terrain + locs + npc/obj/player models render. Record the outco
   committed; correctness of the renumber is gated by Inc 1's independent cross-check
   + Inc 2/3's per-handler byte review; the host smoke test is the runtime gate.
 - **Highest-risk translations** (re-read Java, add `// Java:` refs): `SERVERPROT_LENGTH`
-  contents (index 242=6); the renumber correspondence (match by body, not number —
+  contents (257 ints; e.g. [165]=4, [242]=0, [244]=-2); the renumber correspondence (match by body, not number —
   collision traps); the login `reply==0` wrapper + `loginServer` shift/mask; the 165
   region-grid `/8` integer division + the delta-shift lift; the `CheckScene`/
   `awaitingSync` sequencing; the LocChange `AddLoc` arg-order mismatch + `start+1`/
