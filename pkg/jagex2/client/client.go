@@ -5954,8 +5954,8 @@ func (c *Client) Load() {
 	c.ImageCompass = pix32.NewPix323(jagMedia, "compass", 0)
 
 	// Java: Client.java:1755-1756 — mapedge is new in 244 (the minimap
-	// hint-arrow edge sprite). Loaded for parity; its drawMinimapArrow
-	// consumer is deferred to the UI-polish pass (see DrawMinimap).
+	// hint-arrow edge sprite); drawn rotated at the minimap rim by
+	// DrawMinimapArrow from DrawMinimap's hint-arrow block.
 	c.ImageMapedge = pix32.NewPix323(jagMedia, "mapedge", 0)
 	c.ImageMapedge.Trim()
 
