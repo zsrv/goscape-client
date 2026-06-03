@@ -2827,8 +2827,7 @@ func (c *Client) DrawMinimap() {
 // endTime/startTime, applying the new loc when its startTime elapses, and
 // reverting to the old loc (then unlinking) when endTime hits 0.
 //
-// Java: Client.updateLocChanges (client.java:3539-3577). Replaces the rev-225
-// UpdateMergeLocs.
+// Java: Client.updateLocChanges (client.java:3539-3577).
 func (c *Client) UpdateLocChanges() {
 	if c.SceneState != 2 {
 		return
@@ -9475,7 +9474,7 @@ func (c *Client) Read() (ok bool) {
 	c.LastPacketType1 = c.LastPacketType0
 	c.LastPacketType0 = c.PacketType
 
-	// Java: opcode 4 — general chat / trade-req / duel-req (client.java:10139-10173)
+	// Java: opcode 95 — general chat / trade-req / duel-req (client.java:10139-10173)
 	// strings.Index returns a byte offset; Java's indexOf returns a UTF-16
 	// code-unit offset. Player names are ASCII-bound by the protocol, so for
 	// valid inputs the substring split below is identical to Java's
@@ -9514,7 +9513,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 41 — private message inbound (client.java:10034-10069)
+	// Java: opcode 30 — private message inbound (client.java:10034-10069)
 	if c.PacketType == io.SERVERPROT_MESSAGE_PRIVATE {
 		var39 := c.In.G8()
 		var5 := c.In.G4()
@@ -9564,13 +9563,13 @@ func (c *Client) Read() (ok bool) {
 
 	// Java: post-zone opcode dispatch (client.java:9697-10370). Unhandled
 	// opcodes fall through to the catch-all at client.java:10371-10372.
-	// Java: opcode 1 — NPC info (client.java:9454-9458)
+	// Java: opcode 244 — NPC info (client.java:9454-9458)
 	if c.PacketType == io.SERVERPROT_NPC_INFO {
 		c.GetNpcPos(c.In, c.PacketSize)
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 162 — player info: base coords + appended zone packets (client.java:10299-10307)
+	// Java: opcode 233 — player info: base coords + appended zone packets (client.java:10299-10307)
 	if c.PacketType == io.SERVERPROT_UPDATE_ZONE_PARTIAL_ENCLOSED {
 		c.BaseX = c.In.G1()
 		c.BaseZ = c.In.G1()
@@ -9581,7 +9580,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 184 — player info + scene build (client.java:10349-10369)
+	// Java: opcode 86 — player info + scene build (client.java:10349-10369)
 	if c.PacketType == io.SERVERPROT_PLAYER_INFO {
 		// Java: PLAYER_INFO (client.java:8003-8005) — getPlayerPos then clear the
 		// awaiting-sync flag. The scene build trigger, low-mem rebuild, and minimap
@@ -9599,7 +9598,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 150 — varp set (byte) (client.java:9363-9377)
+	// Java: opcode 236 — varp set (byte) (client.java:9363-9377)
 	if c.PacketType == io.SERVERPROT_VARP_SMALL {
 		var26 := c.In.G2()
 		var52 := c.In.G1B()
@@ -9615,7 +9614,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 152 — friend list add/update + bubble-sort (client.java:9383-9431)
+	// Java: opcode 70 — friend list add/update + bubble-sort (client.java:9383-9431)
 	if c.PacketType == io.SERVERPROT_UPDATE_FRIENDLIST {
 		var39 := c.In.G8()
 		var5 := c.In.G1()
@@ -9666,7 +9665,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 43 — system update timer (client.java:9432-9436)
+	// Java: opcode 85 — system update timer (client.java:9432-9436)
 	if c.PacketType == io.SERVERPROT_UPDATE_REBOOT_TIMER {
 		c.SystemUpdateTimer = c.In.G2() * 30
 		c.PacketType = -1
@@ -9815,7 +9814,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 197 — set component model to local player head (client.java:9609-9613)
+	// Java: opcode 108 — set component model to local player head (client.java:9609-9613)
 	if c.PacketType == io.SERVERPROT_IF_SETPLAYERHEAD {
 		var26 := c.In.G2()
 		component.Instances[var26].ModelType = 3
@@ -9823,7 +9822,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 25 — hint arrow / minimap marker (client.java:9615-9650)
+	// Java: opcode 49 — hint arrow / minimap marker (client.java:9615-9650)
 	if c.PacketType == io.SERVERPROT_HINT_ARROW {
 		c.HintType = c.In.G1()
 		if c.HintType == 1 {
@@ -9897,13 +9896,13 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 142 — server-initiated logout (client.java:9666-9670)
+	// Java: opcode 17 — server-initiated logout (client.java:9666-9670)
 	if c.PacketType == io.SERVERPROT_LOGOUT {
 		c.Logout()
 		c.PacketType = -1
 		return false
 	}
-	// Java: opcode 19 — clear move-flag tile (client.java:9687-9690)
+	// Java: opcode 62 — clear move-flag tile (client.java:9687-9690)
 	if c.PacketType == io.SERVERPROT_UNSET_MAP_FLAG {
 		c.FlagSceneTileX = 0
 		c.PacketType = -1
@@ -9916,7 +9915,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 28 — open viewport+sidebar interface (client.java:9702-9720)
+	// Java: opcode 207 — open viewport+sidebar interface (client.java:9702-9720)
 	if c.PacketType == io.SERVERPROT_IF_OPENMAIN_SIDE {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
@@ -9936,7 +9935,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 175 — varp set (g4) (client.java:9721-9735)
+	// Java: opcode 226 — varp set (g4) (client.java:9721-9735)
 	if c.PacketType == io.SERVERPROT_VARP_LARGE {
 		var26 := c.In.G2()
 		var4 := c.In.G4()
@@ -9952,7 +9951,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 146 — component anim (client.java:9736-9742)
+	// Java: opcode 219 — component anim (client.java:9736-9742)
 	if c.PacketType == io.SERVERPROT_IF_SETANIM {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
@@ -9960,7 +9959,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 167 — tab interface assign (client.java:9743-9754)
+	// Java: opcode 200 — tab interface assign (client.java:9743-9754)
 	if c.PacketType == io.SERVERPROT_IF_SETTAB {
 		var26 := c.In.G2()
 		var4 := c.In.G1()
@@ -9985,7 +9984,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 98 — inventory slot full update (client.java:9787-9806)
+	// Java: opcode 72 — inventory slot full update (client.java:9787-9806)
 	if c.PacketType == io.SERVERPROT_UPDATE_INV_FULL {
 		c.RedrawSidebar = true
 		var26 := c.In.G2()
@@ -10006,13 +10005,13 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 226 — InputTracking.setEnabled (client.java:9807-9811)
+	// Java: opcode 22 — InputTracking.setEnabled (client.java:9807-9811)
 	if c.PacketType == io.SERVERPROT_ENABLE_TRACKING {
 		inputtracking.SetEnabled()
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 243 — open chatback input prompt (client.java:9812-9819)
+	// Java: opcode 152 — open chatback input prompt (client.java:9812-9819)
 	if c.PacketType == io.SERVERPROT_P_COUNTDIALOG {
 		c.ShowSocialInput = false
 		c.ChatbackInputOpen = true
@@ -10021,7 +10020,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 15 — clear inventory component (client.java:9820-9829)
+	// Java: opcode 162 — clear inventory component (client.java:9820-9829)
 	if c.PacketType == io.SERVERPROT_UPDATE_INV_STOP_TRANSMIT {
 		var26 := c.In.G2()
 		var27 := component.Instances[var26]
@@ -10032,7 +10031,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 140 — last-login info (client.java:9830-9853)
+	// Java: opcode 44 — last-login info (client.java:9830-9853)
 	if c.PacketType == io.SERVERPROT_LAST_LOGIN_INFO {
 		c.LastAddress = c.In.G4()
 		c.DaysSinceLastLogin = c.In.G2()
@@ -10057,7 +10056,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 126 — flashing tab (client.java:9854-9866)
+	// Java: opcode 168 — flashing tab (client.java:9854-9866)
 	if c.PacketType == io.SERVERPROT_TUT_FLASH {
 		c.FlashingTab = c.In.G1()
 		if c.FlashingTab == c.SelectedTab {
@@ -10071,13 +10070,13 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 254 — multizone flag (client.java:9880-9884)
+	// Java: opcode 97 — multizone flag (client.java:9880-9884)
 	if c.PacketType == io.SERVERPROT_SET_MULTIWAY {
 		c.InMultizone = c.In.G1()
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 12 — queue wave sound (client.java:9885-9897)
+	// Java: opcode 151 — queue wave sound (client.java:9885-9897)
 	if c.PacketType == io.SERVERPROT_SYNTH_SOUND {
 		var26 := c.In.G2()
 		var4 := c.In.G1()
@@ -10091,7 +10090,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 204 — component model = npc head (client.java:9898-9904)
+	// Java: opcode 129 — component model = npc head (client.java:9898-9904)
 	if c.PacketType == io.SERVERPROT_IF_SETNPCHEAD {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
@@ -10100,14 +10099,14 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 7 — scene base coords (client.java:9906-9910)
+	// Java: opcode 94 — scene base coords (client.java:9906-9910)
 	if c.PacketType == io.SERVERPROT_UPDATE_ZONE_PARTIAL_FOLLOWS {
 		c.BaseX = c.In.G1()
 		c.BaseZ = c.In.G1()
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 32 — privacy chat settings (client.java:9925-9932)
+	// Java: opcode 9 — privacy chat settings (client.java:9925-9932)
 	if c.PacketType == io.SERVERPROT_CHAT_FILTER_SETTINGS {
 		c.PublicChatSetting = c.In.G1()
 		c.PrivateChatSetting = c.In.G1()
@@ -10117,7 +10116,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 195 — open sidebar interface only (client.java:9934-9951)
+	// Java: opcode 176 — open sidebar interface only (client.java:9934-9951)
 	if c.PacketType == io.SERVERPROT_IF_OPENSIDE {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
@@ -10137,7 +10136,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 14 — open chat interface only (client.java:9953-9966)
+	// Java: opcode 189 — open chat interface only (client.java:9953-9966)
 	if c.PacketType == io.SERVERPROT_IF_OPENCHAT {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
@@ -10153,7 +10152,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 209 — component x/y position (client.java:9968-9976)
+	// Java: opcode 241 — component x/y position (client.java:9968-9976)
 	if c.PacketType == io.SERVERPROT_IF_SETPOSITION {
 		var26 := c.In.G2()
 		var4 := c.In.G2B()
@@ -10164,7 +10163,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 3 — cutscene camera init (client.java:9978-9991)
+	// Java: opcode 12 — cutscene camera init (client.java:9978-9991)
 	if c.PacketType == io.SERVERPROT_CAM_MOVETO {
 		c.Cutscene = true
 		c.CutsceneSrcLocalTileX = c.In.G1()
@@ -10202,7 +10201,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 193 — flush varCache→varps (client.java:10071-10080)
+	// Java: opcode 87 — flush varCache→varps (client.java:10071-10080)
 	if c.PacketType == io.SERVERPROT_RESET_CLIENT_VARCACHE {
 		for var26 := range len(c.Varps) {
 			if c.Varps[var26] != c.VarCache[var26] {
@@ -10214,7 +10213,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 87 — component model = new Model(id) (client.java:10082-10087)
+	// Java: opcode 245 — component model = new Model(id) (client.java:10082-10087)
 	if c.PacketType == io.SERVERPROT_IF_SETMODEL {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
@@ -10223,7 +10222,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 185 — sticky chat interface (client.java:10089-10094)
+	// Java: opcode 174 — sticky chat interface (client.java:10089-10094)
 	if c.PacketType == io.SERVERPROT_TUT_OPEN {
 		var26 := c.In.G2B()
 		c.StickyChatInterfaceID = var26
@@ -10231,7 +10230,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 68 — energy update (client.java:10096-10102)
+	// Java: opcode 177 — energy update (client.java:10096-10102)
 	if c.PacketType == io.SERVERPROT_UPDATE_RUNENERGY {
 		if c.SelectedTab == 12 {
 			c.RedrawSidebar = true
@@ -10240,7 +10239,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 74 — cutscene camera-target init (client.java:10104-10129)
+	// Java: opcode 222 — cutscene camera-target init (client.java:10104-10129)
 	if c.PacketType == io.SERVERPROT_CAM_LOOKAT {
 		c.Cutscene = true
 		c.CutsceneDstLocalTileX = c.In.G1()
@@ -10268,7 +10267,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 84 — selected sidebar tab (client.java:10131-10136)
+	// Java: opcode 56 — selected sidebar tab (client.java:10131-10136)
 	if c.PacketType == io.SERVERPROT_IF_SETTAB_ACTIVE {
 		c.SelectedTab = c.In.G1()
 		c.RedrawSidebar = true
@@ -10276,7 +10275,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 46 — component obj-icon model (client.java:10174-10184)
+	// Java: opcode 164 — component obj-icon model (client.java:10174-10184)
 	if c.PacketType == io.SERVERPROT_IF_SETOBJECT {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
@@ -10290,7 +10289,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 168 — open viewport interface only (client.java:10186-10205)
+	// Java: opcode 10 — open viewport interface only (client.java:10186-10205)
 	if c.PacketType == io.SERVERPROT_IF_OPENMAIN {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
@@ -10312,7 +10311,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 2 — component RGB15→RGB24 colour (client.java:10207-10215)
+	// Java: opcode 78 — component RGB15→RGB24 colour (client.java:10207-10215)
 	if c.PacketType == io.SERVERPROT_IF_SETCOLOUR {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
@@ -10323,7 +10322,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 136 — clear all primarySeqIds (client.java:10217-10229)
+	// Java: opcode 242 — clear all primarySeqIds (client.java:10217-10229)
 	if c.PacketType == io.SERVERPROT_RESET_ANIMS {
 		for var26 := range len(c.Players) {
 			if c.Players[var26] != nil {
@@ -10338,7 +10337,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 26 — component hide flag (client.java:10231-10236)
+	// Java: opcode 123 — component hide flag (client.java:10231-10236)
 	if c.PacketType == io.SERVERPROT_IF_SETHIDE {
 		var26 := c.In.G2()
 		var29 := c.In.G1() == 1
@@ -10346,7 +10345,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 21 — ignore list bulk update (client.java:10238-10244)
+	// Java: opcode 7 — ignore list bulk update (client.java:10238-10244)
 	if c.PacketType == io.SERVERPROT_UPDATE_IGNORELIST {
 		c.IgnoreCount = c.PacketSize / 8
 		for var26 := range c.IgnoreCount {
@@ -10355,7 +10354,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 239 — cutscene end / clear camera modifiers (client.java:10246-10252)
+	// Java: opcode 53 — cutscene end / clear camera modifiers (client.java:10246-10252)
 	if c.PacketType == io.SERVERPROT_CAM_RESET {
 		c.Cutscene = false
 		for var26 := range 5 {
@@ -10364,7 +10363,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 129 — close all interfaces (client.java:10254-10271)
+	// Java: opcode 214 — close all interfaces (client.java:10254-10271)
 	if c.PacketType == io.SERVERPROT_IF_CLOSE {
 		if c.SidebarInterfaceID != -1 {
 			c.SidebarInterfaceID = -1
@@ -10384,7 +10383,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 201 — component text (client.java:10273-10281)
+	// Java: opcode 154 — component text (client.java:10273-10281)
 	if c.PacketType == io.SERVERPROT_IF_SETTEXT {
 		var26 := c.In.G2()
 		var28 := c.In.GJStr()
@@ -10395,7 +10394,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 44 — skill XP/level update (client.java:10283-10297)
+	// Java: opcode 24 — skill XP/level update (client.java:10283-10297)
 	if c.PacketType == io.SERVERPROT_UPDATE_STAT {
 		c.RedrawSidebar = true
 		var26 := c.In.G1()
@@ -10412,7 +10411,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 22 — weight carried (client.java:10309-10315)
+	// Java: opcode 160 — weight carried (client.java:10309-10315)
 	if c.PacketType == io.SERVERPROT_UPDATE_RUNWEIGHT {
 		if c.SelectedTab == 12 {
 			c.RedrawSidebar = true
@@ -10421,7 +10420,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 13 — camera shake/wobble modifier (client.java:10317-10328)
+	// Java: opcode 50 — camera shake/wobble modifier (client.java:10317-10328)
 	if c.PacketType == io.SERVERPROT_CAM_SHAKE {
 		var26 := c.In.G1()
 		var4 := c.In.G1()
@@ -10435,7 +10434,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 213 — inventory slot partial update (client.java:10330-10347)
+	// Java: opcode 132 — inventory slot partial update (client.java:10330-10347)
 	if c.PacketType == io.SERVERPROT_UPDATE_INV_PARTIAL {
 		c.RedrawSidebar = true
 		var26 := c.In.G2()
