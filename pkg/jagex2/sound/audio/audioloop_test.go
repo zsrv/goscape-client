@@ -186,6 +186,40 @@ func TestCommandClobbersLatchedTrack(t *testing.T) {
 	}
 }
 
+// TestVoladjustLatchedDuringFadeOut pins the subtlest faithful quirk: a
+// voladjust arriving mid-fade-out stays latched (the slot only clears when
+// not fading out) and re-dispatches every tick — so each tick calls
+// setVolume twice: the fade step (Java SignLink.java:407) then the latched
+// voladjust at full midivol (:417). The volume audibly seesaws until the
+// fade-out completes; only then does the slot clear.
+func TestVoladjustLatchedDuringFadeOut(t *testing.T) {
+	resetSignlinkAudio(t)
+	signlink.SetMidiFade(1)
+	sink := &fakeSink{runningV: true}
+	l := &audioLoop{sink: sink}
+
+	signlink.SetMidiTrack([]byte{0xB})
+	l.tick() // latch track, enter fade-out
+
+	signlink.SetMidiCommand("voladjust") // clobbers the latched track
+	l.tick()
+	l.tick()
+	wantSeesaw := []int{88, 96, 80, 96} // fade step, voladjust, fade step, voladjust
+	if !slices.Equal(sink.volCalls, wantSeesaw) {
+		t.Fatalf("seesaw: got %v, want %v", sink.volCalls, wantSeesaw)
+	}
+	if cmd, _ := signlink.PeekMidi(); cmd != "voladjust" {
+		t.Fatalf("voladjust must stay latched while fading out, got %q", cmd)
+	}
+
+	for range 10 { // drain the fade-out (72..0 = 10 more steps)
+		l.tick()
+	}
+	if cmd, _ := signlink.PeekMidi(); cmd != "" {
+		t.Fatalf("slot must clear after the fade-out completes, got %q", cmd)
+	}
+}
+
 // TestLinearVolume pins the vol/256 mapping (see linearVolume's doc for the
 // equivalence proof against Java's CC rescale).
 func TestLinearVolume(t *testing.T) {
