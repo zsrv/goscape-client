@@ -1,5 +1,13 @@
 # WS1 — On-demand cache + Model loader (rev-244) Implementation Plan
 
+> **STATUS: DONE 2026-06-03.** All 6 increments landed on `rev-244`
+> (`b2021f2`→`7ff9643`), each build/vet/test/gofmt/golangci-lint green and
+> spec+quality reviewed; final holistic review confirmed clean end-to-end
+> integration. Two structural follow-ups discovered and flagged in code (NOT
+> done): the config-getter `NewModel1`→`TryGet` sweep and the Component type-6
+> deferred-model refactor — both tie to on-demand lazy resolution, slated for
+> WS2 or a dedicated increment. Host smoke test pending WS2 (login + REBUILD).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Port the 244 on-demand loading subsystem so models, animations, MIDI,
