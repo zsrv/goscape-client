@@ -1,9 +1,14 @@
 # WS2 — Wire protocol / login / REBUILD + LocChange merge + lazy model (rev-244) Implementation Plan
 
-> **STATUS: PLAN (drafted 2026-06-03).** Design approved; plan-phase research
-> complete (the five open questions are now RESOLVED below). WS2 is the last gate
-> before a host smoke test. Follows WS1 (`WS1-MODEL-LOADER-DESIGN.md`, DONE) and
-> WS3 (`WS3-MODELSOURCE-DESIGN.md`, DONE).
+> **STATUS: IMPLEMENTED — pending host smoke test (2026-06-03).** All 8
+> increments are committed to branch `rev-244`, each two-stage reviewed (spec +
+> code-quality) against Java `01f16088`; full build/vet/test/gofmt/lint green at
+> HEAD; final cross-increment integration review cleared it for the smoke test.
+> Commits: Inc1 `5d6239e`, Inc2 `bf2fb8c`, Inc3 `2f219e1`, Inc4 `eaf887c`,
+> Inc5 `8a8c7b5`, Inc6 `a850b34`, Inc7 `9534775`, Inc8 `93eadd5`. The **host
+> smoke test is the remaining runtime gate** (host-only; can't run in sandbox) —
+> see the Milestone section + `.claude/resume/`. Follows WS1
+> (`WS1-MODEL-LOADER-DESIGN.md`, DONE) and WS3 (`WS3-MODELSOURCE-DESIGN.md`, DONE).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement task-by-task with
@@ -1139,12 +1144,34 @@ func (c *Component) GetModel(arg0, arg1 int, arg2 bool, localPlayer *playerentit
 
 ---
 
-## Milestone — host smoke test (post-Inc 8)
+## Milestone — host smoke test (post-Inc 8) — **PENDING (host-only)**
 
 Run the real client against an Engine-TS 244 server (host-only; no headless).
 Verify: connect → login (StaffModLevel) → REBUILD_NORMAL loads maps via OnDemand →
 scene builds → terrain + locs + npc/obj/player models render. Record the outcome
 (what rendered / what didn't) in this doc's status header + a resume note.
+
+### Known deviations / follow-ups carried out of Inc 4–8 (all reviewed, none blocking)
+- **Per-frame call order (Inc 6):** `UpdateLocChanges()` sits at the rev-225 loop
+  position (after `UpdateEntityChats`) rather than adjacent to `UpdateSceneState`
+  as Java `updateGame` has it. Reviewed as non-functional (player/npc updates
+  don't read `LocChanges` in-cycle; everything completes before `DrawScene`).
+  Validate during the smoke test; align if any artifact appears.
+- **Stale rev-225 opcode numbers in handler doc-comments** (pre-existing, from the
+  Inc 1–3 renumber, NOT Inc 4–8): several `// Java: opcode NNN` comments still cite
+  the 225 number though the code dispatches on the 244 `io.SERVERPROT_*` constant
+  (e.g. "opcode 197" above IF_SETPLAYERHEAD=108, "184" above PLAYER_INFO=86, "46"
+  above IF_SETOBJECT=164). Cosmetic (named const is authoritative). Comment-sweep
+  follow-up.
+- **`SignLink.reporterror` 360000ms timeout (Inc 5):** Java's `fileStreams[0]` arg
+  has no Go analogue; substituted `c.OnDemand.HasCache()`. Diagnostic-only path
+  (fires after 6 min of failed loading).
+- **Player-design `IdkType.checkModel()` guard (Inc 8):** the Go player-design block
+  omits Java's pre-build `checkModel` guard loop. Pre-existing (predates Inc 8).
+- **DEFERRED features (flagged, not in WS2):** chat crowns `@cr1@`/`@cr2@` (needs
+  `imageModIcons` sprite loading); IF_OPENOVERLAY render (cosmetic; field+branch
+  added in Inc 2 but overlay not drawn); opcode-103 confirm-then-remove (removed in
+  Inc 2 — confirm the 244 server never sends it).
 
 ## Risk / verification
 - **No runtime gate in sandbox.** Every increment build/vet/test/gofmt/lint-green +
