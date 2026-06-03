@@ -1,6 +1,7 @@
 package signlink
 
 import (
+	"bytes"
 	"sync"
 	"testing"
 )
@@ -72,6 +73,36 @@ func TestSetMidiCommandIsRaceFree(t *testing.T) {
 	wg.Wait()
 }
 
+// TestMidiSlotSingleSlotClobber pins the Java single-slot protocol: SignLink
+// has ONE `midi` field (SignLink.java:45), so a "stop" issued while a track
+// is pending replaces it (the track is lost), and vice versa. PeekMidi must
+// NOT clear — the consumer clears separately (the fade-out latch,
+// SignLink.java:422-424).
+func TestMidiSlotSingleSlotClobber(t *testing.T) {
+	t.Cleanup(ClearMidi)
+
+	SetMidiTrack([]byte{1, 2})
+	SetMidiCommand("stop")
+	cmd, data := PeekMidi()
+	if cmd != "stop" || data != nil {
+		t.Fatalf("stop should clobber the pending track: got %q %v", cmd, data)
+	}
+
+	SetMidiTrack([]byte{3})
+	cmd, data = PeekMidi()
+	if cmd != "play" || !bytes.Equal(data, []byte{3}) {
+		t.Fatalf("track should clobber the pending stop: got %q %v", cmd, data)
+	}
+	if again, _ := PeekMidi(); again != "play" {
+		t.Fatalf("PeekMidi must not clear the slot: got %q", again)
+	}
+
+	ClearMidi()
+	if cmd, data := PeekMidi(); cmd != "" || data != nil {
+		t.Fatalf("ClearMidi should empty the slot: got %q %v", cmd, data)
+	}
+}
+
 // resetSignlinkAudioFields wipes the audio-facing globals between tests
 // so cross-test ordering is irrelevant. signlink's globals normally
 // persist for process lifetime — fine in production, but a footgun for
@@ -80,6 +111,7 @@ func resetSignlinkAudioFields() {
 	mu.Lock()
 	defer mu.Unlock()
 	Midi = ""
+	MidiData = nil
 	MidiFade = 0
-	MidiVol = 0
+	MidiVol = 96
 }

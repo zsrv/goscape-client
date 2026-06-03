@@ -55,26 +55,35 @@ var cond = sync.NewCond(&mu)
 var slotMu sync.Mutex
 
 var (
-	DNSReq        string
-	DNS           string
-	LoadReq       string
-	LoadBuf       []byte
-	SaveReq       string
-	SaveBuf       []byte
-	URLReq        string
-	URLStream     []byte // this was DataInputStream in java
-	LoopRate      int    = 50
-	Midi          string
+	DNSReq    string
+	DNS       string
+	LoadReq   string
+	LoadBuf   []byte
+	SaveReq   string
+	SaveBuf   []byte
+	URLReq    string
+	URLStream []byte // this was DataInputStream in java
+	LoopRate  int    = 50
+	// Midi is the single-slot audio command: "" (none), "stop", "voladjust",
+	// or "play" (track bytes pending in MidiData). Latest write wins —
+	// exactly Java's lone `midi` field, where a command can clobber a
+	// pending track and vice versa.
+	// Java: midi = "none" (SignLink.java:45); "play" stands in for the
+	// jingle<pos>.mid path of the disk protocol (SignLink.java:179-182),
+	// which the Go port replaces with in-memory bytes.
+	Midi string
+	// MidiData holds the pending track bytes when Midi == "play".
+	MidiData      []byte
 	Save          string
 	ReportError   bool = true
 	ErrorName     string
 	ClientVersion int = 244 // Java: clientversion = 244 (SignLink.java:53)
 	MidiFade      int
-	MidiVol       int
+	MidiVol       int = 96 // Java: midivol = 96 (SignLink.java:59)
 	SaveLen       int
 	//ThreadLiveID  int // not needed in go
 	UID     int
-	WaveVol int
+	WaveVol int = 96 // Java: wavevol = 96 (SignLink.java:71)
 	//MainApp Applet
 	//SocketIP net.IPAddr // not needed in go
 	SunJava bool
@@ -338,29 +347,57 @@ func DNSLookup(arg0 string) {
 	DNSReq = arg0
 }
 
-// ConsumeMidi atomically reads and clears the Midi path/command. Returns
-// the empty string when nothing is queued. The audio playback driver
-// polls this; Java's signlink consumer (in the signed-applet wrapper)
-// read `midi` and reset it to `null` after acting, which this mirrors.
+// PeekMidi returns the pending command slot without clearing it. The
+// consumer (audio.runAudioLoop) clears via ClearMidi only when not fading
+// out, porting the latch `if (!midiFadingOut) midi = "none"`
+// (SignLink.java:422-424).
+func PeekMidi() (string, []byte) {
+	mu.Lock()
+	defer mu.Unlock()
+	return Midi, MidiData
+}
+
+// ClearMidi empties the command slot (Java: midi = "none").
+func ClearMidi() {
+	mu.Lock()
+	defer mu.Unlock()
+	Midi = ""
+	MidiData = nil
+}
+
+// SetMidiTrack publishes track bytes for the audio consumer. Single slot,
+// latest-wins: it clobbers any pending command, exactly like Java's lone
+// `midi` field. Java: midisave → run loop → midi = cachedir + savereq
+// (SignLink.java:179-182, 327-337); the Go port hands the bytes over
+// in-memory instead of via jingle<pos>.mid.
+func SetMidiTrack(data []byte) {
+	mu.Lock()
+	defer mu.Unlock()
+	Midi = "play"
+	MidiData = data
+}
+
+// SetMidiCommand publishes the "stop" or "voladjust" sentinel. Clobbers a
+// pending track (single slot, see SetMidiTrack).
+func SetMidiCommand(s string) {
+	mu.Lock()
+	defer mu.Unlock()
+	Midi = s
+	MidiData = nil
+}
+
+// ConsumeMidi atomically reads and clears the command slot.
 //
-// Recognised values: a filesystem path to a .mid file (play it), the
-// sentinel "stop" (stop current track honoring MidiFade), or "voladjust"
-// (re-read MidiVol without restarting the track).
+// Deprecated: superseded by PeekMidi/ClearMidi (the faithful consumer needs
+// the fade-out latch). Still used by the js watcher until it moves onto
+// runAudioLoop; remove with it.
 func ConsumeMidi() string {
 	mu.Lock()
 	defer mu.Unlock()
 	s := Midi
 	Midi = ""
+	MidiData = nil
 	return s
-}
-
-// SetMidiCommand publishes a command/path to the audio driver. Used for
-// the "stop" and "voladjust" sentinels written from the game thread; the
-// I/O polling loop publishes resolved paths directly under mu.
-func SetMidiCommand(s string) {
-	mu.Lock()
-	defer mu.Unlock()
-	Midi = s
 }
 
 // SetMidiFade publishes the fade flag (0 = immediate, 1 = crossfade) that
