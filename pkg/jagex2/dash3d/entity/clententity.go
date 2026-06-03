@@ -1,26 +1,33 @@
 package entity
 
-import "github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
+import (
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
+)
 
 type ClientEntity struct {
-	X                        int
-	Z                        int
-	Yaw                      int
-	SeqStretches             bool
-	Size                     int
-	SeqStandID               int
-	SeqTurnID                int
-	SeqWalkID                int
-	SeqTurnAroundID          int
-	SeqTurnLeftID            int
-	SeqTurnRightId           int
-	SeqRunID                 int
-	Chat                     string
-	ChatTimer                int
-	ChatColor                int
-	ChatStyle                int
-	Damage                   int
-	DamageType               int
+	X               int
+	Z               int
+	Yaw             int
+	SeqStretches    bool
+	Size            int
+	SeqStandID      int
+	SeqTurnID       int
+	SeqWalkID       int
+	SeqTurnAroundID int
+	SeqTurnLeftID   int
+	SeqTurnRightId  int
+	SeqRunID        int
+	Chat            string
+	ChatTimer       int
+	ChatColor       int
+	ChatStyle       int
+	// Java: ClientEntity damage/damageType/damageCycle = new int[4]
+	// (ClientEntity.java:98-104, new in 244) — up to four simultaneous
+	// hitsplats, each expiring 70 cycles after Hit() records it.
+	Damage                   [4]int
+	DamageType               [4]int
+	DamageCycle              [4]int
 	CombatCycle              int
 	Health                   int
 	DstYaw                   int
@@ -76,6 +83,19 @@ func NewClientEntity() *ClientEntity {
 		SecondarySeqID:  -1,
 		PrimarySeqID:    -1,
 		SpotanimID:      -1,
+	}
+}
+
+// Hit records a hitsplat in the first free of the four damage slots; each
+// slot lives for 70 cycles. Java: ClientEntity.hit (ClientEntity.java:264-272).
+func (e *ClientEntity) Hit(arg0 int, arg2 int) {
+	for var4 := range 4 {
+		if e.DamageCycle[var4] <= clientextras.LoopCycle {
+			e.Damage[var4] = arg2
+			e.DamageType[var4] = arg0
+			e.DamageCycle[var4] = clientextras.LoopCycle + 70
+			return
+		}
 	}
 }
 

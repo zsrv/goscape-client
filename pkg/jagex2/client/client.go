@@ -769,7 +769,11 @@ func (c *Client) Draw2DEntityElements() {
 					}
 				}
 			}
-			if pe.CombatCycle > clientextras.LoopCycle+100 {
+			// Java: Client.java:6308-6342 — 244 triggers the health bar on
+			// combatCycle > loopCycle (not the 225 +100/+330 windows) and draws
+			// up to four hitmarks from the per-slot damage queue, each offset
+			// by its slot position.
+			if pe.CombatCycle > clientextras.LoopCycle {
 				c.ProjectFromGround1(pe.Height+15, pe)
 				if c.ProjectX > -1 {
 					var4 = pe.Health * 30 / pe.TotalHealth
@@ -778,12 +782,24 @@ func (c *Client) Draw2DEntityElements() {
 					pix2d.FillRect(c.ProjectY-3, c.ProjectX-15+var4, 0xFF0000, 30-var4, 5)
 				}
 			}
-			if pe.CombatCycle > clientextras.LoopCycle+330 {
-				c.ProjectFromGround1(pe.Height/2, pe)
-				if c.ProjectX > -1 {
-					c.ImageHitmarks[pe.DamageType].PlotSprite(c.ProjectY-12, c.ProjectX-12)
-					c.FontPlain11.CentreString(c.ProjectY+4, 0, strconv.Itoa(pe.Damage), c.ProjectX)
-					c.FontPlain11.CentreString(c.ProjectY+3, 0xFFFFFF, strconv.Itoa(pe.Damage), c.ProjectX-1)
+			for var16 := range 4 {
+				if pe.DamageCycle[var16] > clientextras.LoopCycle {
+					c.ProjectFromGround1(pe.Height/2, pe)
+					if c.ProjectX <= -1 {
+						continue
+					}
+					if var16 == 1 {
+						c.ProjectY -= 20
+					} else if var16 == 2 {
+						c.ProjectX -= 15
+						c.ProjectY -= 10
+					} else if var16 == 3 {
+						c.ProjectX += 15
+						c.ProjectY -= 10
+					}
+					c.ImageHitmarks[pe.DamageType[var16]].PlotSprite(c.ProjectY-12, c.ProjectX-12)
+					c.FontPlain11.CentreString(c.ProjectY+4, 0, strconv.Itoa(pe.Damage[var16]), c.ProjectX)
+					c.FontPlain11.CentreString(c.ProjectY+3, 0xFFFFFF, strconv.Itoa(pe.Damage[var16]), c.ProjectX-1)
 				}
 			}
 		}
@@ -1006,6 +1022,16 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 		var6 := c.NPCs[var5]
 		var7 := arg0.G1()
 		var8 := 0
+		if var7&0x1 == 1 {
+			// Java: DAMAGE_STACK (Client.java:9456-9467, new in 244) — the
+			// second simultaneous hitmark slot.
+			var10 := arg0.G1()
+			var11 := arg0.G1()
+			var6.Hit(var11, var10)
+			var6.CombatCycle = clientextras.LoopCycle + 300
+			var6.Health = arg0.G1()
+			var6.TotalHealth = arg0.G1()
+		}
 		if var7&0x2 == 2 {
 			var8 = arg0.G2()
 			if var8 == 0xFFFF {
@@ -1034,9 +1060,12 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 			var6.ChatTimer = 100
 		}
 		if var7&0x10 == 16 {
-			var6.Damage = arg0.G1()
-			var6.DamageType = arg0.G1()
-			var6.CombatCycle = clientextras.LoopCycle + 400
+			// Java: DAMAGE (Client.java:9520-9528) — 244 routes through the
+			// 4-slot hit queue and uses combatCycle = loopCycle + 300.
+			var10 := arg0.G1()
+			var11 := arg0.G1()
+			var6.Hit(var11, var10)
+			var6.CombatCycle = clientextras.LoopCycle + 300
 			var6.Health = arg0.G1()
 			var6.TotalHealth = arg0.G1()
 		}
@@ -10677,9 +10706,12 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		c.AddMessage(2, arg4.Chat, arg4.Name)
 	}
 	if arg2&0x10 == 16 {
-		arg4.Damage = arg3.G1()
-		arg4.DamageType = arg3.G1()
-		arg4.CombatCycle = clientextras.LoopCycle + 400
+		// Java: DAMAGE (Client.java:9203-9209) — 244 routes through the
+		// 4-slot hit queue and uses combatCycle = loopCycle + 300.
+		var10 := arg3.G1()
+		var11 := arg3.G1()
+		arg4.Hit(var11, var10)
+		arg4.CombatCycle = clientextras.LoopCycle + 300
 		arg4.Health = arg3.G1()
 		arg4.TotalHealth = arg3.G1()
 	}
@@ -10746,19 +10778,30 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 			arg4.SpotanimID = -1
 		}
 	}
-	if arg2&0x200 != 512 {
-		return
+	if arg2&0x200 == 512 {
+		// Java: EXACTMOVE (Client.java:9280-9293) — 244 no longer has this as
+		// the final block, so no early-return form.
+		arg4.ForceMoveStartSceneTileX = arg3.G1()
+		arg4.ForceMoveStartSceneTileZ = arg3.G1()
+		arg4.ForceMoveEndSceneTileX = arg3.G1()
+		arg4.ForceMoveEndSceneTileZ = arg3.G1()
+		arg4.ForceMoveEndCycle = arg3.G2() + clientextras.LoopCycle
+		arg4.ForceMoveStartCycle = arg3.G2() + clientextras.LoopCycle
+		arg4.ForceMoveFaceDirection = arg3.G1()
+		arg4.PathLength = 0
+		arg4.PathTileX[0] = arg4.ForceMoveEndSceneTileX
+		arg4.PathTileZ[0] = arg4.ForceMoveEndSceneTileZ
 	}
-	arg4.ForceMoveStartSceneTileX = arg3.G1()
-	arg4.ForceMoveStartSceneTileZ = arg3.G1()
-	arg4.ForceMoveEndSceneTileX = arg3.G1()
-	arg4.ForceMoveEndSceneTileZ = arg3.G1()
-	arg4.ForceMoveEndCycle = arg3.G2() + clientextras.LoopCycle
-	arg4.ForceMoveStartCycle = arg3.G2() + clientextras.LoopCycle
-	arg4.ForceMoveFaceDirection = arg3.G1()
-	arg4.PathLength = 0
-	arg4.PathTileX[0] = arg4.ForceMoveEndSceneTileX
-	arg4.PathTileZ[0] = arg4.ForceMoveEndSceneTileZ
+	if arg2&0x400 == 1024 {
+		// Java: DAMAGE_STACK (Client.java:9296-9302, new in 244) — the second
+		// simultaneous hitmark slot.
+		var10 := arg3.G1()
+		var11 := arg3.G1()
+		arg4.Hit(var11, var10)
+		arg4.CombatCycle = clientextras.LoopCycle + 300
+		arg4.Health = arg3.G1()
+		arg4.TotalHealth = arg3.G1()
+	}
 }
 
 func (c *Client) DrawProgress(message string, percent int) {
