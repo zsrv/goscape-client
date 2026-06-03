@@ -193,15 +193,25 @@ func (c *Client) handleMouseMove(e platform.MouseMove) {
 	}
 }
 
-// handleMouseCross maps a platform enter/leave event to InputTracking.
-// Java: mouseEntered/mouseExited on GameShell (GameShell.java:323-336).
+// handleMouseCross maps a platform enter/leave event to the mouse-state
+// resets and InputTracking. Java: mouseEntered/mouseExited on GameShell
+// (GameShell.java:376-390).
 func (c *Client) handleMouseCross(e platform.MouseCross) {
-	if !inputtracking.Enabled {
+	if e.Entered {
+		// Java: mouseEntered only records the tracking event.
+		if inputtracking.Enabled {
+			inputtracking.MouseEntered()
+		}
 		return
 	}
-	if e.Entered {
-		inputtracking.MouseEntered()
-	} else {
+	// Java: mouseExited resets idleCycles/mouseX/mouseY BEFORE the tracking
+	// gate (GameShell.java:383-385), so the resets run even with tracking
+	// disabled — without them the client keeps hovering at the last
+	// in-window position after the cursor leaves.
+	c.IdleCycles = 0
+	c.MouseX = -1
+	c.MouseY = -1
+	if inputtracking.Enabled {
 		inputtracking.MouseExited()
 	}
 }
@@ -300,10 +310,12 @@ func (c *Client) handleKey(e platform.KeyPress) {
 		}
 		// Java: `if (InputTracking.enabled) InputTracking.keyPressed(var3);` runs
 		// UNCONDITIONALLY on every press (only the KeyQueue push above is gated by
-		// var3 > 4). It was previously nested inside the isSentinel branch, which
-		// dropped arrow keys (var3 1..4) and other non-text keys from the recorded
-		// input-tracking stream. Mirrors the unconditional KeyReleased call below.
-		if inputtracking.Enabled {
+		// var3 > 4) — but Java has exactly ONE keyPressed event per physical key.
+		// In this port a printable key arrives as BOTH a KeyPress{KeyRune} and a
+		// CharInput; handleCharInput records it (with the real typed char, like
+		// Java's keyChar), so recording the KeyRune press here too would double
+		// every printable keystroke in the tracking stream.
+		if inputtracking.Enabled && e.Key != platform.KeyRune {
 			inputtracking.KeyPressed(var3)
 		}
 		return
