@@ -1045,12 +1045,25 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 				var6.PrimarySeqLoop = 0
 			}
 			var9 := arg0.G1()
-			if var8 == -1 || var6.PrimarySeqID == -1 || seqtype.Instances[var8].Priority > seqtype.Instances[var6.PrimarySeqID].Priority || seqtype.Instances[var6.PrimarySeqID].Priority == 0 {
+			// Java: 244 ANIM form (Client.java:9479-9498) — duplicatebehavior
+			// restart branch, >= priority test, preanimRouteLength capture.
+			if var8 == var6.PrimarySeqID && var8 != -1 {
+				var18 := seqtype.Instances[var8].DuplicateBehavior
+				if var18 == 1 {
+					var6.PrimarySeqFrame = 0
+					var6.PrimarySeqCycle = 0
+					var6.PrimarySeqDelay = var9
+					var6.PrimarySeqLoop = 0
+				} else if var18 == 2 {
+					var6.PrimarySeqLoop = 0
+				}
+			} else if var8 == -1 || var6.PrimarySeqID == -1 || seqtype.Instances[var8].Priority >= seqtype.Instances[var6.PrimarySeqID].Priority {
 				var6.PrimarySeqID = var8
 				var6.PrimarySeqFrame = 0
 				var6.PrimarySeqCycle = 0
 				var6.PrimarySeqDelay = var9
 				var6.PrimarySeqLoop = 0
+				var6.PreanimRouteLength = var6.PathLength
 			}
 		}
 		if var7&0x4 == 4 {
@@ -3985,7 +3998,7 @@ func (c *Client) UpdateClientPlayer(arg0 *playerentity.ClientPlayer) {
 		arg0.ForceMoveStartCycle = 0
 		arg0.X = arg0.PathTileX[0]*128 + arg0.Size*64
 		arg0.Z = arg0.PathTileZ[0]*128 + arg0.Size*64
-		arg0.PathLength = 0
+		arg0.ClearRoute() // Java: e.clearRoute() (Client.java:4915)
 	}
 	if arg0 == c.LocalPlayer && (arg0.X < 1536 || arg0.Z < 1536 || arg0.X >= 11776 || arg0.Z >= 11776) {
 		arg0.PrimarySeqID = -1
@@ -3994,7 +4007,7 @@ func (c *Client) UpdateClientPlayer(arg0 *playerentity.ClientPlayer) {
 		arg0.ForceMoveStartCycle = 0
 		arg0.X = arg0.PathTileX[0]*128 + arg0.Size*64
 		arg0.Z = arg0.PathTileZ[0]*128 + arg0.Size*64
-		arg0.PathLength = 0
+		arg0.ClearRoute() // Java: e.clearRoute() (Client.java:4925)
 	}
 	if arg0.ForceMoveEndCycle > clientextras.LoopCycle {
 		c.UpdateForceMovement(&arg0.ClientEntity)
@@ -4015,7 +4028,7 @@ func (c *Client) UpdateClientNpc(arg0 *entity.ClientNpc) {
 		arg0.ForceMoveStartCycle = 0
 		arg0.X = arg0.PathTileX[0]*128 + arg0.Size*64
 		arg0.Z = arg0.PathTileZ[0]*128 + arg0.Size*64
-		arg0.PathLength = 0
+		arg0.ClearRoute() // Java: e.clearRoute() (Client.java:4915)
 	}
 	if arg0.ForceMoveEndCycle > clientextras.LoopCycle {
 		c.UpdateForceMovement(&arg0.ClientEntity)
@@ -4080,8 +4093,15 @@ func (c *Client) UpdateMovement(arg1 *entity.ClientEntity) {
 		return
 	}
 	if arg1.PrimarySeqID != -1 && arg1.PrimarySeqDelay == 0 {
+		// Java: 244 gates movement on preanimRouteLength + preanim_move /
+		// postanim_mode (Client.java:5002-5014), replacing 225's
+		// walkmerge==null test.
 		var3 := seqtype.Instances[arg1.PrimarySeqID]
-		if var3.WalkMerge == nil {
+		if arg1.PreanimRouteLength > 0 && var3.PreanimMove == 0 {
+			arg1.SeqTrigger++
+			return
+		}
+		if arg1.PreanimRouteLength <= 0 && var3.PostanimMode == 0 {
 			arg1.SeqTrigger++
 			return
 		}
@@ -4176,6 +4196,10 @@ func (c *Client) UpdateMovement(arg1 *entity.ClientEntity) {
 	}
 	if arg1.X == var5 && arg1.Z == var6 {
 		arg1.PathLength--
+		// Java: Client.java:5119-5121 (new in 244).
+		if arg1.PreanimRouteLength > 0 {
+			arg1.PreanimRouteLength--
+		}
 	}
 }
 
@@ -4238,6 +4262,9 @@ func (c *Client) UpdateFacingDirection(arg0 *entity.ClientEntity) {
 	arg0.SecondarySeqID = arg0.SeqWalkID
 }
 
+// UpdateSequences advances the secondary/spotanim/primary seq frames.
+// Java: updateSequences (Client.java:5193-5265). 244 order: secondary,
+// spotanim, preanim early-trigger, primary-advance, delay decrement.
 func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 	arg1.SeqStretches = false
 	var var3 *seqtype.SeqType
@@ -4251,6 +4278,30 @@ func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 		if arg1.SecondarySeqFrame >= var3.FrameCount {
 			arg1.SecondarySeqCycle = 0
 			arg1.SecondarySeqFrame = 0
+		}
+	}
+	if arg1.SpotanimID != -1 && clientextras.LoopCycle >= arg1.SpotanimLastCycle {
+		if arg1.SpotanimFrame < 0 {
+			arg1.SpotanimFrame = 0
+		}
+		var3 = spotanimtype.Instances[arg1.SpotanimID].Seq
+		arg1.SpotanimCycle++
+		for arg1.SpotanimFrame < var3.FrameCount && arg1.SpotanimCycle > var3.GetFrameDuration(arg1.SpotanimFrame) {
+			arg1.SpotanimCycle -= var3.GetFrameDuration(arg1.SpotanimFrame)
+			arg1.SpotanimFrame++
+		}
+		if arg1.SpotanimFrame >= var3.FrameCount && (arg1.SpotanimFrame < 0 || arg1.SpotanimFrame >= var3.FrameCount) {
+			arg1.SpotanimID = -1
+		}
+	}
+	// Java: Client.java:5229-5235 (new in 244) — while a preanim_move==1 seq
+	// still has route to walk, hold the primary seq on delay 1 instead of
+	// advancing it.
+	if arg1.PrimarySeqID != -1 && arg1.PrimarySeqDelay <= 1 {
+		var3 = seqtype.Instances[arg1.PrimarySeqID]
+		if var3.PreanimMove == 1 && arg1.PreanimRouteLength > 0 && arg1.ForceMoveEndCycle <= clientextras.LoopCycle && arg1.ForceMoveStartCycle < clientextras.LoopCycle {
+			arg1.PrimarySeqDelay = 1
+			return
 		}
 	}
 	if arg1.PrimarySeqID != -1 && arg1.PrimarySeqDelay == 0 {
@@ -4274,23 +4325,6 @@ func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 	}
 	if arg1.PrimarySeqDelay > 0 {
 		arg1.PrimarySeqDelay--
-	}
-	if arg1.SpotanimID == -1 || clientextras.LoopCycle < arg1.SpotanimLastCycle {
-		return
-	}
-	if arg1.SpotanimFrame < 0 {
-		arg1.SpotanimFrame = 0
-	}
-	var3 = spotanimtype.Instances[arg1.SpotanimID].Seq
-	arg1.SpotanimCycle++
-	for arg1.SpotanimFrame < var3.FrameCount && arg1.SpotanimCycle > var3.GetFrameDuration(arg1.SpotanimFrame) {
-		arg1.SpotanimCycle -= var3.GetFrameDuration(arg1.SpotanimFrame)
-		arg1.SpotanimFrame++
-	}
-	if arg1.SpotanimFrame >= var3.FrameCount {
-		if arg1.SpotanimFrame < 0 || arg1.SpotanimFrame >= var3.FrameCount {
-			arg1.SpotanimID = -1
-		}
 	}
 }
 
@@ -10708,12 +10742,25 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 			arg4.PrimarySeqLoop = 0
 		}
 		var15 = arg3.G1()
-		if var6 == -1 || arg4.PrimarySeqID == -1 || seqtype.Instances[var6].Priority > seqtype.Instances[arg4.PrimarySeqID].Priority || seqtype.Instances[arg4.PrimarySeqID].Priority == 0 {
+		// Java: 244 ANIM form (Client.java:9159-9178) — duplicatebehavior
+		// restart branch, >= priority test, preanimRouteLength capture.
+		if var6 == arg4.PrimarySeqID && var6 != -1 {
+			var18 := seqtype.Instances[var6].DuplicateBehavior
+			if var18 == 1 {
+				arg4.PrimarySeqFrame = 0
+				arg4.PrimarySeqCycle = 0
+				arg4.PrimarySeqDelay = var15
+				arg4.PrimarySeqLoop = 0
+			} else if var18 == 2 {
+				arg4.PrimarySeqLoop = 0
+			}
+		} else if var6 == -1 || arg4.PrimarySeqID == -1 || seqtype.Instances[var6].Priority >= seqtype.Instances[arg4.PrimarySeqID].Priority {
 			arg4.PrimarySeqID = var6
 			arg4.PrimarySeqFrame = 0
 			arg4.PrimarySeqCycle = 0
 			arg4.PrimarySeqDelay = var15
 			arg4.PrimarySeqLoop = 0
+			arg4.PreanimRouteLength = arg4.PathLength
 		}
 	}
 	if arg2&0x4 == 4 {
@@ -10812,9 +10859,9 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		arg4.ForceMoveEndCycle = arg3.G2() + clientextras.LoopCycle
 		arg4.ForceMoveStartCycle = arg3.G2() + clientextras.LoopCycle
 		arg4.ForceMoveFaceDirection = arg3.G1()
-		arg4.PathLength = 0
-		arg4.PathTileX[0] = arg4.ForceMoveEndSceneTileX
-		arg4.PathTileZ[0] = arg4.ForceMoveEndSceneTileZ
+		// Java: player.clearRoute() (Client.java:9290) — 244 dropped 225's
+		// routeTileX/Z[0] writes here.
+		arg4.ClearRoute()
 	}
 	if arg2&0x400 == 1024 {
 		// Java: DAMAGE_STACK (Client.java:9296-9302, new in 244) — the second

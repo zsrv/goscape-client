@@ -25,13 +25,17 @@ type ClientEntity struct {
 	// Java: ClientEntity damage/damageType/damageCycle = new int[4]
 	// (ClientEntity.java:98-104, new in 244) — up to four simultaneous
 	// hitsplats, each expiring 70 cycles after Hit() records it.
-	Damage                   [4]int
-	DamageType               [4]int
-	DamageCycle              [4]int
-	CombatCycle              int
-	Health                   int
-	DstYaw                   int
-	PathLength               int
+	Damage      [4]int
+	DamageType  [4]int
+	DamageCycle [4]int
+	CombatCycle int
+	Health      int
+	DstYaw      int
+	PathLength  int
+	// Java: preanimRouteLength (z.ob, new in 244) — the route length captured
+	// when an ANIM block accepts a new primary seq; gates whether the seq
+	// blocks movement (preanim_move) vs plays after it (postanim_mode).
+	PreanimRouteLength       int
 	PathTileX                []int
 	PathTileZ                []int
 	PathRunning              []bool
@@ -99,8 +103,17 @@ func (e *ClientEntity) Hit(arg0 int, arg2 int) {
 	}
 }
 
+// ClearRoute resets the walk route and its preanim capture.
+// Java: ClientEntity.clearRoute (ClientEntity.java:252-256, new in 244).
+func (e *ClientEntity) ClearRoute() {
+	e.PathLength = 0
+	e.PreanimRouteLength = 0
+}
+
 func (e *ClientEntity) Teleport(arg1 bool, arg2 int, arg3 int) {
-	if e.PrimarySeqID != -1 && seqtype.Instances[e.PrimarySeqID].Priority <= 1 {
+	// Java: 244 cancels on postanim_mode == 1 (ClientEntity.java:174), not the
+	// 225 `priority <= 1` test.
+	if e.PrimarySeqID != -1 && seqtype.Instances[e.PrimarySeqID].PostanimMode == 1 {
 		e.PrimarySeqID = -1
 	}
 	if !arg1 {
@@ -121,7 +134,10 @@ func (e *ClientEntity) Teleport(arg1 bool, arg2 int, arg3 int) {
 			return
 		}
 	}
+	// Java: move() resets THREE fields on the teleport path
+	// (ClientEntity.java:195-197): routeLength, preanimRouteLength, seqDelayMove.
 	e.PathLength = 0
+	e.PreanimRouteLength = 0
 	e.SeqTrigger = 0
 	e.PathTileX[0] = arg2
 	e.PathTileZ[0] = arg3
@@ -154,7 +170,9 @@ func (e *ClientEntity) MoveAlongRoute(arg0 bool, arg1 int) {
 		var4++
 		var5--
 	}
-	if e.PrimarySeqID != -1 && seqtype.Instances[e.PrimarySeqID].Priority <= 1 {
+	// Java: 244 cancels on postanim_mode == 1 (ClientEntity.java:236), not the
+	// 225 `priority <= 1` test.
+	if e.PrimarySeqID != -1 && seqtype.Instances[e.PrimarySeqID].PostanimMode == 1 {
 		e.PrimarySeqID = -1
 	}
 	if e.PathLength < 9 {
