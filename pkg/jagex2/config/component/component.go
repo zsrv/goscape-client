@@ -18,7 +18,10 @@ import (
 var (
 	Instances  []*Component
 	ImageCache *datastruct.LruCache[*pix32.Pix32]
-	ModelCache *datastruct.LruCache[*model.Model]
+	// Java: Component.modelCache = new LruCache(30) (Component.java:119) — a static
+	// field initializer created once at class load and never nulled. unpack() only
+	// creates/nulls imageCache (Component.java:204,443); modelCache must survive it.
+	ModelCache = datastruct.NewLruCache[*model.Model](30)
 )
 
 type Component struct {
@@ -93,7 +96,6 @@ func NewComponent() *Component {
 
 func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 	ImageCache = datastruct.NewLruCache[*pix32.Pix32](50000)
-	ModelCache = datastruct.NewLruCache[*model.Model](30)
 	var4 := io.NewPacket(arg3.Read("data", nil))
 	var5 := -1
 	var6 := var4.G2()
@@ -102,8 +104,8 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 		var var8 *Component
 		for ok := true; ok; ok = var8.ButtonType != 1 && var8.ButtonType != 4 && var8.ButtonType != 5 && var8.ButtonType != 6 {
 			if var4.Pos >= len(var4.Data) {
+				// Java: Component.java:443 nulls only imageCache; modelCache stays alive.
 				ImageCache = nil
-				ModelCache = nil
 				return
 			}
 			var7 := var4.G2()

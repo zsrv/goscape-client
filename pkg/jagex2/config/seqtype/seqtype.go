@@ -33,14 +33,23 @@ type SeqType struct {
 }
 
 // GetFrameDuration returns the duration (in client cycles) of animation frame
-// `frame`. Java: rev-244 SeqType.getFrameDuration (it lazily resolves a zero
-// delay from the frame's AnimFrame, caching into delay[], then falls back to 1).
-// The Go decode (below) already resolves that fallback eagerly into Delay[], so
-// the resolved value is identical and this getter simply returns it. Callers
-// (e.g. ClientLocAnim.GetModel) use this rather than indexing Delay directly, to
-// match the rev-244 call shape.
+// `frame`, lazily resolving a zero wire delay from the frame's AnimFrame
+// (caching into Delay[]) and falling back to 1. The AnimFrame may not be
+// loaded yet (frames arrive over OnDemand after seq.dat decodes), so the nil
+// guard is load-bearing. Java: SeqType.getFrameDuration (SeqType.java:77-93).
 func (t *SeqType) GetFrameDuration(frame int) int {
-	return t.Delay[frame]
+	duration := t.Delay[frame]
+	if duration == 0 {
+		transform := animframe.Get(t.Frames[frame])
+		if transform != nil {
+			duration = transform.Delay
+			t.Delay[frame] = duration
+		}
+	}
+	if duration == 0 {
+		duration = 1
+	}
+	return duration
 }
 
 func NewSeqType() *SeqType {
@@ -114,18 +123,10 @@ func (t *SeqType) Decode(arg1 *io.Packet) {
 				if t.IFrames[i] == 0xFFFF {
 					t.IFrames[i] = -1
 				}
+				// Java: rev-244 decode stops at the raw g2 read; the delay==0
+				// fallback lives in the lazy getFrameDuration (AnimFrames are
+				// NOT loaded yet at decode time — they arrive over OnDemand).
 				t.Delay[i] = arg1.G2()
-				// Java: rev-244 moved this delay==0 fallback OUT of decode into a
-				// lazy getFrameDuration(frame) (now exposed as GetFrameDuration
-				// above). Resolving eagerly here is kept (identical resolved
-				// values; current load order has AnimFrame ready at decode), so
-				// GetFrameDuration just returns the already-resolved Delay[frame].
-				if t.Delay[i] == 0 {
-					t.Delay[i] = animframe.Instances[t.Frames[i]].Delay
-				}
-				if t.Delay[i] == 0 {
-					t.Delay[i] = 1
-				}
 			}
 		case 2:
 			t.ReplayOff = arg1.G2()

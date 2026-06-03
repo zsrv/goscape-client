@@ -26,6 +26,16 @@ func Init(capacity int) {
 	Instances = make([]*AnimFrame, capacity+1)
 }
 
+// Get returns the frame for id, or nil when the table or the frame itself has
+// not been loaded yet (frames arrive lazily over OnDemand archive 1).
+// Java: AnimFrame.get (AnimFrame.java:153-159).
+func Get(id int) *AnimFrame {
+	if Instances == nil {
+		return nil
+	}
+	return Instances[id]
+}
+
 // Unpack decodes a single per-id animation blob (rev-244). The 8-byte trailer
 // gives the head/tran1/tran2/del section lengths; the AnimBase is embedded at
 // the tail of the blob (there is no per-frame base-id lookup as in 225).

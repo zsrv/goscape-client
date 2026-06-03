@@ -4010,7 +4010,7 @@ func (c *Client) UpdateForceMovement(arg0 *entity.ClientEntity) {
 
 func (c *Client) StartForceMovement(arg0 *entity.ClientEntity, arg1 int) {
 	c.PacketSize += arg1
-	if arg0.ForceMoveStartCycle == clientextras.LoopCycle || arg0.PrimarySeqID == -1 || arg0.PrimarySeqDelay != 0 || arg0.PrimarySeqCycle+1 > seqtype.Instances[arg0.PrimarySeqID].Delay[arg0.PrimarySeqFrame] {
+	if arg0.ForceMoveStartCycle == clientextras.LoopCycle || arg0.PrimarySeqID == -1 || arg0.PrimarySeqDelay != 0 || arg0.PrimarySeqCycle+1 > seqtype.Instances[arg0.PrimarySeqID].GetFrameDuration(arg0.PrimarySeqFrame) {
 		var3 := arg0.ForceMoveStartCycle - arg0.ForceMoveEndCycle
 		var4 := clientextras.LoopCycle - arg0.ForceMoveEndCycle
 		var5 := arg0.ForceMoveStartSceneTileX*128 + arg0.Size*64
@@ -4205,7 +4205,7 @@ func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 	if arg1.SecondarySeqID != -1 {
 		var3 = seqtype.Instances[arg1.SecondarySeqID]
 		arg1.SecondarySeqCycle++
-		if arg1.SecondarySeqFrame < var3.FrameCount && arg1.SecondarySeqCycle > var3.Delay[arg1.SecondarySeqFrame] {
+		if arg1.SecondarySeqFrame < var3.FrameCount && arg1.SecondarySeqCycle > var3.GetFrameDuration(arg1.SecondarySeqFrame) {
 			arg1.SecondarySeqCycle = 0
 			arg1.SecondarySeqFrame++
 		}
@@ -4217,8 +4217,8 @@ func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 	if arg1.PrimarySeqID != -1 && arg1.PrimarySeqDelay == 0 {
 		var3 = seqtype.Instances[arg1.PrimarySeqID]
 		arg1.PrimarySeqCycle++
-		for arg1.PrimarySeqFrame < var3.FrameCount && arg1.PrimarySeqCycle > var3.Delay[arg1.PrimarySeqFrame] {
-			arg1.PrimarySeqCycle -= var3.Delay[arg1.PrimarySeqFrame]
+		for arg1.PrimarySeqFrame < var3.FrameCount && arg1.PrimarySeqCycle > var3.GetFrameDuration(arg1.PrimarySeqFrame) {
+			arg1.PrimarySeqCycle -= var3.GetFrameDuration(arg1.PrimarySeqFrame)
 			arg1.PrimarySeqFrame++
 		}
 		if arg1.PrimarySeqFrame >= var3.FrameCount {
@@ -4244,8 +4244,8 @@ func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 	}
 	var3 = spotanimtype.Instances[arg1.SpotanimID].Seq
 	arg1.SpotanimCycle++
-	for arg1.SpotanimFrame < var3.FrameCount && arg1.SpotanimCycle > var3.Delay[arg1.SpotanimFrame] {
-		arg1.SpotanimCycle -= var3.Delay[arg1.SpotanimFrame]
+	for arg1.SpotanimFrame < var3.FrameCount && arg1.SpotanimCycle > var3.GetFrameDuration(arg1.SpotanimFrame) {
+		arg1.SpotanimCycle -= var3.GetFrameDuration(arg1.SpotanimFrame)
 		arg1.SpotanimFrame++
 	}
 	if arg1.SpotanimFrame >= var3.FrameCount {
@@ -6331,7 +6331,9 @@ func (c *Client) PushProjectiles() {
 		} else if clientextras.LoopCycle >= v.StartCycle {
 			if v.Target > 0 {
 				var3 := c.NPCs[v.Target-1]
-				if var3 != nil {
+				// Java: Client.java:6040 also requires the target to be on-grid
+				// (x/z in [0,13312)) before homing on it.
+				if var3 != nil && var3.X >= 0 && var3.X < 13312 && var3.Z >= 0 && var3.Z < 13312 {
 					v.UpdateVelocity(c.GetHeightMapY(v.Level, var3.X, var3.Z)-v.OffsetY, var3.Z, var3.X, clientextras.LoopCycle)
 				}
 			}
@@ -6343,7 +6345,8 @@ func (c *Client) PushProjectiles() {
 				} else {
 					var5 = c.Players[var4]
 				}
-				if var5 != nil {
+				// Java: Client.java:6054 — same on-grid guard for the player branch.
+				if var5 != nil && var5.X >= 0 && var5.X < 13312 && var5.Z >= 0 && var5.Z < 13312 {
 					v.UpdateVelocity(c.GetHeightMapY(v.Level, var5.X, var5.Z)-v.OffsetY, var5.Z, var5.X, clientextras.LoopCycle)
 				}
 			}
@@ -7965,8 +7968,8 @@ func (c *Client) UpdateInterfaceAnimation(arg0, arg1 int) bool {
 			if var9 != -1 {
 				var10 := seqtype.Instances[var9]
 				var7.SeqCycle += arg1
-				for var7.SeqCycle > var10.Delay[var7.SeqFrame] {
-					var7.SeqCycle -= var10.Delay[var7.SeqFrame] + 1
+				for var7.SeqCycle > var10.GetFrameDuration(var7.SeqFrame) {
+					var7.SeqCycle -= var10.GetFrameDuration(var7.SeqFrame) + 1
 					var7.SeqFrame++
 					if var7.SeqFrame >= var10.FrameCount {
 						var7.SeqFrame -= var10.ReplayOff

@@ -1059,7 +1059,12 @@ func (m *Model) ApplyTransform(arg1 int) {
 	if m.LabelVertices == nil || arg1 == -1 {
 		return
 	}
-	var3 := animframe.Instances[arg1]
+	// Java: AnimFrame.get(id) + null guard (Model.java:1155-1160) — the frame may
+	// not have arrived over the lazy OnDemand channel yet; no-op like Java.
+	var3 := animframe.Get(arg1)
+	if var3 == nil {
+		return
+	}
 	var4 := var3.Base
 	BaseX = 0
 	BaseY = 0
@@ -1078,8 +1083,18 @@ func (m *Model) ApplyTransforms(arg0 int, arg2 int, arg3 []int) {
 		m.ApplyTransform(arg2)
 		return
 	}
-	var5 := animframe.Instances[arg2]
-	var6 := animframe.Instances[arg0]
+	// Java: both frames fetched via AnimFrame.get with null guards
+	// (Model.java:1180-1190): missing primary -> no-op; missing secondary ->
+	// fall back to applying just the primary transform.
+	var5 := animframe.Get(arg2)
+	if var5 == nil {
+		return
+	}
+	var6 := animframe.Get(arg0)
+	if var6 == nil {
+		m.ApplyTransform(arg2)
+		return
+	}
 	var7 := var5.Base
 	BaseX = 0
 	BaseY = 0
