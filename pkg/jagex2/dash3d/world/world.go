@@ -3,7 +3,6 @@ package world
 import (
 	"math"
 	"math/rand"
-	"strings"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/flotype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/loctype"
@@ -131,21 +130,28 @@ func NewWorld(arg0 int, arg1 [][][]int8, arg2 int, arg3 [][][]int) *World {
 	return &w
 }
 
-func (w *World) ClearLandscape(arg0, arg1, arg3, arg4 int) {
-	var6 := int8(0)
-	for i := range flotype.Count {
-		if strings.EqualFold(flotype.Instances[i].Name, "water") {
-			var6 = int8(i + 1) // Java: (byte)(var3 + 1)
-			break
-		}
-	}
-	for i := arg1; i < arg1+arg4; i++ {
-		for j := arg0; j < arg0+arg3; j++ {
-			if j >= 0 && j < w.MaxTileX && i >= 0 && i < w.MaxTileZ {
-				w.LevelTileOverlayIDs[0][j][i] = var6
-				for k := range 4 {
-					w.LevelHeightMap[k][j][i] = 0
-					w.LevelTileFlags[k][j][i] = 0
+// Java: spreadHeight (World.java:108-133) — new in 244, replacing 225's
+// clearLandscape (water-fill, deleted in 244) for absent neighbouring
+// mapsquares: clears the shadow and copies the ground heightmap inward from
+// the loaded edges so terrain slopes off smoothly instead of dropping to sea
+// level. Note the inclusive (<=) loop bounds: the spread covers 65 rows/cols
+// for a 64-tile square, faithful to Java.
+func (w *World) SpreadHeight(startX, startZ, endX, endZ int) {
+	for z := startZ; z <= startZ+endZ; z++ {
+		for x := startX; x <= startX+endX; x++ {
+			if x >= 0 && x < w.MaxTileX && z >= 0 && z < w.MaxTileZ {
+				w.LevelShadeMap[0][x][z] = 127
+				if startX == x && x > 0 {
+					w.LevelHeightMap[0][x][z] = w.LevelHeightMap[0][x-1][z]
+				}
+				if startX+endX == x && x < w.MaxTileX-1 {
+					w.LevelHeightMap[0][x][z] = w.LevelHeightMap[0][x+1][z]
+				}
+				if startZ == z && z > 0 {
+					w.LevelHeightMap[0][x][z] = w.LevelHeightMap[0][x][z-1]
+				}
+				if startZ+endZ == z && z < w.MaxTileZ-1 {
+					w.LevelHeightMap[0][x][z] = w.LevelHeightMap[0][x][z+1]
 				}
 			}
 		}

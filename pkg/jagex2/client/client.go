@@ -8664,10 +8664,9 @@ func (c *Client) CheckScene() int {
 
 func (c *Client) BuildScene() {
 	// Java: try { ... } catch (Exception) {} — empty swallow around the entire
-	// build-scene body (BZip2 decode + scene/landscape assembly). The Java
-	// finally-equivalent (LocType.modelCacheStatic.clear() + Pix3D.initPool(20)
-	// at the tail) is preserved unconditionally below. Any panic in Go
-	// propagates naturally.
+	// build-scene body (scene/landscape assembly). The Java finally-equivalent
+	// (LocType.modelCacheStatic.clear() + Pix3D.initPool(20) at the tail) is
+	// preserved unconditionally below. Any panic in Go propagates naturally.
 	c.MinimapLevel = -1
 	c.Spotanims.Clear()
 	c.Projectiles.Clear()
@@ -8678,7 +8677,6 @@ func (c *Client) BuildScene() {
 		c.LevelCollisionMap[i].Reset()
 	}
 	var3 := world.NewWorld(104, c.LevelTileFlags, 104, c.LevelHeightMap)
-	var4 := make([]byte, 100_000)
 	var5 := len(c.SceneMapLandData)
 	world.LowMemory = world3d.LowMemory
 	for i := range var5 {
@@ -8694,28 +8692,35 @@ func (c *Client) BuildScene() {
 		c.Scene.SetMinLevel(0)
 	}
 	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) Client.java:3329
+	// Java: Client.java:3331-3340 — 244 passes the map data straight through:
+	// the OnDemand layer already gunzipped it on receipt (WS1), so 225's
+	// G4-length + headerless-bzip2 decode here is gone.
 	for i := range var5 {
 		var8 := (c.SceneMapIndex[i]>>8)*64 - c.SceneBaseTileX
 		var9 := (c.SceneMapIndex[i]&0xFF)*64 - c.SceneBaseTileZ
 		var10 := c.SceneMapLandData[i]
 		if var10 != nil {
-			var11 := io.NewPacket(var10).G4()
-			bzip2.Read(var4, var11, var10, len(var10)-4, 4)
-			var3.LoadGround(var4, (c.SceneCenterZoneX-6)*8, var9, var8, (c.SceneCenterZoneZ-6)*8)
-		} else if c.SceneCenterZoneZ < 800 {
-			var3.ClearLandscape(var8, var9, 64, 64)
+			var3.LoadGround(var10, (c.SceneCenterZoneX-6)*8, var9, var8, (c.SceneCenterZoneZ-6)*8)
+		}
+	}
+	// Java: Client.java:3342-3350 — 244 handles absent neighbour squares in a
+	// separate pass that spreads the loaded edge heights inward (225 instead
+	// water-filled them inline via clearLandscape, deleted in 244).
+	for i := range var5 {
+		var8 := (c.SceneMapIndex[i]>>8)*64 - c.SceneBaseTileX
+		var9 := (c.SceneMapIndex[i]&0xFF)*64 - c.SceneBaseTileZ
+		if c.SceneMapLandData[i] == nil && c.SceneCenterZoneZ < 800 {
+			var3.SpreadHeight(var8, var9, 64, 64)
 		}
 	}
 	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) Client.java:3352
-	var16 := 0
+	// Java: Client.java:3354-3363 — loc data likewise arrives pre-gunzipped.
 	for i := range var5 {
 		var14 := c.SceneMapLocData[i]
 		if var14 != nil {
-			var16 = io.NewPacket(var14).G4()
-			bzip2.Read(var4, var16, var14, len(var14)-4, 4)
 			var11 := (c.SceneMapIndex[i]>>8)*64 - c.SceneBaseTileX
 			var12 := (c.SceneMapIndex[i]&0xFF)*64 - c.SceneBaseTileZ
-			var3.LoadLocations(var4, c.Scene, c.LevelCollisionMap, var12, var11)
+			var3.LoadLocations(var14, c.Scene, c.LevelCollisionMap, var12, var11)
 		}
 	}
 	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) Client.java:3365
