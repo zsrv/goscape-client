@@ -4,6 +4,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/npctype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/objtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity/playerentity"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct/jstring"
@@ -59,8 +62,10 @@ type Component struct {
 	ActiveAnim       int
 	MarginX          int
 	MarginY          int
-	Model            *model.Model // TODO(WS follow-up): 244 stores type-6 models as deferred (modelType,id) int pairs resolved lazily via Model.tryGet; Go keeps the 225 eager *Model (built at decode). Refactor with the config-getter NewModel1→TryGet sweep.
-	ActiveModel      *model.Model // TODO(WS follow-up): see Model above — 244 defers activeModel as (activeModelType,id).
+	ModelType        int
+	Model            int
+	ActiveModelType  int
+	ActiveModel      int
 	Graphic          *pix32.Pix32
 	ActiveGraphic    *pix32.Pix32
 	Font             *pixfont.PixFont
@@ -88,7 +93,7 @@ func NewComponent() *Component {
 
 func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 	ImageCache = datastruct.NewLruCache[*pix32.Pix32](50000)
-	ModelCache = datastruct.NewLruCache[*model.Model](50000)
+	ModelCache = datastruct.NewLruCache[*model.Model](30)
 	var4 := io.NewPacket(arg3.Read("data", nil))
 	var5 := -1
 	var6 := var4.G2()
@@ -251,11 +256,13 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 			if var8.Type == 6 {
 				var7 = var4.G1()
 				if var7 != 0 {
-					var8.Model = GetModel(((var7 - 1) << 8) + var4.G1())
+					var8.ModelType = 1
+					var8.Model = ((var7 - 1) << 8) + var4.G1()
 				}
 				var7 = var4.G1()
 				if var7 != 0 {
-					var8.ActiveModel = GetModel(((var7 - 1) << 8) + var4.G1())
+					var8.ActiveModelType = 1
+					var8.ActiveModel = ((var7 - 1) << 8) + var4.G1()
 				}
 				var7 = var4.G1()
 				if var7 == 0 {
@@ -314,18 +321,21 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 	}
 }
 
-func (c *Component) GetModel(arg0 int, arg1 int, arg2 bool) *model.Model {
-	var4 := c.Model
+// Java: Component.getModel (Component.java:458-484).
+func (c *Component) GetModel(arg0 int, arg1 int, arg2 bool, localPlayer *playerentity.ClientPlayer) *model.Model {
+	var m *model.Model // Java: model — resolved deferred (type,id) pair
 	if arg2 {
-		var4 = c.ActiveModel
+		m = c.LoadModel(c.ActiveModelType, c.ActiveModel, localPlayer)
+	} else {
+		m = c.LoadModel(c.ModelType, c.Model, localPlayer)
 	}
-	if var4 == nil {
+	if m == nil {
 		return nil
 	}
-	if arg0 == -1 && arg1 == -1 && var4.FaceColour == nil {
-		return var4
+	if arg0 == -1 && arg1 == -1 && m.FaceColour == nil {
+		return m
 	}
-	var5 := model.NewModel4(var4, true, true, false)
+	var5 := model.NewModel4(m, true, true, false)
 	if arg0 != -1 || arg1 != -1 {
 		var5.CreateLabelReferences()
 	}
@@ -337,6 +347,37 @@ func (c *Component) GetModel(arg0 int, arg1 int, arg2 bool) *model.Model {
 	}
 	var5.CalculateNormals(64, 768, -50, -10, -50, true)
 	return var5
+}
+
+// Java: Component.loadModel (Component.java:492-515).
+func (c *Component) LoadModel(typ int, id int, localPlayer *playerentity.ClientPlayer) *model.Model {
+	m := ModelCache.Get((int64(typ) << 16) + int64(id)) // Java: model
+	if m != nil {
+		return m
+	}
+	if typ == 1 {
+		m = model.TryGet(id)
+	} else if typ == 2 {
+		m = npctype.Get(id).GetHeadModel()
+	} else if typ == 3 {
+		m = localPlayer.GetHeadModel()
+	} else if typ == 4 {
+		m = objtype.Get(id).GetInvModel(50) // Java: Component.loadModel uses ObjType.getInvModel (not getInterfaceModel) — Component.java:505
+	} else if typ == 5 {
+		m = nil
+	}
+	if m != nil {
+		ModelCache.Put((int64(typ)<<16)+int64(id), m)
+	}
+	return m
+}
+
+// Java: Component.cacheModel (Component.java:518-523).
+func CacheModel(m *model.Model, id int, typ int) {
+	ModelCache.Clear()
+	if m != nil && typ != 4 {
+		ModelCache.Put((int64(typ)<<16)+int64(id), m)
+	}
 }
 
 func GetImage(arg0 *io.Jagfile, arg1 int, arg2 string) (result *pix32.Pix32) {
@@ -357,14 +398,4 @@ func GetImage(arg0 *io.Jagfile, arg1 int, arg2 string) (result *pix32.Pix32) {
 	var6 = pix32.NewPix323(arg0, arg2, arg1)
 	ImageCache.Put(var4, var6)
 	return var6
-}
-
-func GetModel(arg1 int) *model.Model {
-	var2 := ModelCache.Get(int64(arg1))
-	if var2 != nil {
-		return var2
-	}
-	var2 = model.NewModel1(arg1)
-	ModelCache.Put(int64(arg1), var2)
-	return var2
 }

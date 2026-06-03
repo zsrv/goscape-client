@@ -3761,10 +3761,10 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 					}
 					var var34 *model.Model
 					if var33 == -1 {
-						var34 = var14.GetModel(-1, -1, var31)
+						var34 = var14.GetModel(-1, -1, var31, c.LocalPlayer)
 					} else {
 						var35 := seqtype.Instances[var33]
-						var34 = var14.GetModel(var35.Frames[var14.SeqFrame], var35.IFrames[var14.SeqFrame], var31)
+						var34 = var14.GetModel(var35.Frames[var14.SeqFrame], var35.IFrames[var14.SeqFrame], var31, c.LocalPlayer)
 					}
 					if var34 != nil {
 						var34.DrawSimple(0, var14.Yan, 0, var14.Xan, 0, var17, var18)
@@ -5294,7 +5294,9 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 			var10.CreateLabelReferences()
 			var10.ApplyTransform(seqtype.Instances[c.LocalPlayer.SeqStandID].Frames[0])
 			var10.CalculateNormals(64, 850, -30, -50, -30, true)
-			arg1.Model = var10
+			arg1.ModelType = 5
+			arg1.Model = 0
+			component.CacheModel(var10, 0, 5)
 		}
 	} else if var3 == 324 {
 		if c.GenderButtonImage0 == nil {
@@ -9816,7 +9818,8 @@ func (c *Client) Read() (ok bool) {
 	// Java: opcode 197 — set component model to local player head (client.java:9609-9613)
 	if c.PacketType == io.SERVERPROT_IF_SETPLAYERHEAD {
 		var26 := c.In.G2()
-		component.Instances[var26].Model = c.LocalPlayer.GetHeadModel()
+		component.Instances[var26].ModelType = 3
+		component.Instances[var26].Model = (c.LocalPlayer.Appearances[8] << 6) + (c.LocalPlayer.Appearances[0] << 12) + (c.LocalPlayer.Colors[0] << 24) + (c.LocalPlayer.Colors[4] << 18) + c.LocalPlayer.Appearances[11]
 		c.PacketType = -1
 		return true
 	}
@@ -10092,8 +10095,8 @@ func (c *Client) Read() (ok bool) {
 	if c.PacketType == io.SERVERPROT_IF_SETNPCHEAD {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
-		var33 := npctype.Get(var4)
-		component.Instances[var26].Model = var33.GetHeadModel()
+		component.Instances[var26].ModelType = 2
+		component.Instances[var26].Model = var4
 		c.PacketType = -1
 		return true
 	}
@@ -10215,7 +10218,8 @@ func (c *Client) Read() (ok bool) {
 	if c.PacketType == io.SERVERPROT_IF_SETMODEL {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
-		component.Instances[var26].Model = model.NewModel1(var4)
+		component.Instances[var26].ModelType = 1
+		component.Instances[var26].Model = var4
 		c.PacketType = -1
 		return true
 	}
@@ -10278,7 +10282,8 @@ func (c *Client) Read() (ok bool) {
 		var4 := c.In.G2()
 		var5 := c.In.G2()
 		var31 := objtype.Get(var4)
-		component.Instances[var26].Model = var31.GetInterfaceModel(50)
+		component.Instances[var26].ModelType = 4
+		component.Instances[var26].Model = var4
 		component.Instances[var26].Xan = var31.Xan2D
 		component.Instances[var26].Yan = var31.Yan2D
 		component.Instances[var26].Zoom = var31.Zoom2D * 100 / var5
