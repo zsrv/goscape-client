@@ -184,7 +184,11 @@ type Client struct {
 	// Java: field1264 (client.lc, Client.java:563) — new in 244; set to 255 by
 	// opcode 192, decremented by 2 per cycle, drives the yellow sine-modulated
 	// viewport flash overlay (and is reset on login).
-	Field1264                     int
+	Field1264 int
+	// Java: warnMembersInNonMembers (client.rf, Client.java:881) — new in 244;
+	// 5th field of LAST_LOGIN_INFO, drives the members-on-free-world welcome
+	// warning (clientCodes 652-655).
+	WarnMembersInNonMembers       int
 	HintNPC                       int
 	OverrideChat                  int
 	SkillLevel                    []int
@@ -569,7 +573,7 @@ func NewClient() *Client {
 		ViewportOverlayInterfaceID: -1,
 		DesignColors:               make([]int, 5),
 		Login:                      io.Alloc(1),
-		FriendWorld:                make([]int, 100),
+		FriendWorld:                make([]int, 200), // Java: new int[200] (244; 225 was 100)
 		MinimapLevel:               -1,
 		ImageHitmarks:              make([]*pix32.Pix32, 20),
 		LastWaveID:                 -1,
@@ -611,7 +615,7 @@ func NewClient() *Client {
 		MinimapZoomModifier:       1,
 		Varps:                     make([]int, 2000),
 		EntityRemovalIDs:          make([]int, 1000),
-		FriendName37:              make([]int64, 100),
+		FriendName37:              make([]int64, 200), // Java: new long[200] (244; 225 was 100)
 		MinimapMaskLineLengths:    make([]int, 151),
 		LevelCollisionMap:         make([]*dash3d.CollisionMap, 4),
 		ImageHeadIcons:            make([]*pix32.Pix32, 20),
@@ -642,7 +646,7 @@ func NewClient() *Client {
 		ImageCrosses:              make([]*pix32.Pix32, 8),
 		WaveIDs:                   make([]int, 50),
 		CameraOffsetXModifier:     2,
-		FriendName:                make([]string, 100),
+		FriendName:                make([]string, 200), // Java: new String[200] (244; 225 was 100)
 		FlashingTab:               -1,
 		SidebarInterfaceID:        -1,
 		CameraOffsetZModifier:     2,
@@ -5330,8 +5334,14 @@ func (c *Client) HandlePrivateChatInput(arg2 int) {
 
 func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 	var3 := arg1.ClientCode
-	if var3 >= 1 && var3 <= 100 {
-		var3--
+	// Java: 244 extends the friend-name range with 701-900 and the
+	// friend-world range with 801-900 (Client.java:11434-11468).
+	if (var3 >= 1 && var3 <= 100) || (var3 >= 701 && var3 <= 900) {
+		if var3 > 700 {
+			var3 -= 601
+		} else {
+			var3--
+		}
 		if var3 >= c.FriendCount {
 			arg1.Text = ""
 			arg1.ButtonType = 0
@@ -5339,8 +5349,12 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 			arg1.Text = c.FriendName[var3]
 			arg1.ButtonType = 1
 		}
-	} else if var3 >= 101 && var3 <= 200 {
-		var3 -= 101
+	} else if (var3 >= 101 && var3 <= 200) || !(var3 < 801 || var3 > 900) { //nolint:staticcheck // QF1001: mirrors Java's literal `!(clientCode < 801 || clientCode > 900)` (Client.java:11448)
+		if var3 > 800 {
+			var3 -= 701
+		} else {
+			var3 -= 101
+		}
 		if var3 >= c.FriendCount {
 			arg1.Text = ""
 			arg1.ButtonType = 0
@@ -5485,7 +5499,12 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 		if var3 == 652 {
 			switch c.DaysSinceRecoveriesChanged {
 			case 201:
-				arg1.Text = ""
+				// Java: Client.java:11600-11605 — members-on-free-world warning.
+				if c.WarnMembersInNonMembers == 1 {
+					arg1.Text = "@yel@This is a non-members world: @whi@Since you are a member we"
+				} else {
+					arg1.Text = ""
+				}
 			case 200:
 				arg1.Text = "You have not yet set any password recovery questions."
 			default:
@@ -5503,7 +5522,12 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 		if var3 == 653 {
 			switch c.DaysSinceRecoveriesChanged {
 			case 201:
-				arg1.Text = ""
+				// Java: Client.java:11621-11626.
+				if c.WarnMembersInNonMembers == 1 {
+					arg1.Text = "@whi@recommend you use a members world instead. You may use"
+				} else {
+					arg1.Text = ""
+				}
 			case 200:
 				arg1.Text = "We strongly recommend you do so now to secure your account."
 			default:
@@ -5513,7 +5537,12 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 		if var3 == 654 {
 			switch c.DaysSinceRecoveriesChanged {
 			case 201:
-				arg1.Text = ""
+				// Java: Client.java:11633-11638 ("unavailabe" [sic] in the source).
+				if c.WarnMembersInNonMembers == 1 {
+					arg1.Text = "@whi@this world but member benefits are unavailabe whilst here."
+				} else {
+					arg1.Text = ""
+				}
 			case 200:
 				arg1.Text = "Do this from the 'account management' area on our front webpage"
 			default:
@@ -7231,8 +7260,12 @@ func (c *Client) AddFriend(arg0 int64) {
 	if arg0 == 0 {
 		return
 	}
-	if c.FriendCount >= 100 {
-		c.AddMessage(0, "Your friends list is full. Max of 100 hit", "")
+	// Java: two-tier cap (Client.java:12154-12159) — free users 100, members 200.
+	if c.FriendCount >= 100 && c.MembersAccount != 1 {
+		c.AddMessage(0, "Your friendlist is full. Max of 100 for free users, and 200 for members", "")
+		return
+	} else if c.FriendCount >= 200 {
+		c.AddMessage(0, "Your friendlist is full. Max of 100 for free users, and 200 for members", "")
 		return
 	}
 	var4 := jstring.FormatName(jstring.FromBase37(arg0))
@@ -8495,8 +8528,14 @@ func (c *Client) HandleTabInput() {
 
 func (c *Client) HandleSocialMenuOption(arg0 *component.Component) bool {
 	var3 := arg0.ClientCode
-	if var3 >= 1 && var3 <= 200 {
-		if var3 >= 101 {
+	// Java: 244 extends the friend ranges with 701-900 (friends 100..199)
+	// and a 4-way index adjust (Client.java:11255-11263).
+	if (var3 >= 1 && var3 <= 200) || (var3 >= 701 && var3 <= 900) {
+		if var3 >= 801 {
+			var3 -= 701
+		} else if var3 >= 701 {
+			var3 -= 601
+		} else if var3 >= 101 {
 			var3 -= 101
 		} else {
 			var3--
@@ -9855,7 +9894,7 @@ func (c *Client) Read() (ok bool) {
 				break
 			}
 		}
-		if !matched && c.FriendCount < 100 {
+		if !matched && c.FriendCount < 200 { // Java: friendCount < 200 (Client.java:7407)
 			c.FriendName37[c.FriendCount] = var39
 			c.FriendName[c.FriendCount] = var44
 			c.FriendWorld[c.FriendCount] = var5
@@ -10256,11 +10295,12 @@ func (c *Client) Read() (ok bool) {
 		c.DaysSinceLastLogin = c.In.G2()
 		c.DaysSinceRecoveriesChanged = c.In.G1()
 		c.UnreadMessages = c.In.G2()
+		c.WarnMembersInNonMembers = c.In.G1() // Java: Client.java:7281 (5th field, new in 244)
 		if c.LastAddress != 0 && c.ViewportInterfaceID == -1 {
 			signlink.DNSLookup(jstring.FormatIPv4(int32(c.LastAddress)))
 			c.CloseInterfaces()
 			var47 := 650 // Java: short var47
-			if c.DaysSinceRecoveriesChanged != 201 {
+			if c.DaysSinceRecoveriesChanged != 201 || c.WarnMembersInNonMembers == 1 {
 				var47 = 655
 			}
 			c.ReportAbuseInput = ""
