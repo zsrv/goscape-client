@@ -59,8 +59,8 @@ type Component struct {
 	ActiveAnim       int
 	MarginX          int
 	MarginY          int
-	Model            *model.Model
-	ActiveModel      *model.Model
+	Model            *model.Model // TODO(WS follow-up): 244 stores type-6 models as deferred (modelType,id) int pairs resolved lazily via Model.tryGet; Go keeps the 225 eager *Model (built at decode). Refactor with the config-getter NewModel1→TryGet sweep.
+	ActiveModel      *model.Model // TODO(WS follow-up): see Model above — 244 defers activeModel as (activeModelType,id).
 	Graphic          *pix32.Pix32
 	ActiveGraphic    *pix32.Pix32
 	Font             *pixfont.PixFont
