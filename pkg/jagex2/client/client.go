@@ -972,10 +972,33 @@ func (c *Client) DrawPrivateMessages() {
 		if c.MessageText[i] != "" {
 			var5 := c.MessageType[i]
 			var6 := 0
-			if (var5 == 3 || var5 == 7) && (var5 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+			// Java: Client.java:6634-6661 (244) — strip the @cr1@/@cr2@ crown
+			// tag from the sender and plot the mod/admin icon after "From".
+			var10 := c.MessageSender[i]
+			var11 := 0 // Java: byte modlevel
+			if strings.HasPrefix(var10, "@cr1@") {
+				var10 = var10[5:]
+				var11 = 1
+			}
+			if strings.HasPrefix(var10, "@cr2@") {
+				var10 = var10[5:]
+				var11 = 2
+			}
+			if (var5 == 3 || var5 == 7) && (var5 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(var10)) {
 				var6 = 329 - var3*13
-				var2.DrawString(4, var6, 0, "From "+c.MessageSender[i]+": "+c.MessageText[i])
-				var2.DrawString(4, var6-1, 0xFFFF, "From "+c.MessageSender[i]+": "+c.MessageText[i])
+				var12 := 4
+				var2.DrawString(var12, var6, 0, "From")
+				var2.DrawString(var12, var6-1, 0xFFFF, "From")
+				var12 += var2.StringWidth("From ")
+				if var11 == 1 {
+					c.ImageModIcons[0].PlotSprite(var6-12, var12)
+					var12 += 14
+				} else if var11 == 2 {
+					c.ImageModIcons[1].PlotSprite(var6-12, var12)
+					var12 += 14
+				}
+				var2.DrawString(var12, var6, 0, var10+": "+c.MessageText[i])
+				var2.DrawString(var12, var6-1, 0xFFFF, var10+": "+c.MessageText[i])
 				var3++
 				if var3 >= 5 {
 					return
@@ -1939,44 +1962,53 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 			if var7 < -20 {
 				break
 			}
+			// Java: Client.java:3792-3802 — the @cr1@/@cr2@ crown tag is
+			// stripped before the friend/self checks and all menu strings.
+			var10 := c.MessageSender[i]
+			if strings.HasPrefix(var10, "@cr1@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
+				var10 = var10[5:]
+			}
+			if strings.HasPrefix(var10, "@cr2@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
+				var10 = var10[5:]
+			}
 			if var6 == 0 {
 				var4++
 			}
-			if (var6 == 1 || var6 == 2) && (var6 == 1 || c.PublicChatSetting == 0 || c.PublicChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
-				if arg0 > var7-14 && arg0 <= var7 && c.MessageSender[i] != c.LocalPlayer.Name {
+			if (var6 == 1 || var6 == 2) && (var6 == 1 || c.PublicChatSetting == 0 || c.PublicChatSetting == 1 && c.IsFriend(var10)) {
+				if arg0 > var7-14 && arg0 <= var7 && var10 != c.LocalPlayer.Name {
 					if c.StaffModLevel >= 1 {
-						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + c.MessageSender[i]
+						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + var10
 						c.MenuAction[c.MenuSize] = 34
 						c.MenuSize++
 					}
-					c.MenuOption[c.MenuSize] = "Add ignore @whi@" + c.MessageSender[i]
+					c.MenuOption[c.MenuSize] = "Add ignore @whi@" + var10
 					c.MenuAction[c.MenuSize] = 436
 					c.MenuSize++
-					c.MenuOption[c.MenuSize] = "Add friend @whi@" + c.MessageSender[i]
+					c.MenuOption[c.MenuSize] = "Add friend @whi@" + var10
 					c.MenuAction[c.MenuSize] = 406
 					c.MenuSize++
 				}
 				var4++
 			}
-			if (var6 == 3 || var6 == 7) && c.SplitPrivateChat == 0 && (var6 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+			if (var6 == 3 || var6 == 7) && c.SplitPrivateChat == 0 && (var6 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(var10)) {
 				if arg0 > var7-14 && arg0 <= var7 {
 					if c.StaffModLevel >= 1 {
-						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + c.MessageSender[i]
+						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + var10
 						c.MenuAction[c.MenuSize] = 34
 						c.MenuSize++
 					}
-					c.MenuOption[c.MenuSize] = "Add ignore @whi@" + c.MessageSender[i]
+					c.MenuOption[c.MenuSize] = "Add ignore @whi@" + var10
 					c.MenuAction[c.MenuSize] = 436
 					c.MenuSize++
-					c.MenuOption[c.MenuSize] = "Add friend @whi@" + c.MessageSender[i]
+					c.MenuOption[c.MenuSize] = "Add friend @whi@" + var10
 					c.MenuAction[c.MenuSize] = 406
 					c.MenuSize++
 				}
 				var4++
 			}
-			if var6 == 4 && (c.TradeChatSetting == 0 || c.TradeChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+			if var6 == 4 && (c.TradeChatSetting == 0 || c.TradeChatSetting == 1 && c.IsFriend(var10)) {
 				if arg0 > var7-14 && arg0 <= var7 {
-					c.MenuOption[c.MenuSize] = "Accept trade @whi@" + c.MessageSender[i]
+					c.MenuOption[c.MenuSize] = "Accept trade @whi@" + var10
 					c.MenuAction[c.MenuSize] = 903
 					c.MenuSize++
 				}
@@ -1985,9 +2017,9 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 			if (var6 == 5 || var6 == 6) && c.SplitPrivateChat == 0 && c.PrivateChatSetting < 2 {
 				var4++
 			}
-			if var6 == 8 && (c.TradeChatSetting == 0 || c.TradeChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+			if var6 == 8 && (c.TradeChatSetting == 0 || c.TradeChatSetting == 1 && c.IsFriend(var10)) {
 				if arg0 > var7-14 && arg0 <= var7 {
-					c.MenuOption[c.MenuSize] = "Accept duel @whi@" + c.MessageSender[i]
+					c.MenuOption[c.MenuSize] = "Accept duel @whi@" + var10
 					c.MenuAction[c.MenuSize] = 363
 					c.MenuSize++
 				}
@@ -2339,7 +2371,15 @@ func (c *Client) HandleInputKey() {
 							c.LocalPlayer.ChatColor = var3
 							c.LocalPlayer.ChatStyle = var4
 							c.LocalPlayer.ChatTimer = 150
-							c.AddMessage(2, c.LocalPlayer.Chat, c.LocalPlayer.Name)
+							// Java: Client.java:4796-4802 — local outgoing chat
+							// carries the staff crown prefix too.
+							if c.StaffModLevel == 2 {
+								c.AddMessage(2, c.LocalPlayer.Chat, "@cr2@"+c.LocalPlayer.Name)
+							} else if c.StaffModLevel == 1 {
+								c.AddMessage(2, c.LocalPlayer.Chat, "@cr1@"+c.LocalPlayer.Name)
+							} else {
+								c.AddMessage(2, c.LocalPlayer.Chat, c.LocalPlayer.Name)
+							}
 							if c.PublicChatSetting == 2 {
 								c.PublicChatSetting = 3
 								c.RedrawPrivacySettings = true
@@ -5277,18 +5317,27 @@ func (c *Client) HandlePrivateChatInput(arg2 int) {
 	for i := range 100 {
 		if c.MessageText[i] != "" {
 			var6 := c.MessageType[i]
-			if (var6 == 3 || var6 == 7) && (var6 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+			// Java: Client.java:3737-3746 — strip the @cr1@/@cr2@ crown tag
+			// before isFriend() and the menu strings.
+			var10 := c.MessageSender[i]
+			if strings.HasPrefix(var10, "@cr1@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
+				var10 = var10[5:]
+			}
+			if strings.HasPrefix(var10, "@cr2@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
+				var10 = var10[5:]
+			}
+			if (var6 == 3 || var6 == 7) && (var6 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(var10)) {
 				var7 := 329 - var4*13
 				if c.MouseX > 8 && c.MouseX < 520 && arg2-11 > var7-10 && arg2-11 <= var7+3 {
 					if c.StaffModLevel >= 1 {
-						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + c.MessageSender[i]
+						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + var10
 						c.MenuAction[c.MenuSize] = 2034
 						c.MenuSize++
 					}
-					c.MenuOption[c.MenuSize] = "Add ignore @whi@" + c.MessageSender[i]
+					c.MenuOption[c.MenuSize] = "Add ignore @whi@" + var10
 					c.MenuAction[c.MenuSize] = 2436
 					c.MenuSize++
-					c.MenuOption[c.MenuSize] = "Add friend @whi@" + c.MessageSender[i]
+					c.MenuOption[c.MenuSize] = "Add friend @whi@" + var10
 					c.MenuAction[c.MenuSize] = 2406
 					c.MenuSize++
 				}
@@ -5940,8 +5989,8 @@ func (c *Client) Load() {
 	c.ImageRedstone2hv.VFlip()
 
 	// Java: Client.java:1828-1830 — mod/admin chat-crown sprites (new in
-	// 244). Loaded for parity; the @cr1@/@cr2@ crown rendering that consumes
-	// them is still deferred.
+	// 244), consumed by the @cr1@/@cr2@ rendering in DrawChatback and
+	// DrawPrivateMessages.
 	for i := range 2 {
 		c.ImageModIcons[i] = pix8.NewPix8(jagMedia, "mod_icons", i)
 	}
@@ -9578,59 +9627,80 @@ func (c *Client) DrawChatback() {
 		var2 := c.FontPlain12
 		var3 := 0
 		pix2d.SetClipping(77, 0, 463, 0)
+		// Java: drawChat message loop (Client.java:11834-11890, 244 form) —
+		// strips a leading @cr1@/@cr2@ crown tag from the sender, plots the
+		// mod/admin icon before the name, and folds types 1/2 (public) and
+		// 3/7 (private) into shared branches.
 		for i := range 100 {
 			if c.MessageText[i] != "" {
 				var5 := c.MessageType[i]
 				var6 := 70 - var3*14 + c.ChatScrollOffset
+				var10 := c.MessageSender[i]
+				var11 := 0 // Java: byte modicon
+				if strings.HasPrefix(var10, "@cr1@") {
+					var10 = var10[5:]
+					var11 = 1
+				} else if strings.HasPrefix(var10, "@cr2@") {
+					var10 = var10[5:]
+					var11 = 2
+				}
 				if var5 == 0 {
 					if var6 > 0 && var6 < 110 {
 						var2.DrawString(4, var6, 0, c.MessageText[i])
 					}
 					var3++
-				}
-				if var5 == 1 {
+				} else if (var5 == 1 || var5 == 2) && (var5 == 1 || c.PublicChatSetting == 0 || c.PublicChatSetting == 1 && c.IsFriend(var10)) {
 					if var6 > 0 && var6 < 110 {
-						var2.DrawString(4, var6, 0xFFFFFF, c.MessageSender[i]+":")
-						var2.DrawString(var2.StringWidth(c.MessageSender[i])+12, var6, 0xFF, c.MessageText[i])
+						var12 := 4
+						if var11 == 1 {
+							c.ImageModIcons[0].PlotSprite(var6-12, var12)
+							var12 += 14
+						} else if var11 == 2 {
+							c.ImageModIcons[1].PlotSprite(var6-12, var12)
+							var12 += 14
+						}
+						var2.DrawString(var12, var6, 0, var10+":")
+						var12 += var2.StringWidth(var10) + 8
+						var2.DrawString(var12, var6, 0xFF, c.MessageText[i])
 					}
 					var3++
-				}
-				if var5 == 2 && (c.PublicChatSetting == 0 || c.PublicChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+				} else if (var5 == 3 || var5 == 7) && c.SplitPrivateChat == 0 && (var5 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(var10)) {
 					if var6 > 0 && var6 < 110 {
-						var2.DrawString(4, var6, 0, c.MessageSender[i]+":")
-						var2.DrawString(var2.StringWidth(c.MessageSender[i])+12, var6, 0xFF, c.MessageText[i])
+						var12 := 4
+						var2.DrawString(var12, var6, 0, "From")
+						var12 += var2.StringWidth("From ")
+						if var11 == 1 {
+							c.ImageModIcons[0].PlotSprite(var6-12, var12)
+							var12 += 14
+						} else if var11 == 2 {
+							c.ImageModIcons[1].PlotSprite(var6-12, var12)
+							var12 += 14
+						}
+						var2.DrawString(var12, var6, 0, var10+":")
+						var12 += var2.StringWidth(var10) + 8
+						var2.DrawString(var12, var6, 8388608, c.MessageText[i])
 					}
 					var3++
-				}
-				if (var5 == 3 || var5 == 7) && c.SplitPrivateChat == 0 && (var5 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+				} else if var5 == 4 && (c.TradeChatSetting == 0 || c.TradeChatSetting == 1 && c.IsFriend(var10)) {
 					if var6 > 0 && var6 < 110 {
-						var2.DrawString(4, var6, 0, "From "+c.MessageSender[i]+":")
-						var2.DrawString(var2.StringWidth("From "+c.MessageSender[i])+12, var6, 8388608, c.MessageText[i])
+						var2.DrawString(4, var6, 8388736, var10+" "+c.MessageText[i])
 					}
 					var3++
-				}
-				if var5 == 4 && (c.TradeChatSetting == 0 || c.TradeChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
-					if var6 > 0 && var6 < 110 {
-						var2.DrawString(4, var6, 8388736, c.MessageSender[i]+" "+c.MessageText[i])
-					}
-					var3++
-				}
-				if var5 == 5 && c.SplitPrivateChat == 0 && c.PrivateChatSetting < 2 {
+				} else if var5 == 5 && c.SplitPrivateChat == 0 && c.PrivateChatSetting < 2 {
 					if var6 > 0 && var6 < 110 {
 						var2.DrawString(4, var6, 8388608, c.MessageText[i])
 					}
 					var3++
-				}
-				if var5 == 6 && c.SplitPrivateChat == 0 && c.PrivateChatSetting < 2 {
+				} else if var5 == 6 && c.SplitPrivateChat == 0 && c.PrivateChatSetting < 2 {
 					if var6 > 0 && var6 < 110 {
-						var2.DrawString(4, var6, 0, "To "+c.MessageSender[i]+":")
-						var2.DrawString(var2.StringWidth("To "+c.MessageSender[i])+12, var6, 8388608, c.MessageText[i])
+						var2.DrawString(4, var6, 0, "To "+var10+":")
+						var2.DrawString(var2.StringWidth("To "+var10)+12, var6, 8388608, c.MessageText[i])
 					}
 					var3++
-				}
-				if var5 == 8 && (c.TradeChatSetting == 0 || c.TradeChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
+				} else if var5 == 8 && (c.TradeChatSetting == 0 || c.TradeChatSetting == 1 && c.IsFriend(var10)) {
 					if var6 > 0 && var6 < 110 {
-						var2.DrawString(4, var6, 13350793, c.MessageSender[i]+" "+c.MessageText[i])
+						// Java: 0x7e3200 (Client.java:11916) — duel/trade-accept brown.
+						var2.DrawString(4, var6, 0x7e3200, var10+" "+c.MessageText[i])
 					}
 					var3++
 				}
@@ -9640,8 +9710,17 @@ func (c *Client) DrawChatback() {
 		c.ChatScrollHeight = var3*14 + 7
 		c.ChatScrollHeight = max(c.ChatScrollHeight, 78)
 		c.DrawScrollbar(463, 0, c.ChatScrollHeight-c.ChatScrollOffset-77, c.ChatScrollHeight, 77)
-		var2.DrawString(4, 90, 0, jstring.FormatName(c.Username)+":")
-		var2.DrawString(var2.StringWidth(c.Username+": ")+6, 90, 0xFF, c.ChatTyped+"*")
+		// Java: Client.java:11933-11941 — prefer localPlayer.name for the
+		// prompt, and measure the typed-text offset from the SAME string that
+		// is drawn (the Go previously measured the raw Username).
+		var13 := ""
+		if c.LocalPlayer == nil || c.LocalPlayer.Name == "" {
+			var13 = jstring.FormatName(c.Username)
+		} else {
+			var13 = c.LocalPlayer.Name
+		}
+		var2.DrawString(4, 90, 0, var13+":")
+		var2.DrawString(var2.StringWidth(var13+": ")+6, 90, 0xFF, c.ChatTyped+"*")
 		pix2d.HLine(0, 77, 479, 0)
 	} else {
 		c.DrawInterface(0, 0, component.Instances[c.StickyChatInterfaceID], 0)
@@ -9818,8 +9897,12 @@ func (c *Client) Read() (ok bool) {
 				c.PrivateMessageCount = (c.PrivateMessageCount + 1) % 100
 				var37 := wordpack.Unpack(c.In, c.PacketSize-13)
 				var38 := wordfilter.Filter(var37)
-				if var6 > 1 {
-					c.AddMessage(7, var38, jstring.FormatName(jstring.FromBase37(var39)))
+				// Java: Client.java:8396-8404 — three staffModLevel branches:
+				// 2/3 -> @cr2@ type 7, 1 -> @cr1@ type 7, else plain type 3.
+				if var6 == 2 || var6 == 3 {
+					c.AddMessage(7, var38, "@cr2@"+jstring.FormatName(jstring.FromBase37(var39)))
+				} else if var6 == 1 {
+					c.AddMessage(7, var38, "@cr1@"+jstring.FormatName(jstring.FromBase37(var39)))
 				} else {
 					c.AddMessage(3, var38, jstring.FormatName(jstring.FromBase37(var39)))
 				}
@@ -10855,7 +10938,9 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		var15 = arg3.G1()
 		var16 := arg3.G1()
 		var9 := arg3.Pos
-		if arg4.Name != "" {
+		// Java: `if (player.name != null && player.visible)` (Client.java:9223)
+		// — 244 also requires the player to be visible.
+		if arg4.Name != "" && arg4.Visible {
 			var10 := jstring.ToBase37(arg4.Name)
 			var12 := false
 			if var15 <= 1 {
@@ -10885,8 +10970,13 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 					arg4.ChatColor = var6 >> 8
 					arg4.ChatStyle = var6 & 0xFF
 					arg4.ChatTimer = 150
-					if var15 > 1 {
-						c.AddMessage(1, var18, arg4.Name)
+					// Java: Client.java:9243-9249 — staff crowns prepended to the
+					// sender; types 2/3 (mod/admin) and 1 (pmod) become type-1
+					// messages, everyone else stays type 2.
+					if var15 == 2 || var15 == 3 {
+						c.AddMessage(1, var18, "@cr2@"+arg4.Name)
+					} else if var15 == 1 {
+						c.AddMessage(1, var18, "@cr1@"+arg4.Name)
 					} else {
 						c.AddMessage(2, var18, arg4.Name)
 					}
