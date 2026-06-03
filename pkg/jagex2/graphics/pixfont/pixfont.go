@@ -2,11 +2,30 @@ package pixfont
 
 import (
 	"math"
-	"math/rand"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
+
+// javaRandom is a faithful java.util.Random 48-bit LCG (setSeed/nextInt
+// subset). The anti-macro tooltip jitter must reproduce the Java client's
+// exact sequence for a given seed, and Go's math/rand is an unrelated
+// generator. Java: java.util.Random (PixFont.java:34 `rand`).
+type javaRandom struct {
+	seed int64
+}
+
+func (r *javaRandom) SetSeed(seed int64) {
+	r.seed = (seed ^ 0x5DEECE66D) & (1<<48 - 1)
+}
+
+// NextInt advances the LCG and returns the high 32 bits as a signed Java int
+// (java.util.Random.next(32)). The seed is masked to 48 bits, so Java's
+// logical >>> equals Go's >> here.
+func (r *javaRandom) NextInt() int {
+	r.seed = (r.seed*0x5DEECE66D + 0xB) & (1<<48 - 1)
+	return int(int32(r.seed >> 16))
+}
 
 // CHAR_LOOKUP maps a Latin-1 codepoint (0..255) to a glyph table index.
 // Index 94 is the "no glyph" sentinel; index 74 is the catch-all/default
@@ -43,8 +62,11 @@ type PixFont struct {
 	CharOffsetY    []int
 	CharAdvance    []int
 	DrawWidth      []int
-	Random         *rand.Rand
-	Height         int
+	Random         javaRandom
+	// Java: PixFont.strikeout (PixFont.java:37) — set by the @str@ tag while
+	// drawing; drawStringTag emits a dark-red strikethrough when it ends true.
+	Strikeout bool
+	Height    int
 }
 
 func init() {
@@ -223,6 +245,8 @@ func (p *PixFont) DrawCenteredWave(arg0 int, arg2 int, arg3 int, arg4 int, arg5 
 // walks runes via a []rune so the i+4 lookahead matches Java exactly when
 // the string contains non-ASCII chars like '£'.
 func (p *PixFont) DrawStringTaggable(arg0 int, arg2 int, arg3 string, arg4 bool, arg5 int) {
+	p.Strikeout = false // Java: PixFont.java:174 — reset before the null check
+	var7 := arg0        // Java: var7 = start x for the strikethrough width
 	if arg3 == "" {
 		return
 	}
@@ -231,7 +255,11 @@ func (p *PixFont) DrawStringTaggable(arg0 int, arg2 int, arg3 string, arg4 bool,
 	// C-style loop required: `i += 4` below must skip a `@xxx@` tag.
 	for i := 0; i < len(runes); i++ {
 		if runes[i] == '@' && i+4 < len(runes) && runes[i+4] == '@' {
-			arg5 = p.EvaluateTag(string(runes[i+1 : i+4]))
+			// Java: unknown tags return -1 and leave the colour unchanged.
+			var10 := p.EvaluateTag(string(runes[i+1 : i+4]))
+			if var10 != -1 {
+				arg5 = var10
+			}
 			i += 4
 		} else {
 			var8 := GlyphIndex(runes[i])
@@ -244,6 +272,11 @@ func (p *PixFont) DrawStringTaggable(arg0 int, arg2 int, arg3 string, arg4 bool,
 			arg0 += p.CharAdvance[var8]
 		}
 	}
+	// Java: PixFont.java:199-201 — dark-red strikethrough across the rendered
+	// text when an @str@ tag was seen.
+	if p.Strikeout {
+		pix2d.HLine(8388608, int(float64(p.Height)*0.7)+var9, arg0-var7, var7)
+	}
 }
 
 // DrawStringTooltip renders arg5 with jitter for tooltip popups, supporting
@@ -253,18 +286,20 @@ func (p *PixFont) DrawStringTooltip(arg0 int, arg1 bool, arg3 int, arg4 int, arg
 	if arg5 == "" {
 		return
 	}
-	if p.Random == nil {
-		p.Random = rand.New(rand.NewSource(int64(arg0)))
-	} else {
-		p.Random.Seed(int64(arg0))
-	}
-	var8 := (p.Random.Int() & 0x1F) + 192
+	// Java: this.rand.setSeed((long) arg1) — java.util.Random LCG, ported
+	// exactly so the per-call alpha and per-char jitter match the Java client.
+	p.Random.SetSeed(int64(arg0))
+	var8 := (p.Random.NextInt() & 0x1F) + 192
 	var11 := arg3 - p.Height
 	runes := []rune(arg5)
 	// C-style loop required: `i += 4` below must skip a `@xxx@` tag.
 	for i := 0; i < len(runes); i++ {
 		if runes[i] == '@' && i+4 < len(runes) && runes[i+4] == '@' {
-			arg4 = p.EvaluateTag(string(runes[i+1 : i+4]))
+			// Java: unknown tags return -1 and leave the colour unchanged.
+			var12 := p.EvaluateTag(string(runes[i+1 : i+4]))
+			if var12 != -1 {
+				arg4 = var12
+			}
 			i += 4
 		} else {
 			var10 := GlyphIndex(runes[i])
@@ -275,7 +310,7 @@ func (p *PixFont) DrawStringTooltip(arg0 int, arg1 bool, arg3 int, arg4 int, arg
 				p.DrawCharAlpha(p.CharMask[var10], arg6+p.CharOffsetX[var10], p.CharMaskHeight[var10], arg4, var11+p.CharOffsetY[var10], var8, p.CharMaskWidth[var10])
 			}
 			arg6 += p.CharAdvance[var10]
-			if p.Random.Int()&0x3 == 0 {
+			if p.Random.NextInt()&0x3 == 0 {
 				arg6++
 			}
 		}
@@ -319,7 +354,13 @@ func (p *PixFont) EvaluateTag(arg1 string) int {
 	case "gr3":
 		return 4259584
 	default:
-		return 0
+		// Java: PixFont.java:272-276 — "str" sets the strikeout side effect;
+		// every unrecognized tag (including "str") yields the -1 sentinel so
+		// callers keep the current colour.
+		if arg1 == "str" {
+			p.Strikeout = true
+		}
+		return -1
 	}
 }
 
