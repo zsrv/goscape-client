@@ -200,6 +200,7 @@ type Client struct {
 	JagChecksum                   []int
 	MidiThreadActive              bool
 	ImageSideIcons                []*pix8.Pix8
+	ImageModIcons                 []*pix8.Pix8
 	OrbitCameraPitch              int
 	MAX_PLAYER_COUNT              int
 	LOCAL_PLAYER_INDEX            int
@@ -442,7 +443,9 @@ type Client struct {
 	GenderButtonImage1            *pix32.Pix32
 	ImageFlamesLeft               *pix32.Pix32
 	ImageFlamesRight              *pix32.Pix32
-	ImageMapflag                  *pix32.Pix32
+	ImageMapedge                  *pix32.Pix32
+	ImageMapmarker0               *pix32.Pix32
+	ImageMapmarker1               *pix32.Pix32
 	ImageMinimap                  *pix32.Pix32
 	ImageMapdot0                  *pix32.Pix32
 	ImageMapdot1                  *pix32.Pix32
@@ -481,7 +484,6 @@ type Client struct {
 	AreaBackright1                *pixmap.PixMap
 	AreaBackright2                *pixmap.PixMap
 	AreaBacktop1                  *pixmap.PixMap
-	AreaBacktop2                  *pixmap.PixMap
 	AreaBackvmid1                 *pixmap.PixMap
 	AreaBackvmid2                 *pixmap.PixMap
 	AreaBackvmid3                 *pixmap.PixMap
@@ -570,6 +572,7 @@ func NewClient() *Client {
 		JagChecksum:                make([]int, 9),
 		MidiThreadActive:           true,
 		ImageSideIcons:             make([]*pix8.Pix8, 13),
+		ImageModIcons:              make([]*pix8.Pix8, 2),
 		OrbitCameraPitch:           128,
 		// Java: deob/client.java:92 — `public int selectedTab = 3;`
 		// Latent in current flows (Login resets to 3 before InGame goes
@@ -2787,10 +2790,17 @@ func (c *Client) DrawMinimap() {
 			}
 		}
 	}
+	// Java: Client.java:12021-12043 — the 244 minimap hint-arrow block
+	// (drawMinimapArrow / imageMapmarker1 / imageMapedge) is deferred to the
+	// UI-polish pass: it must land together with the 244 minimap coordinate
+	// shifts (drawOnMinimap's +4/-4 offsets etc.) or the arrows would be
+	// drawn into the wrong spot on the 225-era minimap layout kept here.
 	if c.FlagSceneTileX != 0 {
 		var3 = c.FlagSceneTileX*4 + 2 - c.LocalPlayer.X/32
 		var4 = c.FlagSceneTileZ*4 + 2 - c.LocalPlayer.Z/32
-		c.DrawOnMinimap(var4, c.ImageMapflag, var3)
+		// Java: Client.java:12044-12048 — imageMapmarker0 is the destination
+		// flag (the role 225's imageMapflag played).
+		c.DrawOnMinimap(var4, c.ImageMapmarker0, var3)
 	}
 	pix2d.FillRect(82, 93, 0xFFFFFF, 3, 3)
 	c.AreaViewport.Bind()
@@ -4245,7 +4255,6 @@ func (c *Client) DrawGame() {
 	c.AreaBackright1.Draw(729, 5)
 	c.AreaBackright2.Draw(752, 231)
 	c.AreaBacktop1.Draw(0, 0)
-	c.AreaBacktop2.Draw(561, 0)
 	c.AreaBackvmid1.Draw(520, 11)
 	c.AreaBackvmid2.Draw(520, 231)
 	c.AreaBackvmid3.Draw(501, 375)
@@ -4499,7 +4508,6 @@ func (c *Client) blitRetainedScreen() {
 	c.blitIf(c.AreaBackright1, 729, 5)
 	c.blitIf(c.AreaBackright2, 752, 231)
 	c.blitIf(c.AreaBacktop1, 0, 0)
-	c.blitIf(c.AreaBacktop2, 561, 0)
 	c.blitIf(c.AreaBackvmid1, 520, 11)
 	c.blitIf(c.AreaBackvmid2, 520, 231)
 	c.blitIf(c.AreaBackvmid3, 501, 375)
@@ -5735,6 +5743,12 @@ func (c *Client) Load() {
 
 	c.ImageCompass = pix32.NewPix323(jagMedia, "compass", 0)
 
+	// Java: Client.java:1755-1756 — mapedge is new in 244 (the minimap
+	// hint-arrow edge sprite). Loaded for parity; its drawMinimapArrow
+	// consumer is deferred to the UI-polish pass (see DrawMinimap).
+	c.ImageMapedge = pix32.NewPix323(jagMedia, "mapedge", 0)
+	c.ImageMapedge.Trim()
+
 	// Java: load() wraps the mapscene loop in its own try { ... } catch (Exception) {}
 	// so a media archive with fewer than 50 mapscene sprites leaves the missing
 	// entries nil and lets the rest of load() continue (deob/client.java:6049-6055).
@@ -5773,7 +5787,11 @@ func (c *Client) Load() {
 		}
 	}()
 
-	c.ImageMapflag = pix32.NewPix323(jagMedia, "mapflag", 0)
+	// Java: Client.java:1786-1787 — 244 replaces 225's single "mapflag"
+	// sprite with "mapmarker" 0 (destination flag) and 1 (hint arrow); the
+	// 244 media archive has no "mapflag" member.
+	c.ImageMapmarker0 = pix32.NewPix323(jagMedia, "mapmarker", 0)
+	c.ImageMapmarker1 = pix32.NewPix323(jagMedia, "mapmarker", 1)
 
 	for i := range 8 {
 		c.ImageCrosses[i] = pix32.NewPix323(jagMedia, "cross", i)
@@ -5814,6 +5832,13 @@ func (c *Client) Load() {
 	c.ImageRedstone2hv.HFlip()
 	c.ImageRedstone2hv.VFlip()
 
+	// Java: Client.java:1828-1830 — mod/admin chat-crown sprites (new in
+	// 244). Loaded for parity; the @cr1@/@cr2@ crown rendering that consumes
+	// them is still deferred.
+	for i := range 2 {
+		c.ImageModIcons[i] = pix8.NewPix8(jagMedia, "mod_icons", i)
+	}
+
 	backleft1 := pix32.NewPix323(jagMedia, "backleft1", 0)
 	c.AreaBackleft1 = pixmap.NewPixMap(backleft1.Wi, backleft1.Hi)
 	backleft1.QuickPlotSprite(0, 0)
@@ -5834,9 +5859,8 @@ func (c *Client) Load() {
 	c.AreaBacktop1 = pixmap.NewPixMap(backtop1.Wi, backtop1.Hi)
 	backtop1.QuickPlotSprite(0, 0)
 
-	backtop2 := pix32.NewPix323(jagMedia, "backtop2", 0)
-	c.AreaBacktop2 = pixmap.NewPixMap(backtop2.Wi, backtop2.Hi)
-	backtop2.QuickPlotSprite(0, 0)
+	// Java: 244 drops 225's backtop2/areaBacktop2 entirely (Client.java:1849
+	// loads only backtop1; the 244 media archive has no "backtop2" member).
 
 	backvmid1 := pix32.NewPix323(jagMedia, "backvmid1", 0)
 	c.AreaBackvmid1 = pixmap.NewPixMap(backvmid1.Wi, backvmid1.Hi)
@@ -7111,7 +7135,6 @@ func (c *Client) Unload() {
 	c.AreaBackright1 = nil
 	c.AreaBackright2 = nil
 	c.AreaBacktop1 = nil
-	c.AreaBacktop2 = nil
 	c.AreaBackvmid1 = nil
 	c.AreaBackvmid2 = nil
 	c.AreaBackvmid3 = nil

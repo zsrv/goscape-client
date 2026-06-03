@@ -156,6 +156,24 @@ func (p *Pix32) RGBAdjust(arg0, arg1, arg2 int) {
 	}
 }
 
+// Java: trim() (244 Pix32.java:151-163) — new in 244; pads the cropped
+// sprite back out to its original OWi×OHi bounds (Pix32 counterpart of
+// Pix8.Trim, without that method's same-size early return — Java has none
+// here). First consumer is the imageMapedge minimap sprite.
+func (p *Pix32) Trim() {
+	pixels := make([]int, p.OHi*p.OWi)
+	for y := range p.Hi {
+		for x := range p.Wi {
+			pixels[(p.YOf+y)*p.OWi+p.XOf+x] = p.Pixels[p.Wi*y+x]
+		}
+	}
+	p.Pixels = pixels
+	p.Wi = p.OWi
+	p.Hi = p.OHi
+	p.XOf = 0
+	p.YOf = 0
+}
+
 // Old name: BlitOpaque
 func (p *Pix32) QuickPlotSprite(arg1, arg2 int) {
 	arg1 += p.XOf
