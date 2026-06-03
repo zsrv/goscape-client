@@ -881,7 +881,7 @@ func (c *Client) Draw2DEntityElements() {
 }
 
 func (c *Client) CloseInterfaces() {
-	c.Out.P1Isaac(io.CLIENTPROT_CLOSE_MODAL) // Java: pIsaac(187) client.java:4337
+	c.Out.P1Isaac(io.CLIENTPROT_CLOSE_MODAL) // Java: pIsaac(187) Client.java:4337
 	if c.SidebarInterfaceID != -1 {
 		c.SidebarInterfaceID = -1
 		c.RedrawSidebar = true
@@ -1086,7 +1086,7 @@ func (c *Client) AddIgnore(arg0 int64) {
 	c.IgnoreName37[c.IgnoreCount] = arg0
 	c.IgnoreCount++
 	c.RedrawSidebar = true
-	c.Out.P1Isaac(io.CLIENTPROT_IGNORELIST_ADD) // Java: pIsaac(203) client.java:12247
+	c.Out.P1Isaac(io.CLIENTPROT_IGNORELIST_ADD) // Java: pIsaac(203) Client.java:12247
 	c.Out.P8(arg0)
 }
 
@@ -1464,7 +1464,7 @@ func (c *Client) DrawScene(arg0 int) {
 		CycleLogic2++
 		if CycleLogic2 > 1802 {
 			CycleLogic2 = 0
-			c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC2) // Java: pIsaac(148) client.java:5865
+			c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC2) // Java: pIsaac(148) Client.java:5865
 			c.Out.P1(0)
 			var4 = c.Out.Pos
 			c.Out.P2(29711)
@@ -1909,7 +1909,7 @@ func (c *Client) HandleChatSettingsInput(arg0 int) {
 		c.PublicChatSetting = (c.PublicChatSetting + 1) % 4
 		c.RedrawPrivacySettings = true
 		c.RedrawChatback = true
-		c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) client.java:4295
+		c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) Client.java:4295
 		c.Out.P1(c.PublicChatSetting)
 		c.Out.P1(c.PrivateChatSetting)
 		c.Out.P1(c.TradeChatSetting)
@@ -1918,7 +1918,7 @@ func (c *Client) HandleChatSettingsInput(arg0 int) {
 		c.PrivateChatSetting = (c.PrivateChatSetting + 1) % 3
 		c.RedrawPrivacySettings = true
 		c.RedrawChatback = true
-		c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) client.java:4305
+		c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) Client.java:4305
 		c.Out.P1(c.PublicChatSetting)
 		c.Out.P1(c.PrivateChatSetting)
 		c.Out.P1(c.TradeChatSetting)
@@ -1927,7 +1927,7 @@ func (c *Client) HandleChatSettingsInput(arg0 int) {
 		c.TradeChatSetting = (c.TradeChatSetting + 1) % 3
 		c.RedrawPrivacySettings = true
 		c.RedrawChatback = true
-		c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) client.java:4315
+		c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) Client.java:4315
 		c.Out.P1(c.PublicChatSetting)
 		c.Out.P1(c.PrivateChatSetting)
 		c.Out.P1(c.TradeChatSetting)
@@ -2201,7 +2201,7 @@ func (c *Client) HandleInputKey() {
 							c.RemoveFriend(var8)
 						}
 						if c.SocialAction == 3 && len(c.SocialInput) > 0 {
-							c.Out.P1Isaac(io.CLIENTPROT_MESSAGE_PRIVATE) // Java: pIsaac(170) client.java:4628
+							c.Out.P1Isaac(io.CLIENTPROT_MESSAGE_PRIVATE) // Java: pIsaac(170) Client.java:4628
 							c.Out.P1(0)
 							var7 = c.Out.Pos
 							c.Out.P8(c.SocialName37)
@@ -2213,7 +2213,7 @@ func (c *Client) HandleInputKey() {
 							if c.PrivateChatSetting == 2 {
 								c.PrivateChatSetting = 1
 								c.RedrawPrivacySettings = true
-								c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) client.java:4645
+								c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) Client.java:4645
 								c.Out.P1(c.PublicChatSetting)
 								c.Out.P1(c.PrivateChatSetting)
 								c.Out.P1(c.TradeChatSetting)
@@ -2247,7 +2247,7 @@ func (c *Client) HandleInputKey() {
 							if v, perr := strconv.ParseInt(c.ChatbackInput, 10, 32); perr == nil {
 								var7 = int(v)
 							}
-							c.Out.P1Isaac(io.CLIENTPROT_RESUME_P_COUNTDIALOG) // Java: pIsaac(190) client.java:4682
+							c.Out.P1Isaac(io.CLIENTPROT_RESUME_P_COUNTDIALOG) // Java: pIsaac(190) Client.java:4682
 							c.Out.P4(var7)
 						}
 						c.ChatbackInputOpen = false
@@ -2274,7 +2274,7 @@ func (c *Client) HandleInputKey() {
 						if c.ChatTyped == "::clientdrop" {
 							c.TryReconnect()
 						} else if strings.HasPrefix(c.ChatTyped, "::") {
-							c.Out.P1Isaac(io.CLIENTPROT_CLIENT_CHEAT) // Java: pIsaac(76) client.java:4715
+							c.Out.P1Isaac(io.CLIENTPROT_CLIENT_CHEAT) // Java: pIsaac(76) Client.java:4715
 							c.Out.P1(len(c.ChatTyped) - 1)
 							c.Out.PJStr(c.ChatTyped[2:])
 						} else {
@@ -2336,7 +2336,7 @@ func (c *Client) HandleInputKey() {
 								var4 = 2
 								c.ChatTyped = c.ChatTyped[7:]
 							}
-							c.Out.P1Isaac(io.CLIENTPROT_MESSAGE_PUBLIC) // Java: pIsaac(171) client.java:4780
+							c.Out.P1Isaac(io.CLIENTPROT_MESSAGE_PUBLIC) // Java: pIsaac(171) Client.java:4780
 							c.Out.P1(0)
 							var5 := c.Out.Pos
 							c.Out.P1(var3)
@@ -2353,7 +2353,7 @@ func (c *Client) HandleInputKey() {
 							if c.PublicChatSetting == 2 {
 								c.PublicChatSetting = 3
 								c.RedrawPrivacySettings = true
-								c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) client.java:4810
+								c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) Client.java:4810
 								c.Out.P1(c.PublicChatSetting)
 								c.Out.P1(c.PrivateChatSetting)
 								c.Out.P1(c.TradeChatSetting)
@@ -2827,7 +2827,7 @@ func (c *Client) DrawMinimap() {
 // endTime/startTime, applying the new loc when its startTime elapses, and
 // reverting to the old loc (then unlinking) when endTime hits 0.
 //
-// Java: Client.updateLocChanges (client.java:3539-3577).
+// Java: Client.updateLocChanges (Client.java:3539-3577).
 func (c *Client) UpdateLocChanges() {
 	if c.SceneState != 2 {
 		return
@@ -2862,7 +2862,7 @@ func (c *Client) UpdateLocChanges() {
 	CycleLogic5++
 	if CycleLogic5 > 85 {
 		CycleLogic5 = 0
-		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC5) // Java: pIsaac(232) client.java:3575
+		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC5) // Java: pIsaac(232) Client.java:3575
 	}
 }
 
@@ -2870,7 +2870,7 @@ func (c *Client) UpdateLocChanges() {
 // freshly-loaded scene by resetting its startTime and recapturing the old loc,
 // while dropping every timed change. Called after a scene rebuild.
 //
-// Java: Client.clearLocChanges (client.java:3431-3442).
+// Java: Client.clearLocChanges (Client.java:3431-3442).
 func (c *Client) ClearLocChanges() {
 	loc := c.LocChanges.Head()
 	for loc != nil {
@@ -4331,7 +4331,7 @@ func (c *Client) DrawGame() {
 	if c.RedrawSideIcons {
 		if c.FlashingTab != -1 && c.FlashingTab == c.SelectedTab {
 			c.FlashingTab = -1
-			c.Out.P1Isaac(io.CLIENTPROT_TUTORIAL_CLICKSIDE) // Java: pIsaac(233) client.java:5677
+			c.Out.P1Isaac(io.CLIENTPROT_TUTORIAL_CLICKSIDE) // Java: pIsaac(233) Client.java:5677
 			c.Out.P1(c.SelectedTab)
 		}
 		c.RedrawSideIcons = false
@@ -4564,10 +4564,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 				if var12 != nil && var12.Name != "" && strings.EqualFold(var12.Name, var9) {
 					c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var12.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var12.PathTileZ[0], 0, 0, 0)
 					if var5 == 903 {
-						c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER4) // Java: pIsaac(43) client.java:10214
+						c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER4) // Java: pIsaac(43) Client.java:10211
 					}
 					if var5 == 363 {
-						c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER1) // Java: pIsaac(211) client.java:10218
+						c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER1) // Java: pIsaac(211) Client.java:10214
 					}
 					c.Out.P2(c.PlayerIDs[i])
 					var10 = true
@@ -4579,7 +4579,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 		}
 	}
-	if var5 == 450 && c.InteractWithLoc(io.CLIENTPROT_OPLOCU, var3, var4, var6) { // Java: interactWithLoc(106,...) client.java:9764
+	if var5 == 450 && c.InteractWithLoc(io.CLIENTPROT_OPLOCU, var3, var4, var6) { // Java: interactWithLoc(106,...) Client.java:9764
 		c.Out.P2(c.ObjInterface)
 		c.Out.P2(c.ObjSelectedSlot)
 		c.Out.P2(c.ObjSelectedInterface)
@@ -4590,26 +4590,26 @@ func (c *Client) UseMenuOption(arg1 int) {
 				OpLogic5++
 			}
 			if OpLogic5 >= 90 {
-				c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC5) // Java: pIsaac(7) client.java:9949
+				c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC5) // Java: pIsaac(7) Client.java:9949
 			}
-			c.Out.P1Isaac(io.CLIENTPROT_OPHELD4) // Java: pIsaac(6) client.java:9953
+			c.Out.P1Isaac(io.CLIENTPROT_OPHELD4) // Java: pIsaac(6) Client.java:9953
 		}
 		if var5 == 347 {
-			c.Out.P1Isaac(io.CLIENTPROT_OPHELD5) // Java: pIsaac(133) client.java:9938
+			c.Out.P1Isaac(io.CLIENTPROT_OPHELD5) // Java: pIsaac(133) Client.java:9938
 		}
 		if var5 == 422 {
-			c.Out.P1Isaac(io.CLIENTPROT_OPHELD3) // Java: pIsaac(221) client.java:9941
+			c.Out.P1Isaac(io.CLIENTPROT_OPHELD3) // Java: pIsaac(221) Client.java:9941
 		}
 		if var5 == 405 {
 			OpLogic3 += var6
 			if OpLogic3 >= 97 {
-				c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC3) // Java: pIsaac(37) client.java:9958
+				c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC3) // Java: pIsaac(37) Client.java:9958
 				c.Out.P3(14953816)
 			}
-			c.Out.P1Isaac(io.CLIENTPROT_OPHELD1) // Java: pIsaac(228) client.java:9963
+			c.Out.P1Isaac(io.CLIENTPROT_OPHELD1) // Java: pIsaac(228) Client.java:9963
 		}
 		if var5 == 38 {
-			c.Out.P1Isaac(io.CLIENTPROT_OPHELD2) // Java: pIsaac(166) client.java:9966
+			c.Out.P1Isaac(io.CLIENTPROT_OPHELD2) // Java: pIsaac(166) Client.java:9966
 		}
 		c.Out.P2(var6)
 		c.Out.P2(var3)
@@ -4635,33 +4635,33 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossMode = 2
 			c.CrossCycle = 0
 			if var5 == 542 {
-				c.Out.P1Isaac(io.CLIENTPROT_OPNPC2) // Java: pIsaac(84) client.java:10136
+				c.Out.P1Isaac(io.CLIENTPROT_OPNPC2) // Java: pIsaac(84) Client.java:10136
 			}
 			if var5 == 6 {
 				if var6&0x3 == 0 {
 					OpLogic2++
 				}
 				if OpLogic2 >= 124 {
-					c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC2) // Java: pIsaac(218) client.java:10113
+					c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC2) // Java: pIsaac(218) Client.java:10113
 					c.Out.P4(0)
 				}
-				c.Out.P1Isaac(io.CLIENTPROT_OPNPC3) // Java: pIsaac(132) client.java:10118
+				c.Out.P1Isaac(io.CLIENTPROT_OPNPC3) // Java: pIsaac(132) Client.java:10118
 			}
 			if var5 == 963 {
-				c.Out.P1Isaac(io.CLIENTPROT_OPNPC4) // Java: pIsaac(229) client.java:10105
+				c.Out.P1Isaac(io.CLIENTPROT_OPNPC4) // Java: pIsaac(229) Client.java:10105
 			}
 			if var5 == 728 {
-				c.Out.P1Isaac(io.CLIENTPROT_OPNPC1) // Java: pIsaac(222) client.java:10133
+				c.Out.P1Isaac(io.CLIENTPROT_OPNPC1) // Java: pIsaac(222) Client.java:10133
 			}
 			if var5 == 245 {
 				if var6&0x3 == 0 {
 					OpLogic4++
 				}
 				if OpLogic4 >= 85 {
-					c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC4) // Java: pIsaac(34) client.java:10125
+					c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC4) // Java: pIsaac(34) Client.java:10125
 					c.Out.P2(39596)
 				}
-				c.Out.P1Isaac(io.CLIENTPROT_OPNPC5) // Java: pIsaac(102) client.java:10130
+				c.Out.P1Isaac(io.CLIENTPROT_OPNPC5) // Java: pIsaac(102) Client.java:10130
 			}
 			c.Out.P2(var6)
 		}
@@ -4676,7 +4676,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.CrossY = c.MouseClickY
 		c.CrossMode = 2
 		c.CrossCycle = 0
-		c.Out.P1Isaac(io.CLIENTPROT_OPOBJU) // Java: pIsaac(111) client.java:9757
+		c.Out.P1Isaac(io.CLIENTPROT_OPOBJU) // Java: pIsaac(111) Client.java:9757
 		c.Out.P2(var3 + c.SceneBaseTileX)
 		c.Out.P2(var4 + c.SceneBaseTileZ)
 		c.Out.P2(var6)
@@ -4695,10 +4695,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.AddMessage(0, var9, "")
 	}
 	if var5 == 285 {
-		c.InteractWithLoc(io.CLIENTPROT_OPLOC1, var3, var4, var6) // Java: interactWithLoc(238,...) client.java:9915
+		c.InteractWithLoc(io.CLIENTPROT_OPLOC1, var3, var4, var6) // Java: interactWithLoc(238,...) Client.java:9915
 	}
 	if var5 == 881 {
-		c.Out.P1Isaac(io.CLIENTPROT_OPHELDU) // Java: pIsaac(58) client.java:9887
+		c.Out.P1Isaac(io.CLIENTPROT_OPHELDU) // Java: pIsaac(58) Client.java:9887
 		c.Out.P2(var6)
 		c.Out.P2(var3)
 		c.Out.P2(var4)
@@ -4717,7 +4717,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	if var5 == 391 {
-		c.Out.P1Isaac(io.CLIENTPROT_OPHELDT) // Java: pIsaac(143) client.java:10143
+		c.Out.P1Isaac(io.CLIENTPROT_OPHELDT) // Java: pIsaac(143) Client.java:10143
 		c.Out.P2(var6)
 		c.Out.P2(var3)
 		c.Out.P2(var4)
@@ -4750,7 +4750,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		return
 	}
 	if var5 == 44 && !c.PressedContinueOption {
-		c.Out.P1Isaac(io.CLIENTPROT_RESUME_PAUSEBUTTON) // Java: pIsaac(11) client.java:9909
+		c.Out.P1Isaac(io.CLIENTPROT_RESUME_PAUSEBUTTON) // Java: pIsaac(11) Client.java:9909
 		c.Out.P2(var4)
 		c.PressedContinueOption = true
 	}
@@ -4775,7 +4775,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
 			c.CrossCycle = 0
-			c.Out.P1Isaac(io.CLIENTPROT_OPNPCU) // Java: pIsaac(52) client.java:10078
+			c.Out.P1Isaac(io.CLIENTPROT_OPNPCU) // Java: pIsaac(52) Client.java:10078
 			c.Out.P2(var6)
 			c.Out.P2(c.ObjInterface)
 			c.Out.P2(c.ObjSelectedSlot)
@@ -4792,21 +4792,21 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossMode = 2
 			c.CrossCycle = 0
 			if var5 == 1101 {
-				c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER1) // Java: pIsaac(211) client.java:10293
+				c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER1) // Java: pIsaac(211) Client.java:10293
 			}
 			if var5 == 151 {
 				OpLogic8++
 				if OpLogic8 >= 90 {
-					c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC8) // Java: pIsaac(100) client.java:10285
+					c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC8) // Java: pIsaac(100) Client.java:10285
 					c.Out.P2(31114)
 				}
-				c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER2) // Java: pIsaac(219) client.java:10290
+				c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER2) // Java: pIsaac(219) Client.java:10290
 			}
 			if var5 == 1373 {
-				c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER4) // Java: pIsaac(43) client.java:10280
+				c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER4) // Java: pIsaac(43) Client.java:10280
 			}
 			if var5 == 1544 {
-				c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER3) // Java: pIsaac(64) client.java:10277
+				c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER3) // Java: pIsaac(64) Client.java:10277
 			}
 			c.Out.P2(var6)
 		}
@@ -4819,7 +4819,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
 			c.CrossCycle = 0
-			c.Out.P1Isaac(io.CLIENTPROT_OPNPCT) // Java: pIsaac(101) client.java:9780
+			c.Out.P1Isaac(io.CLIENTPROT_OPNPCT) // Java: pIsaac(101) Client.java:9780
 			c.Out.P2(var6)
 			c.Out.P2(c.ActiveSpellID)
 		}
@@ -4848,7 +4848,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 		}
 	}
-	if var5 == 55 && c.InteractWithLoc(io.CLIENTPROT_OPLOCT, var3, var4, var6) { // Java: interactWithLoc(182,...) client.java:9787
+	if var5 == 55 && c.InteractWithLoc(io.CLIENTPROT_OPLOCT, var3, var4, var6) { // Java: interactWithLoc(182,...) Client.java:9787
 		c.Out.P2(c.ActiveSpellID)
 	}
 	if var5 == 224 || var5 == 993 || var5 == 99 || var5 == 746 || var5 == 877 {
@@ -4861,19 +4861,19 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.CrossMode = 2
 		c.CrossCycle = 0
 		if var5 == 224 {
-			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ1) // Java: pIsaac(231) client.java:9810
+			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ1) // Java: pIsaac(231) Client.java:9809
 		}
 		if var5 == 746 {
-			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ4) // Java: pIsaac(17) client.java:9818
+			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ4) // Java: pIsaac(17) Client.java:9815
 		}
 		if var5 == 877 {
-			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ5) // Java: pIsaac(225) client.java:9815
+			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ5) // Java: pIsaac(225) Client.java:9812
 		}
 		if var5 == 99 {
-			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ3) // Java: pIsaac(27) client.java:9803
+			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ3) // Java: pIsaac(27) Client.java:9803
 		}
 		if var5 == 993 {
-			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ2) // Java: pIsaac(110) client.java:9806
+			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ2) // Java: pIsaac(110) Client.java:9806
 		}
 		c.Out.P2(var3 + c.SceneBaseTileX)
 		c.Out.P2(var4 + c.SceneBaseTileZ)
@@ -4891,7 +4891,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	if var5 == 504 {
-		c.InteractWithLoc(io.CLIENTPROT_OPLOC2, var3, var4, var6) // Java: interactWithLoc(38,...) client.java:10300
+		c.InteractWithLoc(io.CLIENTPROT_OPLOC2, var3, var4, var6) // Java: interactWithLoc(38,...) Client.java:10300
 	}
 	var var22 *component.Component
 	if var5 == 930 {
@@ -4923,39 +4923,39 @@ func (c *Client) UseMenuOption(arg1 int) {
 			var23 = c.HandleInterfaceAction(var22)
 		}
 		if var23 {
-			c.Out.P1Isaac(io.CLIENTPROT_IF_BUTTON) // Java: pIsaac(39) client.java:9861
+			c.Out.P1Isaac(io.CLIENTPROT_IF_BUTTON) // Java: pIsaac(39) Client.java:9861
 			c.Out.P2(var4)
 		}
 	}
 	if var5 == 602 || var5 == 596 || var5 == 22 || var5 == 892 || var5 == 415 {
 		if var5 == 22 {
-			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON3) // Java: pIsaac(158) client.java:10018
+			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON3) // Java: pIsaac(158) Client.java:10018
 		}
 		if var5 == 415 {
 			if var4&0x3 == 0 {
 				OpLogic7++
 			}
 			if OpLogic7 >= 55 {
-				c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC7) // Java: pIsaac(50) client.java:10010
+				c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC7) // Java: pIsaac(50) Client.java:10010
 				c.Out.P4(0)
 			}
-			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON5) // Java: pIsaac(212) client.java:10015
+			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON5) // Java: pIsaac(212) Client.java:10015
 		}
 		if var5 == 602 {
-			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON1) // Java: pIsaac(153) client.java:10036
+			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON1) // Java: pIsaac(153) Client.java:10036
 		}
 		if var5 == 892 {
 			if var3&0x3 == 0 {
 				OpLogic9++
 			}
 			if OpLogic9 >= 130 {
-				c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC9) // Java: pIsaac(169) client.java:10028
+				c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC9) // Java: pIsaac(169) Client.java:10028
 				c.Out.P1(177)
 			}
-			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON4) // Java: pIsaac(204) client.java:10033
+			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON4) // Java: pIsaac(204) Client.java:10033
 		}
 		if var5 == 596 {
-			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON2) // Java: pIsaac(193) client.java:10021
+			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON2) // Java: pIsaac(193) Client.java:10021
 		}
 		c.Out.P2(var6)
 		c.Out.P2(var3)
@@ -4976,10 +4976,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 			OpLogic1++
 		}
 		if OpLogic1 >= 99 {
-			c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC1) // Java: pIsaac(47) client.java:9828
+			c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC1) // Java: pIsaac(47) Client.java:9828
 			c.Out.P4(0)
 		}
-		c.InteractWithLoc(io.CLIENTPROT_OPLOC4, var3, var4, var6) // Java: interactWithLoc(55,...) client.java:9833
+		c.InteractWithLoc(io.CLIENTPROT_OPLOC4, var3, var4, var6) // Java: interactWithLoc(55,...) Client.java:9833
 	}
 	if var5 == 965 {
 		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 2, 0, var4, 0, 0, 0)
@@ -4990,7 +4990,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.CrossY = c.MouseClickY
 		c.CrossMode = 2
 		c.CrossCycle = 0
-		c.Out.P1Isaac(io.CLIENTPROT_OPOBJT) // Java: pIsaac(25) client.java:10000
+		c.Out.P1Isaac(io.CLIENTPROT_OPOBJT) // Java: pIsaac(25) Client.java:9997
 		c.Out.P2(var3 + c.SceneBaseTileX)
 		c.Out.P2(var4 + c.SceneBaseTileZ)
 		c.Out.P2(var6)
@@ -4999,13 +4999,13 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 1501 {
 		OpLogic6 += c.SceneBaseTileZ
 		if OpLogic6 >= 92 {
-			c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC6) // Java: pIsaac(177) client.java:9692
+			c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC6) // Java: pIsaac(177) Client.java:9692
 			c.Out.P4(0)
 		}
-		c.InteractWithLoc(io.CLIENTPROT_OPLOC5, var3, var4, var6) // Java: interactWithLoc(243,...) client.java:9697
+		c.InteractWithLoc(io.CLIENTPROT_OPLOC5, var3, var4, var6) // Java: interactWithLoc(243,...) Client.java:9697
 	}
 	if var5 == 364 {
-		c.InteractWithLoc(io.CLIENTPROT_OPLOC3, var3, var4, var6) // Java: interactWithLoc(19,...) client.java:9786
+		c.InteractWithLoc(io.CLIENTPROT_OPLOC3, var3, var4, var6) // Java: interactWithLoc(19,...) Client.java:9786
 	}
 	if var5 == 1102 {
 		var17 = objtype.Get(var6)
@@ -5017,7 +5017,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.AddMessage(0, var18, "")
 	}
 	if var5 == 960 {
-		c.Out.P1Isaac(io.CLIENTPROT_IF_BUTTON) // Java: pIsaac(39) client.java:9861
+		c.Out.P1Isaac(io.CLIENTPROT_IF_BUTTON) // Java: pIsaac(39) Client.java:9861
 		c.Out.P2(var4)
 		var22 = component.Instances[var4]
 		if var22.Scripts != nil && var22.Scripts[0][0] == 5 {
@@ -5056,7 +5056,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
 			c.CrossCycle = 0
-			c.Out.P1Isaac(io.CLIENTPROT_OPPLAYERU) // Java: pIsaac(48) client.java:9726
+			c.Out.P1Isaac(io.CLIENTPROT_OPPLAYERU) // Java: pIsaac(48) Client.java:9726
 			c.Out.P2(var6)
 			c.Out.P2(c.ObjInterface)
 			c.Out.P2(c.ObjSelectedSlot)
@@ -5064,7 +5064,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	if var5 == 465 {
-		c.Out.P1Isaac(io.CLIENTPROT_IF_BUTTON) // Java: pIsaac(39) client.java:10057
+		c.Out.P1Isaac(io.CLIENTPROT_IF_BUTTON) // Java: pIsaac(39) Client.java:10057
 		c.Out.P2(var4)
 		var22 = component.Instances[var4]
 		if var22.Scripts != nil && var22.Scripts[0][0] == 5 {
@@ -5101,7 +5101,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
 			c.CrossCycle = 0
-			c.Out.P1Isaac(io.CLIENTPROT_OPPLAYERT) // Java: pIsaac(73) client.java:10250
+			c.Out.P1Isaac(io.CLIENTPROT_OPPLAYERT) // Java: pIsaac(73) Client.java:10250
 			c.Out.P2(var6)
 			c.Out.P2(c.ActiveSpellID)
 		}
@@ -5558,7 +5558,7 @@ func (c *Client) HandleInterfaceAction(arg1 *component.Component) bool {
 		c.ValidateCharacterDesign()
 	}
 	if var3 == 326 {
-		c.Out.P1Isaac(io.CLIENTPROT_IF_PLAYERDESIGN) // Java: pIsaac(8) client.java:11740
+		c.Out.P1Isaac(io.CLIENTPROT_IF_PLAYERDESIGN) // Java: pIsaac(8) Client.java:11740
 		if c.DesignGenderMale {
 			c.Out.P1(0)
 		} else {
@@ -5578,7 +5578,7 @@ func (c *Client) HandleInterfaceAction(arg1 *component.Component) bool {
 	if var3 >= 601 && var3 <= 612 {
 		c.CloseInterfaces()
 		if len(c.ReportAbuseInput) > 0 {
-			c.Out.P1Isaac(io.CLIENTPROT_REPORT_ABUSE) // Java: pIsaac(251) client.java:11759
+			c.Out.P1Isaac(io.CLIENTPROT_REPORT_ABUSE) // Java: pIsaac(251) Client.java:11759
 			c.Out.P8(jstring.ToBase37(c.ReportAbuseInput))
 			c.Out.P1(var3 - 601)
 			if c.ReportAbuseMuteOption {
@@ -6785,7 +6785,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 				}
 			}
 		}
-		c.LocChanges = datastruct.NewLinkList[*entity.LocChange]() // Java: this.locChanges = new LinkList() (client.java:2742)
+		c.LocChanges = datastruct.NewLinkList[*entity.LocChange]() // Java: this.locChanges = new LinkList() (Client.java:2742)
 		c.FriendCount = 0
 		c.StickyChatInterfaceID = -1
 		c.ChatInterfaceID = -1
@@ -6981,7 +6981,7 @@ func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
 // pending new loc plus its timing window. A fresh change captures the loc it
 // replaces via StoreLoc before being pushed.
 //
-// Java: Client.appendLoc (client.java:8760-8784).
+// Java: Client.appendLoc (Client.java:8760-8784).
 func (c *Client) AppendLoc(x, shape, endTime, typ, angle, layer, z, currentLevel, startTime int) {
 	var loc *entity.LocChange
 	for next := c.LocChanges.Head(); next != nil; next = c.LocChanges.Next() {
@@ -7012,7 +7012,7 @@ func (c *Client) AppendLoc(x, shape, endTime, typ, angle, layer, z, currentLevel
 // StoreLoc captures the loc currently in the scene at the change's tile into the
 // LocChange's Old* fields, so the change can be reverted later.
 //
-// Java: Client.storeLoc (client.java:8788-8814).
+// Java: Client.storeLoc (Client.java:8788-8814).
 func (c *Client) StoreLoc(loc *entity.LocChange) {
 	typecode := 0
 	otherId := -1
@@ -7070,7 +7070,7 @@ func (c *Client) AddFriend(arg0 int64) {
 	c.FriendWorld[c.FriendCount] = 0
 	c.FriendCount++
 	c.RedrawSidebar = true
-	c.Out.P1Isaac(io.CLIENTPROT_FRIENDLIST_ADD) // Java: pIsaac(9) client.java:12186
+	c.Out.P1Isaac(io.CLIENTPROT_FRIENDLIST_ADD) // Java: pIsaac(9) Client.java:12186
 	c.Out.P8(arg0)
 }
 
@@ -7293,7 +7293,7 @@ func (c *Client) UpdateGame() {
 	if !c.InGame {
 		return
 	}
-	// Java: client.updateGame (client.java:2943) — updateSceneState() runs first
+	// Java: client.updateGame (Client.java:2943) — updateSceneState() runs first
 	// inside the in-game block, before updateLocChanges/updateAudio. Guarded so it
 	// only fires once the OnDemand loader and a pending scene map exist.
 	if c.OnDemand != nil && c.SceneMapLandData != nil {
@@ -7351,7 +7351,7 @@ func (c *Client) UpdateGame() {
 	}
 	var11 := inputtracking.Flush()
 	if var11 != nil {
-		c.Out.P1Isaac(io.CLIENTPROT_EVENT_TRACKING) // Java: pIsaac(217) client.java:2950
+		c.Out.P1Isaac(io.CLIENTPROT_EVENT_TRACKING) // Java: pIsaac(217) Client.java:2950
 		c.Out.P2(var11.Pos)
 		c.Out.PData(var11.Data, var11.Pos, 0)
 		var11.Release()
@@ -7366,7 +7366,7 @@ func (c *Client) UpdateGame() {
 	c.UpdateLocChanges()
 	// Java: 225 camera-key packet (opcode 189: arrow-key cameraMovedWrite send),
 	// no 244 equivalent — the entire if(actionKey[1..4]) cameraMovedWrite/pIsaac(189)
-	// block and the cameraMovedWrite field are absent in Java 244 (client.java:2960
+	// block and the cameraMovedWrite field are absent in Java 244 (Client.java:2960
 	// goes straight from updateEntityChats() to sceneDelta++) — removed.
 	c.SceneDelta++
 	if c.CrossMode != 0 {
@@ -7412,7 +7412,7 @@ func (c *Client) UpdateGame() {
 					var14 := var13.InvSlotObjCount[c.HoveredSlot]
 					var13.InvSlotObjCount[c.HoveredSlot] = var13.InvSlotObjCount[c.ObjDragSlot]
 					var13.InvSlotObjCount[c.ObjDragSlot] = var14
-					c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTOND) // Java: pIsaac(81) client.java:3038
+					c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTOND) // Java: pIsaac(81) Client.java:3038
 					c.Out.P2(c.ObjDragInterfaceID)
 					c.Out.P2(c.ObjDragSlot)
 					c.Out.P2(c.HoveredSlot)
@@ -7429,7 +7429,7 @@ func (c *Client) UpdateGame() {
 	CycleLogic3++
 	if CycleLogic3 > 127 {
 		CycleLogic3 = 0
-		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC3) // Java: pIsaac(144) client.java:3060
+		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC3) // Java: pIsaac(144) Client.java:3060
 		c.Out.P3(4991788)
 	}
 	if world3d.ClickTileX != -1 {
@@ -7470,7 +7470,7 @@ func (c *Client) UpdateGame() {
 	if c.IdleCycles > 4500 {
 		c.IdleTimeout = 250
 		c.IdleCycles -= 500
-		c.Out.P1Isaac(io.CLIENTPROT_IDLE_TIMER) // Java: pIsaac(146) client.java:3113
+		c.Out.P1Isaac(io.CLIENTPROT_IDLE_TIMER) // Java: pIsaac(146) Client.java:3113
 	}
 	c.CameraOffsetCycle++
 	if c.CameraOffsetCycle > 500 {
@@ -7531,12 +7531,12 @@ func (c *Client) UpdateGame() {
 	CycleLogic4++
 	if CycleLogic4 > 110 {
 		CycleLogic4 = 0
-		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC4) // Java: pIsaac(41) client.java:3180
+		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC4) // Java: pIsaac(41) Client.java:3180
 		c.Out.P4(0)
 	}
 	c.HeartbeatTimer++
 	if c.HeartbeatTimer > 50 {
-		c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) client.java:3187
+		c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) Client.java:3187
 	}
 	if c.Stream != nil && c.Out.Pos > 0 {
 		// Java: try { stream.write(...); out.pos = 0; heartbeatTimer = 0; }
@@ -7774,15 +7774,15 @@ func (c *Client) TryMove(arg0, arg1 int, arg2 bool, arg3, arg4, arg6, arg7, arg8
 		var25 := c.BFSStepX[var19]
 		var26 := c.BFSStepZ[var19]
 		if arg6 == 0 {
-			c.Out.P1Isaac(io.CLIENTPROT_MOVE_GAMECLICK) // Java: pIsaac(63) client.java:7184
+			c.Out.P1Isaac(io.CLIENTPROT_MOVE_GAMECLICK) // Java: pIsaac(63) Client.java:7184
 			c.Out.P1(var21 + var21 + 3)
 		}
 		if arg6 == 1 {
-			c.Out.P1Isaac(io.CLIENTPROT_MOVE_MINIMAPCLICK) // Java: pIsaac(56) client.java:7188
+			c.Out.P1Isaac(io.CLIENTPROT_MOVE_MINIMAPCLICK) // Java: pIsaac(56) Client.java:7188
 			c.Out.P1(var21 + var21 + 3 + 14)
 		}
 		if arg6 == 2 {
-			c.Out.P1Isaac(io.CLIENTPROT_MOVE_OPCLICK) // Java: pIsaac(167) client.java:7192
+			c.Out.P1Isaac(io.CLIENTPROT_MOVE_OPCLICK) // Java: pIsaac(167) Client.java:7192
 			c.Out.P1(var21 + var21 + 3)
 		}
 		if c.ActionKey[5] == 1 {
@@ -7927,7 +7927,7 @@ func (c *Client) RemoveFriend(arg1 int64) {
 				c.FriendWorld[j] = c.FriendWorld[j+1]
 				c.FriendName37[j] = c.FriendName37[j+1]
 			}
-			c.Out.P1Isaac(io.CLIENTPROT_FRIENDLIST_DEL) // Java: pIsaac(69) client.java:12209
+			c.Out.P1Isaac(io.CLIENTPROT_FRIENDLIST_DEL) // Java: pIsaac(69) Client.java:12209
 			c.Out.P8(arg1)
 			return
 		}
@@ -8280,7 +8280,7 @@ func (c *Client) HandleTabInput() {
 	CycleLogic1++
 	if CycleLogic1 > 150 {
 		CycleLogic1 = 0
-		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC1) // Java: pIsaac(46) client.java:4278
+		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC1) // Java: pIsaac(46) Client.java:4278
 		c.Out.P1(43)
 	}
 }
@@ -8504,7 +8504,7 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 }
 
 // UpdateSceneState drives the scene load/rebuild state machine each game cycle.
-// Java: client.updateSceneState (client.java:3234-3256). Called from updateGame
+// Java: client.updateSceneState (Client.java:3235-3256). Called from updateGame
 // once per cycle while in-game. Three blocks: (a) low-mem level-switch rebuild,
 // (b) sceneState==1 → checkScene + 6-minute load-timeout error report, (c)
 // minimap re-create when the current level changes.
@@ -8521,7 +8521,7 @@ func (c *Client) UpdateSceneState() {
 		status := c.CheckScene()
 		if status != 0 && time.Now().UnixMilli()-c.SceneLoadStartTime > 360000 {
 			// Java: SignLink.reporterror(this.username + " glcfb " + ...
-			// + this.fileStreams[0] + ...) (client.java:3247). Go has no
+			// + this.fileStreams[0] + ...) (Client.java:3248). Go has no
 			// fileStreams[] field; the closest analogue is the OnDemand cache
 			// presence (Java's fileStreams[0] is the OnDemand cache file stream),
 			// so we report c.OnDemand.HasCache() in its place. This path only
@@ -8539,7 +8539,7 @@ func (c *Client) UpdateSceneState() {
 // CheckScene tests whether all requested map land/loc files have arrived (and
 // loc-data prefetch is complete) and, if so, builds the scene. Returns 0 on a
 // successful build, or a negative status code identifying what is still
-// pending. Java: client.checkScene (client.java:3258-3291).
+// pending. Java: client.checkScene (Client.java:3260-3291).
 func (c *Client) CheckScene() int {
 	for i := range len(c.SceneMapLandData) {
 		if c.SceneMapLandData[i] == nil && c.SceneMapLandFile[i] != -1 {
@@ -8604,7 +8604,7 @@ func (c *Client) BuildScene() {
 	} else {
 		c.Scene.SetMinLevel(0)
 	}
-	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) client.java:3329
+	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) Client.java:3329
 	for i := range var5 {
 		var8 := (c.SceneMapIndex[i]>>8)*64 - c.SceneBaseTileX
 		var9 := (c.SceneMapIndex[i]&0xFF)*64 - c.SceneBaseTileZ
@@ -8617,7 +8617,7 @@ func (c *Client) BuildScene() {
 			var3.ClearLandscape(var8, var9, 64, 64)
 		}
 	}
-	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) client.java:3352
+	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) Client.java:3352
 	var16 := 0
 	for i := range var5 {
 		var14 := c.SceneMapLocData[i]
@@ -8629,10 +8629,10 @@ func (c *Client) BuildScene() {
 			var3.LoadLocations(var4, c.Scene, c.LevelCollisionMap, var12, var11)
 		}
 	}
-	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) client.java:3365
+	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) Client.java:3365
 	var3.Build(c.Scene, c.LevelCollisionMap)
 	c.AreaViewport.Bind()
-	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) client.java:3371
+	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) Client.java:3371
 	// Java: rev-244 buildScene has no LocList bridge-level post-pass — animated
 	// locs are stored directly as scene-node ModelSources (self-animating
 	// ClientLocAnim) at the level World.build placed them; the rev-225 list pass
@@ -8642,7 +8642,7 @@ func (c *Client) BuildScene() {
 			c.SortObjStacks(i, j)
 		}
 	}
-	c.ClearLocChanges() // Java: this.clearLocChanges() (client.java:3379)
+	c.ClearLocChanges() // Java: this.clearLocChanges() (Client.java:3379)
 	loctype.ModelCacheStatic.Clear()
 	pix3d.InitPool(20)
 }
@@ -9014,7 +9014,7 @@ func (c *Client) RemoveIgnore(arg1 int64) {
 			for j := i; j < c.IgnoreCount; j++ {
 				c.IgnoreName37[j] = c.IgnoreName37[j+1]
 			}
-			c.Out.P1Isaac(io.CLIENTPROT_IGNORELIST_DEL) // Java: pIsaac(207) client.java:12267
+			c.Out.P1Isaac(io.CLIENTPROT_IGNORELIST_DEL) // Java: pIsaac(207) Client.java:12267
 			c.Out.P8(arg1)
 			return
 		}
@@ -9199,7 +9199,7 @@ func (c *Client) UpdatePlayers() {
 		return
 	}
 	CycleLogic6 = 0
-	c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC6) // Java: pIsaac(215) client.java:4869
+	c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC6) // Java: pIsaac(215) Client.java:4869
 	c.Out.P1(0)
 	var3 = c.Out.Pos
 	c.Out.P1(162)
@@ -9474,7 +9474,7 @@ func (c *Client) Read() (ok bool) {
 	c.LastPacketType1 = c.LastPacketType0
 	c.LastPacketType0 = c.PacketType
 
-	// Java: opcode 95 — general chat / trade-req / duel-req (client.java:7895-7934)
+	// Java: opcode 95 — general chat / trade-req / duel-req (Client.java:7895-7934)
 	// strings.Index returns a byte offset; Java's indexOf returns a UTF-16
 	// code-unit offset. Player names are ASCII-bound by the protocol, so for
 	// valid inputs the substring split below is identical to Java's
@@ -9513,7 +9513,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 30 — private message inbound (client.java:8366-8410)
+	// Java: opcode 30 — private message inbound (Client.java:8366-8410)
 	if c.PacketType == io.SERVERPROT_MESSAGE_PRIVATE {
 		var39 := c.In.G8()
 		var5 := c.In.G4()
@@ -9563,13 +9563,13 @@ func (c *Client) Read() (ok bool) {
 
 	// Java: post-zone opcode dispatch (client.java:9697-10370). Unhandled
 	// opcodes fall through to the catch-all at client.java:10371-10372.
-	// Java: opcode 244 — NPC info (client.java:8274-8279)
+	// Java: opcode 244 — NPC info (Client.java:8274-8279)
 	if c.PacketType == io.SERVERPROT_NPC_INFO {
 		c.GetNpcPos(c.In, c.PacketSize)
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 233 — player info: base coords + appended zone packets (client.java:8328-8339)
+	// Java: opcode 233 — player info: base coords + appended zone packets (Client.java:8328-8339)
 	if c.PacketType == io.SERVERPROT_UPDATE_ZONE_PARTIAL_ENCLOSED {
 		c.BaseX = c.In.G1()
 		c.BaseZ = c.In.G1()
@@ -9580,9 +9580,9 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 86 — player info + scene build (client.java:8002-8008)
+	// Java: opcode 86 — player info + scene build (Client.java:8002-8008)
 	if c.PacketType == io.SERVERPROT_PLAYER_INFO {
-		// Java: PLAYER_INFO (client.java:8003-8005) — getPlayerPos then clear the
+		// Java: PLAYER_INFO (Client.java:8003-8005) — getPlayerPos then clear the
 		// awaiting-sync flag. The scene build trigger, low-mem rebuild, and minimap
 		// re-create that the 225 handler inlined here now live in updateSceneState/
 		// checkScene (WS2 Inc 5).
@@ -9598,7 +9598,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 236 — varp set (byte) (client.java:8423-8442)
+	// Java: opcode 236 — varp set (byte) (Client.java:8423-8442)
 	if c.PacketType == io.SERVERPROT_VARP_SMALL {
 		var26 := c.In.G2()
 		var52 := c.In.G1B()
@@ -9614,7 +9614,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 70 — friend list add/update + bubble-sort (client.java:7384-7440)
+	// Java: opcode 70 — friend list add/update + bubble-sort (Client.java:7384-7440)
 	if c.PacketType == io.SERVERPROT_UPDATE_FRIENDLIST {
 		var39 := c.In.G8()
 		var5 := c.In.G1()
@@ -9665,14 +9665,14 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 85 — system update timer (client.java:7652-7657)
+	// Java: opcode 85 — system update timer (Client.java:7652-7657)
 	if c.PacketType == io.SERVERPROT_UPDATE_REBOOT_TIMER {
 		c.SystemUpdateTimer = c.In.G2() * 30
 		c.PacketType = -1
 		return true
 	}
 	// Java: opcode 165 — REBUILD_NORMAL: region-grid map-fetch + delta-shift
-	// entities (client.java:7704-7858). Replaces the 225 opcodes 80 (cache save)
+	// entities (Client.java:7704-7857). Replaces the 225 opcodes 80 (cache save)
 	// and 237 (CRC cache-load / OnDemand-reply rebuild), which no longer exist
 	// in 244. The 244 map-fetch uses the OnDemand region grid (request archive 3)
 	// instead of the in-band CRC dance; updateOnDemand fills sceneMapLandData/
@@ -9764,7 +9764,7 @@ func (c *Client) Read() (ok bool) {
 				var48.Z -= var9 * 128
 			}
 		}
-		c.AwaitingSync = true // Java: this.awaitingSync = true (client.java:7805)
+		c.AwaitingSync = true // Java: this.awaitingSync = true (Client.java:7805)
 		// Java: byte var49/var45/var14 and var15/var16/var17 — step direction and bounds
 		// for the four-layer object-stack shift. Stored as bytes in Java for compactness;
 		// values are used as int loop control so we widen to int up front in Go.
@@ -9797,7 +9797,7 @@ func (c *Client) Read() (ok bool) {
 				}
 			}
 		}
-		// Java: this.locChanges shift loop (client.java:7840-7846).
+		// Java: this.locChanges shift loop (Client.java:7840-7846).
 		for var53 := c.LocChanges.Head(); var53 != nil; var53 = c.LocChanges.Next() {
 			v := var53.Value
 			v.X -= var8
@@ -9814,7 +9814,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 108 — set component model to local player head (client.java:7992-7999)
+	// Java: opcode 108 — set component model to local player head (Client.java:7992-7999)
 	if c.PacketType == io.SERVERPROT_IF_SETPLAYERHEAD {
 		var26 := c.In.G2()
 		component.Instances[var26].ModelType = 3
@@ -9822,7 +9822,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 49 — hint arrow / minimap marker (client.java:8188-8221)
+	// Java: opcode 49 — hint arrow / minimap marker (Client.java:8188-8221)
 	if c.PacketType == io.SERVERPROT_HINT_ARROW {
 		c.HintType = c.In.G1()
 		if c.HintType == 1 {
@@ -9896,13 +9896,13 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 17 — server-initiated logout (client.java:7443-7448)
+	// Java: opcode 17 — server-initiated logout (Client.java:7443-7448)
 	if c.PacketType == io.SERVERPROT_LOGOUT {
 		c.Logout()
 		c.PacketType = -1
 		return false
 	}
-	// Java: opcode 62 — clear move-flag tile (client.java:8166-8171)
+	// Java: opcode 62 — clear move-flag tile (Client.java:8166-8171)
 	if c.PacketType == io.SERVERPROT_UNSET_MAP_FLAG {
 		c.FlagSceneTileX = 0
 		c.PacketType = -1
@@ -9915,7 +9915,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 207 — open viewport+sidebar interface (client.java:7352-7374)
+	// Java: opcode 207 — open viewport+sidebar interface (Client.java:7352-7374)
 	if c.PacketType == io.SERVERPROT_IF_OPENMAIN_SIDE {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
@@ -9935,7 +9935,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 226 — varp set (g4) (client.java:7613-7632)
+	// Java: opcode 226 — varp set (g4) (Client.java:7613-7632)
 	if c.PacketType == io.SERVERPROT_VARP_LARGE {
 		var26 := c.In.G2()
 		var4 := c.In.G4()
@@ -9951,7 +9951,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 219 — component anim (client.java:7885-7892)
+	// Java: opcode 219 — component anim (Client.java:7885-7892)
 	if c.PacketType == io.SERVERPROT_IF_SETANIM {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
@@ -9959,7 +9959,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 200 — tab interface assign (client.java:8080-8094)
+	// Java: opcode 200 — tab interface assign (Client.java:8080-8094)
 	if c.PacketType == io.SERVERPROT_IF_SETTAB {
 		var26 := c.In.G2()
 		var4 := c.In.G1()
@@ -9972,11 +9972,11 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 60 — InputTracking.stop → outbound EVENT_TRACKING (client.java:7959-7971)
+	// Java: opcode 60 — InputTracking.stop → outbound EVENT_TRACKING (Client.java:7959-7971)
 	if c.PacketType == io.SERVERPROT_FINISH_TRACKING {
 		var51 := inputtracking.Stop()
 		if var51 != nil {
-			c.Out.P1Isaac(io.CLIENTPROT_EVENT_TRACKING) // Java: pIsaac(217) client.java:7964
+			c.Out.P1Isaac(io.CLIENTPROT_EVENT_TRACKING) // Java: pIsaac(217) Client.java:7964
 			c.Out.P2(var51.Pos)
 			c.Out.PData(var51.Data, var51.Pos, 0)
 			var51.Release()
@@ -9984,7 +9984,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 72 — inventory slot full update (client.java:7307-7332)
+	// Java: opcode 72 — inventory slot full update (Client.java:7307-7332)
 	if c.PacketType == io.SERVERPROT_UPDATE_INV_FULL {
 		c.RedrawSidebar = true
 		var26 := c.In.G2()
@@ -10005,13 +10005,13 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 22 — InputTracking.setEnabled (client.java:7468-7473)
+	// Java: opcode 22 — InputTracking.setEnabled (Client.java:7468-7473)
 	if c.PacketType == io.SERVERPROT_ENABLE_TRACKING {
 		inputtracking.SetEnabled()
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 152 — open chatback input prompt (client.java:7511-7519)
+	// Java: opcode 152 — open chatback input prompt (Client.java:7511-7519)
 	if c.PacketType == io.SERVERPROT_P_COUNTDIALOG {
 		c.ShowSocialInput = false
 		c.ChatbackInputOpen = true
@@ -10020,7 +10020,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 162 — clear inventory component (client.java:8174-8185)
+	// Java: opcode 162 — clear inventory component (Client.java:8174-8185)
 	if c.PacketType == io.SERVERPROT_UPDATE_INV_STOP_TRANSMIT {
 		var26 := c.In.G2()
 		var27 := component.Instances[var26]
@@ -10031,7 +10031,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 44 — last-login info (client.java:7275-7304)
+	// Java: opcode 44 — last-login info (Client.java:7275-7304)
 	if c.PacketType == io.SERVERPROT_LAST_LOGIN_INFO {
 		c.LastAddress = c.In.G4()
 		c.DaysSinceLastLogin = c.In.G2()
@@ -10056,7 +10056,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 168 — flashing tab (client.java:8037-8052)
+	// Java: opcode 168 — flashing tab (Client.java:8037-8052)
 	if c.PacketType == io.SERVERPROT_TUT_FLASH {
 		c.FlashingTab = c.In.G1()
 		if c.FlashingTab == c.SelectedTab {
@@ -10070,13 +10070,13 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 97 — multizone flag (client.java:7644-7649)
+	// Java: opcode 97 — multizone flag (Client.java:7644-7649)
 	if c.PacketType == io.SERVERPROT_SET_MULTIWAY {
 		c.InMultizone = c.In.G1()
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 151 — queue wave sound (client.java:7672-7686)
+	// Java: opcode 151 — queue wave sound (Client.java:7672-7686)
 	if c.PacketType == io.SERVERPROT_SYNTH_SOUND {
 		var26 := c.In.G2()
 		var4 := c.In.G1()
@@ -10090,7 +10090,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 129 — component model = npc head (client.java:8108-8117)
+	// Java: opcode 129 — component model = npc head (Client.java:8108-8117)
 	if c.PacketType == io.SERVERPROT_IF_SETNPCHEAD {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
@@ -10099,14 +10099,14 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 94 — scene base coords (client.java:7488-7494)
+	// Java: opcode 94 — scene base coords (Client.java:7488-7494)
 	if c.PacketType == io.SERVERPROT_UPDATE_ZONE_PARTIAL_FOLLOWS {
 		c.BaseX = c.In.G1()
 		c.BaseZ = c.In.G1()
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 9 — privacy chat settings (client.java:7579-7589)
+	// Java: opcode 9 — privacy chat settings (Client.java:7579-7589)
 	if c.PacketType == io.SERVERPROT_CHAT_FILTER_SETTINGS {
 		c.PublicChatSetting = c.In.G1()
 		c.PrivateChatSetting = c.In.G1()
@@ -10116,7 +10116,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 176 — open sidebar interface only (client.java:8011-8034)
+	// Java: opcode 176 — open sidebar interface only (Client.java:8011-8034)
 	if c.PacketType == io.SERVERPROT_IF_OPENSIDE {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
@@ -10136,7 +10136,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 189 — open chat interface only (client.java:8253-8271)
+	// Java: opcode 189 — open chat interface only (Client.java:8253-8271)
 	if c.PacketType == io.SERVERPROT_IF_OPENCHAT {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
@@ -10152,7 +10152,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 241 — component x/y position (client.java:7599-7610)
+	// Java: opcode 241 — component x/y position (Client.java:7599-7610)
 	if c.PacketType == io.SERVERPROT_IF_SETPOSITION {
 		var26 := c.In.G2()
 		var4 := c.In.G2B()
@@ -10163,7 +10163,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 12 — cutscene camera init (client.java:8308-8325)
+	// Java: opcode 12 — cutscene camera init (Client.java:8308-8325)
 	if c.PacketType == io.SERVERPROT_CAM_MOVETO {
 		c.Cutscene = true
 		c.CutsceneSrcLocalTileX = c.In.G1()
@@ -10180,7 +10180,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: UPDATE_ZONE_FULL_FOLLOWS (ptype 131) — clear obj-stacks then mark every
-	// LocChange in the 8x8 region for immediate revert via endTime=0 (client.java:8341-8362).
+	// LocChange in the 8x8 region for immediate revert via endTime=0 (Client.java:8342-8363).
 	if c.PacketType == io.SERVERPROT_UPDATE_ZONE_FULL_FOLLOWS {
 		c.BaseX = c.In.G1()
 		c.BaseZ = c.In.G1()
@@ -10201,7 +10201,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 87 — flush varCache→varps (client.java:7689-7701)
+	// Java: opcode 87 — flush varCache→varps (Client.java:7689-7701)
 	if c.PacketType == io.SERVERPROT_RESET_CLIENT_VARCACHE {
 		for var26 := range len(c.Varps) {
 			if c.Varps[var26] != c.VarCache[var26] {
@@ -10213,7 +10213,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 245 — component model = new Model(id) (client.java:7660-7669)
+	// Java: opcode 245 — component model = new Model(id) (Client.java:7660-7669)
 	if c.PacketType == io.SERVERPROT_IF_SETMODEL {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
@@ -10222,7 +10222,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 174 — sticky chat interface (client.java:8055-8062)
+	// Java: opcode 174 — sticky chat interface (Client.java:8055-8062)
 	if c.PacketType == io.SERVERPROT_TUT_OPEN {
 		var26 := c.In.G2B()
 		c.StickyChatInterfaceID = var26
@@ -10230,7 +10230,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 177 — energy update (client.java:8154-8163)
+	// Java: opcode 177 — energy update (Client.java:8154-8163)
 	if c.PacketType == io.SERVERPROT_UPDATE_RUNENERGY {
 		if c.SelectedTab == 12 {
 			c.RedrawSidebar = true
@@ -10239,7 +10239,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 222 — cutscene camera-target init (client.java:8120-8151)
+	// Java: opcode 222 — cutscene camera-target init (Client.java:8120-8151)
 	if c.PacketType == io.SERVERPROT_CAM_LOOKAT {
 		c.Cutscene = true
 		c.CutsceneDstLocalTileX = c.In.G1()
@@ -10267,7 +10267,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 56 — selected sidebar tab (client.java:8097-8105)
+	// Java: opcode 56 — selected sidebar tab (Client.java:8097-8105)
 	if c.PacketType == io.SERVERPROT_IF_SETTAB_ACTIVE {
 		c.SelectedTab = c.In.G1()
 		c.RedrawSidebar = true
@@ -10275,7 +10275,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 164 — component obj-icon model (client.java:7335-7349)
+	// Java: opcode 164 — component obj-icon model (Client.java:7335-7349)
 	if c.PacketType == io.SERVERPROT_IF_SETOBJECT {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
@@ -10289,7 +10289,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 10 — open viewport interface only (client.java:8224-8250)
+	// Java: opcode 10 — open viewport interface only (Client.java:8224-8250)
 	if c.PacketType == io.SERVERPROT_IF_OPENMAIN {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
@@ -10311,7 +10311,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 78 — component RGB15→RGB24 colour (client.java:7497-7508)
+	// Java: opcode 78 — component RGB15→RGB24 colour (Client.java:7497-7508)
 	if c.PacketType == io.SERVERPROT_IF_SETCOLOUR {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
@@ -10322,7 +10322,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 242 — clear all primarySeqIds (client.java:7974-7989)
+	// Java: opcode 242 — clear all primarySeqIds (Client.java:7974-7989)
 	if c.PacketType == io.SERVERPROT_RESET_ANIMS {
 		for var26 := range len(c.Players) {
 			if c.Players[var26] != nil {
@@ -10337,7 +10337,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 123 — component hide flag (client.java:8413-8420)
+	// Java: opcode 123 — component hide flag (Client.java:8413-8420)
 	if c.PacketType == io.SERVERPROT_IF_SETHIDE {
 		var26 := c.In.G2()
 		var29 := c.In.G1() == 1
@@ -10345,7 +10345,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 7 — ignore list bulk update (client.java:8445-8453)
+	// Java: opcode 7 — ignore list bulk update (Client.java:8445-8453)
 	if c.PacketType == io.SERVERPROT_UPDATE_IGNORELIST {
 		c.IgnoreCount = c.PacketSize / 8
 		for var26 := range c.IgnoreCount {
@@ -10354,7 +10354,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 53 — cutscene end / clear camera modifiers (client.java:7522-7531)
+	// Java: opcode 53 — cutscene end / clear camera modifiers (Client.java:7522-7531)
 	if c.PacketType == io.SERVERPROT_CAM_RESET {
 		c.Cutscene = false
 		for var26 := range 5 {
@@ -10363,7 +10363,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 214 — close all interfaces (client.java:7860-7882)
+	// Java: opcode 214 — close all interfaces (Client.java:7860-7882)
 	if c.PacketType == io.SERVERPROT_IF_CLOSE {
 		if c.SidebarInterfaceID != -1 {
 			c.SidebarInterfaceID = -1
@@ -10383,7 +10383,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 154 — component text (client.java:8065-8077)
+	// Java: opcode 154 — component text (Client.java:8065-8077)
 	if c.PacketType == io.SERVERPROT_IF_SETTEXT {
 		var26 := c.In.G2()
 		var28 := c.In.GJStr()
@@ -10394,7 +10394,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 24 — skill XP/level update (client.java:7937-7956)
+	// Java: opcode 24 — skill XP/level update (Client.java:7937-7956)
 	if c.PacketType == io.SERVERPROT_UPDATE_STAT {
 		c.RedrawSidebar = true
 		var26 := c.In.G1()
@@ -10411,7 +10411,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 160 — weight carried (client.java:7476-7485)
+	// Java: opcode 160 — weight carried (Client.java:7476-7485)
 	if c.PacketType == io.SERVERPROT_UPDATE_RUNWEIGHT {
 		if c.SelectedTab == 12 {
 			c.RedrawSidebar = true
@@ -10420,7 +10420,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 50 — camera shake/wobble modifier (client.java:7451-7465)
+	// Java: opcode 50 — camera shake/wobble modifier (Client.java:7451-7465)
 	if c.PacketType == io.SERVERPROT_CAM_SHAKE {
 		var26 := c.In.G1()
 		var4 := c.In.G1()
@@ -10434,7 +10434,7 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 132 — inventory slot partial update (client.java:8282-8305)
+	// Java: opcode 132 — inventory slot partial update (Client.java:8282-8305)
 	if c.PacketType == io.SERVERPROT_UPDATE_INV_PARTIAL {
 		c.RedrawSidebar = true
 		var26 := c.In.G2()
