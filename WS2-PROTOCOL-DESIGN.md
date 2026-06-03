@@ -1179,7 +1179,10 @@ scene builds → terrain + locs + npc/obj/player models render. Record the outco
 - **DEFERRED features (flagged, not in WS2):** chat crowns `@cr1@`/`@cr2@` (needs
   `imageModIcons` sprite loading); IF_OPENOVERLAY render (cosmetic; field+branch
   added in Inc 2 but overlay not drawn); opcode-103 confirm-then-remove (removed in
-  Inc 2 — confirm the 244 server never sends it).
+  Inc 2 — CONFIRMED 2026-06-03: opcode 103 = `IF_SETRECOL` in Engine-TS
+  `244-GOSCAPE` @9aadcec4, declared in `ServerGameProt.ts:17` but referenced
+  nowhere else — no message class, no codec, no script command; the server
+  cannot emit it).
 
 ## Risk / verification
 - **No runtime gate in sandbox.** Every increment build/vet/test/gofmt/lint-green +
@@ -1192,8 +1195,9 @@ scene builds → terrain + locs + npc/obj/player models render. Record the outco
   `awaitingSync` sequencing; the LocChange `AddLoc` arg-order mismatch + `start+1`/
   `end+1`; `ChangeLocAvailable` shape normalization; B1 nil-handling ripple; B2
   import-cycle (thread `localPlayer`, don't import).
-- **Deferred (noted, not in WS2):** chat crowns + `imageModIcons`; opcode-103
-  confirm-then-remove; IF_OPENOVERLAY render; WS5 audio; UI polish; WS3 cleanups.
+- **Deferred (noted, not in WS2):** chat crowns + `imageModIcons`; ~~opcode-103
+  confirm-then-remove~~ (confirmed 2026-06-03, see above); IF_OPENOVERLAY render;
+  WS5 audio; UI polish; WS3 cleanups.
 
 ## Self-review notes
 - **Spec coverage:** opcode renumber ✔(Inc1/2/3), login+staffmodlevel ✔(Inc4),
