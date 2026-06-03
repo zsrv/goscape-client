@@ -261,7 +261,7 @@ type Client struct {
 	ProjectX                      int
 	ProjectY                      int
 	StickyChatInterfaceID         int
-	Rights                        bool
+	StaffModLevel                 int // Java: staffmodlevel
 	CameraModifierCycle           []int
 	ImageMapscene                 []*pix8.Pix8
 	CHAT_COLORS                   []int
@@ -2004,7 +2004,7 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 			}
 			if (var6 == 1 || var6 == 2) && (var6 == 1 || c.PublicChatSetting == 0 || c.PublicChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
 				if arg0 > var7-14 && arg0 <= var7 && c.MessageSender[i] != c.LocalPlayer.Name {
-					if c.Rights {
+					if c.StaffModLevel >= 1 {
 						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + c.MessageSender[i]
 						c.MenuAction[c.MenuSize] = 34
 						c.MenuSize++
@@ -2020,7 +2020,7 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 			}
 			if (var6 == 3 || var6 == 7) && c.SplitPrivateChat == 0 && (var6 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
 				if arg0 > var7-14 && arg0 <= var7 {
-					if c.Rights {
+					if c.StaffModLevel >= 1 {
 						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + c.MessageSender[i]
 						c.MenuAction[c.MenuSize] = 34
 						c.MenuSize++
@@ -5192,7 +5192,7 @@ func (c *Client) HandlePrivateChatInput(arg2 int) {
 			if (var6 == 3 || var6 == 7) && (var6 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(c.MessageSender[i])) {
 				var7 := 329 - var4*13
 				if c.MouseX > 8 && c.MouseX < 520 && arg2-11 > var7-10 && arg2-11 <= var7+3 {
-					if c.Rights {
+					if c.StaffModLevel >= 1 {
 						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + c.MessageSender[i]
 						c.MenuAction[c.MenuSize] = 2034
 						c.MenuSize++
@@ -5322,7 +5322,7 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 		}
 	} else {
 		if var3 == 613 {
-			if !c.Rights {
+			if c.StaffModLevel < 1 {
 				arg1.Text = ""
 			} else if c.ReportAbuseMuteOption {
 				arg1.Colour = 0xFF0000
@@ -6640,50 +6640,23 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		return
 	}
 	c.Stream = clientstream.NewClientStream(conn)
-	if err := c.Stream.ReadFully(c.In.Data, 0, 8); err != nil {
-		c.LoginMessage0 = ""
-		c.LoginMessage1 = "Error connecting to server."
-		return
-	}
-	c.In.Pos = 0
-	c.ServerSeed = c.In.G8()
-	var4 := [4]int{int(rand.Float64() * 9.9999999e7), int(rand.Float64() * 9.9999999e7), int(c.ServerSeed >> 32), int(c.ServerSeed)}
+	// Java: Client.login (Client.java:2602-2619). Prefix + 8 dummy reads + reply gate.
+	username37 := jstring.ToBase37(arg0) // Java: username37 (Client.java:2602)
+	loginServer := int(username37 >> 16 & 0x1F)
 	c.Out.Pos = 0
-	c.Out.P1(10)
-	c.Out.P4(var4[0])
-	c.Out.P4(var4[1])
-	c.Out.P4(var4[2])
-	c.Out.P4(var4[3])
-	c.Out.P4(signlink.UID)
-	c.Out.PJStr(arg0)
-	c.Out.PJStr(arg1)
-	c.Out.RSAEnc(RSA_MODULUS, RSA_EXPONENT)
-	c.Login.Pos = 0
-	if arg2 {
-		c.Login.P1(18)
-	} else {
-		c.Login.P1(16)
-	}
-	c.Login.P1(c.Out.Pos + 36 + 1 + 1)
-	c.Login.P1(225)
-	if LowMemory {
-		c.Login.P1(1)
-	} else {
-		c.Login.P1(0)
-	}
-	for i := range 9 {
-		c.Login.P4(c.JagChecksum[i])
-	}
-	c.Login.PData(c.Out.Data, c.Out.Pos, 0)
-	c.Out.Random = io.NewIsaac(var4)
-	for i := range 4 {
-		var4[i] += 50
-	}
-	c.RandomIn = io.NewIsaac(var4)
-	if err := c.Stream.Write(c.Login.Data, c.Login.Pos, 0); err != nil {
+	c.Out.P1(14)
+	c.Out.P1(loginServer)
+	if err := c.Stream.Write(c.Out.Data, c.Out.Pos, 0); err != nil {
 		c.LoginMessage0 = ""
 		c.LoginMessage1 = "Error connecting to server."
 		return
+	}
+	for range 8 {
+		if _, err := c.Stream.Read(); err != nil {
+			c.LoginMessage0 = ""
+			c.LoginMessage1 = "Error connecting to server."
+			return
+		}
 	}
 	var7, err := c.Stream.Read()
 	if err != nil {
@@ -6691,16 +6664,70 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.LoginMessage1 = "Error connecting to server."
 		return
 	}
+	if var7 == 0 {
+		if err := c.Stream.ReadFully(c.In.Data, 0, 8); err != nil {
+			c.LoginMessage0 = ""
+			c.LoginMessage1 = "Error connecting to server."
+			return
+		}
+		c.In.Pos = 0
+		c.ServerSeed = c.In.G8()
+		var4 := [4]int{int(rand.Float64() * 9.9999999e7), int(rand.Float64() * 9.9999999e7), int(c.ServerSeed >> 32), int(c.ServerSeed)}
+		c.Out.Pos = 0
+		c.Out.P1(10)
+		c.Out.P4(var4[0])
+		c.Out.P4(var4[1])
+		c.Out.P4(var4[2])
+		c.Out.P4(var4[3])
+		c.Out.P4(signlink.UID)
+		c.Out.PJStr(arg0)
+		c.Out.PJStr(arg1)
+		c.Out.RSAEnc(RSA_MODULUS, RSA_EXPONENT)
+		c.Login.Pos = 0
+		if arg2 {
+			c.Login.P1(18)
+		} else {
+			c.Login.P1(16)
+		}
+		c.Login.P1(c.Out.Pos + 36 + 1 + 1)
+		c.Login.P1(244)
+		if LowMemory {
+			c.Login.P1(1)
+		} else {
+			c.Login.P1(0)
+		}
+		for i := range 9 {
+			c.Login.P4(c.JagChecksum[i])
+		}
+		c.Login.PData(c.Out.Data, c.Out.Pos, 0)
+		c.Out.Random = io.NewIsaac(var4)
+		for i := range 4 {
+			var4[i] += 50
+		}
+		c.RandomIn = io.NewIsaac(var4)
+		if err := c.Stream.Write(c.Login.Data, c.Login.Pos, 0); err != nil {
+			c.LoginMessage0 = ""
+			c.LoginMessage1 = "Error connecting to server."
+			return
+		}
+		var7, err = c.Stream.Read()
+		if err != nil {
+			c.LoginMessage0 = ""
+			c.LoginMessage1 = "Error connecting to server."
+			return
+		}
+	}
 	if var7 == 1 {
 		time.Sleep(2000 * time.Millisecond)
 		c.LoginFunc(arg0, arg1, arg2)
 		return
 	}
-	if var7 == 2 || var7 == 18 {
+	if var7 == 2 || var7 == 18 || var7 == 19 {
+		c.StaffModLevel = 0
 		if var7 == 18 {
-			c.Rights = true
-		} else {
-			c.Rights = false
+			c.StaffModLevel = 1
+		} else if var7 == 19 {
+			c.StaffModLevel = 2
 		}
 		inputtracking.SetDisabled()
 		c.InGame = true
@@ -6874,6 +6901,13 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.LoginMessage1 = "To play on this world move to a free area first"
 		return
 	}
+	if var7 == 20 {
+		c.LoginMessage0 = "Invalid loginserver requested"
+		c.LoginMessage1 = "Please try using a different world."
+		return
+	}
+	c.LoginMessage0 = "Unexpected server response"
+	c.LoginMessage1 = "Please try using a different world."
 }
 
 func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
