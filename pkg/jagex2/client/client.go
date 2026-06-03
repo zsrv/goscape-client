@@ -171,7 +171,6 @@ type Client struct {
 	MapLastBaseX                  int
 	MapLastBaseZ                  int
 	SocialInput                   string
-	MergedLocations               *datastruct.LinkList[*entity.LocMergeEntity]
 	IgnoreName37                  []int64
 	WeightCarried                 int
 	SceneMapLandData              [][]byte
@@ -222,7 +221,7 @@ type Client struct {
 	MessageIDs                    []int
 	MenuVisible                   bool
 	ReportAbuseMuteOption         bool
-	SpawnedLocations              *datastruct.LinkList[*entity.LocChange]
+	LocChanges                    *datastruct.LinkList[*entity.LocChange] // Java: locChanges (merge of rev-225 SpawnedLocations + MergedLocations)
 	MessageType                   []int
 	MessageSender                 []string
 	MessageText                   []string
@@ -549,7 +548,6 @@ func NewClient() *Client {
 		// END GameShell
 
 		CameraModifierEnabled:      make([]bool, 5),
-		MergedLocations:            datastruct.NewLinkList[*entity.LocMergeEntity](),
 		IgnoreName37:               make([]int64, 100),
 		MessageIds:                 make([]int, 100),
 		Out:                        io.Alloc(1),
@@ -589,7 +587,7 @@ func NewClient() *Client {
 		WaveDelay:                 make([]int, 50),
 		TabInterfaceID:            []int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 		MessageIDs:                make([]int, 100),
-		SpawnedLocations:          datastruct.NewLinkList[*entity.LocChange](),
+		LocChanges:                datastruct.NewLinkList[*entity.LocChange](),
 		MessageType:               make([]int, 100),
 		MessageSender:             make([]string, 100),
 		MessageText:               make([]string, 100),
@@ -1118,51 +1116,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 			var11 = arg1.G2()
 		}
 		if var5 >= 0 && var6 >= 0 && var5 < 104 && var6 < 104 {
-			var var12 *entity.LocChange
-			for var13 := c.SpawnedLocations.Head(); var13 != nil; var13 = c.SpawnedLocations.Next() {
-				v := var13.Value
-				if v.Plane == c.CurrentLevel && v.X == var5 && v.Z == var6 && v.Layer == var10 {
-					var12 = v
-					break
-				}
-			}
-			if var12 == nil {
-				var14 = 0
-				var15 = -1
-				var16 = 0
-				var17 := 0
-				if var10 == 0 {
-					var14 = c.Scene.GetWallBitSet(c.CurrentLevel, var5, var6)
-				}
-				if var10 == 1 {
-					var14 = c.Scene.GetWallDecorationBitSet(c.CurrentLevel, var6, var5)
-				}
-				if var10 == 2 {
-					var14 = c.Scene.GetLocBitSet(c.CurrentLevel, var5, var6)
-				}
-				if var10 == 3 {
-					var14 = c.Scene.GetGroundDecorationBitSet(c.CurrentLevel, var5, var6)
-				}
-				if var14 != 0 {
-					var18 := c.Scene.GetInfo(c.CurrentLevel, var5, var6, var14)
-					var15 = (var14 >> 14) & 0x7FFF
-					var16 = var18 & 0x1F
-					var17 = var18 >> 6
-				}
-				var12 = entity.NewLocChange()
-				var12.Plane = c.CurrentLevel
-				var12.Layer = var10
-				var12.X = var5
-				var12.Z = var6
-				var12.LastLocIndex = var15
-				var12.LastShape = var16
-				var12.LastAngle = var17
-				c.SpawnedLocations.AddTail(datastruct.NewLinkable(var12))
-			}
-			var12.LocIndex = var11
-			var12.Shape = var8
-			var12.Angle = var9
-			c.AddLoc(var9, var5, var6, var10, var11, var8, c.CurrentLevel)
+			c.AppendLoc(var5, var8, -1, var11, var9, var10, var6, c.CurrentLevel, 0)
 		}
 	} else if arg2 == io.SERVERPROT_LOC_ANIM {
 		// LOC_ANIM. Java: rev-244 readZonePacket LOC_ANIM — instead of the
@@ -1330,42 +1284,43 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 						var19 = c.Players[var14]
 					}
 					if var19 != nil {
-						var20 := entity.NewLocMergeEntity(c.CurrentLevel, var9, var6, var36+clientextras.LoopCycle, var8, -1, var5, var10)
-						c.MergedLocations.AddTail(datastruct.NewLinkable(var20))
-						var21 := entity.NewLocMergeEntity(c.CurrentLevel, var9, var6, var37+clientextras.LoopCycle, var8, var11, var5, var10)
-						c.MergedLocations.AddTail(datastruct.NewLinkable(var21))
+						var26 := loctype.Get(var11)
 						var22 := c.LevelHeightMap[c.CurrentLevel][var5][var6]
 						var23 := c.LevelHeightMap[c.CurrentLevel][var5+1][var6]
 						var24 := c.LevelHeightMap[c.CurrentLevel][var5+1][var6+1]
 						var25 := c.LevelHeightMap[c.CurrentLevel][var5][var6+1]
-						var26 := loctype.Get(var11)
-						var19.LocStartCycle = var36 + clientextras.LoopCycle
-						var19.LocStopCycle = var37 + clientextras.LoopCycle
-						var19.LocModel = var26.GetModel(var8, var9, var22, var23, var24, var25, -1)
-						var27 := var26.Width
-						var28 := var26.Length
-						if var9 == 1 || var9 == 3 {
-							var27 = var26.Length
-							var28 = var26.Width
+						var20 := var26.GetModel(var8, var9, var22, var23, var24, var25, -1)
+						if var20 != nil {
+							c.AppendLoc(var5, 0, var37+1, -1, 0, var10, var6, c.CurrentLevel, var36+1)
+
+							var19.LocStartCycle = clientextras.LoopCycle + var36
+							var19.LocStopCycle = clientextras.LoopCycle + var37
+							var19.LocModel = var20
+							var27 := var26.Width
+							var28 := var26.Length
+							if var9 == 1 || var9 == 3 {
+								var27 = var26.Length
+								var28 = var26.Width
+							}
+							var19.LocOffsetX = var5*128 + var27*64
+							var19.LocOffsetZ = var6*128 + var28*64
+							var19.LocOffsetY = c.GetHeightMapY(c.CurrentLevel, var19.LocOffsetX, var19.LocOffsetZ)
+							var29 := int8(0)
+							if var39 > var41 {
+								var29 = var39
+								var39 = var41
+								var41 = var29
+							}
+							if var40 > var42 {
+								var29 = var40
+								var40 = var42
+								var42 = var29
+							}
+							var19.MinTileX = var5 + int(var39)
+							var19.MaxTileX = var5 + int(var41)
+							var19.MinTileZ = var6 + int(var40)
+							var19.MaxTileZ = var6 + int(var42)
 						}
-						var19.LocOffsetX = var5*128 + var27*64
-						var19.LocOffsetZ = var6*128 + var28*64
-						var19.LocOffsetY = c.GetHeightMapY(c.CurrentLevel, var19.LocOffsetX, var19.LocOffsetZ)
-						var29 := int8(0)
-						if var39 > var41 {
-							var29 = var39
-							var39 = var41
-							var41 = var29
-						}
-						if var40 > var42 {
-							var29 = var40
-							var40 = var42
-							var42 = var29
-						}
-						var19.MinTileX = var5 + int(var39)
-						var19.MaxTileX = var5 + int(var41)
-						var19.MinTileZ = var6 + int(var40)
-						var19.MaxTileZ = var6 + int(var42)
 					}
 				}
 				if arg2 == io.SERVERPROT_OBJ_COUNT {
@@ -2868,21 +2823,67 @@ func (c *Client) DrawMinimap() {
 //
 // Java source: deob/client.java:3343-3350.
 
-func (c *Client) UpdateMergeLocs() {
+// UpdateLocChanges advances every pending LocChange one cycle: counting down
+// endTime/startTime, applying the new loc when its startTime elapses, and
+// reverting to the old loc (then unlinking) when endTime hits 0.
+//
+// Java: Client.updateLocChanges (client.java:3539-3577). Replaces the rev-225
+// UpdateMergeLocs.
+func (c *Client) UpdateLocChanges() {
 	if c.SceneState != 2 {
 		return
 	}
-	for var2 := c.MergedLocations.Head(); var2 != nil; var2 = c.MergedLocations.Next() {
-		v := var2.Value
-		if clientextras.LoopCycle >= v.LastCycle {
-			c.AddLoc(v.Angle, v.X, v.Z, v.Layer, v.LocIndex, v.Shape, v.Plane)
-			var2.Unlink()
+	for loc := c.LocChanges.Head(); loc != nil; loc = c.LocChanges.Next() {
+		v := loc.Value
+		if v.EndTime > 0 {
+			v.EndTime--
+		}
+
+		if v.EndTime != 0 {
+			if v.StartTime > 0 {
+				v.StartTime--
+			}
+
+			if v.StartTime == 0 && (v.NewType < 0 || world.ChangeLocAvailable(v.NewType, v.NewShape)) {
+				c.AddLoc(v.NewAngle, v.X, v.Z, v.Layer, v.NewType, v.NewShape, v.Level)
+				v.StartTime = -1
+
+				if v.NewType == v.OldType && v.OldType == -1 {
+					loc.Unlink()
+				} else if v.NewType == v.OldType && v.NewAngle == v.OldAngle && v.NewShape == v.OldShape {
+					loc.Unlink()
+				}
+			}
+		} else if v.OldType < 0 || world.ChangeLocAvailable(v.OldType, v.OldShape) {
+			c.AddLoc(v.OldAngle, v.X, v.Z, v.Layer, v.OldType, v.OldShape, v.Level)
+			loc.Unlink()
 		}
 	}
+
 	CycleLogic5++
 	if CycleLogic5 > 85 {
 		CycleLogic5 = 0
 		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC5) // Java: pIsaac(232) client.java:3575
+	}
+}
+
+// ClearLocChanges re-arms each permanent (endTime == -1) LocChange against the
+// freshly-loaded scene by resetting its startTime and recapturing the old loc,
+// while dropping every timed change. Called after a scene rebuild.
+//
+// Java: Client.clearLocChanges (client.java:3431-3442).
+func (c *Client) ClearLocChanges() {
+	loc := c.LocChanges.Head()
+	for loc != nil {
+		v := loc.Value
+		if v.EndTime == -1 {
+			v.StartTime = 0
+			c.StoreLoc(v)
+		} else {
+			loc.Unlink()
+		}
+
+		loc = c.LocChanges.Next()
 	}
 }
 
@@ -6776,7 +6777,6 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.LocalPlayer = c.Players[c.LOCAL_PLAYER_INDEX]
 		c.Projectiles.Clear()
 		c.Spotanims.Clear()
-		c.MergedLocations.Clear()
 		for i := range 4 {
 			for j := range 104 {
 				for k := range 104 {
@@ -6784,7 +6784,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 				}
 			}
 		}
-		c.SpawnedLocations = datastruct.NewLinkList[*entity.LocChange]()
+		c.LocChanges = datastruct.NewLinkList[*entity.LocChange]() // Java: this.locChanges = new LinkList() (client.java:2742)
 		c.FriendCount = 0
 		c.StickyChatInterfaceID = -1
 		c.ChatInterfaceID = -1
@@ -6976,6 +6976,70 @@ func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
 	world.AddLoc(arg1, c.LevelCollisionMap[arg7], arg2, arg0, c.LevelHeightMap, arg7, arg4, arg5, c.Scene, var13)
 }
 
+// AppendLoc finds-or-creates the LocChange at (level,x,z,layer) and records the
+// pending new loc plus its timing window. A fresh change captures the loc it
+// replaces via StoreLoc before being pushed.
+//
+// Java: Client.appendLoc (client.java:8760-8784).
+func (c *Client) AppendLoc(x, shape, endTime, typ, angle, layer, z, currentLevel, startTime int) {
+	var loc *entity.LocChange
+	for next := c.LocChanges.Head(); next != nil; next = c.LocChanges.Next() {
+		v := next.Value
+		if v.Level == currentLevel && v.X == x && v.Z == z && v.Layer == layer {
+			loc = v
+			break
+		}
+	}
+
+	if loc == nil {
+		loc = entity.NewLocChange()
+		loc.Level = currentLevel
+		loc.Layer = layer
+		loc.X = x
+		loc.Z = z
+		c.StoreLoc(loc)
+		c.LocChanges.AddTail(datastruct.NewLinkable(loc))
+	}
+
+	loc.NewType = typ
+	loc.NewShape = shape
+	loc.NewAngle = angle
+	loc.StartTime = startTime
+	loc.EndTime = endTime
+}
+
+// StoreLoc captures the loc currently in the scene at the change's tile into the
+// LocChange's Old* fields, so the change can be reverted later.
+//
+// Java: Client.storeLoc (client.java:8788-8814).
+func (c *Client) StoreLoc(loc *entity.LocChange) {
+	typecode := 0
+	otherId := -1
+	otherShape := 0
+	otherAngle := 0
+
+	if loc.Layer == 0 {
+		typecode = c.Scene.GetWallBitSet(loc.Level, loc.X, loc.Z)
+	} else if loc.Layer == 1 {
+		typecode = c.Scene.GetWallDecorationBitSet(loc.Level, loc.Z, loc.X)
+	} else if loc.Layer == 2 {
+		typecode = c.Scene.GetLocBitSet(loc.Level, loc.X, loc.Z)
+	} else if loc.Layer == 3 {
+		typecode = c.Scene.GetGroundDecorationBitSet(loc.Level, loc.X, loc.Z)
+	}
+
+	if typecode != 0 {
+		var7 := c.Scene.GetInfo(loc.Level, loc.X, loc.Z, typecode)
+		otherId = (typecode >> 14) & 0x7FFF
+		otherShape = var7 & 0x1F
+		otherAngle = var7 >> 6
+	}
+
+	loc.OldType = otherId
+	loc.OldShape = otherShape
+	loc.OldAngle = otherAngle
+}
+
 func (c *Client) AddFriend(arg0 int64) {
 	if arg0 == 0 {
 		return
@@ -7087,8 +7151,7 @@ func (c *Client) Unload() {
 	c.NPCs = nil
 	c.NPCIDs = nil
 	c.LevelObjStacks = nil
-	c.SpawnedLocations = nil
-	c.MergedLocations = nil
+	c.LocChanges = nil
 	c.Projectiles = nil
 	c.Spotanims = nil
 	c.MenuParamB = nil
@@ -7299,7 +7362,7 @@ func (c *Client) UpdateGame() {
 	c.UpdatePlayers()
 	c.UpdateNpcs()
 	c.UpdateEntityChats()
-	c.UpdateMergeLocs()
+	c.UpdateLocChanges()
 	// Java: 225 camera-key packet (opcode 189: arrow-key cameraMovedWrite send),
 	// no 244 equivalent — the entire if(actionKey[1..4]) cameraMovedWrite/pIsaac(189)
 	// block and the cameraMovedWrite field are absent in Java 244 (client.java:2960
@@ -8516,7 +8579,6 @@ func (c *Client) BuildScene() {
 	// at the tail) is preserved unconditionally below. Any panic in Go
 	// propagates naturally.
 	c.MinimapLevel = -1
-	c.MergedLocations.Clear()
 	c.Spotanims.Clear()
 	c.Projectiles.Clear()
 	pix3d.ClearTexels()
@@ -8579,10 +8641,7 @@ func (c *Client) BuildScene() {
 			c.SortObjStacks(i, j)
 		}
 	}
-	for var17 := c.SpawnedLocations.Head(); var17 != nil; var17 = c.SpawnedLocations.Next() {
-		v := var17.Value
-		c.AddLoc(v.Angle, v.X, v.Z, v.Layer, v.LocIndex, v.Shape, v.Plane)
-	}
+	c.ClearLocChanges() // Java: this.clearLocChanges() (client.java:3379)
 	loctype.ModelCacheStatic.Clear()
 	pix3d.InitPool(20)
 }
@@ -9737,10 +9796,8 @@ func (c *Client) Read() (ok bool) {
 				}
 			}
 		}
-		// WS2 Inc 6: switch to c.LocChanges. Java iterates this.locChanges
-		// (client.java:7841); until the LocChange list lands we keep this on the
-		// current SpawnedLocations list the 225 handler used.
-		for var53 := c.SpawnedLocations.Head(); var53 != nil; var53 = c.SpawnedLocations.Next() {
+		// Java: this.locChanges shift loop (client.java:7840-7846).
+		for var53 := c.LocChanges.Head(); var53 != nil; var53 = c.LocChanges.Next() {
 			v := var53.Value
 			v.X -= var8
 			v.Z -= var9
@@ -10120,7 +10177,8 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 135 — clear obj-stacks + reapply spawned locs in 8x8 region (client.java:9993-10011)
+	// Java: UPDATE_ZONE_FULL_FOLLOWS (ptype 131) — clear obj-stacks then mark every
+	// LocChange in the 8x8 region for immediate revert via endTime=0 (client.java:8341-8362).
 	if c.PacketType == io.SERVERPROT_UPDATE_ZONE_FULL_FOLLOWS {
 		c.BaseX = c.In.G1()
 		c.BaseZ = c.In.G1()
@@ -10132,11 +10190,10 @@ func (c *Client) Read() (ok bool) {
 				}
 			}
 		}
-		for var36 := c.SpawnedLocations.Head(); var36 != nil; var36 = c.SpawnedLocations.Next() {
+		for var36 := c.LocChanges.Head(); var36 != nil; var36 = c.LocChanges.Next() {
 			v := var36.Value
-			if v.X >= c.BaseX && v.X < c.BaseX+8 && v.Z >= c.BaseZ && v.Z < c.BaseZ+8 && v.Plane == c.CurrentLevel {
-				c.AddLoc(v.LastAngle, v.X, v.Z, v.Layer, v.LastLocIndex, v.LastShape, v.Plane)
-				var36.Unlink()
+			if v.X >= c.BaseX && v.X < c.BaseX+8 && v.Z >= c.BaseZ && v.Z < c.BaseZ+8 && c.CurrentLevel == v.Level {
+				v.EndTime = 0
 			}
 		}
 		c.PacketType = -1

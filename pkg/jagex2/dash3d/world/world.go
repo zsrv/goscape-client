@@ -995,6 +995,21 @@ func (w *World) HSL24To16(arg0, arg1, arg2 int) int {
 	return ((arg0 / 4) << 10) + ((arg1 / 32) << 7) + arg2/2
 }
 
+// ChangeLocAvailable reports whether the LocType id has the model required to
+// render at the given shape, normalizing shape variants first.
+//
+// Java: World.changeLocAvailable (World.java:1096-1105).
+func ChangeLocAvailable(id, shape int) bool {
+	loc := loctype.Get(id)
+	if shape == 11 {
+		shape = 10
+	}
+	if shape >= 5 && shape <= 8 {
+		shape = 4
+	}
+	return loc.CheckModel(shape)
+}
+
 func AddLoc(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [][][]int, arg7 int, arg8 int, shape int, scene *world3d.World3D, level int) {
 	heightSW := heightMap[level][x][z]
 	heightSE := heightMap[level][x+1][z]
