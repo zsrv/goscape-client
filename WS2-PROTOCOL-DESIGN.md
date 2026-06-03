@@ -1,13 +1,16 @@
 # WS2 — Wire protocol / login / REBUILD + LocChange merge + lazy model (rev-244) Implementation Plan
 
-> **STATUS: IMPLEMENTED — pending host smoke test (2026-06-03).** All 8
-> increments are committed to branch `rev-244`, each two-stage reviewed (spec +
-> code-quality) against Java `01f16088`; full build/vet/test/gofmt/lint green at
-> HEAD; final cross-increment integration review cleared it for the smoke test.
-> Commits: Inc1 `5d6239e`, Inc2 `bf2fb8c`, Inc3 `2f219e1`, Inc4 `eaf887c`,
-> Inc5 `8a8c7b5`, Inc6 `a850b34`, Inc7 `9534775`, Inc8 `93eadd5`. The **host
-> smoke test is the remaining runtime gate** (host-only; can't run in sandbox) —
-> see the Milestone section + `.claude/resume/`. Follows WS1
+> **STATUS: IMPLEMENTED + AUDIT FIX PASS DONE — pending host smoke re-run
+> (2026-06-03).** All 8 increments are committed to branch `rev-244`, each
+> two-stage reviewed (spec + code-quality) against Java `01f16088`; full
+> build/vet/test/gofmt/lint green at HEAD. The full parity audit
+> (`PARITY-AUDIT-2026-06-03.md`) was then fixed in a 15-commit pass
+> (`7b2d63e`..`965d3ec`): all 11 blockers, all 62 bugs, the actionable
+> latents, and the 765x503 layout migration. NOTE: the audit refuted this
+> doc's "opcode 192 = obfuscated dead-write" call — it is the live field1264
+> viewport-flash trigger and is now ported (`SERVERPROT_VIEWPORT_FLASH`).
+> The **host smoke test is the remaining runtime gate** (host-only; can't
+> run in sandbox) — see `.claude/resume/`. Follows WS1
 > (`WS1-MODEL-LOADER-DESIGN.md`, DONE) and WS3 (`WS3-MODELSOURCE-DESIGN.md`, DONE).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development
@@ -88,7 +91,7 @@ deferred model (B2).
 - **Opcode 103 (recolor component model) has NO 244 equivalent** → removed in Inc 2
   (also erases one B2 ripple site). Confirm the 244 server never sends it.
 - **New 244 opcodes** with no 225 Go branch: `MIDI_JINGLE=173`, `IF_OPENOVERLAY=158`
-  → add branches in Inc 2. `opcode 192` (obfuscated dead-write) → not ported.
+  → add branches in Inc 2. `opcode 192` → PORTED in the 2026-06-03 audit fix pass (`SERVERPROT_VIEWPORT_FLASH`; the earlier "obfuscated dead-write" call was wrong — it arms the field1264 viewport flash).
 
 ---
 

@@ -6395,6 +6395,12 @@ func (c *Client) Draw3DEntityElements() {
 	if c.CrossMode == 2 {
 		c.ImageCrosses[c.CrossCycle/100+4].PlotSprite(c.CrossY-8-4, c.CrossX-8-4)
 	}
+	// Java: Client.java:6555-6558 (new in 244) — the viewport overlay
+	// interface (IF_OPENOVERLAY) renders before the main viewport interface.
+	if c.ViewportOverlayInterfaceID != -1 {
+		c.UpdateInterfaceAnimation(c.ViewportOverlayInterfaceID, c.SceneDelta)
+		c.DrawInterface(0, 0, component.Instances[c.ViewportOverlayInterfaceID], 0)
+	}
 	// Java: Client.java:6560-6565 (new in 244) — yellow sine-modulated
 	// translucent flash band near the viewport bottom while field1264 > 0
 	// (alpha fades as the counter decays).
