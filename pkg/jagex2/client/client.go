@@ -367,7 +367,6 @@ type Client struct {
 	HintType                      int
 	OrbitCameraX                  int
 	OrbitCameraZ                  int
-	CameraMovedWrite              int
 	ActiveMapFunctionCount        int
 	ObjDragCycles                 int
 	NPCCount                      int
@@ -527,6 +526,9 @@ type Client struct {
 	SceneMapLocData            [][]byte
 	SceneMapLandFile           []int      // Java: sceneMapLandFile[]; allocated/filled by WS2 opcode 165 (REBUILD_NORMAL, Client.java:7744) — nil until then
 	SceneMapLocFile            []int      // Java: sceneMapLocFile[];  allocated/filled by WS2 opcode 165 (Client.java:7745) — nil until then
+	AwaitingSync               bool       // Java: awaitingSync
+	WithinTutorialIsland       bool       // Java: withinTutorialIsland
+	SceneLoadStartTime         int64      // Java: sceneLoadStartTime
 	LevelTileFlags             [][][]int8 // Java: byte[][][] (signed) — int8 so int() sign-extends
 	LevelHeightMap             [][][]int
 	NextMidiSong               int // Java: nextMidiSong (Client.java)
@@ -7227,6 +7229,12 @@ func (c *Client) UpdateGame() {
 	if !c.InGame {
 		return
 	}
+	// Java: client.updateGame (client.java:2943) — updateSceneState() runs first
+	// inside the in-game block, before updateLocChanges/updateAudio. Guarded so it
+	// only fires once the OnDemand loader and a pending scene map exist.
+	if c.OnDemand != nil && c.SceneMapLandData != nil {
+		c.UpdateSceneState()
+	}
 	for i := 0; i < c.WaveCount; i++ {
 		if c.WaveDelay[i] <= 0 {
 			var4 := false
@@ -7292,21 +7300,10 @@ func (c *Client) UpdateGame() {
 	c.UpdateNpcs()
 	c.UpdateEntityChats()
 	c.UpdateMergeLocs()
-	if c.ActionKey[1] == 1 || c.ActionKey[2] == 1 || c.ActionKey[3] == 1 || c.ActionKey[4] == 1 {
-		// Java: cameraMovedWrite++ > 5 — post-increment returns the pre-
-		// increment value to the comparator, then bumps the counter; the
-		// increment only happens when an arrow key is held.
-		origCMW := c.CameraMovedWrite
-		c.CameraMovedWrite++
-		if origCMW > 5 {
-			c.CameraMovedWrite = 0
-			c.Out.P1Isaac(189)
-			c.Out.P2(c.OrbitCameraPitch)
-			c.Out.P2(c.OrbitCameraYaw)
-			c.Out.P1(c.MinimapAnticheatAngle)
-			c.Out.P1(c.MinimapZoom)
-		}
-	}
+	// Java: 225 camera-key packet (opcode 189: arrow-key cameraMovedWrite send),
+	// no 244 equivalent — the entire if(actionKey[1..4]) cameraMovedWrite/pIsaac(189)
+	// block and the cameraMovedWrite field are absent in Java 244 (client.java:2960
+	// goes straight from updateEntityChats() to sceneDelta++) — removed.
 	c.SceneDelta++
 	if c.CrossMode != 0 {
 		c.CrossCycle += 20
@@ -8442,6 +8439,76 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 	c.Scene.AddObjStack(entity.ModelSourceOf(var14.GetInterfaceModel(var5.Count)), entity.ModelSourceOf(var11), c.GetHeightMapY(c.CurrentLevel, arg0*128+64, arg1*128+64), c.CurrentLevel, var13, arg1, arg0, entity.ModelSourceOf(var12))
 }
 
+// UpdateSceneState drives the scene load/rebuild state machine each game cycle.
+// Java: client.updateSceneState (client.java:3234-3256). Called from updateGame
+// once per cycle while in-game. Three blocks: (a) low-mem level-switch rebuild,
+// (b) sceneState==1 → checkScene + 6-minute load-timeout error report, (c)
+// minimap re-create when the current level changes.
+func (c *Client) UpdateSceneState() {
+	if LowMemory && c.SceneState == 2 && world.LevelBuilt != c.CurrentLevel {
+		c.AreaViewport.Bind()
+		c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
+		c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
+		c.presentLoadingMessage()
+		c.SceneState = 1
+		c.SceneLoadStartTime = time.Now().UnixMilli()
+	}
+	if c.SceneState == 1 {
+		status := c.CheckScene()
+		if status != 0 && time.Now().UnixMilli()-c.SceneLoadStartTime > 360000 {
+			// Java: SignLink.reporterror(this.username + " glcfb " + ...
+			// + this.fileStreams[0] + ...) (client.java:3247). Go has no
+			// fileStreams[] field; the closest analogue is the OnDemand cache
+			// presence (Java's fileStreams[0] is the OnDemand cache file stream),
+			// so we report c.OnDemand.HasCache() in its place. This path only
+			// fires after 6 minutes of failed scene loading and is diagnostic.
+			signlink.ReportErrorFunc(fmt.Sprintf("%s glcfb %d,%d,%t,%t,%d,%d,%d,%d", c.Username, c.ServerSeed, status, LowMemory, c.OnDemand.HasCache(), c.OnDemand.Remaining(), c.CurrentLevel, c.SceneCenterZoneX, c.SceneCenterZoneZ))
+			c.SceneLoadStartTime = time.Now().UnixMilli()
+		}
+	}
+	if c.SceneState == 2 && c.CurrentLevel != c.MinimapLevel {
+		c.MinimapLevel = c.CurrentLevel
+		c.CreateMinimap(c.CurrentLevel)
+	}
+}
+
+// CheckScene tests whether all requested map land/loc files have arrived (and
+// loc-data prefetch is complete) and, if so, builds the scene. Returns 0 on a
+// successful build, or a negative status code identifying what is still
+// pending. Java: client.checkScene (client.java:3258-3291).
+func (c *Client) CheckScene() int {
+	for i := range len(c.SceneMapLandData) {
+		if c.SceneMapLandData[i] == nil && c.SceneMapLandFile[i] != -1 {
+			return -1
+		}
+		if c.SceneMapLocData[i] == nil && c.SceneMapLocFile[i] != -1 {
+			return -2
+		}
+	}
+	ready := true
+	for i := range len(c.SceneMapLandData) {
+		data := c.SceneMapLocData[i]
+		if data != nil {
+			x := (c.SceneMapIndex[i]>>8)*64 - c.SceneBaseTileX
+			z := (c.SceneMapIndex[i]&0xFF)*64 - c.SceneBaseTileZ
+			// Java: ready &= World.checkLocations(x, z, data) — bitwise &= is
+			// unconditional; checkLocations has model.Request side effects, so we
+			// must NOT short-circuit. Evaluate first, then AND into ready.
+			ok := world.CheckLocations(x, z, data)
+			ready = ready && ok
+		}
+	}
+	if !ready {
+		return -3
+	} else if c.AwaitingSync {
+		return -4
+	}
+	c.SceneState = 2
+	world.LevelBuilt = c.CurrentLevel
+	c.BuildScene()
+	return 0
+}
+
 func (c *Client) BuildScene() {
 	// Java: try { ... } catch (Exception) {} — empty swallow around the entire
 	// build-scene body (BZip2 decode + scene/landscape assembly). The Java
@@ -9455,24 +9522,12 @@ func (c *Client) Read() (ok bool) {
 	}
 	// Java: opcode 184 — player info + scene build (client.java:10349-10369)
 	if c.PacketType == io.SERVERPROT_PLAYER_INFO {
+		// Java: PLAYER_INFO (client.java:8003-8005) — getPlayerPos then clear the
+		// awaiting-sync flag. The scene build trigger, low-mem rebuild, and minimap
+		// re-create that the 225 handler inlined here now live in updateSceneState/
+		// checkScene (WS2 Inc 5).
 		c.GetPlayer(c.In, c.PacketSize)
-		if c.SceneState == 1 {
-			c.SceneState = 2
-			world.LevelBuilt = c.CurrentLevel
-			c.BuildScene()
-		}
-		if LowMemory && c.SceneState == 2 && world.LevelBuilt != c.CurrentLevel {
-			c.AreaViewport.Bind()
-			c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
-			c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
-			c.presentLoadingMessage()
-			world.LevelBuilt = c.CurrentLevel
-			c.BuildScene()
-		}
-		if c.CurrentLevel != c.MinimapLevel && c.SceneState == 2 {
-			c.MinimapLevel = c.CurrentLevel
-			c.CreateMinimap(c.CurrentLevel)
-		}
+		c.AwaitingSync = false
 		c.PacketType = -1
 		return true
 	}
@@ -9556,98 +9611,73 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 80 — scene map land cache save (client.java:9438-9452)
-	if c.PacketType == 80 {
-		var26 := c.In.G1()
-		var4 := c.In.G1()
-		var5 := -1
-		for var6 := range len(c.SceneMapIndex) {
-			if c.SceneMapIndex[var6] == (var26<<8)+var4 {
-				var5 = var6
-			}
-		}
-		if var5 != -1 {
-			signlink.CacheSave(fmt.Sprintf("m%d_%d", var26, var4), c.SceneMapLandData[var5])
-			c.SceneState = 1
-		}
-		c.PacketType = -1
-		return true
-	}
-	// Java: opcode 237 — scene rebuild request + delta-shift entities (client.java:9460-9607)
-	if c.PacketType == 237 {
-		var26 := c.In.G2()
-		var4 := c.In.G2()
-		if c.SceneCenterZoneX == var26 && c.SceneCenterZoneZ == var4 && c.SceneState != 0 {
+	// Java: opcode 165 — REBUILD_NORMAL: region-grid map-fetch + delta-shift
+	// entities (client.java:7704-7858). Replaces the 225 opcodes 80 (cache save)
+	// and 237 (CRC cache-load / OnDemand-reply rebuild), which no longer exist
+	// in 244. The 244 map-fetch uses the OnDemand region grid (request archive 3)
+	// instead of the in-band CRC dance; updateOnDemand fills sceneMapLandData/
+	// sceneMapLocData asynchronously and checkScene/updateSceneState drive the
+	// build. The entity delta-shift below is lifted verbatim from the 225 opcode
+	// 237 handler and verified line-by-line against Java 7772-7854 (with the
+	// 244-only awaitingSync=true at Java 7805 added).
+	if c.PacketType == io.SERVERPROT_REBUILD_NORMAL {
+		zoneX := c.In.G2()
+		zoneZ := c.In.G2()
+		if c.SceneCenterZoneX == zoneX && c.SceneCenterZoneZ == zoneZ && c.SceneState == 2 {
 			c.PacketType = -1
 			return true
 		}
-		c.SceneCenterZoneX = var26
-		c.SceneCenterZoneZ = var4
+		c.SceneCenterZoneX = zoneX
+		c.SceneCenterZoneZ = zoneZ
 		c.SceneBaseTileX = (c.SceneCenterZoneX - 6) * 8
 		c.SceneBaseTileZ = (c.SceneCenterZoneZ - 6) * 8
+		c.WithinTutorialIsland = false
+		if (c.SceneCenterZoneX/8 == 48 || c.SceneCenterZoneX/8 == 49) && c.SceneCenterZoneZ/8 == 48 {
+			c.WithinTutorialIsland = true
+		} else if c.SceneCenterZoneX/8 == 48 && c.SceneCenterZoneZ/8 == 148 {
+			c.WithinTutorialIsland = true
+		}
 		c.SceneState = 1
+		c.SceneLoadStartTime = time.Now().UnixMilli()
 		c.AreaViewport.Bind()
 		c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
 		c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
 		c.presentLoadingMessage()
-		signlink.LoopRate = 5
-		var5 := (c.PacketSize - 2) / 10
-		c.SceneMapLandData = make([][]byte, var5)
-		c.SceneMapLocData = make([][]byte, var5)
-		c.SceneMapIndex = make([]int, var5)
-		c.Out.P1Isaac(150)
-		c.Out.P1(0)
-		var6 := 0
-		for var7 := range var5 {
-			var8 := c.In.G1()
-			var9 := c.In.G1()
-			var10 := c.In.G4()
-			var11 := c.In.G4()
-			c.SceneMapIndex[var7] = (var8 << 8) + var9
-			var var12 []byte
-			if var10 != 0 {
-				var12 = signlink.CacheLoad(fmt.Sprintf("m%d_%d", var8, var9))
-				if var12 != nil {
-					if int(crc32.ChecksumIEEE(var12)) != var10 {
-						var12 = nil
-					}
-				}
-				if var12 == nil {
-					c.SceneState = 0
-					c.Out.P1(0)
-					c.Out.P1(var8)
-					c.Out.P1(var9)
-					var6 += 3
-				} else {
-					c.SceneMapLandData[var7] = var12
-				}
+		regions := 0
+		for x := (c.SceneCenterZoneX - 6) / 8; x <= (c.SceneCenterZoneX+6)/8; x++ {
+			for z := (c.SceneCenterZoneZ - 6) / 8; z <= (c.SceneCenterZoneZ+6)/8; z++ {
+				regions++
 			}
-			if var11 != 0 {
-				var12 = signlink.CacheLoad(fmt.Sprintf("l%d_%d", var8, var9))
-				if var12 != nil {
-					if int(crc32.ChecksumIEEE(var12)) != var11 {
-						var12 = nil
-					}
-				}
-				if var12 == nil {
-					c.SceneState = 0
-					c.Out.P1(1)
-					c.Out.P1(var8)
-					c.Out.P1(var9)
-					var6 += 3
+		}
+		c.SceneMapLandData = make([][]byte, regions)
+		c.SceneMapLocData = make([][]byte, regions)
+		c.SceneMapIndex = make([]int, regions)
+		c.SceneMapLandFile = make([]int, regions)
+		c.SceneMapLocFile = make([]int, regions)
+		mapCount := 0
+		for x := (c.SceneCenterZoneX - 6) / 8; x <= (c.SceneCenterZoneX+6)/8; x++ {
+			for z := (c.SceneCenterZoneZ - 6) / 8; z <= (c.SceneCenterZoneZ+6)/8; z++ {
+				c.SceneMapIndex[mapCount] = (x << 8) + z
+				if c.WithinTutorialIsland && (z == 49 || z == 149 || z == 147 || x == 50 || x == 49 && z == 47) {
+					c.SceneMapLandFile[mapCount] = -1
+					c.SceneMapLocFile[mapCount] = -1
+					mapCount++
 				} else {
-					c.SceneMapLocData[var7] = var12
+					landFile := c.OnDemand.GetMapFile(z, x, 0)
+					c.SceneMapLandFile[mapCount] = landFile
+					if landFile != -1 {
+						c.OnDemand.Request(3, landFile)
+					}
+					locFile := c.OnDemand.GetMapFile(z, x, 1)
+					c.SceneMapLocFile[mapCount] = locFile
+					if locFile != -1 {
+						c.OnDemand.Request(3, locFile)
+					}
+					mapCount++
 				}
 			}
 		}
-		c.Out.PSize1(var6)
-		signlink.LoopRate = 50
-		c.AreaViewport.Bind()
-		if c.SceneState == 0 {
-			c.FontPlain12.CentreString(166, 0, "Map area updated since last visit, so load will take longer this time only", 257)
-			c.FontPlain12.CentreString(165, 0xFFFFFF, "Map area updated since last visit, so load will take longer this time only", 256)
-		}
-		c.presentLoadingMessage()
+		// Entity delta-shift (Java 7772-7854), lifted from the 225 opcode 237 handler.
 		var8 := c.SceneBaseTileX - c.MapLastBaseX
 		var9 := c.SceneBaseTileZ - c.MapLastBaseZ
 		c.MapLastBaseX = c.SceneBaseTileX
@@ -9674,6 +9704,7 @@ func (c *Client) Read() (ok bool) {
 				var48.Z -= var9 * 128
 			}
 		}
+		c.AwaitingSync = true // Java: this.awaitingSync = true (client.java:7805)
 		// Java: byte var49/var45/var14 and var15/var16/var17 — step direction and bounds
 		// for the four-layer object-stack shift. Stored as bytes in Java for compactness;
 		// values are used as int loop control so we widen to int up front in Go.
@@ -9706,6 +9737,9 @@ func (c *Client) Read() (ok bool) {
 				}
 			}
 		}
+		// WS2 Inc 6: switch to c.LocChanges. Java iterates this.locChanges
+		// (client.java:7841); until the LocChange list lands we keep this on the
+		// current SpawnedLocations list the 225 handler used.
 		for var53 := c.SpawnedLocations.Head(); var53 != nil; var53 = c.SpawnedLocations.Next() {
 			v := var53.Value
 			v.X -= var8
