@@ -2068,7 +2068,11 @@ func (c *Client) PushPlayers() {
 			if var5 >= 0 && var5 < 104 && var6 >= 0 && var6 < 104 {
 				if var3.LocModel == nil || clientextras.LoopCycle < var3.LocStartCycle || clientextras.LoopCycle >= var3.LocStopCycle {
 					if (var3.X&0x7F) == 64 && (var3.Z&0x7F) == 64 {
-						if c.TileLastOccupiedCycle[var5][var6] == c.SceneCycle {
+						// Java: `&& i != -1` (Client.java:5983, new in 244) —
+						// the local player is never skipped; needed because
+						// pushNpcs(true) now runs BEFORE pushPlayers and an
+						// always-on-top NPC may have marked this tile.
+						if c.TileLastOccupiedCycle[var5][var6] == c.SceneCycle && i != -1 {
 							continue
 						}
 						c.TileLastOccupiedCycle[var5][var6] = c.SceneCycle
@@ -2283,7 +2287,9 @@ func (c *Client) HandleInputKey() {
 						c.RedrawChatback = true
 					}
 				} else if c.ChatInterfaceID == -1 {
-					if var2 >= 32 && var2 <= 122 && len(c.ChatTyped) < 80 {
+					// Java: Client.java:4690 — inside a ::command, chars up to 126
+					// ({ | } ~) are also accepted.
+					if var2 >= 32 && (var2 <= 122 || strings.HasPrefix(c.ChatTyped, "::") && var2 <= 126) && len(c.ChatTyped) < 80 {
 						c.ChatTyped = c.ChatTyped + string(rune(var2))
 						c.RedrawChatback = true
 					}
@@ -2463,6 +2469,12 @@ func (c *Client) UpdateTitle() {
 		var9 := var4 + 20
 		if c.MouseClickButton == 1 && c.MouseClickX >= var3-75 && c.MouseClickX <= var3+75 && c.MouseClickY >= var9-20 && c.MouseClickY <= var9+20 {
 			c.LoginFunc(c.Username, c.Password, false)
+			// Java: `if (this.ingame) return;` (Client.java:2542-2545) — on a
+			// successful login bail before the title-screen key loop drains
+			// queued keys into username/password.
+			if c.InGame {
+				return
+			}
 		}
 		var3 = c.ScreenWidth/2 + 80
 		if c.MouseClickButton == 1 && c.MouseClickX >= var3-75 && c.MouseClickX <= var3+75 && c.MouseClickY >= var9-20 && c.MouseClickY <= var9+20 {
@@ -7059,6 +7071,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.ChatInterfaceID = -1
 		c.ViewportInterfaceID = -1
 		c.SidebarInterfaceID = -1
+		c.ViewportOverlayInterfaceID = -1 // Java: Client.java:2748
 		c.PressedContinueOption = false
 		c.SelectedTab = 3
 		c.ChatbackInputOpen = false
@@ -7160,6 +7173,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.SystemUpdateTimer = 0
 		c.MenuSize = 0
 		c.MenuVisible = false
+		c.SceneLoadStartTime = time.Now().UnixMilli() // Java: Client.java:2807
 		return
 	}
 	if var7 == 16 {
@@ -9193,7 +9207,9 @@ func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) (resu
 			var6++
 			var9 = var4[var6]
 			var6++
-			if var12&(0x1<<var9) == 0 {
+			// Java: int << implicitly masks the shift count to 5 bits
+			// (JLS 15.19); Go does not, so mask explicitly.
+			if var12&(0x1<<(var9&0x1F)) == 0 {
 				var5 += 0
 			} else {
 				var5 += 1
@@ -10332,7 +10348,9 @@ func (c *Client) Read() (ok bool) {
 	// Java: opcode 226 — varp set (g4) (Client.java:7613-7632)
 	if c.PacketType == io.SERVERPROT_VARP_LARGE {
 		var26 := c.In.G2()
-		var4 := c.In.G4()
+		// Java: g4 returns a signed 32-bit int; wrap so high-bit varps store
+		// negative like Java (Go's G4 yields the unsigned bit pattern).
+		var4 := int(int32(c.In.G4()))
 		c.VarCache[var26] = var4
 		if c.Varps[var26] != var4 {
 			c.Varps[var26] = var4

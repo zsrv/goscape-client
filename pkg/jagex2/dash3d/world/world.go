@@ -712,7 +712,9 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 							if var27 == 0 {
 								arg0.SetTile(i, j, l, 0, 0, -1, var28, var29, var30, var31, MulHSL(var36, var32), MulHSL(var36, var33), MulHSL(var36, var34), MulHSL(var36, var35), 0, 0, 0, 0, var38, 0)
 							} else {
-								var39 = int(w.LevelTileOverlayShape[i][j][l] + 1)
+								// Java: byte + 1 promotes to 32-bit int BEFORE the add
+								// (World.java:806); widen first so int8(127)+1 cannot wrap.
+								var39 = int(w.LevelTileOverlayShape[i][j][l]) + 1
 								var56 := int(w.LevelTileOverlayRotation[i][j][l])
 								var41 := flotype.Instances[var27-1]
 								var42 := var41.Texture

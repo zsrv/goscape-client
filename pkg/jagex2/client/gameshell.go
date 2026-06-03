@@ -505,6 +505,11 @@ func (c *Client) RunShell() {
 			var4 = 256
 			var5 = int(int64(c.DelTime) - (var1-c.OTim[var3])/10)
 		}
+		// Java: GameShell.java:189-191 — clamp the sleep delta to deltime
+		// (only exceedable under backward clock skew).
+		if var5 > c.DelTime {
+			var5 = c.DelTime
+		}
 		c.OTim[var3] = var1
 		var3 = (var3 + 1) % 10
 		if var5 > 1 {
