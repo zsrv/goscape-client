@@ -155,7 +155,11 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 			if var8.Type == 0 {
 				var8.Scroll = var4.G2()
 				var8.Hide = var4.G1() == 1
-				var11 = var4.G1()
+				// Java: int childCount = data.g2() (Component.java:265) —
+				// rev-244 widens the Type==0 child count to g2 from 225's
+				// g1 (225-clean Component.java:253). Reading one byte here
+				// desyncs the whole sequential stream.
+				var11 = var4.G2()
 				var8.ChildID = make([]int, var11)
 				var8.ChildX = make([]int, var11)
 				var8.ChildY = make([]int, var11)
