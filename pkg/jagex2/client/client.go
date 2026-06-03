@@ -729,10 +729,21 @@ func (c *Client) Draw2DEntityElements() {
 						c.ImageHeadIcons[7].PlotSprite(c.ProjectY-var4, c.ProjectX-12)
 					}
 				}
-			} else if c.HintType == 1 && c.HintNPC == c.NPCIDs[i-c.PlayerCount] && clientextras.LoopCycle%20 < 10 {
-				c.ProjectFromGround1(pe.Height+15, pe)
-				if c.ProjectX > -1 {
-					c.ImageHeadIcons[2].PlotSprite(c.ProjectY-28, c.ProjectX-12)
+			} else {
+				// Java: Client.java:6240-6248 (new in 244) — NPC head icon,
+				// independent of the hint marker below.
+				var16 := var3.(*entity.ClientNpc).Type
+				if var16.HeadIcon >= 0 && var16.HeadIcon < len(c.ImageHeadIcons) {
+					c.ProjectFromGround1(pe.Height+15, pe)
+					if c.ProjectX > -1 {
+						c.ImageHeadIcons[var16.HeadIcon].PlotSprite(c.ProjectY-30, c.ProjectX-12)
+					}
+				}
+				if c.HintType == 1 && c.HintNPC == c.NPCIDs[i-c.PlayerCount] && clientextras.LoopCycle%20 < 10 {
+					c.ProjectFromGround1(pe.Height+15, pe)
+					if c.ProjectX > -1 {
+						c.ImageHeadIcons[2].PlotSprite(c.ProjectY-28, c.ProjectX-12)
+					}
 				}
 			}
 			if pe.Chat != "" && (i >= c.PlayerCount || c.PublicChatSetting == 0 || c.PublicChatSetting == 3 || c.PublicChatSetting == 1 && c.IsFriend(var3.(*playerentity.ClientPlayer).Name)) {
@@ -1502,11 +1513,14 @@ func (c *Client) GetTopLevelCutscene(arg0 int) int {
 	return c.CurrentLevel
 }
 
-func (c *Client) DrawScene(arg0 int) {
+func (c *Client) DrawScene() {
 	c.SceneCycle++
+	// Java: 244 drawScene splits NPC submission into an always-on-top pass
+	// before players and a normal pass after (Client.java:5841-5844); the 225
+	// PacketSize+= deob padding and the int parameter were dropped with it.
+	c.PushNPCs(true)
 	c.PushPlayers()
-	c.PushNPCs()
-	c.PacketSize += arg0
+	c.PushNPCs(false)
 	c.PushProjectiles()
 	c.PushSpotanims()
 	var2 := 0
@@ -3413,11 +3427,14 @@ func (c *Client) SaveMidi(arg0 []byte, arg2 int, arg3 bool) {
 	audio.PlayMIDI(arg0[:arg2], arg3)
 }
 
-func (c *Client) PushNPCs() {
+// PushNPCs submits visible NPCs whose type's alwaysontop flag matches the
+// pass being drawn. Java: pushNpcs(boolean) (Client.java:6002-6028, new in
+// 244 — drawScene calls it twice, around pushPlayers).
+func (c *Client) PushNPCs(alwaysOnTop bool) {
 	for i := range c.NPCCount {
 		var3 := c.NPCs[c.NPCIDs[i]]
 		var4 := (c.NPCIDs[i] << 14) + 536870912
-		if var3 != nil && var3.IsVisible() {
+		if var3 != nil && var3.IsVisible() && var3.Type.AlwaysOnTop == alwaysOnTop {
 			var5 := var3.X >> 7
 			var6 := var3.Z >> 7
 			if var5 >= 0 && var5 < 104 && var6 >= 0 && var6 < 104 {
@@ -3773,6 +3790,17 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 						var29 = "Please wait..."
 						var16 = var14.Colour
 					}
+					// Java: Client.java:10684-10692 — when bound to the 479-wide
+					// chatback, remap yellow -> blue and green -> white so config
+					// text stays legible on the parchment.
+					if pix2d.Width2D == 479 {
+						if var16 == 0xFFFF00 {
+							var16 = 0xFF
+						}
+						if var16 == 0xC000 {
+							var16 = 0xFFFFFF
+						}
+					}
 					var32 = var26 + var15.Height
 					for len(var29) > 0 {
 						if strings.Contains(var29, "%") {
@@ -3892,10 +3920,19 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 						}
 					}
 				}
+			} else if var14.Alpha == 0 {
+				// Java: type-3 rectangles (Client.java:10651-10662) — opaque
+				// path when alpha == 0, translucent fillRectTrans/drawRectTrans
+				// otherwise (new in 244).
+				if var14.Fill {
+					pix2d.FillRect(var26, var25, var14.Colour, var14.Width, var14.Height)
+				} else {
+					pix2d.DrawRect(var25, var14.Colour, var14.Height, var26, var14.Width)
+				}
 			} else if var14.Fill {
-				pix2d.FillRect(var26, var25, var14.Colour, var14.Width, var14.Height)
+				pix2d.FillRectTrans(var26, 256-(int(var14.Alpha)&0xFF), var14.Height, var14.Width, var14.Colour, var25)
 			} else {
-				pix2d.DrawRect(var25, var14.Colour, var14.Height, var26, var14.Width)
+				pix2d.DrawRectTrans(var14.Height, var14.Colour, var25, var26, var14.Width, 256-(int(var14.Alpha)&0xFF))
 			}
 		}
 	}
@@ -4392,7 +4429,7 @@ func (c *Client) DrawGame() {
 		c.RedrawPrivacySettings = true
 	}
 	if c.SceneState == 2 {
-		c.DrawScene(0)
+		c.DrawScene()
 	}
 	if c.MenuVisible && c.MenuArea == 1 {
 		c.RedrawSidebar = true
