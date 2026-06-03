@@ -13,7 +13,8 @@ var (
 	Domains         [][]rune
 	TLDs            [][]rune
 	TLDType         []int
-	ALLOWLIST       []string = []string{"cook", "cook's", "cooks", "seeks", "sheet"}
+	// Java: WordFilter.java:29 — 244 added "woop"/"woops" (225 had 5 entries).
+	ALLOWLIST []string = []string{"cook", "cook's", "cooks", "seeks", "sheet", "woop", "woops"}
 )
 
 func Unpack(jag *io.Jagfile) {
@@ -760,12 +761,21 @@ func Filter2(badCombinations [][]int8, chars []rune, fragment []rune) {
 			if bad {
 				numeralCount := 0
 				alphaCount := 0
+				// Java: alphaIndex tracks the LAST alpha position; before the
+				// masking gate, numeralCount is reduced by the distance from it
+				// to the span end (WordFilter.java:756-771, missing in 225).
+				alphaIndex := -1
 				for i := start; i < end; i++ {
 					if IsNumber(chars[i]) {
 						numeralCount++
 					} else if IsAlpha(chars[i]) {
 						alphaCount++
+						alphaIndex = i
 					}
+				}
+
+				if alphaIndex > -1 {
+					numeralCount -= end - alphaIndex + 1
 				}
 
 				if numeralCount <= alphaCount {
@@ -851,7 +861,9 @@ func GetEmulatedSize(c, a, b rune) int {
 
 		if a == 'b' {
 			if b != '6' && b != '8' {
-				if b == '1' && c == '3' {
+				// Java 244: `if ((b != '1' || c != '3') && (b != 'i' || c != '3'))
+				// return 0; return 2;` — 225 lacked the 'i3' alternative.
+				if (b == '1' && c == '3') || (b == 'i' && c == '3') {
 					return 2
 				}
 				return 0
@@ -867,7 +879,9 @@ func GetEmulatedSize(c, a, b rune) int {
 		}
 
 		if a == 'd' {
-			if b == '[' && c == ')' {
+			// Java 244: `if ((b != '[' || c != ')') && (b != 'i' || c != ')'))
+			// return 0; return 2;` — 225 lacked the 'i)' alternative.
+			if (b == '[' && c == ')') || (b == 'i' && c == ')') {
 				return 2
 			}
 			return 0
@@ -891,7 +905,8 @@ func GetEmulatedSize(c, a, b rune) int {
 		}
 
 		if a == 'g' {
-			if b != '9' && b != '6' {
+			// Java 244 also accepts 'q' as an emulated 'g' (WordFilter.java:899-905).
+			if b != '9' && b != '6' && b != 'q' {
 				return 0
 			}
 			return 1
