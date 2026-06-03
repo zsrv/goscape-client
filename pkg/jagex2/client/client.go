@@ -1597,8 +1597,8 @@ func (c *Client) DrawScene() {
 	var9 = pix3d.Cycle
 	model.CheckHover = true
 	model.PickedCount = 0
-	model.MouseX = c.MouseX - 8
-	model.MouseZ = c.MouseY - 11
+	model.MouseX = c.MouseX - 4 // Java: Client.java:5928 (244 viewport at 4,4)
+	model.MouseZ = c.MouseY - 4 // Java: Client.java:5929
 	pix2d.Clear()
 	c.Scene.Draw(c.CameraYaw, c.CameraX, var2, c.CameraPitch, c.CameraY, c.CameraZ)
 	c.Scene.ClearTemporaryLocs()
@@ -1606,7 +1606,7 @@ func (c *Client) DrawScene() {
 	c.DrawTileHint()
 	c.UpdateTextures(var9)
 	c.Draw3DEntityElements()
-	c.AreaViewport.Draw(8, 11)
+	c.AreaViewport.Draw(4, 4)
 	c.CameraX = var3
 	c.CameraY = var4
 	c.CameraZ = var5
@@ -1925,7 +1925,7 @@ func (c *Client) HandleChatSettingsInput(arg0 int) {
 	if c.MouseClickButton != 1 {
 		return
 	}
-	if c.MouseClickX >= 8 && c.MouseClickX <= 108 && c.MouseClickY >= 490 && c.MouseClickY <= 522 {
+	if c.MouseClickX >= 6 && c.MouseClickX <= 106 && c.MouseClickY >= 467 && c.MouseClickY <= 499 {
 		c.PublicChatSetting = (c.PublicChatSetting + 1) % 4
 		c.RedrawPrivacySettings = true
 		c.RedrawChatback = true
@@ -1934,7 +1934,7 @@ func (c *Client) HandleChatSettingsInput(arg0 int) {
 		c.Out.P1(c.PrivateChatSetting)
 		c.Out.P1(c.TradeChatSetting)
 	}
-	if c.MouseClickX >= 137 && c.MouseClickX <= 237 && c.MouseClickY >= 490 && c.MouseClickY <= 522 {
+	if c.MouseClickX >= 135 && c.MouseClickX <= 235 && c.MouseClickY >= 467 && c.MouseClickY <= 499 {
 		c.PrivateChatSetting = (c.PrivateChatSetting + 1) % 3
 		c.RedrawPrivacySettings = true
 		c.RedrawChatback = true
@@ -1943,7 +1943,7 @@ func (c *Client) HandleChatSettingsInput(arg0 int) {
 		c.Out.P1(c.PrivateChatSetting)
 		c.Out.P1(c.TradeChatSetting)
 	}
-	if c.MouseClickX >= 275 && c.MouseClickX <= 375 && c.MouseClickY >= 490 && c.MouseClickY <= 522 {
+	if c.MouseClickX >= 273 && c.MouseClickX <= 373 && c.MouseClickY >= 467 && c.MouseClickY <= 499 {
 		c.TradeChatSetting = (c.TradeChatSetting + 1) % 3
 		c.RedrawPrivacySettings = true
 		c.RedrawChatback = true
@@ -1952,7 +1952,7 @@ func (c *Client) HandleChatSettingsInput(arg0 int) {
 		c.Out.P1(c.PrivateChatSetting)
 		c.Out.P1(c.TradeChatSetting)
 	}
-	if c.MouseClickX < 416 || c.MouseClickX > 516 || c.MouseClickY < 490 || c.MouseClickY > 522 {
+	if c.MouseClickX < 412 || c.MouseClickX > 512 || c.MouseClickY < 467 || c.MouseClickY > 499 {
 		return
 	}
 	c.CloseInterfaces()
@@ -3481,6 +3481,8 @@ func (c *Client) DrawTitleScreen() {
 	var6 := 0
 	if c.TitleScreenState == 0 {
 		var4 = var3/2 - 20
+		// Java: Client.java:5484-5485 (new in 244) — fileserver status line.
+		c.FontPlain11.DrawStringTaggableCenter(var2/2, 0x75a9a9, true, var3/2+80, c.OnDemand.Message())
 		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4, "Welcome to RuneScape")
 		_ = var4 + 30
 		var5 = var2/2 - 80
@@ -3537,7 +3539,7 @@ func (c *Client) DrawTitleScreen() {
 		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
 		c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Cancel")
 	}
-	c.ImageTitle4.Draw(214, 186)
+	c.ImageTitle4.Draw(202, 171)
 	// The back buffer used to retain pixels across frames (Java/AWT), so the
 	// static background tiles only needed re-uploading on a full "dirty"
 	// redraw (c.RedrawFrame). The upload-op must re-issue each frame. Hoist
@@ -3548,14 +3550,14 @@ func (c *Client) DrawTitleScreen() {
 	// flameMu: ImageTitle0/1 buffers are written by the RunFlames goroutine.
 	c.flameMu.Lock()
 	c.ImageTitle0.Draw(0, 0)
-	c.ImageTitle1.Draw(661, 0)
+	c.ImageTitle1.Draw(637, 0)
 	c.flameMu.Unlock()
 	c.ImageTitle2.Draw(128, 0)
-	c.ImageTitle3.Draw(214, 386)
+	c.ImageTitle3.Draw(202, 371)
 	c.ImageTitle5.Draw(0, 265)
-	c.ImageTitle6.Draw(574, 265)
-	c.ImageTitle7.Draw(128, 186)
-	c.ImageTitle8.Draw(574, 186)
+	c.ImageTitle6.Draw(562, 265)
+	c.ImageTitle7.Draw(128, 171)
+	c.ImageTitle8.Draw(562, 171)
 }
 
 func (c *Client) PrepareGameScreen() {
@@ -3576,8 +3578,10 @@ func (c *Client) PrepareGameScreen() {
 	//      while the render is in progress. The keepalive preserves the
 	//      original invariant and avoids that LoadTitle-mid-render path.
 	// Combined memory cost ~1.7 MB — negligible.
+	// Java: prepareGame PixMap dims (Client.java:2907-2920) — the classic
+	// 765x503 chrome (the 225 port used the 789-wide variants).
 	c.AreaChatback = pixmap.NewPixMap(479, 96)
-	c.AreaMapback = pixmap.NewPixMap(168, 160)
+	c.AreaMapback = pixmap.NewPixMap(172, 156)
 	pix2d.Clear()
 	c.ImageMapback.PlotSprite(0, 0)
 	c.AreaSidebar = pixmap.NewPixMap(190, 261)
@@ -3586,9 +3590,9 @@ func (c *Client) PrepareGameScreen() {
 	// hashPixels change-detection is pure overhead — upload unconditionally.
 	c.AreaViewport.AlwaysUpload = true
 	pix2d.Clear()
-	c.AreaBackbase1 = pixmap.NewPixMap(501, 61)
-	c.AreaBackbase2 = pixmap.NewPixMap(288, 40)
-	c.AreaBackhmid1 = pixmap.NewPixMap(269, 66)
+	c.AreaBackbase1 = pixmap.NewPixMap(496, 50)
+	c.AreaBackbase2 = pixmap.NewPixMap(269, 37)
+	c.AreaBackhmid1 = pixmap.NewPixMap(249, 45)
 	c.RedrawFrame = true
 }
 
@@ -4413,21 +4417,21 @@ func (c *Client) DrawGame() {
 		c.ImageTitle0.Draw(0, 0)
 	}
 	if c.ImageTitle1 != nil {
-		c.ImageTitle1.Draw(661, 0)
+		c.ImageTitle1.Draw(637, 0)
 	}
 	c.flameMu.Unlock()
-	c.AreaBackleft1.Draw(0, 11)
-	c.AreaBackleft2.Draw(0, 375)
-	c.AreaBackright1.Draw(729, 5)
-	c.AreaBackright2.Draw(752, 231)
+	c.AreaBackleft1.Draw(0, 4)
+	c.AreaBackleft2.Draw(0, 357)
+	c.AreaBackright1.Draw(722, 4)
+	c.AreaBackright2.Draw(743, 205)
 	c.AreaBacktop1.Draw(0, 0)
-	c.AreaBackvmid1.Draw(520, 11)
-	c.AreaBackvmid2.Draw(520, 231)
-	c.AreaBackvmid3.Draw(501, 375)
-	c.AreaBackhmid2.Draw(0, 345)
+	c.AreaBackvmid1.Draw(516, 4)
+	c.AreaBackvmid2.Draw(516, 205)
+	c.AreaBackvmid3.Draw(496, 357)
+	c.AreaBackhmid2.Draw(0, 338)
 	if c.SceneState != 2 {
-		c.AreaViewport.Draw(8, 11)
-		c.AreaMapback.Draw(561, 5)
+		c.AreaViewport.Draw(4, 4)
+		c.AreaMapback.Draw(550, 4)
 	}
 	if c.RedrawFrame {
 		c.RedrawFrame = false
@@ -4465,8 +4469,8 @@ func (c *Client) DrawGame() {
 	c.DrawSidebar()
 	if c.ChatInterfaceID == -1 {
 		c.ChatInterface.ScrollPosition = c.ChatScrollHeight - c.ChatScrollOffset - 77
-		if c.MouseX > 453 && c.MouseX < 565 && c.MouseY > 350 {
-			c.HandleScrollInput(c.MouseX-22, 0, c.MouseY-375, c.ChatScrollHeight, 77, false, 463, 0, c.ChatInterface)
+		if c.MouseX > 448 && c.MouseX < 560 && c.MouseY > 332 {
+			c.HandleScrollInput(c.MouseX-17, 0, c.MouseY-357, c.ChatScrollHeight, 77, false, 463, 0, c.ChatInterface)
 		}
 		var3 := c.ChatScrollHeight - 77 - c.ChatInterface.ScrollPosition
 		var3 = max(var3, 0)
@@ -4498,7 +4502,7 @@ func (c *Client) DrawGame() {
 	c.DrawChatback()
 	if c.SceneState == 2 {
 		c.DrawMinimap()
-		c.AreaMapback.Draw(561, 5)
+		c.AreaMapback.Draw(550, 4)
 	}
 	if c.FlashingTab != -1 {
 		c.RedrawSideIcons = true
@@ -4516,41 +4520,41 @@ func (c *Client) DrawGame() {
 			if c.TabInterfaceID[c.SelectedTab] != -1 {
 				switch c.SelectedTab {
 				case 0:
-					c.ImageRedstone1.PlotSprite(30, 29)
+					c.ImageRedstone1.PlotSprite(10, 22)
 				case 1:
-					c.ImageRedstone2.PlotSprite(29, 59)
+					c.ImageRedstone2.PlotSprite(8, 54)
 				case 2:
-					c.ImageRedstone2.PlotSprite(29, 87)
+					c.ImageRedstone2.PlotSprite(8, 82)
 				case 3:
-					c.ImageRedstone3.PlotSprite(29, 115)
+					c.ImageRedstone3.PlotSprite(8, 110)
 				case 4:
-					c.ImageRedstone2h.PlotSprite(29, 156)
+					c.ImageRedstone2h.PlotSprite(8, 153)
 				case 5:
-					c.ImageRedstone2h.PlotSprite(29, 184)
+					c.ImageRedstone2h.PlotSprite(8, 181)
 				case 6:
-					c.ImageRedstone1h.PlotSprite(30, 212)
+					c.ImageRedstone1h.PlotSprite(9, 209)
 				}
 			}
 			if c.TabInterfaceID[0] != -1 && (c.FlashingTab != 0 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[0].PlotSprite(34, 35)
+				c.ImageSideIcons[0].PlotSprite(13, 29)
 			}
 			if c.TabInterfaceID[1] != -1 && (c.FlashingTab != 1 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[1].PlotSprite(32, 59)
+				c.ImageSideIcons[1].PlotSprite(11, 53)
 			}
 			if c.TabInterfaceID[2] != -1 && (c.FlashingTab != 2 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[2].PlotSprite(32, 86)
+				c.ImageSideIcons[2].PlotSprite(11, 82)
 			}
 			if c.TabInterfaceID[3] != -1 && (c.FlashingTab != 3 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[3].PlotSprite(33, 121)
+				c.ImageSideIcons[3].PlotSprite(12, 115)
 			}
 			if c.TabInterfaceID[4] != -1 && (c.FlashingTab != 4 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[4].PlotSprite(34, 157)
+				c.ImageSideIcons[4].PlotSprite(13, 153)
 			}
 			if c.TabInterfaceID[5] != -1 && (c.FlashingTab != 5 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[5].PlotSprite(32, 185)
+				c.ImageSideIcons[5].PlotSprite(11, 180)
 			}
 			if c.TabInterfaceID[6] != -1 && (c.FlashingTab != 6 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[6].PlotSprite(34, 212)
+				c.ImageSideIcons[6].PlotSprite(13, 208)
 			}
 		}
 		c.AreaBackbase2.Bind()
@@ -4559,19 +4563,19 @@ func (c *Client) DrawGame() {
 			if c.TabInterfaceID[c.SelectedTab] != -1 {
 				switch c.SelectedTab {
 				case 7:
-					c.ImageRedstone1v.PlotSprite(0, 49)
+					c.ImageRedstone1v.PlotSprite(0, 42)
 				case 8:
-					c.ImageRedstone2v.PlotSprite(0, 81)
+					c.ImageRedstone2v.PlotSprite(0, 74)
 				case 9:
-					c.ImageRedstone2v.PlotSprite(0, 108)
+					c.ImageRedstone2v.PlotSprite(0, 102)
 				case 10:
-					c.ImageRedstone3v.PlotSprite(1, 136)
+					c.ImageRedstone3v.PlotSprite(1, 130)
 				case 11:
-					c.ImageRedstone2hv.PlotSprite(0, 178)
+					c.ImageRedstone2hv.PlotSprite(0, 173)
 				case 12:
-					c.ImageRedstone2hv.PlotSprite(0, 205)
+					c.ImageRedstone2hv.PlotSprite(0, 201)
 				case 13:
-					c.ImageRedstone1hv.PlotSprite(0, 233)
+					c.ImageRedstone1hv.PlotSprite(0, 229)
 				}
 			}
 			// Java: deob/client.java:4828-4845 — `!= -1` (TabInterfaceID
@@ -4581,22 +4585,22 @@ func (c *Client) DrawGame() {
 			// etc., tabs 8-13) rendered even when no interface was set.
 			// Same defect-class as the `%1` typo just fixed at line 3553.
 			if c.TabInterfaceID[8] != -1 && (c.FlashingTab != 8 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[7].PlotSprite(2, 80)
+				c.ImageSideIcons[7].PlotSprite(2, 74)
 			}
 			if c.TabInterfaceID[9] != -1 && (c.FlashingTab != 9 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[8].PlotSprite(3, 107)
+				c.ImageSideIcons[8].PlotSprite(3, 102)
 			}
 			if c.TabInterfaceID[10] != -1 && (c.FlashingTab != 10 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[9].PlotSprite(4, 142)
+				c.ImageSideIcons[9].PlotSprite(4, 137)
 			}
 			if c.TabInterfaceID[11] != -1 && (c.FlashingTab != 11 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[10].PlotSprite(2, 179)
+				c.ImageSideIcons[10].PlotSprite(2, 174)
 			}
 			if c.TabInterfaceID[12] != -1 && (c.FlashingTab != 12 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[11].PlotSprite(2, 206)
+				c.ImageSideIcons[11].PlotSprite(2, 201)
 			}
 			if c.TabInterfaceID[13] != -1 && (c.FlashingTab != 13 || clientextras.LoopCycle%20 < 10) {
-				c.ImageSideIcons[12].PlotSprite(2, 230)
+				c.ImageSideIcons[12].PlotSprite(2, 226)
 			}
 		}
 		c.AreaViewport.Bind()
@@ -4604,47 +4608,47 @@ func (c *Client) DrawGame() {
 	// Always upload the two SideIcons pixmaps. Pixel content edits
 	// above were gated by RedrawSideIcons; the GPU upload runs every
 	// frame so they don't go white between dirty cycles.
-	c.AreaBackhmid1.Draw(520, 165)
-	c.AreaBackbase2.Draw(501, 492)
+	c.AreaBackhmid1.Draw(516, 160)
+	c.AreaBackbase2.Draw(496, 466)
 	if c.RedrawPrivacySettings {
 		c.RedrawPrivacySettings = false
 		c.AreaBackbase1.Bind()
 		c.ImageBackbase1.PlotSprite(0, 0)
-		c.FontPlain12.DrawStringTaggableCenter(57, 0xFFFFFF, true, 33, "Public chat")
+		c.FontPlain12.DrawStringTaggableCenter(55, 0xFFFFFF, true, 28, "Public chat")
 		switch c.PublicChatSetting {
 		case 0:
-			c.FontPlain12.DrawStringTaggableCenter(57, 0xFF00, true, 46, "On")
+			c.FontPlain12.DrawStringTaggableCenter(55, 0xFF00, true, 41, "On")
 		case 1:
-			c.FontPlain12.DrawStringTaggableCenter(57, 0xFFFF00, true, 46, "Friends")
+			c.FontPlain12.DrawStringTaggableCenter(55, 0xFFFF00, true, 41, "Friends")
 		case 2:
-			c.FontPlain12.DrawStringTaggableCenter(57, 0xFF0000, true, 46, "Off")
+			c.FontPlain12.DrawStringTaggableCenter(55, 0xFF0000, true, 41, "Off")
 		case 3:
-			c.FontPlain12.DrawStringTaggableCenter(57, 0xFFFF, true, 46, "Hide")
+			c.FontPlain12.DrawStringTaggableCenter(55, 0xFFFF, true, 41, "Hide")
 		}
-		c.FontPlain12.DrawStringTaggableCenter(186, 0xFFFFFF, true, 33, "Private chat")
+		c.FontPlain12.DrawStringTaggableCenter(184, 0xFFFFFF, true, 28, "Private chat")
 		switch c.PrivateChatSetting {
 		case 0:
-			c.FontPlain12.DrawStringTaggableCenter(186, 0xFF00, true, 46, "On")
+			c.FontPlain12.DrawStringTaggableCenter(184, 0xFF00, true, 41, "On")
 		case 1:
-			c.FontPlain12.DrawStringTaggableCenter(186, 0xFFFF00, true, 46, "Friends")
+			c.FontPlain12.DrawStringTaggableCenter(184, 0xFFFF00, true, 41, "Friends")
 		case 2:
-			c.FontPlain12.DrawStringTaggableCenter(186, 0xFF0000, true, 46, "Off")
+			c.FontPlain12.DrawStringTaggableCenter(184, 0xFF0000, true, 41, "Off")
 		}
-		c.FontPlain12.DrawStringTaggableCenter(326, 0xFFFFFF, true, 33, "Trade/duel")
+		c.FontPlain12.DrawStringTaggableCenter(324, 0xFFFFFF, true, 28, "Trade/duel")
 		switch c.TradeChatSetting {
 		case 0:
-			c.FontPlain12.DrawStringTaggableCenter(326, 0xFF00, true, 46, "On")
+			c.FontPlain12.DrawStringTaggableCenter(324, 0xFF00, true, 41, "On")
 		case 1:
-			c.FontPlain12.DrawStringTaggableCenter(326, 0xFFFF00, true, 46, "Friends")
+			c.FontPlain12.DrawStringTaggableCenter(324, 0xFFFF00, true, 41, "Friends")
 		case 2:
-			c.FontPlain12.DrawStringTaggableCenter(326, 0xFF0000, true, 46, "Off")
+			c.FontPlain12.DrawStringTaggableCenter(324, 0xFF0000, true, 41, "Off")
 		}
-		c.FontPlain12.DrawStringTaggableCenter(462, 0xFFFFFF, true, 38, "Report abuse")
+		c.FontPlain12.DrawStringTaggableCenter(458, 0xFFFFFF, true, 33, "Report abuse")
 		c.AreaViewport.Bind()
 	}
 	// Always upload the PrivacySettings pixmap. Pixel content edits
 	// above were gated by RedrawPrivacySettings.
-	c.AreaBackbase1.Draw(0, 471)
+	c.AreaBackbase1.Draw(0, 453)
 	c.SceneDelta = 0
 }
 
@@ -4667,24 +4671,24 @@ func (c *Client) blitIf(p *pixmap.PixMap, x, y int) {
 func (c *Client) blitRetainedScreen() {
 	c.flameMu.Lock()
 	c.blitIf(c.ImageTitle0, 0, 0)
-	c.blitIf(c.ImageTitle1, 661, 0)
+	c.blitIf(c.ImageTitle1, 637, 0)
 	c.flameMu.Unlock()
-	c.blitIf(c.AreaBackleft1, 0, 11)
-	c.blitIf(c.AreaBackleft2, 0, 375)
-	c.blitIf(c.AreaBackright1, 729, 5)
-	c.blitIf(c.AreaBackright2, 752, 231)
+	c.blitIf(c.AreaBackleft1, 0, 4)
+	c.blitIf(c.AreaBackleft2, 0, 357)
+	c.blitIf(c.AreaBackright1, 722, 4)
+	c.blitIf(c.AreaBackright2, 743, 205)
 	c.blitIf(c.AreaBacktop1, 0, 0)
-	c.blitIf(c.AreaBackvmid1, 520, 11)
-	c.blitIf(c.AreaBackvmid2, 520, 231)
-	c.blitIf(c.AreaBackvmid3, 501, 375)
-	c.blitIf(c.AreaBackhmid1, 520, 165)
-	c.blitIf(c.AreaBackhmid2, 0, 345)
-	c.blitIf(c.AreaBackbase1, 0, 471)
-	c.blitIf(c.AreaBackbase2, 501, 492)
-	c.blitIf(c.AreaViewport, 8, 11)
-	c.blitIf(c.AreaMapback, 561, 5)
-	c.blitIf(c.AreaSidebar, 562, 231)
-	c.blitIf(c.AreaChatback, 22, 375)
+	c.blitIf(c.AreaBackvmid1, 516, 4)
+	c.blitIf(c.AreaBackvmid2, 516, 205)
+	c.blitIf(c.AreaBackvmid3, 496, 357)
+	c.blitIf(c.AreaBackhmid1, 516, 160)
+	c.blitIf(c.AreaBackhmid2, 0, 338)
+	c.blitIf(c.AreaBackbase1, 0, 453)
+	c.blitIf(c.AreaBackbase2, 496, 466)
+	c.blitIf(c.AreaViewport, 4, 4)
+	c.blitIf(c.AreaMapback, 550, 4)
+	c.blitIf(c.AreaSidebar, 553, 205)
+	c.blitIf(c.AreaChatback, 17, 357)
 }
 
 // presentLoadingMessage shows the current full game screen with the caller's
@@ -4909,9 +4913,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 	}
 	if var5 == 660 {
 		if c.MenuVisible {
-			c.Scene.Click(var4-11, var3-8)
+			c.Scene.Click(var4-4, var3-4) // Java: scene.click(c - 4, b - 4) (Client.java:10190)
 		} else {
-			c.Scene.Click(c.MouseClickY-11, c.MouseClickX-8)
+			c.Scene.Click(c.MouseClickY-4, c.MouseClickX-4) // Java: Client.java:10192
 		}
 	}
 	if var5 == 188 {
@@ -5377,7 +5381,8 @@ func (c *Client) HandlePrivateChatInput(arg2 int) {
 			}
 			if (var6 == 3 || var6 == 7) && (var6 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(var10)) {
 				var7 := 329 - var4*13
-				if c.MouseX > 8 && c.MouseX < 520 && arg2-11 > var7-10 && arg2-11 <= var7+3 {
+				// Java: Client.java:3752 — 244 viewport origin (4,4).
+				if c.MouseX > 4 && c.MouseX < 516 && arg2-4 > var7-10 && arg2-4 <= var7+3 {
 					if c.StaffModLevel >= 1 {
 						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + var10
 						c.MenuAction[c.MenuSize] = 2034
@@ -6308,22 +6313,25 @@ func (c *Client) HandleInput() {
 	c.MenuSize = 1
 	c.HandlePrivateChatInput(c.MouseY)
 	c.LastHoveredInterfaceID = 0
-	if c.MouseX > 8 && c.MouseY > 11 && c.MouseX < 520 && c.MouseY < 345 {
+	// Java: handleInput hit regions + base origins (Client.java:3649-3682),
+	// 244's 765x503 layout — viewport at (4,4), sidebar at (553,205), chat
+	// at (17,357).
+	if c.MouseX > 4 && c.MouseY > 4 && c.MouseX < 516 && c.MouseY < 338 {
 		if c.ViewportInterfaceID == -1 {
 			c.HandleViewportOptions()
 		} else {
-			c.HandleInterfaceInput(c.MouseY, c.MouseX, 11, component.Instances[c.ViewportInterfaceID], 8, 0)
+			c.HandleInterfaceInput(c.MouseY, c.MouseX, 4, component.Instances[c.ViewportInterfaceID], 4, 0)
 		}
 	}
 	if c.LastHoveredInterfaceID != c.ViewportHoveredInterfaceIndex {
 		c.ViewportHoveredInterfaceIndex = c.LastHoveredInterfaceID
 	}
 	c.LastHoveredInterfaceID = 0
-	if c.MouseX > 562 && c.MouseY > 231 && c.MouseX < 752 && c.MouseY < 492 {
+	if c.MouseX > 553 && c.MouseY > 205 && c.MouseX < 743 && c.MouseY < 466 {
 		if c.SidebarInterfaceID != -1 {
-			c.HandleInterfaceInput(c.MouseY, c.MouseX, 231, component.Instances[c.SidebarInterfaceID], 562, 0)
+			c.HandleInterfaceInput(c.MouseY, c.MouseX, 205, component.Instances[c.SidebarInterfaceID], 553, 0)
 		} else if c.TabInterfaceID[c.SelectedTab] != -1 {
-			c.HandleInterfaceInput(c.MouseY, c.MouseX, 231, component.Instances[c.TabInterfaceID[c.SelectedTab]], 562, 0)
+			c.HandleInterfaceInput(c.MouseY, c.MouseX, 205, component.Instances[c.TabInterfaceID[c.SelectedTab]], 553, 0)
 		}
 	}
 	if c.LastHoveredInterfaceID != c.SidebarHoveredInterfaceIndex {
@@ -6331,11 +6339,11 @@ func (c *Client) HandleInput() {
 		c.SidebarHoveredInterfaceIndex = c.LastHoveredInterfaceID
 	}
 	c.LastHoveredInterfaceID = 0
-	if c.MouseX > 22 && c.MouseY > 375 && c.MouseX < 431 && c.MouseY < 471 {
-		if c.ChatInterfaceID == -1 {
-			c.HandleChatMouseInput(c.MouseY-375, 0)
-		} else {
-			c.HandleInterfaceInput(c.MouseY, c.MouseX, 375, component.Instances[c.ChatInterfaceID], 22, 0)
+	if c.MouseX > 17 && c.MouseY > 357 && c.MouseX < 426 && c.MouseY < 453 {
+		if c.ChatInterfaceID != -1 {
+			c.HandleInterfaceInput(c.MouseY, c.MouseX, 357, component.Instances[c.ChatInterfaceID], 17, 0)
+		} else if c.MouseY < 434 { // Java: Client.java:3681 — message rows only
+			c.HandleChatMouseInput(c.MouseY-357, 0)
 		}
 	}
 	if c.ChatInterfaceID != -1 && c.LastHoveredInterfaceID != c.ChatHoveredInterfaceIndex {
@@ -6382,10 +6390,10 @@ func (c *Client) Draw3DEntityElements() {
 	var2 := 0
 	c.DrawPrivateMessages()
 	if c.CrossMode == 1 {
-		c.ImageCrosses[c.CrossCycle/100].PlotSprite(c.CrossY-8-11, c.CrossX-8-8)
+		c.ImageCrosses[c.CrossCycle/100].PlotSprite(c.CrossY-8-4, c.CrossX-8-4)
 	}
 	if c.CrossMode == 2 {
-		c.ImageCrosses[c.CrossCycle/100+4].PlotSprite(c.CrossY-8-11, c.CrossX-8-8)
+		c.ImageCrosses[c.CrossCycle/100+4].PlotSprite(c.CrossY-8-4, c.CrossX-8-4)
 	}
 	// Java: Client.java:6560-6565 (new in 244) — yellow sine-modulated
 	// translucent flash band near the viewport bottom while field1264 > 0
@@ -6680,15 +6688,15 @@ func (c *Client) ShowContextMenu() {
 	var4 := c.MenuSize*15 + 21
 	var5 := 0
 	var6 := 0
-	if c.MouseClickX > 8 && c.MouseClickY > 11 && c.MouseClickX < 520 && c.MouseClickY < 345 {
-		var5 = c.MouseClickX - 8 - var2/2
+	if c.MouseClickX > 4 && c.MouseClickY > 4 && c.MouseClickX < 516 && c.MouseClickY < 338 {
+		var5 = c.MouseClickX - 4 - var2/2
 		if var5+var2 > 512 {
 			var5 = 512 - var2
 		}
 		if var5 < 0 {
 			var5 = 0
 		}
-		var6 = c.MouseClickY - 11
+		var6 = c.MouseClickY - 4
 		if var6+var4 > 334 {
 			var6 = 334 - var4
 		}
@@ -6702,14 +6710,14 @@ func (c *Client) ShowContextMenu() {
 		c.MenuWidth = var2
 		c.MenuHeight = c.MenuSize*15 + 22
 	}
-	if c.MouseClickX > 562 && c.MouseClickY > 231 && c.MouseClickX < 752 && c.MouseClickY < 492 {
-		var5 = c.MouseClickX - 562 - var2/2
+	if c.MouseClickX > 553 && c.MouseClickY > 205 && c.MouseClickX < 743 && c.MouseClickY < 466 {
+		var5 = c.MouseClickX - 553 - var2/2
 		if var5 < 0 {
 			var5 = 0
 		} else if var5+var2 > 190 {
 			var5 = 190 - var2
 		}
-		var6 = c.MouseClickY - 231
+		var6 = c.MouseClickY - 205
 		if var6 < 0 {
 			var6 = 0
 		} else if var6+var4 > 261 {
@@ -6722,16 +6730,16 @@ func (c *Client) ShowContextMenu() {
 		c.MenuWidth = var2
 		c.MenuHeight = c.MenuSize*15 + 22
 	}
-	if c.MouseClickX <= 22 || c.MouseClickY <= 375 || c.MouseClickX >= 501 || c.MouseClickY >= 471 {
+	if c.MouseClickX <= 17 || c.MouseClickY <= 357 || c.MouseClickX >= 496 || c.MouseClickY >= 453 {
 		return
 	}
-	var5 = c.MouseClickX - 22 - var2/2
+	var5 = c.MouseClickX - 17 - var2/2
 	if var5 < 0 {
 		var5 = 0
 	} else if var5+var2 > 479 {
 		var5 = 479 - var2
 	}
-	var6 = c.MouseClickY - 375
+	var6 = c.MouseClickY - 357
 	if var6 < 0 {
 		var6 = 0
 	} else if var6+var4 > 96 {
@@ -6822,19 +6830,19 @@ func (c *Client) LoadTitle() {
 	pix2d.Clear()
 	c.ImageTitle1 = pixmap.NewPixMap(128, 265)
 	pix2d.Clear()
-	c.ImageTitle2 = pixmap.NewPixMap(533, 186)
+	c.ImageTitle2 = pixmap.NewPixMap(509, 171)
 	pix2d.Clear()
-	c.ImageTitle3 = pixmap.NewPixMap(360, 146)
+	c.ImageTitle3 = pixmap.NewPixMap(360, 132)
 	pix2d.Clear()
 	c.ImageTitle4 = pixmap.NewPixMap(360, 200)
 	pix2d.Clear()
-	c.ImageTitle5 = pixmap.NewPixMap(214, 267)
+	c.ImageTitle5 = pixmap.NewPixMap(202, 238)
 	pix2d.Clear()
-	c.ImageTitle6 = pixmap.NewPixMap(215, 267)
+	c.ImageTitle6 = pixmap.NewPixMap(203, 238)
 	pix2d.Clear()
-	c.ImageTitle7 = pixmap.NewPixMap(86, 79)
+	c.ImageTitle7 = pixmap.NewPixMap(74, 94)
 	pix2d.Clear()
-	c.ImageTitle8 = pixmap.NewPixMap(87, 79)
+	c.ImageTitle8 = pixmap.NewPixMap(75, 94)
 	pix2d.Clear()
 	if c.JagTitle != nil {
 		c.LoadTitleBackground()
@@ -8279,8 +8287,8 @@ func (c *Client) HandleMinimapInput() {
 	if c.MouseClickButton != 1 {
 		return
 	}
-	var2 := c.MouseClickX - 21 - 561
-	var3 := c.MouseClickY - 9 - 5
+	var2 := c.MouseClickX - 25 - 550 // Java: Client.java:4170
+	var3 := c.MouseClickY - 5 - 4    // Java: Client.java:4171
 	if var2 < 0 || var3 < 0 || var2 >= 146 || var3 >= 151 {
 		return
 	}
@@ -8317,7 +8325,7 @@ func (c *Client) HandleMouseInput() {
 		return
 	}
 	var2 := c.MouseClickButton
-	if c.SpellSelected == 1 && c.MouseClickX >= 520 && c.MouseClickY >= 165 && c.MouseClickX <= 788 && c.MouseClickY <= 230 {
+	if c.SpellSelected == 1 && c.MouseClickX >= 516 && c.MouseClickY >= 160 && c.MouseClickX <= 765 && c.MouseClickY <= 205 {
 		var2 = 0
 	}
 	var3 := 0
@@ -8364,16 +8372,16 @@ func (c *Client) HandleMouseInput() {
 		var3 = c.MouseX
 		var4 = c.MouseY
 		if c.MenuArea == 0 {
-			var3 -= 8
-			var4 -= 11
+			var3 -= 4
+			var4 -= 4
 		}
 		if c.MenuArea == 1 {
-			var3 -= 562
-			var4 -= 231
+			var3 -= 553
+			var4 -= 205
 		}
 		if c.MenuArea == 2 {
-			var3 -= 22
-			var4 -= 375
+			var3 -= 17
+			var4 -= 357
 		}
 		if var3 < c.MenuX-10 || var3 > c.MenuX+c.MenuWidth+10 || var4 < c.MenuY-10 || var4 > c.MenuY+c.MenuHeight+10 {
 			c.MenuVisible = false
@@ -8394,16 +8402,16 @@ func (c *Client) HandleMouseInput() {
 	var11 := c.MouseClickX
 	var7 := c.MouseClickY
 	if c.MenuArea == 0 {
-		var11 -= 8
-		var7 -= 11
+		var11 -= 4
+		var7 -= 4
 	}
 	if c.MenuArea == 1 {
-		var11 -= 562
-		var7 -= 231
+		var11 -= 553
+		var7 -= 205
 	}
 	if c.MenuArea == 2 {
-		var11 -= 22
-		var7 -= 375
+		var11 -= 17
+		var7 -= 357
 	}
 	var8 := -1
 	for i := range c.MenuSize {
@@ -8525,72 +8533,72 @@ func (c *Client) HandleTabInput() {
 	if c.MouseClickButton != 1 {
 		return
 	}
-	if c.MouseClickX >= 549 && c.MouseClickX <= 583 && c.MouseClickY >= 195 && c.MouseClickY < 231 && c.TabInterfaceID[0] != -1 {
+	if c.MouseClickX >= 539 && c.MouseClickX <= 573 && c.MouseClickY >= 169 && c.MouseClickY < 205 && c.TabInterfaceID[0] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 0
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 579 && c.MouseClickX <= 609 && c.MouseClickY >= 194 && c.MouseClickY < 231 && c.TabInterfaceID[1] != -1 {
+	if c.MouseClickX >= 569 && c.MouseClickX <= 599 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[1] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 1
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 607 && c.MouseClickX <= 637 && c.MouseClickY >= 194 && c.MouseClickY < 231 && c.TabInterfaceID[2] != -1 {
+	if c.MouseClickX >= 597 && c.MouseClickX <= 627 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[2] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 2
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 635 && c.MouseClickX <= 679 && c.MouseClickY >= 194 && c.MouseClickY < 229 && c.TabInterfaceID[3] != -1 {
+	if c.MouseClickX >= 625 && c.MouseClickX <= 669 && c.MouseClickY >= 168 && c.MouseClickY < 203 && c.TabInterfaceID[3] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 3
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 676 && c.MouseClickX <= 706 && c.MouseClickY >= 194 && c.MouseClickY < 231 && c.TabInterfaceID[4] != -1 {
+	if c.MouseClickX >= 666 && c.MouseClickX <= 696 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[4] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 4
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 704 && c.MouseClickX <= 734 && c.MouseClickY >= 194 && c.MouseClickY < 231 && c.TabInterfaceID[5] != -1 {
+	if c.MouseClickX >= 694 && c.MouseClickX <= 724 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[5] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 5
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 732 && c.MouseClickX <= 766 && c.MouseClickY >= 195 && c.MouseClickY < 231 && c.TabInterfaceID[6] != -1 {
+	if c.MouseClickX >= 722 && c.MouseClickX <= 756 && c.MouseClickY >= 169 && c.MouseClickY < 205 && c.TabInterfaceID[6] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 6
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 550 && c.MouseClickX <= 584 && c.MouseClickY >= 492 && c.MouseClickY < 528 && c.TabInterfaceID[7] != -1 {
+	if c.MouseClickX >= 540 && c.MouseClickX <= 574 && c.MouseClickY >= 466 && c.MouseClickY < 502 && c.TabInterfaceID[7] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 7
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 582 && c.MouseClickX <= 612 && c.MouseClickY >= 492 && c.MouseClickY < 529 && c.TabInterfaceID[8] != -1 {
+	if c.MouseClickX >= 572 && c.MouseClickX <= 602 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[8] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 8
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 609 && c.MouseClickX <= 639 && c.MouseClickY >= 492 && c.MouseClickY < 529 && c.TabInterfaceID[9] != -1 {
+	if c.MouseClickX >= 599 && c.MouseClickX <= 629 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[9] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 9
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 637 && c.MouseClickX <= 681 && c.MouseClickY >= 493 && c.MouseClickY < 528 && c.TabInterfaceID[10] != -1 {
+	if c.MouseClickX >= 627 && c.MouseClickX <= 671 && c.MouseClickY >= 467 && c.MouseClickY < 502 && c.TabInterfaceID[10] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 10
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 679 && c.MouseClickX <= 709 && c.MouseClickY >= 492 && c.MouseClickY < 529 && c.TabInterfaceID[11] != -1 {
+	if c.MouseClickX >= 669 && c.MouseClickX <= 699 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[11] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 11
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 706 && c.MouseClickX <= 736 && c.MouseClickY >= 492 && c.MouseClickY < 529 && c.TabInterfaceID[12] != -1 {
+	if c.MouseClickX >= 696 && c.MouseClickX <= 726 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[12] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 12
 		c.RedrawSideIcons = true
 	}
-	if c.MouseClickX >= 734 && c.MouseClickX <= 768 && c.MouseClickY >= 492 && c.MouseClickY < 528 && c.TabInterfaceID[13] != -1 {
+	if c.MouseClickX >= 724 && c.MouseClickX <= 758 && c.MouseClickY >= 466 && c.MouseClickY < 502 && c.TabInterfaceID[13] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 13
 		c.RedrawSideIcons = true
@@ -9306,28 +9314,28 @@ func (c *Client) LoadTitleBackground() {
 	background.QuickPlotSprite(0, 0)
 
 	c.ImageTitle1.Bind()
-	background.QuickPlotSprite(-661, 0)
+	background.QuickPlotSprite(-637, 0)
 
 	c.ImageTitle2.Bind()
 	background.QuickPlotSprite(-128, 0)
 
 	c.ImageTitle3.Bind()
-	background.QuickPlotSprite(-214, -386)
+	background.QuickPlotSprite(-202, -371)
 
 	c.ImageTitle4.Bind()
-	background.QuickPlotSprite(-214, -186)
+	background.QuickPlotSprite(-202, -171)
 
 	c.ImageTitle5.Bind()
 	background.QuickPlotSprite(0, -265)
 
 	c.ImageTitle6.Bind()
-	background.QuickPlotSprite(-574, -265)
+	background.QuickPlotSprite(-562, -265)
 
 	c.ImageTitle7.Bind()
-	background.QuickPlotSprite(-128, -186)
+	background.QuickPlotSprite(-128, -171)
 
 	c.ImageTitle8.Bind()
-	background.QuickPlotSprite(-574, -186)
+	background.QuickPlotSprite(-562, -171)
 
 	// draw right side (mirror image)
 	pixels := make([]int, background.Wi)
@@ -9342,35 +9350,35 @@ func (c *Client) LoadTitleBackground() {
 	}
 
 	c.ImageTitle0.Bind()
-	background.QuickPlotSprite(394, 0)
+	background.QuickPlotSprite(382, 0)
 
 	c.ImageTitle1.Bind()
-	background.QuickPlotSprite(-267, 0)
+	background.QuickPlotSprite(-255, 0)
 
 	c.ImageTitle2.Bind()
-	background.QuickPlotSprite(266, 0)
+	background.QuickPlotSprite(254, 0)
 
 	c.ImageTitle3.Bind()
-	background.QuickPlotSprite(180, -386)
+	background.QuickPlotSprite(180, -371)
 
 	c.ImageTitle4.Bind()
-	background.QuickPlotSprite(180, -186)
+	background.QuickPlotSprite(180, -171)
 
 	c.ImageTitle5.Bind()
-	background.QuickPlotSprite(394, -265)
+	background.QuickPlotSprite(382, -265)
 
 	c.ImageTitle6.Bind()
 	background.QuickPlotSprite(-180, -265)
 
 	c.ImageTitle7.Bind()
-	background.QuickPlotSprite(212, -186)
+	background.QuickPlotSprite(254, -171)
 
 	c.ImageTitle8.Bind()
-	background.QuickPlotSprite(-180, -186)
+	background.QuickPlotSprite(-180, -171)
 
 	logo := pix32.NewPix323(c.JagTitle, "logo", 0)
 	c.ImageTitle2.Bind()
-	logo.PlotSprite(18, c.ScreenWidth/2-logo.Wi/2-128)
+	logo.PlotSprite(18, 382-logo.Wi/2-128) // Java: hard 382 (= 765/2), Client.java:5391
 }
 
 func (c *Client) RemoveIgnore(arg1 int64) {
@@ -9658,7 +9666,7 @@ func (c *Client) DrawChatback() {
 	// `if RedrawChatback` at the call site, relying on Java/AWT's
 	// retained back buffer.
 	if !c.RedrawChatback {
-		c.AreaChatback.Draw(22, 375)
+		c.AreaChatback.Draw(17, 357)
 		return
 	}
 	c.RedrawChatback = false
@@ -9783,7 +9791,7 @@ func (c *Client) DrawChatback() {
 	}
 	c.AreaViewport.Bind()
 	pix3d.LineOffset = c.AreaViewportOffsets
-	c.AreaChatback.Draw(22, 375)
+	c.AreaChatback.Draw(17, 357)
 }
 
 func (c *Client) Read() (ok bool) {
@@ -10900,7 +10908,7 @@ func (c *Client) DrawSidebar() {
 		c.AreaViewport.Bind()
 		pix3d.LineOffset = c.AreaViewportOffsets
 	}
-	c.AreaSidebar.Draw(562, 231)
+	c.AreaSidebar.Draw(553, 205)
 }
 
 func (c *Client) IsFriend(arg1 string) bool {
@@ -11107,7 +11115,7 @@ func (c *Client) DrawProgress(message string, percent int) {
 		pix2d.FillRect(midY+2, x/2-150+percent*3, 0, 300-percent*3, 30)
 		c.FontBold12.CentreString(y/2+5-offsetY, 0xFFFFFF, message, x/2)
 
-		c.ImageTitle4.Draw(214, 186)
+		c.ImageTitle4.Draw(202, 171)
 		// Always upload the static title tiles + flame tiles.
 		//
 		// ImageTitle0 / ImageTitle1 are dual-purpose: they hold the
@@ -11117,19 +11125,19 @@ func (c *Client) DrawProgress(message string, percent int) {
 		// unconditionally — the prior `if !c.FlameActive` skip relied on
 		// DrawFlames also issuing the upload (which it no longer does
 		// post-refactor) and produced white rectangles at (0,0) /
-		// (661,0) during boot when FlameActive is true.
+		// (637,0) during boot when FlameActive is true.
 		c.RedrawFrame = false
 		// flameMu: ImageTitle0/1 buffers are written by the RunFlames goroutine.
 		c.flameMu.Lock()
 		c.ImageTitle0.Draw(0, 0)
-		c.ImageTitle1.Draw(661, 0)
+		c.ImageTitle1.Draw(637, 0)
 		c.flameMu.Unlock()
 		c.ImageTitle2.Draw(128, 0)
-		c.ImageTitle3.Draw(214, 386)
+		c.ImageTitle3.Draw(202, 371)
 		c.ImageTitle5.Draw(0, 265)
-		c.ImageTitle6.Draw(574, 265)
-		c.ImageTitle7.Draw(128, 186)
-		c.ImageTitle8.Draw(574, 186)
+		c.ImageTitle6.Draw(562, 265)
+		c.ImageTitle7.Draw(128, 171)
+		c.ImageTitle8.Draw(562, 171)
 	})
 }
 

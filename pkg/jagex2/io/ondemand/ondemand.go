@@ -409,6 +409,13 @@ func (od *OnDemand) Remaining() int {
 	return od.requests.Size()
 }
 
+// Message returns the loader status line shown on the welcome title screen
+// ("Loading extra files - N%"). Java reads the OnDemand.message field
+// directly (OnDemand.java:90, Client.java:5485); the Go field is unexported.
+func (od *OnDemand) Message() string {
+	return od.message
+}
+
 // Cycle pops the next completed request, unlinks it from the requests list, and
 // (if it carries data) strips the 2-byte version trailer and gunzips it.
 // Java: OnDemand.cycle() (vb.c()Lnb;), lines 323–369.

@@ -138,7 +138,9 @@ func main() {
 	// PixMaps, which create backend textures via platform.Active). RunShell
 	// returns when the loop exits (window close / State == -1), then os.Exit(0)
 	// tears down the background signlink + audio goroutines.
-	platform.Main(789, 532, "Jagex", func() {
+	// Java: 244 standalone is the classic 765x503 frame (GameShell
+	// initApplication(503, 765)); the 225-era port used 789x532.
+	platform.Main(765, 503, "Jagex", func() {
 		c := client.NewClient()
 		c.RunShell()
 		os.Exit(0)
