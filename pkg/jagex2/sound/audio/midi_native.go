@@ -8,188 +8,57 @@ import (
 	"io"
 	"log"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/ebitengine/oto/v3"
 	"github.com/sinshu/go-meltysynth/meltysynth"
-
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/sign/signlink"
 )
 
-// gainSmoothingAlpha is the per-sample low-pass coefficient used to
-// smooth gain changes inside midiSource.Read. It implements the same
-// exponential-approach automation as Web Audio's setTargetAtTime, which
-// the TS reference client uses for its fade-out (tinymidipcm.js:229
-// with a 0.5s time constant). For each sample:
+// midiDriver is the native midiSink: a single persistent oto Player attached
+// to a midiSource whose internal sequencer is hot-swappable. Track changes,
+// stops, and volume changes mutate the source/player in place rather than
+// tearing the player down, so oto's device stream stays open for the
+// process lifetime (collapsing to one player fixed an audible-overlap bug
+// in the pre-244 design; that property is preserved).
 //
-//	current = current*α + target*(1-α)
+// All fade/latch sequencing lives in the shared audioLoop (audioloop.go) —
+// the faithful port of the SignLink wrapper consumer — which calls these
+// four primitives from its 50ms tick goroutine:
 //
-// where α = exp(-1 / (τ × sampleRate)). With τ = 0.5s and sampleRate =
-// 22050 Hz that's exp(-1/11025) ≈ 0.9999093. At t = 4τ = 2s the gain
-// has decayed to e⁻⁴ ≈ 1.83 % of its starting value — what TS
-// considers "faded out" before it swaps tracks (fadeseconds = 2 at
-// tinymidipcm.js:140).
-//
-// Moving gain interpolation from the driver (stepped every 50 ms in a
-// goroutine) into the per-sample Read loop eliminates the audible
-// zipper noise of discrete steps and matches TS's smoothness.
-const gainSmoothingAlpha float32 = 0.9999093
-
-// runMidiWatcher polls signlink.ConsumeMidi every midiPollInterval.
-// The cadence matches the game's tick rate (20ms) so a Logout-issued
-// "stop" never has to wait longer than a single tick before the
-// audio side reacts — important because the TS reference's
-// browser-side equivalent is essentially synchronous, and any extra
-// latency here shows up as audible "music still playing after the
-// title screen appeared". Doubled-up with player.Pause inside
-// stop() to flush oto's internal buffer.
-//
-// Track data (paths/bytes) does NOT travel through signlink anymore —
-// c.SaveMidi now calls audio.PlayMIDI directly, shaving ~70ms of
-// polling + disk-write latency off the title-to-game transition.
-// The watcher only handles "stop" and "voladjust" sentinels here.
-//
-// audio.Start only spawns this watcher in the success path (on oto init
-// failure it registers a nil driver and returns), so the watcher always
-// runs with a live context. The d.ctx == nil guard inside playFromBytes
-// is the belt-and-suspenders path for any direct PlayMIDI caller. Either
-// way commands are drained and never play, keeping Java's fire-and-forget
-// protocol semantics intact even with audio disabled.
-const midiPollInterval = 20 * time.Millisecond
-
-func runMidiWatcher(d *midiDriver) {
-	for {
-		cmd := signlink.ConsumeMidi()
-		if cmd != "" {
-			d.handle(cmd)
-		}
-		time.Sleep(midiPollInterval)
-	}
-}
-
-// midiDriverRegistry holds the singleton midiDriver and a close-once
-// channel that PlayMIDI callers wait on. This decouples the audio
-// subsystem's startup (oto init may take ~100ms+ on first run) from
-// the client's startup, which can call SetMidi/SaveMidi as soon as
-// c.Load runs. Without the wait, the very first scape_main play could
-// race ahead of audio.Start and be silently dropped.
-var (
-	driverMu    sync.Mutex
-	driver      *midiDriver
-	driverReady = make(chan struct{})
-)
-
-// registerMidiDriver publishes the driver and unblocks waiters. Called
-// exactly once from audio.Start — either with a real driver (success)
-// or with nil (oto init failed). Nil drivers still close the channel
-// so PlayMIDI returns silently instead of hanging the caller.
-func registerMidiDriver(d *midiDriver) {
-	driverMu.Lock()
-	driver = d
-	driverMu.Unlock()
-	close(driverReady)
-}
-
-// getMidiDriver waits until the driver is available, then returns it.
-// May return nil if audio.Start failed; callers must handle that.
-func getMidiDriver() *midiDriver {
-	<-driverReady
-	driverMu.Lock()
-	defer driverMu.Unlock()
-	return driver
-}
-
-// PlayMIDI feeds an in-memory Standard MIDI File to the synthesizer.
-// Called from c.SaveMidi instead of the historical signlink.MidiSave
-// detour, which required a temporary disk file (a Java-applet
-// artifact). fade matches signlink.MidiFade semantics: true for a
-// crossfade, false for an instant cut-in.
-//
-// User volume is read from signlink.MidiVol inside playFromBytes and
-// applied to the persistent oto.Player via SetVolume — separate from
-// the source's per-sample fade gain. Splitting the two means the
-// volume slider takes effect AFTER oto's internal buffer (instant),
-// while track-change crossfades still ramp smoothly via the source's
-// per-sample smoother.
-//
-// Blocks briefly on first call only, until audio.Start finishes
-// initializing oto. Subsequent calls are non-blocking — playFromBytes
-// hands off to the audio thread via the driver's internal channels.
-func PlayMIDI(midData []byte, fade bool) {
-	d := getMidiDriver()
-	if d == nil {
-		return
-	}
-	d.playFromBytes(midData, fade)
-}
-
-// midiDriver runs a single persistent oto Player attached to a
-// midiSource whose internal sequencer is hot-swappable. Track changes,
-// stops, and volume adjustments mutate the source in place rather than
-// tearing down the player. This mirrors the TS reference client's
-// architecture (tinymidipcm.js:226-295): one gainNode + one
-// BufferSource line, the source's content gets swapped via setTimeout
-// after a fade-out, never overlapping the previous track.
-//
-// Before this design, faded track changes spawned a second Player in
-// parallel with the fading-out first, producing audible overlap for
-// the 2-second fade window. Live-reported bug fixed by collapsing to
-// a single persistent player.
+//	Java MidiPlayer (MidiPlayer.java)      midiDriver
+//	play(seq, loop, volume)  :36-44   →    play(midData, loop, vol)
+//	stop()                   :46-49   →    stop()
+//	setVolume(0, volume)     :32-34   →    setVolume(vol)
+//	running()                :51-53   →    running()
 type midiDriver struct {
 	ctx *oto.Context
 
 	// soundFont is loaded once. nil if loading failed (no SF2 available);
-	// in that case handle() still consumes commands but plays no audio.
+	// play() then consumes commands but produces no audio.
 	soundFont *meltysynth.SoundFont
 	loadOnce  sync.Once
 
-	// mu guards the player handoff during first-play initialization.
-	// After the player exists, all further work happens through src,
-	// which has its own internal locking.
-	mu     sync.Mutex
-	src    *midiSource
-	player *oto.Player
-
-	// gen is incremented on every command. In-flight fade goroutines
-	// snapshot it at start and abandon if it diverges, so a rapid
-	// region change can't leave a stale fade clobbering the new track's
-	// gain. Atomic so abandon-checks are lock-free.
-	gen atomic.Uint64
+	// mu guards the player/source handoff and the running() bookkeeping.
+	mu       sync.Mutex
+	src      *midiSource
+	player   *oto.Player
+	looping  bool
+	playedAt time.Time
+	trackLen time.Duration
 }
 
-func newMidiDriver(ctx *oto.Context) *midiDriver {
-	return &midiDriver{ctx: ctx}
-}
+func newMidiDriver(ctx *oto.Context) *midiDriver { return &midiDriver{ctx: ctx} }
 
-// handle dispatches one signlink Midi command. Only two shapes occur now:
-//   - "stop":      stop sequencing, honoring MidiFade.
-//   - "voladjust": adjust user volume on the persistent Player.
+// play parses and starts a Standard MIDI File at linear gain vol/256.
 //
-// Track data reaches the synth as bytes via PlayMIDI (c.SaveMidi), so the
-// command channel no longer carries file paths.
-func (d *midiDriver) handle(cmd string) {
-	switch cmd {
-	case "stop":
-		d.stop(signlink.ReadMidiFade() == 1)
-	case "voladjust":
-		d.setUserVolume(volumeFromCentibels(signlink.ReadMidiVol()))
-	default:
-		// A path here would be unexpected (signlink.MidiSave is gone) and there
-		// is no filesystem in the browser — log rather than read a file.
-		log.Printf("audio/midi: ignoring unexpected command %q", cmd)
-	}
-}
-
-// playFromBytes is the play implementation. Called by PlayMIDI (direct
-// in-memory entry from c.SaveMidi). The expensive bits — MIDI parsing,
-// Synthesizer allocation, SoundFont voicing setup — happen on the
-// caller's goroutine; only the brief player/source handoff takes d.mu.
-//
-// User volume is read from signlink.MidiVol and applied via the
-// Player's SetVolume on every track change so a "music off → on"
-// option toggle doesn't leak old volume into the new player.
-func (d *midiDriver) playFromBytes(midData []byte, fade bool) {
+// Java: MidiPlayer.play(Sequence, int loop, int volume) (MidiPlayer.java:
+// 36-44) — sequencer.setSequence (the new track replaces the old
+// immediately; any audible crossfade is the audioLoop's doing, not play's),
+// setLoopCount(loop == 1 ? -1 : 0) (the fade flag doubles as loop-forever:
+// MIDI_SONG region tracks loop, jingles play once), and setVolume runs
+// before sequencer.start() so the first samples are at the right gain.
+// A parse/synth failure maps to Java's swallowed InvalidMidiDataException.
+func (d *midiDriver) play(midData []byte, loop bool, vol int) {
 	if d.ctx == nil {
 		return
 	}
@@ -197,13 +66,11 @@ func (d *midiDriver) playFromBytes(midData []byte, fade bool) {
 	if sf == nil {
 		return
 	}
-
 	midiFile, err := meltysynth.NewMidiFile(bytes.NewReader(midData))
 	if err != nil {
 		log.Printf("audio/midi: parse: %v", err)
 		return
 	}
-
 	settings := meltysynth.NewSynthesizerSettings(SampleRate)
 	settings.EnableReverbAndChorus = false
 	synth, err := meltysynth.NewSynthesizer(sf, settings)
@@ -212,133 +79,84 @@ func (d *midiDriver) playFromBytes(midData []byte, fade bool) {
 		return
 	}
 	seq := meltysynth.NewMidiFileSequencer(synth)
-	// loop=false: the game re-issues SetMidi via the NextMusicDelay
-	// countdown at client.go:6997 when it wants the track restarted.
-	// The TS reference reached the same conclusion — its synth-side
-	// looping is commented out at tinymidipcm.js:190-194 with the note
-	// "this was buggy with some midi files". Synth-side looping is
-	// the wrong layer; the game decides when to repeat.
-	seq.Play(midiFile, false)
-
-	userVol := float64(volumeFromCentibels(signlink.ReadMidiVol()))
-
-	gen := d.gen.Add(1)
+	// Java: sequencer.setLoopCount(loop == 1 ? -1 : 0) (MidiPlayer.java:39).
+	seq.Play(midiFile, loop)
 
 	d.mu.Lock()
+	d.looping = loop
+	d.playedAt = time.Now()
+	d.trackLen = midiFile.GetLength()
 	if d.src == nil {
 		// First-ever play creates the persistent player and source.
-		// Source's fade-gain starts at 1.0 (full) — the source's gain
-		// is the FADE multiplier, not the user volume.
-		d.src = newMidiSource(seq, 1.0)
+		d.src = newMidiSource(seq)
 		d.player = d.ctx.NewPlayer(d.src)
-		d.player.SetVolume(userVol)
+		d.player.SetVolume(linearVolume(vol))
 		d.player.Play()
 		d.mu.Unlock()
 		return
 	}
-	src := d.src
-	player := d.player
+	src, player := d.src, d.player
 	d.mu.Unlock()
 
-	// Re-apply user volume on every track change. Covers the case
-	// where MidiVol changed while music was disabled (no voladjust
-	// publish) and then the option flipped back on — without this,
-	// the player would still carry the pre-disable volume.
-	player.SetVolume(userVol)
-
-	// Always Play() in case a previous hard-stop reset the player to
-	// flush oto's internal buffer. Play() is idempotent on a
-	// currently-playing player.
+	player.SetVolume(linearVolume(vol))
+	src.swap(seq)
+	// Play() is idempotent on a playing player and revives one paused by a
+	// previous stop()'s haltAndFlush.
 	player.Play()
-
-	if !fade {
-		// No fade requested: swap the sequencer and snap the fade-
-		// gain back to full. From the listener's perspective the new
-		// track replaces the old immediately. The snap (rather than
-		// setGainTarget) keeps a coming-out-of-stop start from
-		// suffering an unintended ~0.5s fade-in via the smoother.
-		src.swap(seq)
-		src.snapGain(1.0)
-		return
-	}
-
-	go d.fadeAndSwap(src, seq, gen)
 }
 
-// fadeAndSwap drives the TS-style "fade-out, then start" sequencing:
+// stop halts playback immediately.
 //
-//  1. Sets src's fade-gain target to 0 — the per-sample smoother in
-//     Read exponentially decays it toward 0 over the 0.5s time
-//     constant. At t = 2s (= 4τ) the effective fade-gain is ~1.8%,
-//     audibly silent.
-//  2. Sleeps fadeDuration.
-//  3. If still the current generation, swaps the sequencer and snaps
-//     the fade-gain back to 1.0 — matching TS's instant onset of the
-//     new track at the end of its setTimeout. The Player's user
-//     volume is untouched throughout, so the new track resumes at
-//     whatever the slider was last set to.
-//
-// Abandons silently if a newer command supersedes the in-flight ramp.
-func (d *midiDriver) fadeAndSwap(src *midiSource, newSeq *meltysynth.MidiFileSequencer, gen uint64) {
-	src.setGainTarget(0)
-	time.Sleep(fadeDuration)
-	if d.gen.Load() != gen {
-		return
-	}
-	src.swap(newSeq)
-	src.snapGain(1.0)
-}
-
-// stop silences the live source. If fade is true, the gain target
-// ramps to 0 over fadeDuration first via the source's smoother;
-// afterwards the sequencer is cleared so no further notes are
-// produced and Read synthesizes silence.
-//
-// Stops must FLUSH oto's internal buffer, not just halt it. oto pulls
-// ~100ms of audio from the source's Read in advance and queues it
-// internally; if we only Pause(), that queue stays frozen and replays
-// on the next Play() — audible as a brief snippet of pre-stop music
-// before the new track starts (the symptom that prompted this code:
-// logout → silence → login → small piece of the old track → new
-// track). haltAndFlush does the halt-and-flush via Pause + Seek; see
-// its doc for why that pair is the post-v3.4 replacement for the
-// deprecated Player.Reset().
-func (d *midiDriver) stop(fade bool) {
+// Java: MidiPlayer.stop() (MidiPlayer.java:46-49) — sequencer.stop() plus
+// the setTick(-1) broadcast (all-notes-off / all-sound-off / reset
+// controllers on all 16 channels, :59-83). swap(nil) makes the source
+// render silence, covering the note kill; haltAndFlush discards oto's
+// ~100ms pre-rendered queue so no stale audio replays on the next play.
+func (d *midiDriver) stop() {
 	d.mu.Lock()
-	src := d.src
-	player := d.player
+	src, player := d.src, d.player
+	d.looping = false
+	d.trackLen = 0
 	d.mu.Unlock()
 	if src == nil {
 		return
 	}
+	src.swap(nil)
+	if player != nil {
+		haltAndFlush(player)
+	}
+}
 
-	gen := d.gen.Add(1)
-
-	if !fade {
-		src.swap(nil)
-		src.snapGain(0)
-		if player != nil {
-			haltAndFlush(player)
-		}
+// setVolume applies linear gain vol/256 to the persistent player.
+//
+// Java: MidiPlayer.setVolume(0, volume) (MidiPlayer.java:32-34, 113-121) —
+// rescales every channel's 14-bit CC7/CC39 by sqrt(volume/256), which
+// through meltysynth's GM-quadratic channel curve is exactly a linear
+// vol/256 output gain (see linearVolume). Player-side volume applies after
+// oto's internal buffer, so each 50ms fade step from the audioLoop is heard
+// ~immediately — matching javax.sound's immediate CC handling. The 8/256 ≈
+// 3% amplitude steps are the same zipper the Java wrapper produced.
+func (d *midiDriver) setVolume(vol int) {
+	d.mu.Lock()
+	player := d.player
+	d.mu.Unlock()
+	if player == nil {
 		return
 	}
-	go func() {
-		src.setGainTarget(0)
-		time.Sleep(fadeDuration)
-		if d.gen.Load() != gen {
-			return
-		}
-		src.swap(nil)
-		src.snapGain(0)
-		// Faded stop: gain has already smoothed to ~0 over the
-		// fade window, but oto's internal queue still holds those
-		// (near-silent) samples from the fade. Reset flushes them
-		// so a quick re-play has a clean baseline — same rationale
-		// as the hard-stop path above.
-		if player != nil {
-			haltAndFlush(player)
-		}
-	}()
+	player.SetVolume(linearVolume(vol))
+}
+
+// running reports whether a sequence is still playing.
+//
+// Java: Sequencer.isRunning() (via MidiPlayer.running(), MidiPlayer.java:
+// 51-53) — true from start() until the sequence's musical end or stop(); a
+// looping sequence never ends. meltysynth exposes no equivalent getter, so
+// the musical end is tracked by wall clock: play() records the MIDI file's
+// length; stop() zeroes it.
+func (d *midiDriver) running() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.looping || (d.trackLen > 0 && time.Since(d.playedAt) < d.trackLen)
 }
 
 // haltAndFlush stops player AND discards oto's internal pre-read buffer —
@@ -356,34 +174,6 @@ func haltAndFlush(player *oto.Player) {
 	_, _ = player.Seek(0, io.SeekStart)
 }
 
-// setUserVolume is the "voladjust" handler — the in-game audio
-// settings slider. Volume lives on the persistent oto.Player rather
-// than the source so the change is applied AFTER oto's internal
-// buffer (~100ms of pre-Read audio that's already in the queue),
-// matching TS's gainNode-after-BufferSource topology. Source-side
-// gain (snapGain/setGainTarget) only affects samples not yet pulled
-// from Read, so a volume slider routed through there has a ~100ms
-// tail at the old volume — exactly the "delay" the live tester
-// reported.
-//
-// Player.SetVolume is sample-accurate at oto's audio thread, so the
-// user hears the new volume essentially immediately (the 20ms
-// watcher poll is now the dominant latency, matching TS).
-func (d *midiDriver) setUserVolume(linear float32) {
-	d.mu.Lock()
-	player := d.player
-	d.mu.Unlock()
-	if player == nil {
-		return
-	}
-	player.SetVolume(float64(linear))
-}
-
-// fadeDuration is the audible fade-out window. Matches TS's
-// fadeseconds = 2 (tinymidipcm.js:140) and gives the 0.5 s smoothing
-// time constant 4 τ to converge to ~1.8 % of the starting gain.
-const fadeDuration = 2 * time.Second
-
 // ensureSoundFont lazy-loads the SF2. Returns nil if loading failed.
 func (d *midiDriver) ensureSoundFont() *meltysynth.SoundFont {
 	d.loadOnce.Do(func() {
@@ -397,28 +187,16 @@ func (d *midiDriver) ensureSoundFont() *meltysynth.SoundFont {
 	return d.soundFont
 }
 
-// midiSource is the io.Reader that oto pulls PCM bytes from. It owns a
-// swappable sequencer pointer (under seqMu) and a smoothed gain pair
-// (current → target via gainSmoothingAlpha). When seq is nil, Read
-// fills its output with silence so the player stays alive across
-// "stop" commands.
-//
-// Concurrent access: oto's audio goroutine calls Read; driver goroutines
-// (handle, fadeAndSwap, stop) call swap, setGainTarget, and snapGain.
-// gainMu held during Read covers the per-sample smoothing loop, which
-// is microseconds for typical oto buffer sizes — short enough that
-// setters never wait noticeably.
+// midiSource is the io.Reader oto pulls PCM from. It owns a swappable
+// sequencer pointer; when seq is nil it renders silence so the persistent
+// player stays alive across stops. Gain is NOT applied here: the Java
+// volume model is channel-CC based and maps onto oto Player.SetVolume (see
+// setVolume above); the old per-sample fade smoother went away with the
+// TS-style exponential fades it served — the 244 fade is the audioLoop's
+// stepped setVolume.
 type midiSource struct {
 	seqMu sync.Mutex
 	seq   *meltysynth.MidiFileSequencer
-
-	// gainMu guards currentGain and targetGain. currentGain is updated
-	// per sample inside Read; targetGain is updated by driver
-	// goroutines. snapGain sets both at once so a track change can
-	// match TS's instant onset.
-	gainMu      sync.Mutex
-	currentGain float32
-	targetGain  float32
 
 	// scratch buffers reused across Read calls. Read is single-reader
 	// (oto's audio goroutine) so these need no lock.
@@ -426,67 +204,24 @@ type midiSource struct {
 	right []float32
 }
 
-func newMidiSource(seq *meltysynth.MidiFileSequencer, initialGain float32) *midiSource {
-	return &midiSource{
-		seq:         seq,
-		currentGain: initialGain,
-		targetGain:  initialGain,
-	}
+func newMidiSource(seq *meltysynth.MidiFileSequencer) *midiSource {
+	return &midiSource{seq: seq}
 }
 
-// swap atomically replaces the sequencer. Passing nil leaves the
-// source emitting silence until the next swap. Gain state is
-// untouched — the per-sample smoother handles any transition
-// continuously. Callers wanting an instant gain change at the swap
-// point follow with snapGain; callers wanting a smooth one use
-// setGainTarget.
+// swap atomically replaces the sequencer. Passing nil leaves the source
+// emitting silence until the next swap.
 func (s *midiSource) swap(newSeq *meltysynth.MidiFileSequencer) {
 	s.seqMu.Lock()
 	s.seq = newSeq
 	s.seqMu.Unlock()
 }
 
-// setGainTarget glides the gain toward g via the per-sample smoother.
-// Used for voladjust and fade-outs. Time constant is ~0.5 s
-// (gainSmoothingAlpha); the audible effect is an exponential approach
-// reaching ~63 % at 0.5 s and ~98 % at 2 s.
-func (s *midiSource) setGainTarget(g float32) {
-	s.gainMu.Lock()
-	s.targetGain = g
-	s.gainMu.Unlock()
-}
-
-// snapGain sets BOTH current and target gain to g, skipping the
-// smoother. Used after a fade-out completes so the new track's first
-// samples are at full volume — matching TS's setValueAtTime restore
-// in tinymidipcm.js:248.
-func (s *midiSource) snapGain(g float32) {
-	s.gainMu.Lock()
-	s.currentGain = g
-	s.targetGain = g
-	s.gainMu.Unlock()
-}
-
-// gain returns the most recent currentGain — exposed only for tests.
-func (s *midiSource) gain() float32 {
-	s.gainMu.Lock()
-	defer s.gainMu.Unlock()
-	return s.currentGain
-}
-
 // Read fills p with interleaved stereo int16 LE PCM. It never returns
 // io.EOF — when the sequencer is nil ("stop"), it emits silence so the
-// player stays alive and ready for the next play().
+// player stays alive and ready for the next play.
 //
-// p's length is determined by oto. It is expected to be a multiple of
-// 4 (one stereo int16 frame); odd remainders are truncated.
-//
-// The per-sample gain smoothing loop runs under gainMu so snapGain and
-// setGainTarget see consistent state. The lock is held for the
-// duration of one oto buffer's worth of samples (typically 1024
-// frames, ~46 ms of audio but a few hundred µs of CPU); driver
-// goroutines waiting on the lock for a setter call see no noticeable
-// delay.
+// p's length is determined by oto. It is expected to be a multiple of 4
+// (one stereo int16 frame); odd remainders are truncated.
 func (s *midiSource) Read(p []byte) (int, error) {
 	frames := len(p) / 4
 	if frames == 0 {
@@ -511,20 +246,13 @@ func (s *midiSource) Read(p []byte) (int, error) {
 		seq.Render(s.left, s.right)
 	}
 
-	s.gainMu.Lock()
-	current := s.currentGain
-	target := s.targetGain
-	const oneMinusAlpha = 1 - gainSmoothingAlpha
 	for i := range frames {
-		current = current*gainSmoothingAlpha + target*oneMinusAlpha
-		l := clipInt16(s.left[i] * current)
-		r := clipInt16(s.right[i] * current)
+		l := clipInt16(s.left[i])
+		r := clipInt16(s.right[i])
 		off := i * 4
 		binary.LittleEndian.PutUint16(p[off:], uint16(l))
 		binary.LittleEndian.PutUint16(p[off+2:], uint16(r))
 	}
-	s.currentGain = current
-	s.gainMu.Unlock()
 	return frames * 4, nil
 }
 

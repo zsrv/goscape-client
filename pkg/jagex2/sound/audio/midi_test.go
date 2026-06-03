@@ -6,95 +6,45 @@ import (
 	"testing"
 )
 
-// These tests pin the contracts the persistent-Player + swappable-
-// sequencer design depends on. They run without an oto context and
-// without a real meltysynth synth, so they're cheap and don't need
-// audio hardware. The audio package as a whole still needs ALSA dev
-// headers to compile on Linux; these tests run wherever that builds.
+// These tests cover the native midiSource's silence/clipping/buffer
+// behavior — the io.Reader contract the persistent oto Player depends on.
+// They run without an oto context and without a real meltysynth synth, so
+// they're cheap and don't need audio hardware. The audio package as a
+// whole still needs ALSA dev headers to compile on Linux; these tests run
+// wherever that builds.
 //
-// The bug they pin: prior to this design, a faded track change spawned
-// a second oto.Player in parallel with the fading-out first, producing
-// audible overlap. The fix collapsed to a single persistent Player
-// whose midiSource has a swappable sequencer pointer; during a fade,
-// gain ramps to 0 BEFORE the swap, then back to target. Silence at
-// the swap point is non-negotiable — without it, the old sequencer's
-// trailing notes would bleed into the new track.
+// The fade/sequencing logic that used to be pinned here (the gain smoother
+// that prevented track-change overlap) now lives in audioLoop (audioloop.go,
+// the faithful SignLink consumer) and is tested in audioloop_test.go. The
+// source itself no longer applies gain: volume rides on the oto Player via
+// the audioLoop's stepped setVolume, so the source's only contract is to
+// render the current sequencer (or silence when swapped to nil).
 
 func TestMidiSourceNilSeqEmitsSilence(t *testing.T) {
-	s := newMidiSource(nil, 1.0)
-
-	// One stereo frame = 4 bytes (two int16 LE samples).
+	s := newMidiSource(nil)
 	buf := make([]byte, 64)
-	for i := range buf {
-		buf[i] = 0xCC // pre-fill with junk so we'd see un-written bytes.
-	}
 	n, err := s.Read(buf)
-	if err != nil {
-		t.Fatalf("Read returned err with nil seq: %v", err)
-	}
-	if n != len(buf) {
-		t.Fatalf("Read returned n=%d, want %d", n, len(buf))
+	if err != nil || n != 64 {
+		t.Fatalf("Read: n=%d err=%v, want 64 <nil>", n, err)
 	}
 	for i, b := range buf {
 		if b != 0 {
-			t.Fatalf("byte %d = %#x, want 0 (silence): full buf = %x", i, b, buf)
+			t.Fatalf("byte %d = %#x, want silence", i, b)
 		}
 	}
 }
 
 func TestMidiSourceSwapToNilSilencesActiveStream(t *testing.T) {
-	// Start with a "loud" silent source (nil seq + max gain). stop()
-	// issues swap(nil) followed by snapGain(0); assert this leaves the
-	// source emitting silence at zero gain. snapGain skips the smoother
-	// so the gain change is observable on the very next Read.
-	s := newMidiSource(nil, 1.0)
-	s.swap(nil)
-	s.snapGain(0)
-
+	s := newMidiSource(nil)
+	s.swap(nil) // stop(): the source must render silence from the next Read
 	buf := make([]byte, 32)
-	n, _ := s.Read(buf)
-	if n != len(buf) {
-		t.Fatalf("Read returned n=%d, want %d", n, len(buf))
+	if _, err := s.Read(buf); err != nil {
+		t.Fatal(err)
 	}
-	for _, b := range buf {
+	for i, b := range buf {
 		if b != 0 {
-			t.Fatalf("expected silence after swap(nil)+snapGain(0), got %x", buf)
+			t.Fatalf("byte %d = %#x, want silence after swap(nil)", i, b)
 		}
-	}
-	if g := s.gain(); g != 0 {
-		t.Fatalf("gain after swap(nil)+snapGain(0) = %v, want 0", g)
-	}
-}
-
-func TestMidiSourceSnapGainAppliesImmediately(t *testing.T) {
-	// snapGain must skip the smoother — both current and target jump.
-	// Without this, the very-first-Read after a swap would still smooth
-	// from the pre-snap gain (e.g. ~0 at the bottom of a fade-out)
-	// toward the new target over ~0.5 s, audible as a fade-in. TS does
-	// an instant onset; we match it via snapGain.
-	s := newMidiSource(nil, 0)
-	s.snapGain(0.75)
-	if got := s.gain(); got != 0.75 {
-		t.Fatalf("snapGain(0.75): currentGain = %v, want 0.75", got)
-	}
-}
-
-func TestMidiSourceSetGainTargetIsSmoothed(t *testing.T) {
-	// setGainTarget should NOT instantly change the current gain — it
-	// only sets the target, and Read smooths toward it. After a Read
-	// of one buffer-worth of samples, current should have moved
-	// partway toward the target but not all the way.
-	s := newMidiSource(nil, 0)
-	s.setGainTarget(1.0)
-	// 1024-frame buffer (4096 bytes). At α ≈ 0.9999093, after 1024
-	// iterations the gain ≈ 1 - α^1024 ≈ 1 - 0.911 ≈ 0.089. We don't
-	// pin the exact value; we just assert it's between 0 and the
-	// target — proving the smoother actually engages.
-	buf := make([]byte, 4096)
-	_, _ = s.Read(buf)
-	got := s.gain()
-	if got <= 0 || got >= 1.0 {
-		t.Fatalf("after one Read with target=1: currentGain = %v, want strictly between 0 and 1", got)
 	}
 }
 
@@ -103,7 +53,7 @@ func TestMidiSourceShortBufferReturnsZero(t *testing.T) {
 	// we tolerate odd remainders by rounding down. A buffer too small
 	// for a single frame (< 4 bytes) returns (0, nil) so oto can
 	// re-request.
-	s := newMidiSource(nil, 1.0)
+	s := newMidiSource(nil)
 	buf := make([]byte, 3)
 	n, err := s.Read(buf)
 	if n != 0 {

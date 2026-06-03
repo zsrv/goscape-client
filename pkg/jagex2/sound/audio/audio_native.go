@@ -12,10 +12,11 @@ package audio
 // wasn't ported.
 //
 // This package supplies the missing consumer in Go. It owns the single
-// process-wide oto audio context, runs one poll-and-dispatch goroutine for
-// MIDI (driving a meltysynth-based SoundFont synthesizer), and plays SFX
-// synchronously on demand via PlayWave (the game hands it WAV bytes directly;
-// no watcher or scratch file).
+// process-wide oto audio context, runs the shared audioLoop ticker (the
+// faithful SignLink consumer, see audioloop.go) for MIDI (driving a
+// meltysynth-based SoundFont synthesizer), and plays SFX synchronously on
+// demand via PlayWave (the game hands it WAV bytes directly; no watcher or
+// scratch file).
 //
 // Format unification: oto allows exactly one context per process, with a
 // fixed sample format. We pick 22050 Hz stereo signed 16-bit LE because:
@@ -49,62 +50,38 @@ var (
 	readyCtx atomic.Pointer[oto.Context]
 )
 
-// Start boots the audio subsystem: it brings up the oto context,
-// publishes it for the SFX path, and kicks off the MIDI watcher goroutine.
-// It is safe to call even if audio init fails — Start logs a warning and
-// returns; the game continues silently.
+// Start boots the audio subsystem: it brings up the oto context, publishes
+// it for the SFX path, and spawns the shared audioLoop ticker (the faithful
+// SignLink consumer, see audioloop.go) driving the native MIDI sink. Safe to
+// call even if audio init fails — the loop then runs with a no-op sink so
+// latched signlink commands are still drained.
 //
 // Intended to be called once from cmd/client/main.go on a dedicated
-// goroutine. Returns once the MIDI watcher is running; that goroutine then
+// goroutine. Returns once the loop goroutine is spawned; that goroutine
 // runs for the process lifetime.
 func Start() {
 	ctx, err := ensureContext()
 	if err != nil {
 		log.Printf("audio: oto init failed, game will run silently: %v", err)
-		// Unblock any PlayMIDI callers waiting on the driver — with a
-		// nil driver, they'll return silently and the game continues
-		// without music rather than hanging forever.
-		registerMidiDriver(nil)
+		go runAudioLoop(nullSink{})
 		return
 	}
-
-	// Create and register the driver SYNCHRONOUSLY before spawning the
-	// watcher. This guarantees PlayMIDI callers (e.g. c.SaveMidi from
-	// the c.RunMidi goroutine) find a live driver as soon as
-	// audio.Start returns. Without sync registration, c.SaveMidi
-	// could race ahead of audio.Start during boot and lose the first
-	// scape_main play.
-	d := newMidiDriver(ctx)
-	registerMidiDriver(d)
 
 	// Publish the ready context lock-free so PlayWave can use it without
 	// taking otoMu (which ensureContext holds across <-ready).
 	readyCtx.Store(ctx)
 
-	go runMidiWatcher(d)
+	go runAudioLoop(newMidiDriver(ctx))
 }
 
-// DisableForLowMemory is the low-memory counterpart of Start: it brings
-// up no oto context, loads no SoundFont, and spawns no watcher
-// goroutines. It exists so the audio subsystem matches the Java client's
-// lowMemory behavior, where the MIDI thread is never started, sounds.dat
-// is never unpacked, and every runtime playback path is gated behind
-// !lowMemory (deob/client.java:5949, 6163, 7374/9656/9868/9889). Doing
-// any audio work there would contradict the whole point of low-memory
-// mode.
-//
-// It still registers a nil MIDI driver — identical to Start's failed-init
-// path above — so that any stray PlayMIDI caller returns silently instead
-// of blocking forever on driverReady. In lowMemory every SetMidi/SaveMidi
-// site is provably gated out and c.RunMidi never starts, so PlayMIDI
-// should be unreachable; the nil driver is belt-and-suspenders matching
-// the rest of this package.
-//
-// The lowMemory decision lives in cmd/client/main.go rather than here
-// because the audio package cannot import client (client imports audio),
-// so the flag is read at the one call site that knows both.
+// DisableForLowMemory is the low-memory counterpart of Start: no oto
+// context, no SoundFont, no audio device. It matches the Java client's
+// lowMemory behavior, where every playback path is gated behind !lowMemory.
+// A nullSink loop still drains the signlink command slot — the client's
+// publish sites are lowmem-gated, but logout's stopMidi is unconditional,
+// and a latched command should not sit in the slot forever.
 func DisableForLowMemory() {
-	registerMidiDriver(nil)
+	go runAudioLoop(nullSink{})
 }
 
 // ensureContext lazily initializes oto on first call. Subsequent calls

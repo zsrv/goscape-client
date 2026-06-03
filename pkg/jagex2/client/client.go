@@ -3415,28 +3415,22 @@ func (c *Client) ValidateCharacterDesign() {
 	}
 }
 
-func (c *Client) SaveMidi(arg0 []byte, arg2 int, arg3 bool) {
-	// Java: deob/client.java:3782 — savemidi(byte[], int, boolean).
-	// The Java version wrote bytes through signlink.midisave so the
-	// signed-applet wrapper could read jingleN.mid from disk and feed
-	// it to javax.sound.midi. In Go there's no process boundary;
-	// audio.PlayMIDI accepts the bytes directly, cutting ~70ms of
-	// polling + disk write/read latency off the track-change path
-	// (most visibly on the title-screen → game-music transition,
-	// which the TS reference handles in essentially-zero time via
-	// playMidi(buffer)).
-	//
-	// MidiFade is still published through signlink so the audio
-	// watcher's "stop" / "voladjust" handlers can read it — same as
-	// before. SaveMidi's per-call fade arg flows directly into
-	// PlayMIDI rather than through the signlink field, which removes
-	// the same race-window the old signlink-field path had.
-	if arg3 {
+// SaveMidi hands a downloaded MIDI track to the audio consumer.
+// Java: saveMidi(boolean fade, byte[] src) (Client.java:1447-1450) —
+// SignLink.midifade = fade ? 1 : 0; SignLink.midisave(src, src.length).
+// The Go port publishes the bytes in-memory through the signlink slot
+// instead of midisave's jingle<pos>.mid disk round-trip (an applet
+// process-boundary artifact); the consumer (audio.runAudioLoop) picks the
+// slot up on its next 50ms tick, exactly like the Java wrapper thread did
+// with the path. The fade flag must be published BEFORE the track so the
+// consumer's playMidi reads the matching value (same ordering as Java).
+func (c *Client) SaveMidi(fade bool, src []byte) {
+	if fade {
 		signlink.SetMidiFade(1)
 	} else {
 		signlink.SetMidiFade(0)
 	}
-	audio.PlayMIDI(arg0[:arg2], arg3)
+	signlink.SetMidiTrack(src)
 }
 
 // PushNPCs submits visible NPCs whose type's alwaysontop flag matches the
@@ -9059,7 +9053,8 @@ func (c *Client) UpdateOnDemand() {
 		case req.Archive == 1 && req.Data != nil:
 			animframe.Unpack(req.Data)
 		case req.Archive == 2 && c.MidiSong == req.File && req.Data != nil:
-			c.SaveMidi(req.Data, len(req.Data), c.MidiFading)
+			// Java: this.saveMidi(this.midiFading, req.data) (Client.java:2445).
+			c.SaveMidi(c.MidiFading, req.Data)
 		case req.Archive == 3 && c.SceneState == 1:
 			// Java: Client.updateOnDemand (Client.java:2448-2467).
 			for i := range len(c.SceneMapLandData) {

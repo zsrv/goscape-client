@@ -109,20 +109,20 @@ func main() {
 		signlink.StartPriv()
 	})
 	wg.Go(func() {
-		// audio.Start spawns its MIDI watcher goroutine and returns
-		// after the oto context is ready (or has failed). The watcher
-		// polls signlink.ConsumeMidi for the lifetime of the process;
-		// SFX play synchronously via audio.PlayWave (no watcher). Started
-		// after signlink so the soundfont fetch (via signlink.OpenURL)
-		// doesn't race the protocol coming up.
+		// audio.Start brings up the oto context and spawns the shared
+		// audioLoop ticker (the faithful SignLink consumer) for the
+		// lifetime of the process; SFX play synchronously via
+		// audio.PlayWave (no watcher). Started after signlink so the
+		// soundfont fetch (via signlink.OpenURL) doesn't race the
+		// protocol coming up.
 		//
 		// In low-memory mode we bring up no audio at all, matching the
 		// Java client: it never starts the MIDI thread, never unpacks
 		// sounds.dat, and gates every playback path behind !lowMemory
 		// (deob/client.java:5949/6163/7374/...). Initializing oto there
-		// would open an audio device and spawn watchers for a queue
-		// nothing ever fills. client.LowMemory is set synchronously by
-		// SetLowMem above, well before this goroutine reads it.
+		// would open an audio device for a queue nothing ever fills.
+		// client.LowMemory is set synchronously by SetLowMem above,
+		// well before this goroutine reads it.
 		if client.LowMemory {
 			audio.DisableForLowMemory()
 			return
