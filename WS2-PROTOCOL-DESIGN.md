@@ -1157,12 +1157,17 @@ scene builds → terrain + locs + npc/obj/player models render. Record the outco
   as Java `updateGame` has it. Reviewed as non-functional (player/npc updates
   don't read `LocChanges` in-cycle; everything completes before `DrawScene`).
   Validate during the smoke test; align if any artifact appears.
-- **Stale rev-225 opcode numbers in handler doc-comments** (pre-existing, from the
-  Inc 1–3 renumber, NOT Inc 4–8): several `// Java: opcode NNN` comments still cite
-  the 225 number though the code dispatches on the 244 `io.SERVERPROT_*` constant
-  (e.g. "opcode 197" above IF_SETPLAYERHEAD=108, "184" above PLAYER_INFO=86, "46"
-  above IF_SETOBJECT=164). Cosmetic (named const is authoritative). Comment-sweep
-  follow-up.
+- **Stale rev-225 opcode numbers in handler doc-comments** — **RESOLVED 2026-06-03**
+  (`d14ef0e` + `304f880` + `994ee10`): all 50 `// Java: opcode NNN` numbers aligned
+  to the 244 `io.SERVERPROT_*` values; line refs re-derived against `01f16088`
+  Client.java (brace-matched, `[if-line, return-true-line]` convention; two
+  off-by-ones in WS2-era comments corrected: 158, 173); ref-case convention
+  enforced — lowercase `client.java:` = the 225 `deob/client.java`, capital
+  `Client.java:` = the 244 file — with 156 verified refs flipped and 11 drifted
+  refs corrected (OPPLAYER1/4, OPOBJ1/4/5, OPOBJT, reporterror, checkScene /
+  updateSceneState starts, REBUILD / zone-full ends). The orphaned
+  "Replaces the rev-225 UpdateMergeLocs" note in `UpdateLocChanges` was also
+  dropped (`d14ef0e`).
 - **`SignLink.reporterror` 360000ms timeout (Inc 5):** Java's `fileStreams[0]` arg
   has no Go analogue; substituted `c.OnDemand.HasCache()`. Diagnostic-only path
   (fires after 6 min of failed loading).
