@@ -96,7 +96,10 @@ func (t *SpotAnimType) GetModel() *model.Model {
 	if var1 != nil {
 		return var1
 	}
-	var1 = model.NewModel1(t.Model)
+	var1 = model.TryGet(t.Model)
+	if var1 == nil {
+		return nil
+	}
 	for i := range 6 {
 		if t.RecolS[0] != 0 {
 			var1.Recolor(t.RecolS[i], t.RecolD[i])

@@ -290,7 +290,10 @@ func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *mode
 		}
 		var15 := ModelCacheStatic.Get(int64(var13))
 		if var15 == nil {
-			var15 = model.NewModel1(var13 & 0xFFFF)
+			var15 = model.TryGet(var13 & 0xFFFF)
+			if var15 == nil {
+				return nil
+			}
 			if var14 {
 				var15.RotateY180()
 			}

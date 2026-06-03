@@ -79,7 +79,7 @@ func (idk *IdkType) GetModel() *model.Model {
 	}
 	var1 := make([]*model.Model, len(idk.Models))
 	for i := range len(idk.Models) {
-		var1[i] = model.NewModel1(idk.Models[i])
+		var1[i] = model.TryGet(idk.Models[i])
 	}
 	var var3 *model.Model
 	if len(var1) == 1 {
@@ -98,7 +98,7 @@ func (idk *IdkType) GetHeadModel() *model.Model {
 	var3 := 0
 	for i := range 5 {
 		if idk.Heads[i] != -1 {
-			var2[var3] = model.NewModel1(idk.Heads[i])
+			var2[var3] = model.TryGet(idk.Heads[i])
 			var3++
 		}
 	}

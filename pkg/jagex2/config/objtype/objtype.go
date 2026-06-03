@@ -324,8 +324,10 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 	if var4 != nil {
 		return var4
 	}
-	// TODO(WS follow-up): Java getModel uses Model.tryGet for on-demand lazy loading; Go keeps NewModel1 pending the config-getter→TryGet sweep.
-	var4 = model.NewModel1(t.Model)
+	var4 = model.TryGet(t.Model)
+	if var4 == nil {
+		return nil
+	}
 	if t.ResizeX != 128 || t.ResizeY != 128 || t.ResizeZ != 128 {
 		// Java: ObjType.getModel scale(resizey, resizez, resizex); Scale(arg0=z, arg2=y, arg3=x)
 		var4.Scale(t.ResizeZ, t.ResizeY, t.ResizeX)
@@ -369,6 +371,14 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 			var4 = Get(var5)
 		}
 	}
+	// Java: ObjType.getIcon fetches and null-checks the model BEFORE creating
+	// the Pix32 buffer or saving/mutating any pix2d/pix3d global state, so an
+	// early return on a cache-miss leaves render state untouched.
+	// Java: Client-Java ObjType.getIcon lines 507-508 (01f16088)
+	var15 := var4.GetInterfaceModel(1)
+	if var15 == nil {
+		return nil
+	}
 	var3 = pix32.NewPix321(32, 32)
 	var5 = pix3d.CenterW3D
 	var6 := pix3d.CenterH3D
@@ -384,7 +394,6 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 	pix2d.Bind(32, var3.Pixels, 32)
 	pix2d.FillRect(0, 0, 0, 32, 32)
 	pix3d.Init2D()
-	var15 := var4.GetInterfaceModel(1)
 	// Java: `Pix3D.sinTable[xan2d] * zoom2d >> 16` is 32-bit int arithmetic; the
 	// product overflows/wraps at 2^31 (reachable when zoom2d > 32768). int32(...)
 	// reproduces that truncation before the arithmetic >>16, which Go's 64-bit int
@@ -454,16 +463,16 @@ func (t *ObjType) GetWornModel(arg1 int) *model.Model {
 		var4 = t.WomanWear2
 		var5 = t.WomanWear3
 	}
-	var6 := model.NewModel1(var3)
+	var6 := model.TryGet(var3)
 	if var4 != -1 {
 		var var7 *model.Model
 		if var5 == -1 {
-			var7 = model.NewModel1(var4)
+			var7 = model.TryGet(var4)
 			var11 := []*model.Model{var6, var7}
 			var6 = model.NewModel2(var11, 2)
 		} else {
-			var7 = model.NewModel1(var4)
-			var8 := model.NewModel1(var5)
+			var7 = model.TryGet(var4)
+			var8 := model.TryGet(var5)
 			var9 := []*model.Model{var6, var7, var8}
 			var6 = model.NewModel2(var9, 3)
 		}
@@ -494,9 +503,9 @@ func (t *ObjType) GetHeadModel(arg1 int) *model.Model {
 	if arg1 == 1 {
 		var4 = t.WomanHead2
 	}
-	var5 := model.NewModel1(var3)
+	var5 := model.TryGet(var3)
 	if var4 != -1 {
-		var6 := model.NewModel1(var4)
+		var6 := model.TryGet(var4)
 		var7 := []*model.Model{var5, var6}
 		var5 = model.NewModel2(var7, 2)
 	}
@@ -506,4 +515,31 @@ func (t *ObjType) GetHeadModel(arg1 int) *model.Model {
 		}
 	}
 	return var5
+}
+
+// GetInvModel returns the inventory model for the obj, or nil if not yet available.
+// Java: ObjType.getInvModel (rev-244). Unlike GetInterfaceModel, this does NOT
+// scale/calculateNormals/cache — it is the raw recoloured model for Component use.
+func (t *ObjType) GetInvModel(arg0 int) *model.Model {
+	if t.CountObj != nil && arg0 > 1 {
+		var2 := -1
+		for i := range 10 {
+			if arg0 >= t.CountCo[i] && t.CountCo[i] != 0 {
+				var2 = t.CountObj[i]
+			}
+		}
+		if var2 != -1 {
+			return Get(var2).GetInvModel(1)
+		}
+	}
+	var4 := model.TryGet(t.Model)
+	if var4 == nil {
+		return nil
+	}
+	if t.RecolS != nil {
+		for i := range len(t.RecolS) {
+			var4.Recolor(t.RecolS[i], t.RecolD[i])
+		}
+	}
+	return var4
 }

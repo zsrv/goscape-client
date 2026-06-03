@@ -190,9 +190,21 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 func (t *NpcType) GetSequencedModel(target *model.Model, arg0 int, arg1 int, arg2 []int) *model.Model {
 	var5 := ModelCache.Get(t.Index)
 	if var5 == nil {
+		// Java: NpcType.getModel precheck — loop calls Model.request on every
+		// model (non-short-circuit); ready=true means "something missing".
+		// Java: `boolean ready = false; ... if (!Model.request(...)) { ready = true; }`
+		ready := false // Java: ready
+		for i := 0; i < len(t.Models); i++ {
+			if !model.Request(t.Models[i]) {
+				ready = true
+			}
+		}
+		if ready {
+			return nil
+		}
 		var6 := make([]*model.Model, len(t.Models))
 		for i := range len(t.Models) {
-			var6[i] = model.NewModel1(t.Models[i])
+			var6[i] = model.TryGet(t.Models[i])
 		}
 		if len(var6) == 1 {
 			var5 = var6[0]
@@ -233,9 +245,21 @@ func (t *NpcType) GetHeadModel() *model.Model {
 	if t.Heads == nil {
 		return nil
 	}
+	// Java: NpcType.getHeadModel precheck — loop calls Model.request on every
+	// head model (non-short-circuit); exists=true means "something missing".
+	// Java: `boolean exists = false; ... if (!Model.request(...)) { exists = true; }`
+	exists := false // Java: exists
+	for i := 0; i < len(t.Heads); i++ {
+		if !model.Request(t.Heads[i]) {
+			exists = true
+		}
+	}
+	if exists {
+		return nil
+	}
 	var2 := make([]*model.Model, len(t.Heads))
 	for i := range t.Heads {
-		var2[i] = model.NewModel1(t.Heads[i])
+		var2[i] = model.TryGet(t.Heads[i])
 	}
 	var var4 *model.Model
 	if len(var2) == 1 {
