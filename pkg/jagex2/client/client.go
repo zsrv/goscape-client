@@ -46,7 +46,6 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pixfont"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pixmap"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
-	"github.com/zsrv/goscape-client/pkg/jagex2/io/bzip2"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io/clientstream"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io/ondemand"
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/audio"
@@ -176,7 +175,6 @@ type Client struct {
 	WeightCarried         int
 	SceneMapLandData      [][]byte
 	Out                   *io.Packet
-	StartMidiThread       bool
 	ChatEffects           int
 	// Java: bankArrangeMode (client.Nh, Client.java:426) — new in 244; set by
 	// SET_VARC clientCode 9 and read at the obj-drag INV_BUTTOND send site.
@@ -210,7 +208,6 @@ type Client struct {
 	ChatScrollHeight              int
 	In                            *io.Packet
 	JagChecksum                   []int
-	MidiThreadActive              bool
 	ImageSideIcons                []*pix8.Pix8
 	ImageModIcons                 []*pix8.Pix8
 	OrbitCameraPitch              int
@@ -305,9 +302,8 @@ type Client struct {
 	BFSDirection                  [][]int
 	ImageCrosses                  []*pix32.Pix32
 	FlameThread                   bool
-	MidiSong                      int        // Java: midiSong — on-demand archive-2 file id of the currently requested track
-	MidiFading                    bool       // Java: midiFading — whether the MIDI request was issued with fade-in
-	MidiSyncMu                    sync.Mutex // Java: midiSync (deob/client.java:491) — dedicated lock for the MidiSyncName/CRC/Len handoff between SetMidi and RunMidi
+	MidiSong                      int  // Java: midiSong — on-demand archive-2 file id of the currently requested track
+	MidiFading                    bool // Java: midiFading — whether the MIDI request was issued with fade-in
 	WaveIDs                       []int
 	CameraOffsetXModifier         int
 	FriendName                    []string
@@ -327,7 +323,6 @@ type Client struct {
 	LevelObjStacks                [][][]*datastruct.LinkList[*entity.ClientObj]
 	SCROLLBAR_GRIP_FOREGROUND     int
 	CameraModifierWobbleSpeed     []int
-	MidiSyncLen                   int
 	CutsceneSrcLocalTileX         int
 	CutsceneSrcLocalTileZ         int
 	CutsceneSrcHeight             int
@@ -398,7 +393,6 @@ type Client struct {
 	CutsceneRotateSpeed           int
 	CutsceneRotateAcceleration    int
 	SystemUpdateTimer             int
-	MidiSyncCRC                   int
 	SceneDelta                    int
 	TitleLoginField               int
 	PublicChatSetting             int
@@ -429,7 +423,6 @@ type Client struct {
 	ChatCount                     int
 	WildernessLevel               int
 	TitleScreenState              int
-	MidiCRC                       int
 	CameraX                       int
 	CameraY                       int
 	CameraZ                       int
@@ -444,7 +437,6 @@ type Client struct {
 	MenuWidth                     int
 	MenuHeight                    int
 	ScrollInputPadding            int
-	MidiSize                      int
 	FlameCycle0                   int
 	LastWaveStartTime             int64
 	SocialName37                  int64
@@ -521,8 +513,6 @@ type Client struct {
 	ModalMessage               string
 	ObjSelectedName            string
 	SpellCaption               string
-	MidiSyncName               string
-	CurrentMidi                string
 	AreaChatbackOffsets        []int
 	AreaSidebarOffsets         []int
 	AreaViewportOffsets        []int
@@ -582,7 +572,6 @@ func NewClient() *Client {
 		ChatScrollHeight:           78,
 		In:                         io.Alloc(1),
 		JagChecksum:                make([]int, 9),
-		MidiThreadActive:           true,
 		ImageSideIcons:             make([]*pix8.Pix8, 13),
 		ImageModIcons:              make([]*pix8.Pix8, 2),
 		OrbitCameraPitch:           128,
@@ -700,21 +689,11 @@ func NewClient() *Client {
 	return c
 }
 
-func (c *Client) SetMidi(crc int, name string, length int) {
-	// Java: `if (arg2 == null) return;`. The port models Java's null String as ""
-	// (CurrentMidi/MidiSyncName default to and are reset to ""), so this guard
-	// faithfully reproduces the null-check for the internal callers that pass
-	// CurrentMidi. The only divergence is a server packet 54 supplying a non-null
-	// EMPTY name (Java would proceed); the server never sends an empty MIDI name.
-	if name == "" {
-		return
-	}
-	c.MidiSyncMu.Lock()
-	defer c.MidiSyncMu.Unlock()
-	c.MidiSyncName = name
-	c.MidiSyncCRC = crc
-	c.MidiSyncLen = length
-}
+// Java 244 has no setMidi(crc, name, length) / runMidi() worker: ALL MIDI
+// playback is requested by numeric id over OnDemand archive 2 and delivered
+// through saveMidi (Client.java:1601-1603, 2444-2445). The rev-225 named-MIDI
+// mechanism (scape_main HTTP fetch + midiSync handoff) was removed with the
+// 244 audit fix pass.
 
 func (c *Client) Draw2DEntityElements() {
 	c.ChatCount = 0
@@ -1598,59 +1577,6 @@ func (c *Client) DrawScene(arg0 int) {
 	c.CameraYaw = var7
 }
 
-func (c *Client) RunMidi() {
-	c.StartMidiThread = false
-	for c.MidiThreadActive {
-		time.Sleep(50 * time.Millisecond)
-		var2 := ""
-		var3 := 0
-		var4 := 0
-		c.MidiSyncMu.Lock()
-		var2 = c.MidiSyncName
-		var3 = c.MidiSyncCRC
-		var4 = c.MidiSyncLen
-		c.MidiSyncName = ""
-		c.MidiSyncCRC = 0
-		c.MidiSyncLen = 0
-		c.MidiSyncMu.Unlock()
-		if var2 != "" {
-			var14 := signlink.CacheLoad(var2 + ".mid")
-			var6 := 0
-			if var14 != nil && var3 != 12345678 {
-				var6 = int(crc32.ChecksumIEEE(var14))
-				if var6 != var3 {
-					var14 = nil
-				}
-			}
-			if var14 == nil {
-				var15, err := c.OpenURL(var2 + "_" + strconv.Itoa(var3) + ".mid")
-				if err != nil {
-					log.Printf("client: RunMidi error: %v", err)
-					return
-				}
-				var14 = make([]byte, var4)
-				var8 := 0
-				for i := 0; i < var4; i += var8 {
-					var8, err = var15.Read(var14[i:var4])
-					if err != nil {
-						var14 = var14[:i]
-						var4 = i
-						break
-					}
-				}
-				signlink.CacheSave(var2+".mid", var14)
-			}
-			if var14 == nil {
-				return
-			}
-			var6 = io.NewPacket(var14).G4()
-			var16 := make([]byte, var6)
-			bzip2.Read(var16, var6, var14, var4, 4)
-			c.SaveMidi(var16, var6, true)
-		}
-	}
-}
-
 // SetLowMem is Java: setLowMemory (deob/client.java:2184).
 func SetLowMem() {
 	world3d.LowMemory = true
@@ -2320,17 +2246,24 @@ func (c *Client) HandleInputKey() {
 						c.RedrawChatback = true
 					}
 					if (var2 == 13 || var2 == 10) && len(c.ChatTyped) > 0 {
-						// Java: `chatTyped.equals("::clientdrop") && (super.frame != null ||
-						// getHost().indexOf("192.168.1.") != -1)` (deob/client.java:2838). In
-						// Java standalone — the only mode this client runs — initApplication does
-						// `frame = new ViewBox(...)` (GameShell.java:101), so `super.frame != null`
-						// is always true and the host check never matters: ::clientdrop always
-						// reconnects. The Go port keeps c.Frame nil (ViewBox is subsumed by the
-						// platform seam), so reproduce the standalone branch directly instead of
-						// degrading to the LAN-host-only check c.Frame==nil would leave.
-						if c.ChatTyped == "::clientdrop" {
-							c.TryReconnect()
-						} else if strings.HasPrefix(c.ChatTyped, "::") {
+						// Java 244 (Client.java:4700-4716): the local commands are
+						// gated by staffmodlevel == 2 (no host check in 244), and the
+						// CLIENT_CHEAT send is a SEPARATE non-else if — every
+						// ::-prefixed line goes to the server regardless.
+						if c.StaffModLevel == 2 {
+							if c.ChatTyped == "::clientdrop" {
+								c.TryReconnect()
+							} else if c.ChatTyped == "::prefetchmusic" {
+								for i := range c.OnDemand.GetFileCount(2) {
+									c.OnDemand.PrefetchPriority(2, i, 1)
+								}
+							}
+							// Java also handles "::lag" here via the lag() stdout
+							// debug dump; lag() is not ported (its counters are
+							// debug-only and unported), so ::lag only reaches the
+							// server CLIENT_CHEAT below.
+						}
+						if strings.HasPrefix(c.ChatTyped, "::") {
 							c.Out.P1Isaac(io.CLIENTPROT_CLIENT_CHEAT) // Java: pIsaac(76) Client.java:4715
 							c.Out.P1(len(c.ChatTyped) - 1)
 							c.Out.PJStr(c.ChatTyped[2:])
@@ -3647,7 +3580,10 @@ func (c *Client) Logout() {
 		c.LevelCollisionMap[i].Reset()
 	}
 	c.StopMidi()
-	c.CurrentMidi = ""
+	// Java: Client.java:2872-2874 — reset the OnDemand song ids so the next
+	// login's MIDI_SONG packet is not suppressed by the NextMidiSong != id guard.
+	c.NextMidiSong = -1
+	c.MidiSong = -1
 	c.NextMusicDelay = 0
 }
 
@@ -3976,9 +3912,13 @@ func (c *Client) UpdateVarp(arg0 int) {
 		case 4:
 			c.MidiActive = false
 		}
-		if c.MidiActive != var5 {
+		// Java: Client.java:11390-11399 — gated by !lowMem, and reactivation
+		// re-requests the song by id over OnDemand archive 2.
+		if c.MidiActive != var5 && !LowMemory {
 			if c.MidiActive {
-				c.SetMidi(c.MidiCRC, c.CurrentMidi, c.MidiSize)
+				c.MidiSong = c.NextMidiSong
+				c.MidiFading = false
+				c.OnDemand.Request(2, c.MidiSong)
 			} else {
 				c.StopMidi()
 			}
@@ -5253,6 +5193,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	}
 	c.ObjSelected = 0
 	c.SpellSelected = 0
+	c.RedrawSidebar = true // Java: Client.java:10317 (new in 244)
 }
 
 func GetCombatLevelColorTag(arg0 int, arg2 int) string {
@@ -5775,17 +5716,9 @@ func (c *Client) Load() {
 		c.MinDel = 5
 	}
 
-	if !LowMemory {
-		c.StartMidiThread = true
-		c.MidiThreadActive = true
-		// Java: this.startThread(this, 2) (deob/client.java:5952) —
-		// Thread.start() + setPriority(2) on the client Runnable. The
-		// Java Runnable's run() dispatched based on flags; Go's goroutine
-		// scheduler is asynchronous so calling the target function
-		// directly makes intent unambiguous.
-		go c.RunMidi()
-		c.SetMidi(12345678, "scape_main", 40000)
-	}
+	// Java 244 load() starts no MIDI worker and requests no scape_main jingle;
+	// its only MIDI is the OnDemand archive-2 request further down
+	// (Client.java:1601-1603). The 225-era block that lived here was removed.
 
 	if AlreadyStarted {
 		c.ErrorStarted = true
@@ -7334,7 +7267,6 @@ func (c *Client) Unload() {
 	}
 	c.Stream = nil
 	c.StopMidi()
-	c.MidiThreadActive = false
 	c.Out = nil
 	c.Login = nil
 	c.In = nil
@@ -7554,6 +7486,10 @@ func (c *Client) UpdateGame() {
 	if c.OnDemand != nil && c.SceneMapLandData != nil {
 		c.UpdateSceneState()
 	}
+	// Java: updateLocChanges() runs immediately after updateSceneState(),
+	// before updateAudio and the entity updates (Client.java:2944). The 225
+	// deob ran it after the entity updates; relocated for 244 parity.
+	c.UpdateLocChanges()
 	for i := 0; i < c.WaveCount; i++ {
 		if c.WaveDelay[i] <= 0 {
 			var4 := false
@@ -7600,8 +7536,13 @@ func (c *Client) UpdateGame() {
 		if c.NextMusicDelay < 0 {
 			c.NextMusicDelay = 0
 		}
+		// Java: Client.java:3628-3631 — resume the deferred background song
+		// by id over OnDemand archive 2 (the 225 SetMidi name/CRC mechanism
+		// has no 244 source and its fields are never populated here).
 		if c.NextMusicDelay == 0 && c.MidiActive && !LowMemory {
-			c.SetMidi(c.MidiCRC, c.CurrentMidi, c.MidiSize)
+			c.MidiSong = c.NextMidiSong
+			c.MidiFading = false
+			c.OnDemand.Request(2, c.MidiSong)
 		}
 	}
 	var11 := inputtracking.Flush()
@@ -7618,7 +7559,6 @@ func (c *Client) UpdateGame() {
 	c.UpdatePlayers()
 	c.UpdateNpcs()
 	c.UpdateEntityChats()
-	c.UpdateLocChanges()
 	// Java: 225 camera-key packet (opcode 189: arrow-key cameraMovedWrite send),
 	// no 244 equivalent — the entire if(actionKey[1..4]) cameraMovedWrite/pIsaac(189)
 	// block and the cameraMovedWrite field are absent in Java 244 (Client.java:2960
@@ -8387,7 +8327,10 @@ func (c *Client) HandleMouseInput() {
 func (c *Client) ApplyCutscene() {
 	var2 := c.CutsceneSrcLocalTileX*128 + 64
 	var3 := c.CutsceneSrcLocalTileZ*128 + 64
-	var4 := c.GetHeightMapY(c.CurrentLevel, c.CutsceneSrcLocalTileX, c.CutsceneSrcLocalTileZ) - c.CutsceneSrcHeight
+	// Java: getHeightmapY takes SCENE coords (tile*128+64) and >>7s them
+	// internally (Client.java:4478); passing raw tile indices sampled the
+	// heightmap near the origin.
+	var4 := c.GetHeightMapY(c.CurrentLevel, var2, var3) - c.CutsceneSrcHeight
 	if c.CameraX < var2 {
 		c.CameraX += c.CutsceneMoveSpeed + (var2-c.CameraX)*c.CutsceneMoveAcceleration/1000
 		if c.CameraX > var2 {
@@ -8426,7 +8369,7 @@ func (c *Client) ApplyCutscene() {
 	}
 	var2 = c.CutsceneDstLocalTileX*128 + 64
 	var3 = c.CutsceneDstLocalTileZ*128 + 64
-	var4 = c.GetHeightMapY(c.CurrentLevel, c.CutsceneDstLocalTileX, c.CutsceneDstLocalTileZ) - c.CutsceneDstHeight
+	var4 = c.GetHeightMapY(c.CurrentLevel, var2, var3) - c.CutsceneDstHeight // Java: scene coords (Client.java:4642)
 	var5 := var2 - c.CameraX
 	var6 := var4 - c.CameraY
 	var7 := var3 - c.CameraZ
@@ -8930,7 +8873,46 @@ func (c *Client) BuildScene() {
 	}
 	c.ClearLocChanges() // Java: this.clearLocChanges() (Client.java:3379)
 	loctype.ModelCacheStatic.Clear()
+	// Java: buildScene post-build tail (Client.java:3383-3428). The lowMem
+	// gate also requires the disk cache (SignLink.cache_dat != null); the Go
+	// storage seam exposes that as OnDemand.HasCache().
+	if LowMemory && c.OnDemand.HasCache() {
+		var20 := c.OnDemand.GetFileCount(0)
+		for i := range var20 {
+			if c.OnDemand.GetModelFlags(i)&0x79 == 0 {
+				model.UnloadOne(i)
+			}
+		}
+	}
+	// Java: System.gc() — intentionally not ported (Go GC is automatic).
 	pix3d.InitPool(20)
+	// Java: prefetch the land+loc map files of every perimeter zone so the
+	// cache is warm when the player crosses a map-square edge.
+	c.OnDemand.ClearPrefetches()
+	var21 := (c.SceneCenterZoneX-6)/8 - 1
+	var22 := (c.SceneCenterZoneX+6)/8 + 1
+	var23 := (c.SceneCenterZoneZ-6)/8 - 1
+	var24 := (c.SceneCenterZoneZ+6)/8 + 1
+	if c.WithinTutorialIsland {
+		var21 = 49
+		var22 = 50
+		var23 = 49
+		var24 = 50
+	}
+	for x := var21; x <= var22; x++ {
+		for z := var23; z <= var24; z++ {
+			if x == var21 || x == var22 || z == var23 || z == var24 {
+				var27 := c.OnDemand.GetMapFile(z, x, 0)
+				if var27 != -1 {
+					c.OnDemand.Prefetch(3, var27)
+				}
+				var28 := c.OnDemand.GetMapFile(z, x, 1)
+				if var28 != -1 {
+					c.OnDemand.Prefetch(3, var28)
+				}
+			}
+		}
+	}
 }
 
 // UpdateOnDemand dispatches completed on-demand responses for archives 0
@@ -10467,7 +10449,9 @@ func (c *Client) Read() (ok bool) {
 		if c.CutsceneMoveAcceleration >= 100 {
 			c.CameraX = c.CutsceneSrcLocalTileX*128 + 64
 			c.CameraZ = c.CutsceneSrcLocalTileZ*128 + 64
-			c.CameraY = c.GetHeightMapY(c.CurrentLevel, c.CutsceneSrcLocalTileX, c.CutsceneSrcLocalTileZ) - c.CutsceneSrcHeight
+			// Java: getHeightmapY(cameraZ, level, cameraX) — SCENE coords
+			// (Client.java:8321), not the raw tile indices.
+			c.CameraY = c.GetHeightMapY(c.CurrentLevel, c.CameraX, c.CameraZ) - c.CutsceneSrcHeight
 		}
 		c.PacketType = -1
 		return true
@@ -10543,7 +10527,9 @@ func (c *Client) Read() (ok bool) {
 		if c.CutsceneRotateAcceleration >= 100 {
 			var26 := c.CutsceneDstLocalTileX*128 + 64
 			var4 := c.CutsceneDstLocalTileZ*128 + 64
-			var5 := c.GetHeightMapY(c.CurrentLevel, c.CutsceneDstLocalTileX, c.CutsceneDstLocalTileZ) - c.CutsceneDstHeight
+			// Java: getHeightmapY(sceneZ, level, sceneX) — SCENE coords
+			// (Client.java:8132), not the raw tile indices.
+			var5 := c.GetHeightMapY(c.CurrentLevel, var26, var4) - c.CutsceneDstHeight
 			var6 := var26 - c.CameraX
 			var7 := var5 - c.CameraY
 			var8 := var4 - c.CameraZ

@@ -44,7 +44,7 @@ func main() {
 		return
 	}
 
-	fmt.Println("RS2 user client - release #" + strconv.Itoa(225))
+	fmt.Println("RS2 user client - release #" + strconv.Itoa(244)) // Java: Client.java:1281
 
 	client.NodeID = *nodeID
 

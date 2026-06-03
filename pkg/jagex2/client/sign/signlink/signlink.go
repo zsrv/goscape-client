@@ -68,7 +68,7 @@ var (
 	Save          string
 	ReportError   bool = true
 	ErrorName     string
-	ClientVersion int = 225
+	ClientVersion int = 244 // Java: clientversion = 244 (SignLink.java:53)
 	MidiFade      int
 	MidiVol       int
 	SaveLen       int
@@ -418,7 +418,9 @@ func ReportErrorFunc(e string) {
 		return
 	}
 	fmt.Println("Error: " + e) // Java: System.out.println("Error: " + e) (sign/signlink.java:361)
-	var3 := strings.ReplaceAll(e, "@", "_")
+	// Java: SignLink.java:347-350 — four ordered replacements: ':' '@' '&' '#'.
+	var2 := strings.ReplaceAll(e, ":", "_")
+	var3 := strings.ReplaceAll(var2, "@", "_")
 	var4 := strings.ReplaceAll(var3, "&", "_")
 	var5 := strings.ReplaceAll(var4, "#", "_")
 	// Java: sign/signlink.java:366-368 explicitly does
@@ -430,7 +432,8 @@ func ReportErrorFunc(e string) {
 	// is subsumed by the call itself. Discarding the body is the
 	// equivalent of Java's readLine-then-close pattern; the HTTP
 	// transaction is observably identical.
-	_, err := OpenURL("reporterror" + strconv.Itoa(225) + ".cgi?error=" + ErrorName + " " + var5)
+	// Java: "reporterror" + 244 + ".cgi?..." (SignLink.java:352).
+	_, err := OpenURL("reporterror" + strconv.Itoa(244) + ".cgi?error=" + ErrorName + " " + var5)
 	if err != nil {
 		log.Printf("signlink: failed to open url: %v", err)
 		return
