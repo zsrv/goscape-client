@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -5642,7 +5643,10 @@ func (c *Client) Load() {
 	// crashing.
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("client: Client.Load panic: %v", r)
+			// Go-side ops diagnostic (not in Java, which swallows silently):
+			// a panic escaping to this recover is always a porting defect, so
+			// print the stack to make the failing unpack stage identifiable.
+			log.Printf("client: Client.Load panic: %v\n%s", r, debug.Stack())
 			c.ErrorLoading = true
 		}
 	}()
