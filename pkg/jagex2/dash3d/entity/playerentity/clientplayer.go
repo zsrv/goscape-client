@@ -32,27 +32,31 @@ type ClientPlayer struct {
 	Colors             []int
 	CombatLevel        int
 	AppearanceHashCode int64
-	Y                  int
-	LocStartCycle      int
-	LocStopCycle       int
-	LocOffsetX         int
-	LocOffsetY         int
-	LocOffsetZ         int
-	LocModel           *model.Model
-	seqModel           *model.Model // reused per-frame transformed model
-	MinTileX           int
-	MinTileZ           int
-	MaxTileX           int
-	LowMemory          bool
-	MaxTileZ           int
+	// Java: ClientPlayer.java:44 `public long modelCacheKey = -1L` — key of
+	// the last complete composite, used as a fallback while parts reload.
+	ModelCacheKey int64
+	Y             int
+	LocStartCycle int
+	LocStopCycle  int
+	LocOffsetX    int
+	LocOffsetY    int
+	LocOffsetZ    int
+	LocModel      *model.Model
+	seqModel      *model.Model // reused per-frame transformed model
+	MinTileX      int
+	MinTileZ      int
+	MaxTileX      int
+	LowMemory     bool
+	MaxTileZ      int
 }
 
 func NewClientPlayer() *ClientPlayer {
 	return &ClientPlayer{
 		ClientEntity: *entity.NewClientEntity(),
 
-		Appearances: make([]int, 12),
-		Colors:      make([]int, 5),
+		Appearances:   make([]int, 12),
+		Colors:        make([]int, 5),
+		ModelCacheKey: -1,
 	}
 }
 
@@ -133,25 +137,32 @@ func (e *ClientPlayer) GetModel() *model.Model {
 		return nil
 	}
 	var2 := e.GetSequencedModel()
-	e.Height = var2.MaxY
+	// Java: ClientPlayer.java:179-181 — nil while appearance models fault in.
+	if var2 == nil {
+		return nil
+	}
+	e.Height = var2.MaxY // Java: super.height = model.minY (244 Model.minY ≡ Go Model.MaxY)
 	var2.Pickable = true
 	if e.LowMemory {
 		return var2
 	}
 	if e.SpotanimID != -1 && e.SpotanimFrame != -1 {
 		var3 := spotanimtype.Instances[e.SpotanimID]
-		var4 := model.NewModel4(var3.GetModel(), true, !var3.AnimHasAlpha, false)
-		var4.Translate(-e.SpotanimOffset, 0, 0)
-		var4.CreateLabelReferences()
-		var4.ApplyTransform(var3.Seq.Frames[e.SpotanimFrame])
-		var4.LabelFaces = nil
-		var4.LabelVertices = nil
-		if var3.ResizeH != 128 || var3.ResizeV != 128 {
-			var4.Scale(var3.ResizeH, var3.ResizeV, var3.ResizeH)
+		// Java: ClientPlayer.java:194 — spot model may be lazily absent.
+		if spotModel := var3.GetModel(); spotModel != nil {
+			var4 := model.NewModel4(spotModel, true, !var3.AnimHasAlpha, false)
+			var4.Translate(-e.SpotanimOffset, 0, 0)
+			var4.CreateLabelReferences()
+			var4.ApplyTransform(var3.Seq.Frames[e.SpotanimFrame])
+			var4.LabelFaces = nil
+			var4.LabelVertices = nil
+			if var3.ResizeH != 128 || var3.ResizeV != 128 {
+				var4.Scale(var3.ResizeH, var3.ResizeV, var3.ResizeH)
+			}
+			var4.CalculateNormals(var3.Ambient+64, var3.Contrast+850, -30, -50, -30, true)
+			var5 := []*model.Model{var2, var4}
+			var2 = model.NewModel3(var5, 2)
 		}
-		var4.CalculateNormals(var3.Ambient+64, var3.Contrast+850, -30, -50, -30, true)
-		var5 := []*model.Model{var2, var4}
-		var2 = model.NewModel3(var5, 2)
 	}
 	if e.LocModel != nil {
 		if clientextras.LoopCycle >= e.LocStopCycle {
@@ -217,6 +228,36 @@ func (e *ClientPlayer) GetSequencedModel() *model.Model {
 	}
 	var15 := ModelCache.Get(var2)
 	if var15 == nil {
+		// Java: ClientPlayer.java:287-317 — 244 lazy-model barrier: request
+		// every appearance part; while any is still loading, fall back to the
+		// last complete composite (ModelCacheKey) or return nil. This is what
+		// keeps an incomplete composite from ever being cached.
+		needsModel := false
+		for i := range 12 {
+			var12 := e.Appearances[i]
+			if var7 >= 0 && i == 3 {
+				var12 = var7
+			}
+			if var6 >= 0 && i == 5 {
+				var12 = var6
+			}
+			if var12 >= 256 && var12 < 512 && !idktype.Instances[var12-256].CheckModel() {
+				needsModel = true
+			}
+			if var12 >= 512 && !objtype.Get(var12-512).CheckWearModel(e.Gender) {
+				needsModel = true
+			}
+		}
+		if needsModel {
+			if e.ModelCacheKey != -1 {
+				var15 = ModelCache.Get(e.ModelCacheKey)
+			}
+			if var15 == nil {
+				return nil
+			}
+		}
+	}
+	if var15 == nil {
 		var9 := make([]*model.Model, 12)
 		var10 := 0
 		for i := range 12 {
@@ -228,8 +269,12 @@ func (e *ClientPlayer) GetSequencedModel() *model.Model {
 				var12 = var6
 			}
 			if var12 >= 256 && var12 < 512 {
-				var9[var10] = idktype.Instances[var12-256].GetModel()
-				var10++
+				// Java: ClientPlayer.java:333-336 — each part may be lazily
+				// absent; skip nil parts like Java does.
+				if idkModel := idktype.Instances[var12-256].GetModel(); idkModel != nil {
+					var9[var10] = idkModel
+					var10++
+				}
 			}
 			if var12 >= 512 {
 				var13 := objtype.Get(var12 - 512)
@@ -252,6 +297,9 @@ func (e *ClientPlayer) GetSequencedModel() *model.Model {
 		var15.CreateLabelReferences()
 		var15.CalculateNormals(64, 850, -30, -50, -30, true)
 		ModelCache.Put(var2, var15)
+		// Java: ClientPlayer.java:361 — remember the last complete composite
+		// as the reload fallback.
+		e.ModelCacheKey = var2
 	}
 	if e.LowMemory {
 		return var15
@@ -276,13 +324,31 @@ func (e *ClientPlayer) GetHeadModel() *model.Model {
 	if !e.Visible {
 		return nil
 	}
+	// Java: ClientPlayer.java:387-403 — 244 lazy-model barrier for the chat
+	// head: request every head part; return nil while any is still loading.
+	needsModel := false
+	for i := range 12 {
+		var5 := e.Appearances[i]
+		if var5 >= 256 && var5 < 512 && !idktype.Instances[var5-256].CheckHead() {
+			needsModel = true
+		}
+		if var5 >= 512 && !objtype.Get(var5-512).CheckHeadModel(e.Gender) {
+			needsModel = true
+		}
+	}
+	if needsModel {
+		return nil
+	}
 	var2 := make([]*model.Model, 12)
 	var3 := 0
 	for i := range 12 {
 		var5 := e.Appearances[i]
 		if var5 >= 256 && var5 < 512 {
-			var2[var3] = idktype.Instances[var5-256].GetHeadModel()
-			var3++
+			// Java: ClientPlayer.java:411-414 — head part may be lazily absent.
+			if idkModel := idktype.Instances[var5-256].GetHeadModel(); idkModel != nil {
+				var2[var3] = idkModel
+				var3++
+			}
 		}
 		if var5 >= 512 {
 			var6 := objtype.Get(var5 - 512).GetHeadModel(e.Gender)

@@ -5305,6 +5305,15 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 		arg1.Xan = 150
 		arg1.Yan = int(math.Sin(float64(clientextras.LoopCycle)/40.0)*256.0) & 0x7FF
 		if c.UpdateDesignModel {
+			// Java: Client.java:11496-11501 — 244 lazy-model barrier: keep
+			// requesting the selected kits' models and bail out (retrying
+			// next frame) until every one is resident; only then build.
+			for i := range 7 {
+				var7 := c.DesignIdentikits[i]
+				if var7 >= 0 && !idktype.Instances[var7].CheckModel() {
+					return
+				}
+			}
 			c.UpdateDesignModel = false
 			var9 := make([]*model.Model, 7)
 			var5 := 0

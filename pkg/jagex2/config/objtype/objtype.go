@@ -449,6 +449,35 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 	return var3
 }
 
+// Java: checkWearModel (ObjType.java:625-650) — 244 lazy-model load barrier
+// for worn equipment models: requests all gendered wear parts from OnDemand
+// and reports whether every one is resident. Non-short-circuit on purpose:
+// each part is requested even after the first miss, like Java.
+func (t *ObjType) CheckWearModel(gender int) bool {
+	wear := t.ManWear
+	wear2 := t.ManWear2
+	wear3 := t.ManWear3
+	if gender == 1 {
+		wear = t.WomanWear
+		wear2 = t.WomanWear2
+		wear3 = t.WomanWear3
+	}
+	if wear == -1 {
+		return true
+	}
+	ready := true //nolint:staticcheck // QF1007: kept split to mirror Java's flag shape (ObjType.java:639-648)
+	if !model.Request(wear) {
+		ready = false
+	}
+	if wear2 != -1 && !model.Request(wear2) {
+		ready = false
+	}
+	if wear3 != -1 && !model.Request(wear3) {
+		ready = false
+	}
+	return ready
+}
+
 func (t *ObjType) GetWornModel(arg1 int) *model.Model {
 	var3 := t.ManWear
 	if arg1 == 1 {
@@ -489,6 +518,28 @@ func (t *ObjType) GetWornModel(arg1 int) *model.Model {
 		}
 	}
 	return var6
+}
+
+// Java: checkHeadModel (ObjType.java:697-717) — load barrier for the chat
+// head models, mirroring CheckWearModel.
+func (t *ObjType) CheckHeadModel(gender int) bool {
+	head := t.ManHead
+	head2 := t.ManHead2
+	if gender == 1 {
+		head = t.WomanHead
+		head2 = t.WomanHead2
+	}
+	if head == -1 {
+		return true
+	}
+	ready := true //nolint:staticcheck // QF1007: kept split to mirror Java's flag shape (ObjType.java:709-716)
+	if !model.Request(head) {
+		ready = false
+	}
+	if head2 != -1 && !model.Request(head2) {
+		ready = false
+	}
+	return ready
 }
 
 func (t *ObjType) GetHeadModel(arg1 int) *model.Model {

@@ -97,6 +97,10 @@ func (e *ClientProj) Update(arg1 int) {
 
 func (e *ClientProj) GetModel() *model.Model {
 	var2 := e.SpotAnim.GetModel()
+	// Java: ClientProj.java:147-149 — nil while the spotanim model faults in.
+	if var2 == nil {
+		return nil
+	}
 	var3 := model.NewModel4(var2, true, !e.SpotAnim.AnimHasAlpha, false)
 	if e.SpotAnim.Seq != nil {
 		var3.CreateLabelReferences()

@@ -50,6 +50,10 @@ func (e *MapSpotAnim) Update(arg0 int) {
 // GetModel
 func (e *MapSpotAnim) GetModel() *model.Model {
 	mdl := e.Type.GetModel()
+	// Java: MapSpotAnim.java:67-69 — nil while the spotanim model faults in.
+	if mdl == nil {
+		return nil
+	}
 
 	spot := model.NewModel4(mdl, true, !e.Type.AnimHasAlpha, false)
 

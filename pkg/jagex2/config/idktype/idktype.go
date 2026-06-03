@@ -73,6 +73,24 @@ func (idk *IdkType) Decode(arg1 *io.Packet) {
 	}
 }
 
+// Java: checkModel (IdkType.java:85-97) — the 244 lazy-model load barrier:
+// requests every part model from OnDemand and reports whether all are
+// resident. Callers must gate GetModel behind this (GetModel assumes parts
+// are loaded, like Java). Note the non-short-circuit accumulation: every
+// part is requested even after the first miss, exactly as in Java.
+func (idk *IdkType) CheckModel() bool {
+	if idk.Models == nil {
+		return true
+	}
+	ready := true
+	for i := range len(idk.Models) {
+		if !model.Request(idk.Models[i]) {
+			ready = false
+		}
+	}
+	return ready
+}
+
 func (idk *IdkType) GetModel() *model.Model {
 	if idk.Models == nil {
 		return nil
@@ -91,6 +109,18 @@ func (idk *IdkType) GetModel() *model.Model {
 		var3.Recolor(idk.RecolS[i], idk.RecolD[i])
 	}
 	return var3
+}
+
+// Java: checkHead (IdkType.java:124-133) — load barrier for the head-model
+// parts, mirroring CheckModel.
+func (idk *IdkType) CheckHead() bool {
+	ready := true
+	for i := range 5 {
+		if idk.Heads[i] != -1 && !model.Request(idk.Heads[i]) {
+			ready = false
+		}
+	}
+	return ready
 }
 
 func (idk *IdkType) GetHeadModel() *model.Model {
