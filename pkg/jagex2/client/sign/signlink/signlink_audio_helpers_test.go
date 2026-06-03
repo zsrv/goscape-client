@@ -19,19 +19,6 @@ import (
 // reproduce the full live timing, just confirms the helpers do take the
 // mutex (race detector catches it if they regress to bare access).
 
-func TestConsumeMidiClearsAndReturns(t *testing.T) {
-	t.Cleanup(resetSignlinkAudioFields)
-
-	SetMidiCommand("scape_main.mid")
-	got := ConsumeMidi()
-	if got != "scape_main.mid" {
-		t.Fatalf("ConsumeMidi: got %q, want %q", got, "scape_main.mid")
-	}
-	if again := ConsumeMidi(); again != "" {
-		t.Fatalf("ConsumeMidi should clear: got %q, want \"\"", again)
-	}
-}
-
 func TestMidiFadeAndVolRoundTrip(t *testing.T) {
 	t.Cleanup(resetSignlinkAudioFields)
 
@@ -48,12 +35,12 @@ func TestMidiFadeAndVolRoundTrip(t *testing.T) {
 func TestSetMidiCommandIsRaceFree(t *testing.T) {
 	t.Cleanup(resetSignlinkAudioFields)
 
-	// Hammer SetMidiCommand and ConsumeMidi from multiple goroutines so
-	// `go test -race` flags any unsynchronized access regression. We're
+	// Hammer SetMidiCommand and PeekMidi/ClearMidi from multiple goroutines
+	// so `go test -race` flags any unsynchronized access regression. We're
 	// not asserting a specific final value — just that nothing trips the
 	// race detector. The writer/reader split here approximates the live
-	// runtime: client.go goroutines write commands; the audio watcher
-	// goroutine consumes them.
+	// runtime: client.go goroutines write commands; the audioLoop consumer
+	// goroutine peeks and clears them.
 	const writers, readers, iters = 4, 2, 500
 	var wg sync.WaitGroup
 	for range writers {
@@ -66,7 +53,9 @@ func TestSetMidiCommandIsRaceFree(t *testing.T) {
 	for range readers {
 		wg.Go(func() {
 			for range iters {
-				_ = ConsumeMidi()
+				if cmd, _ := PeekMidi(); cmd != "" {
+					ClearMidi()
+				}
 			}
 		})
 	}

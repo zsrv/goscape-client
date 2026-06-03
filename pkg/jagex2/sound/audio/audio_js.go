@@ -4,48 +4,20 @@ package audio
 
 import (
 	"log"
-	"sync"
 	"syscall/js"
-	"time"
-
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/sign/signlink"
 )
 
 // One AudioContext for the process. Created in Start; resumed on the first
 // user gesture (browsers block autoplay until then).
 var (
 	ac        js.Value // AudioContext
-	musicGain js.Value // GainNode: user music volume (MidiVol)
+	musicGain js.Value // GainNode: MIDI volume — the audioLoop's stepped vol/256 lands here
 	sfxGain   js.Value // GainNode: user SFX volume (WaveVol)
 	gestures  []js.Func
 )
 
-// midiPollInterval matches the native watcher cadence (one game tick).
-const midiPollInterval = 20 * time.Millisecond
-
-// driver registry: PlayMIDI callers wait until Start has created the driver
-// (or registered nil on disable), so the first SaveMidi can't race startup.
-var (
-	driverMu    sync.Mutex
-	driver      *webMidiDriver
-	driverReady = make(chan struct{})
-)
-
-func registerMidiDriver(d *webMidiDriver) {
-	driverMu.Lock()
-	driver = d
-	driverMu.Unlock()
-	close(driverReady)
-}
-
-func getMidiDriver() *webMidiDriver {
-	<-driverReady
-	driverMu.Lock()
-	defer driverMu.Unlock()
-	return driver
-}
-
-// Start brings up the Web Audio context and the MIDI driver + watcher.
+// Start brings up the Web Audio context and spawns the shared audioLoop
+// (the faithful SignLink consumer, audioloop.go) ticking the web MIDI sink.
 // Called once from cmd/client/main.go on a goroutine.
 func Start() {
 	ctor := js.Global().Get("AudioContext")
@@ -54,7 +26,7 @@ func Start() {
 	}
 	if !ctor.Truthy() {
 		log.Printf("audio: Web Audio unavailable, game will run silently")
-		registerMidiDriver(nil)
+		go runAudioLoop(nullSink{})
 		return
 	}
 	ac = ctor.New(map[string]any{"sampleRate": SampleRate})
@@ -66,15 +38,14 @@ func Start() {
 
 	installGestureResume()
 
-	d := newWebMidiDriver()
-	registerMidiDriver(d)
-	go runMidiWatcher(d)
+	go runAudioLoop(newWebMidiDriver())
 }
 
 // DisableForLowMemory matches the native low-memory path: no context, no
-// soundfont, nil driver so any stray PlayMIDI returns silently.
+// soundfont; a nullSink loop drains the signlink slot (logout's stopMidi is
+// not lowmem-gated).
 func DisableForLowMemory() {
-	registerMidiDriver(nil)
+	go runAudioLoop(nullSink{})
 }
 
 // installGestureResume resumes the AudioContext on the first user gesture
@@ -92,14 +63,5 @@ func installGestureResume() {
 	gestures = append(gestures, resume)
 	for _, e := range []string{"touchend", "keyup", "mouseup"} {
 		js.Global().Call("addEventListener", e, resume)
-	}
-}
-
-func runMidiWatcher(d *webMidiDriver) {
-	for {
-		if cmd := signlink.ConsumeMidi(); cmd != "" {
-			d.handle(cmd)
-		}
-		time.Sleep(midiPollInterval)
 	}
 }

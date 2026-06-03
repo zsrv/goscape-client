@@ -11,57 +11,64 @@ import (
 	"time"
 
 	"github.com/sinshu/go-meltysynth/meltysynth"
-
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/sign/signlink"
 )
 
-// fadeDuration matches the native 2s fade-out window.
-const fadeDuration = 2 * time.Second
-
-// fadeTimeConstant is the exponential time constant for setTargetAtTime,
-// matching the native per-sample smoother's ~0.5s (gainSmoothingAlpha).
-const fadeTimeConstant = 0.5
+// webMidiDriver is the js midiSink: tracks are pre-rendered to AudioBuffer
+// chunks (static buffers are immune to main-thread synthesis bursts) and
+// scheduled onto the Web Audio clock.
+//
+// The shared audioLoop (audioloop.go) owns all fade/latch sequencing and
+// drives the four midiSink primitives from its 50ms ticker; volume —
+// including the stepped ±8 fade — lands on the single musicGain node as the
+// linear vol/256 gain.
+//
+// Looping (Java: setLoopCount(-1) for MIDI_SONG tracks, MidiPlayer.java:39)
+// re-schedules the rendered chunks one musical length apart, staying
+// loopLookahead ahead of the context clock (keepLooping). The 1s release
+// tail rendered after the musical end overlaps the next iteration's start —
+// a sequencer loop cuts releases at the loop point; the overlap is the
+// closest prerender equivalent.
 
 // renderChunkFrames is how many frames are synthesized per scheduled chunk
-// (~250ms of audio). Each chunk becomes its own AudioBufferSourceNode started
-// at a precise time, so playback can begin after the FIRST chunk renders
-// instead of waiting for the whole track; the render then races ahead of
-// playback (~realtime×many) so the rest is scheduled before it's needed. A
-// chunk is also one frame's worth of synthesis CPU, keeping the per-chunk
-// yield (see streamRender) responsive.
+// (~250ms of audio). Each chunk becomes its own AudioBufferSourceNode
+// started at a precise time, so playback can begin after the FIRST chunk
+// renders instead of waiting for the whole track; the render then races
+// ahead of playback so the rest is scheduled before it's needed. A chunk is
+// also one frame's worth of synthesis CPU, keeping the per-chunk yield
+// (see streamRender) responsive.
 const renderChunkFrames = SampleRate / 4
 
-// PlayMIDI plays an in-memory MIDI track, replacing the current one.
-// fade=true reproduces the native fade-out-then-start. Returns immediately;
-// synthesis + scheduling run on a background goroutine.
-func PlayMIDI(midData []byte, fade bool) {
-	d := getMidiDriver()
-	if d == nil {
-		return
-	}
-	d.playFromBytes(midData, fade)
+// loopLookahead is how far ahead of the AudioContext clock the next loop
+// iteration is scheduled: comfortably above keepLooping's poll period so
+// the schedule never starves, small enough that little stale audio is ever
+// queued (stopAll cancels scheduled sources anyway).
+const loopLookahead = 5 * time.Second
+
+// scheduledSrc pairs a started AudioBufferSourceNode with the AudioContext
+// time it ends, so long loops can prune finished nodes.
+type scheduledSrc struct {
+	node js.Value
+	end  float64
 }
 
-// musicStream is one track's playback: a fade GainNode plus the chunk
-// AudioBufferSourceNodes scheduled onto it. Stopping it stops every scheduled
-// source (including ones scheduled in the future) and disconnects the gain.
+// musicStream is one track's playback: every source node scheduled for it.
+// Stopping it stops them all, including ones scheduled in the future.
 type musicStream struct {
-	fadeGain js.Value
-
 	mu      sync.Mutex
-	sources []js.Value
+	sources []scheduledSrc
 	stopped bool
 }
 
-// schedule starts buf at AudioContext time `at` on this stream. If the stream
-// was already stopped (a newer track superseded it between chunks), the source
-// is stopped immediately so it neither plays nor leaks.
+// schedule starts buf at AudioContext time `at` on this stream. If the
+// stream was already stopped (a newer command superseded it between
+// chunks), the source is stopped immediately so it neither plays nor leaks.
 func (s *musicStream) schedule(buf js.Value, at float64) {
 	src := ac.Call("createBufferSource")
 	src.Set("buffer", buf)
 	src.Set("loop", false)
-	src.Call("connect", s.fadeGain)
+	src.Call("connect", musicGain)
 	src.Call("start", at)
+	end := at + float64(buf.Get("length").Int())/float64(SampleRate)
 	s.mu.Lock()
 	if s.stopped {
 		s.mu.Unlock()
@@ -69,13 +76,29 @@ func (s *musicStream) schedule(buf js.Value, at float64) {
 		src.Call("disconnect")
 		return
 	}
-	s.sources = append(s.sources, src)
+	s.sources = append(s.sources, scheduledSrc{node: src, end: end})
 	s.mu.Unlock()
 }
 
-// stopAll stops + disconnects every scheduled source and the fade gain.
-// Idempotent (both the superseding command and a superseded render goroutine
-// may call it).
+// pruneEnded drops references to sources that finished before `now`,
+// keeping the slice bounded during indefinite loops. Ended nodes are inert
+// — the audio graph has already released them — so dropping the reference
+// is safe; only still-playing/future nodes must stay reachable by stopAll.
+func (s *musicStream) pruneEnded(now float64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	kept := s.sources[:0]
+	for _, e := range s.sources {
+		if e.end > now {
+			kept = append(kept, e)
+		}
+	}
+	clear(s.sources[len(kept):])
+	s.sources = kept
+}
+
+// stopAll stops + disconnects every scheduled source. Idempotent (both a
+// superseding command and a superseded render goroutine may call it).
 func (s *musicStream) stopAll() {
 	s.mu.Lock()
 	if s.stopped {
@@ -86,35 +109,39 @@ func (s *musicStream) stopAll() {
 	srcs := s.sources
 	s.sources = nil
 	s.mu.Unlock()
-	for _, src := range srcs {
-		safeStop(src)
-		src.Call("disconnect")
+	for _, e := range srcs {
+		safeStop(e.node)
+		e.node.Call("disconnect")
 	}
-	s.fadeGain.Call("disconnect")
 }
 
 // safeStop calls stop() on a source, swallowing the InvalidStateError some
-// browsers throw when the source has already ended naturally (e.g. a cache-hit
-// full-track source that finished before a loop re-issue's stopAll). A thrown
-// JS exception would otherwise panic the Go side via syscall/js.
+// browsers throw when the source has already ended naturally. A thrown JS
+// exception would otherwise panic the Go side via syscall/js.
 func safeStop(src js.Value) {
 	defer func() { _ = recover() }()
 	src.Call("stop")
 }
 
-// webMidiDriver owns the current playing stream, a one-track cache of the
-// rendered chunk buffers (so the game's loop re-issue replays instantly
-// without re-synthesizing), and a generation counter so a rapid track change
-// abandons an in-flight render.
 type webMidiDriver struct {
 	soundFont *meltysynth.SoundFont
 	loadOnce  sync.Once
 
-	mu          sync.Mutex
-	cur         *musicStream // current track's stream (nil before first play)
-	cacheKey    string       // identity of the cached track
-	cacheChunks []js.Value   // rendered chunk AudioBuffers for cacheKey
+	mu         sync.Mutex
+	cur        *musicStream // current track's stream (nil before first play / after stop)
+	looping    bool
+	musicalEnd float64 // AudioContext time when a non-loop track's musical length elapses
 
+	// One-track render cache: a jingle→track resume re-schedules instantly
+	// instead of re-synthesizing. AudioBuffers are immutable and may back
+	// any number of source nodes, so the cache holds the same buffers the
+	// first play used — no second copy of the PCM.
+	cacheKey     string
+	cacheChunks  []js.Value
+	cacheSeconds float64 // musical length (sans tail) of the cached track
+
+	// gen is bumped on every play/stop. In-flight render and loop
+	// goroutines snapshot it and abandon when superseded.
 	gen atomic.Uint64
 }
 
@@ -132,95 +159,102 @@ func (d *webMidiDriver) ensureSoundFont() *meltysynth.SoundFont {
 	return d.soundFont
 }
 
-// handle dispatches a signlink Midi command (same protocol as native).
-func (d *webMidiDriver) handle(cmd string) {
-	switch cmd {
-	case "stop":
-		d.stop(signlink.ReadMidiFade() == 1)
-	case "voladjust":
-		d.applyMidiVolume()
-	default:
-		log.Printf("audio/midi: ignoring unexpected command %q", cmd)
-	}
-}
-
-// applyMidiVolume sets the shared music gain from MidiVol (called on
-// voladjust and every track change).
-func (d *webMidiDriver) applyMidiVolume() {
-	v := float64(volumeFromCentibels(signlink.ReadMidiVol()))
-	musicGain.Get("gain").Set("value", v)
-}
-
-// playFromBytes is the play entry point. gen is bumped now so a newer
-// play/stop arriving during the (background) render makes this goroutine
-// abandon. The whole thing runs off the game-loop goroutine so the loop keeps
-// drawing during synthesis.
-func (d *webMidiDriver) playFromBytes(midData []byte, fade bool) {
-	d.applyMidiVolume()
+// play (midiSink) replaces the current track immediately — Java:
+// sequencer.setSequence (MidiPlayer.java:38); any audible crossfade is the
+// audioLoop's stepped setVolume, which has already run a full fade-out
+// before this is called on a fading change. Rendering runs on a background
+// goroutine so the 50ms tick isn't blocked by synthesis.
+func (d *webMidiDriver) play(midData []byte, loop bool, vol int) {
+	d.setVolume(vol) // Java: setVolume before sequencer.start() (MidiPlayer.java:40-41)
 	gen := d.gen.Add(1)
-	go d.playTrack(midData, fade, gen)
-}
-
-// playTrack fades out the previous stream (fade-out-then-start, matching
-// native: the new track starts only after the old has faded), creates the new
-// stream, then plays the cached full buffer (loop re-issue) or stream-renders
-// a new track onto it.
-func (d *webMidiDriver) playTrack(midData []byte, fade bool, gen uint64) {
-	now := ac.Get("currentTime").Float()
-	startAt := now
-
 	d.mu.Lock()
 	old := d.cur
+	d.cur = nil
 	d.mu.Unlock()
 	if old != nil {
-		if fade {
-			old.fadeGain.Get("gain").Call("setTargetAtTime", 0.0, now, fadeTimeConstant)
-			startAt = now + fadeDuration.Seconds()
-			go func() {
-				time.Sleep(fadeDuration)
-				old.stopAll()
-			}()
-		} else {
-			old.stopAll()
-		}
+		old.stopAll()
 	}
+	go d.startTrack(midData, loop, gen)
+}
 
-	s := &musicStream{fadeGain: ac.Call("createGain")}
-	s.fadeGain.Get("gain").Set("value", 1.0)
-	s.fadeGain.Call("connect", musicGain)
+// setVolume (midiSink): linear vol/256 on the shared music gain node.
+// Java: MidiPlayer.setVolume(0, volume) — see linearVolume for the proof
+// that the CC rescale collapses to this.
+func (d *webMidiDriver) setVolume(vol int) {
+	if !musicGain.Truthy() {
+		return
+	}
+	musicGain.Get("gain").Set("value", linearVolume(vol))
+}
+
+// stop (midiSink): Java MidiPlayer.stop() (MidiPlayer.java:46-49). The gen
+// bump makes in-flight render/loop goroutines abandon.
+func (d *webMidiDriver) stop() {
+	d.gen.Add(1)
+	d.mu.Lock()
+	s := d.cur
+	d.cur = nil
+	d.looping = false
+	d.musicalEnd = 0
+	d.mu.Unlock()
+	if s != nil {
+		s.stopAll()
+	}
+}
+
+// running (midiSink): Java Sequencer.isRunning() — a looping track never
+// ends; a one-shot ends when its musical length elapses on the context
+// clock.
+func (d *webMidiDriver) running() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.cur == nil {
+		return false
+	}
+	return d.looping || ac.Get("currentTime").Float() < d.musicalEnd
+}
+
+// startTrack makes a new stream current and feeds it: cached chunks for a
+// repeat of the cached track, or a fresh streaming render.
+func (d *webMidiDriver) startTrack(midData []byte, loop bool, gen uint64) {
+	now := ac.Get("currentTime").Float()
+	s := &musicStream{}
 
 	d.mu.Lock()
 	if d.gen.Load() != gen { // superseded before we became current
 		d.mu.Unlock()
-		s.fadeGain.Call("disconnect")
 		return
 	}
 	d.cur = s
+	d.looping = loop
 	cacheHit := d.cacheKey == string(midData) && len(d.cacheChunks) > 0
 	var cached []js.Value
+	var seconds float64
 	if cacheHit {
-		cached = d.cacheChunks
+		cached, seconds = d.cacheChunks, d.cacheSeconds
+		d.musicalEnd = now + seconds
 	}
 	d.mu.Unlock()
 
 	if cacheHit {
-		d.replayChunks(s, cached, startAt, gen) // re-schedule the cached chunks
+		d.replayChunks(s, cached, now, gen)
+		if loop {
+			d.keepLooping(s, cached, now+seconds, seconds, gen)
+		}
 		return
 	}
-	d.streamRender(s, midData, startAt, gen)
+	d.streamRender(s, midData, now, loop, gen)
 }
 
-// replayChunks re-schedules an already-rendered track's chunk buffers (a loop
-// re-issue) onto the new stream, gapless from startAt, advancing by each
-// chunk's own frame count. AudioBuffers are immutable and may back any number
-// of source nodes, so the cache holds the same buffers the first play used —
-// no extra copy of the PCM. Yields between chunks (single-threaded wasm) so the
-// game loop keeps drawing; abandons if superseded.
+// replayChunks schedules already-rendered chunks gapless from startAt,
+// advancing by each chunk's own frame count. Yields between chunks
+// (single-threaded wasm) so the game loop keeps drawing; abandons if
+// superseded.
 func (d *webMidiDriver) replayChunks(s *musicStream, chunks []js.Value, startAt float64, gen uint64) {
 	at := startAt
 	for _, buf := range chunks {
 		if d.gen.Load() != gen {
-			return // superseded: the new command fades+stops this stream
+			return // superseded: the new command stops this stream
 		}
 		s.schedule(buf, at)
 		at += float64(buf.Get("length").Int()) / float64(SampleRate)
@@ -228,16 +262,16 @@ func (d *webMidiDriver) replayChunks(s *musicStream, chunks []js.Value, startAt 
 	}
 }
 
-// streamRender synthesizes the track chunk by chunk, scheduling each chunk to
+// streamRender synthesizes the track chunk by chunk, scheduling each to
 // play seamlessly as it is produced (so playback starts after chunk 0), and
-// caches the chunk buffers themselves for instant loop replay (the cache shares
-// these buffers — there is no second full-track copy). Renders through a small
-// reusable scratch buffer so the Go heap peak stays flat regardless of track
-// length; the rendered PCM lives only in the JS AudioBuffers (Go wasm linear
-// memory never shrinks, so a full-track []float32 would permanently inflate
-// it). Yields between chunks so the game loop keeps drawing. Abandons if
-// superseded.
-func (d *webMidiDriver) streamRender(s *musicStream, midData []byte, startAt float64, gen uint64) {
+// caches the chunk buffers for instant replay. Renders through a small
+// reusable scratch pair so the Go heap peak stays flat regardless of track
+// length; the rendered PCM lives only in the JS AudioBuffers (Go wasm
+// linear memory never shrinks, so a full-track []float32 would permanently
+// inflate it). Yields between chunks so the game loop keeps drawing.
+// Abandons if superseded. When loop is set, hands off to keepLooping after
+// the full render.
+func (d *webMidiDriver) streamRender(s *musicStream, midData []byte, startAt float64, loop bool, gen uint64) {
 	sf := d.ensureSoundFont()
 	if sf == nil {
 		return
@@ -255,19 +289,26 @@ func (d *webMidiDriver) streamRender(s *musicStream, midData []byte, startAt flo
 		return
 	}
 	seq := meltysynth.NewMidiFileSequencer(synth)
-	seq.Play(midiFile, false) // no synth-side loop; the game re-issues SetMidi
+	// One rendering pass; looping is keepLooping's chunk re-scheduling
+	// (Java setLoopCount(-1) has no prerender equivalent).
+	seq.Play(midiFile, false)
+
+	seconds := midiFile.GetLength().Seconds()
+	d.mu.Lock()
+	d.musicalEnd = startAt + seconds
+	d.mu.Unlock()
 
 	frames := renderFrameCount(midiFile.GetLength())
-	// One reusable chunk-sized scratch pair, not two full-track slices. Safe to
-	// reuse because f32ToJSFloat32Array copies the bytes into the JS buffer
-	// before the next Render overwrites the scratch.
+	// One reusable chunk-sized scratch pair, not two full-track slices.
+	// Safe to reuse because f32ToJSFloat32Array copies the bytes into the
+	// JS buffer before the next Render overwrites the scratch.
 	left := make([]float32, renderChunkFrames)
 	right := make([]float32, renderChunkFrames)
 	chunks := make([]js.Value, 0, (frames+renderChunkFrames-1)/renderChunkFrames)
 	at := startAt
 	for off := 0; off < frames; off += renderChunkFrames {
 		if d.gen.Load() != gen {
-			return // superseded: the new command fades+stops this stream
+			return
 		}
 		n := renderChunkFrames
 		if off+n > frames {
@@ -290,32 +331,31 @@ func (d *webMidiDriver) streamRender(s *musicStream, midData []byte, startAt flo
 	d.mu.Lock()
 	d.cacheKey = string(midData)
 	d.cacheChunks = chunks
+	d.cacheSeconds = seconds
 	d.mu.Unlock()
+
+	if loop {
+		d.keepLooping(s, chunks, startAt+seconds, seconds, gen)
+	}
 }
 
-// stop silences music. With fade, ramp the current stream's gain to 0 then
-// stop it after fadeDuration; without, stop immediately. gen-guarded so a
-// play arriving during the fade isn't clobbered.
-func (d *webMidiDriver) stop(fade bool) {
-	d.gen.Add(1) // supersede any in-flight render so its goroutine abandons
-	d.mu.Lock()
-	s := d.cur
-	d.cur = nil
-	d.mu.Unlock()
-	if s == nil {
-		return
+// keepLooping schedules iteration after iteration of the rendered chunks,
+// each one musical length after the previous, staying loopLookahead ahead
+// of the context clock. Runs until superseded — a stop or track change
+// bumps gen AND stopAlls the stream, cancelling anything pre-scheduled.
+// Java: Sequencer.setLoopCount(-1) (MidiPlayer.java:39).
+func (d *webMidiDriver) keepLooping(s *musicStream, chunks []js.Value, nextAt, seconds float64, gen uint64) {
+	if seconds <= 0 {
+		return // degenerate zero-length track: nothing meaningful to loop
 	}
-	if !fade {
-		s.stopAll()
-		return
+	for d.gen.Load() == gen {
+		now := ac.Get("currentTime").Float()
+		if nextAt-now < loopLookahead.Seconds() {
+			d.replayChunks(s, chunks, nextAt, gen)
+			nextAt += seconds
+			s.pruneEnded(now)
+			continue
+		}
+		time.Sleep(time.Second)
 	}
-	now := ac.Get("currentTime").Float()
-	s.fadeGain.Get("gain").Call("setTargetAtTime", 0.0, now, fadeTimeConstant)
-	go func() {
-		time.Sleep(fadeDuration)
-		// No gen check: stop already set d.cur=nil, so a PlayMIDI arriving
-		// during the fade builds a separate stream — stopping this faded-out
-		// one is always correct, and stopAll is idempotent.
-		s.stopAll()
-	}()
 }

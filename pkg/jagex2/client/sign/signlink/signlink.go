@@ -386,20 +386,6 @@ func SetMidiCommand(s string) {
 	MidiData = nil
 }
 
-// ConsumeMidi atomically reads and clears the command slot.
-//
-// Deprecated: superseded by PeekMidi/ClearMidi (the faithful consumer needs
-// the fade-out latch). Still used by the js watcher until it moves onto
-// runAudioLoop; remove with it.
-func ConsumeMidi() string {
-	mu.Lock()
-	defer mu.Unlock()
-	s := Midi
-	Midi = ""
-	MidiData = nil
-	return s
-}
-
 // SetMidiFade publishes the fade flag (0 = immediate, 1 = crossfade) that
 // the audio driver reads when honoring the next "stop" or track change.
 func SetMidiFade(v int) {
