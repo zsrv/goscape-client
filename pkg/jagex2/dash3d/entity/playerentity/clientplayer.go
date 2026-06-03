@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	ModelCache = datastruct.NewLruCache[*model.Model](200)
+	ModelCache = datastruct.NewLruCache[*model.Model](260) // Java: new LruCache(260) (244; 225 was 200)
 }
 
 type ClientPlayer struct {

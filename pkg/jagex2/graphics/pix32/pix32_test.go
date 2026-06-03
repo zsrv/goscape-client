@@ -26,20 +26,3 @@ func TestDrawRotatedMaskedRecoversOnOutOfBounds(t *testing.T) {
 
 	// Reaching this point means the out-of-bounds access was recovered.
 }
-
-// TestCropRecoversOnOutOfBounds covers the sibling guard in Crop
-// (Pix32.java:302-353, "error in sprite clipping routine"). A zero scale
-// denominator forces a divide-by-zero panic that Java swallows.
-func TestCropRecoversOnOutOfBounds(t *testing.T) {
-	pix2d.Reset()
-	t.Cleanup(pix2d.Reset)
-	pix2d.Bind(4, make([]int, 16), 4)
-
-	p := NewPix321(2, 2)
-
-	// arg2 == 0 makes the `(var6 << 16) / arg2` divisions panic (integer
-	// divide by zero); the deferred recover must absorb it.
-	p.Crop(4, 0, 0, 0)
-
-	// Reaching this point means the panic was recovered.
-}

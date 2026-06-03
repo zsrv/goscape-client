@@ -20,7 +20,7 @@ var (
 	MembersWorld bool = true
 
 	ModelCache = datastruct.NewLruCache[*model.Model](50)
-	IconCache  = datastruct.NewLruCache[*pix32.Pix32](200)
+	IconCache  = datastruct.NewLruCache[*pix32.Pix32](100) // Java: new LruCache(100) (244; 225 was 200)
 )
 
 type ObjType struct {
@@ -343,27 +343,35 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 	return var4
 }
 
-func GetIcon(arg0, arg2 int) *pix32.Pix32 {
-	var3 := IconCache.Get(int64(arg0))
-	if var3 != nil && var3.OHi != arg2 && var3.OHi != -1 {
-		// Java: var3.unlink() — DoublyLinkable's unlink() removes the node
-		// from both the hashtable bucket and the history list. The Go port
-		// of LruCache exposes Delete(key) for the same effect.
-		IconCache.Delete(int64(arg0))
-		var3 = nil
+// GetIcon renders (or fetches from IconCache) the 32x32 inventory icon for
+// obj `id` at stack `count`. outlineRgb selects the 244 variant: 0 = plain
+// (cacheable, dark shadow pass), >0 = selection outline painted in that
+// colour (1.04x zoom), -1 = cert-link sub-icon (1.5x zoom, no outline/shadow).
+// Java: ObjType.getIcon(outlineRgb, count, id) (ObjType.java:474-622).
+func GetIcon(outlineRgb int, count int, id int) *pix32.Pix32 {
+	// Java: the icon cache is only consulted (and later populated) for the
+	// plain outlineRgb==0 variant (ObjType.java:475-486, 602-604).
+	if outlineRgb == 0 {
+		var3 := IconCache.Get(int64(id))
+		if var3 != nil && var3.OHi != count && var3.OHi != -1 {
+			// Java: var3.unlink() — DoublyLinkable's unlink() removes the node
+			// from both the hashtable bucket and the history list. The Go port
+			// of LruCache exposes Delete(key) for the same effect.
+			IconCache.Delete(int64(id))
+			var3 = nil
+		}
+		if var3 != nil {
+			return var3
+		}
 	}
-	if var3 != nil {
-		return var3
-	}
-	var4 := Get(arg0)
+	var4 := Get(id)
 	if var4.CountObj == nil {
-		arg2 = -1
+		count = -1
 	}
-	var5 := 0
-	if arg2 > 1 {
-		var5 = -1
+	if count > 1 {
+		var5 := -1
 		for i := range 10 {
-			if arg2 >= var4.CountCo[i] && var4.CountCo[i] != 0 {
+			if count >= var4.CountCo[i] && var4.CountCo[i] != 0 {
 				var5 = var4.CountObj[i]
 			}
 		}
@@ -379,8 +387,18 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 	if var15 == nil {
 		return nil
 	}
-	var3 = pix32.NewPix321(32, 32)
-	var5 = pix3d.CenterW3D
+	// Java: the cert-link sub-icon is fetched BEFORE binding the icon buffer —
+	// the recursive call rebinds Pix2D itself (ObjType.java:512-519). The -1
+	// variant applies the 1.5x zoom.
+	var linkedIcon *pix32.Pix32
+	if var4.CertTemplate != -1 {
+		linkedIcon = GetIcon(-1, 10, var4.CertLink)
+		if linkedIcon == nil {
+			return nil
+		}
+	}
+	var3 := pix32.NewPix321(32, 32)
+	var5 := pix3d.CenterW3D
 	var6 := pix3d.CenterH3D
 	var7 := pix3d.LineOffset
 	var8 := pix2d.Data
@@ -394,12 +412,19 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 	pix2d.Bind(32, var3.Pixels, 32)
 	pix2d.FillRect(0, 0, 0, 32, 32)
 	pix3d.Init2D()
-	// Java: `Pix3D.sinTable[xan2d] * zoom2d >> 16` is 32-bit int arithmetic; the
+	// Java: zoom scaling per variant (ObjType.java:539-544, new in 244).
+	zoom := var4.Zoom2D
+	if outlineRgb == -1 {
+		zoom = int(float64(zoom) * 1.5)
+	} else if outlineRgb > 0 {
+		zoom = int(float64(zoom) * 1.04)
+	}
+	// Java: `Pix3D.sinTable[xan2d] * zoom >> 16` is 32-bit int arithmetic; the
 	// product overflows/wraps at 2^31 (reachable when zoom2d > 32768). int32(...)
 	// reproduces that truncation before the arithmetic >>16, which Go's 64-bit int
 	// would otherwise skip. Same fix as DrawInterface type-6 (client.go).
-	var16 := int(int32(pix3d.SinTable[var4.Xan2D]*var4.Zoom2D)) >> 16
-	var17 := int(int32(pix3d.CosTable[var4.Xan2D]*var4.Zoom2D)) >> 16
+	var16 := int(int32(pix3d.SinTable[var4.Xan2D]*zoom)) >> 16
+	var17 := int(int32(pix3d.CosTable[var4.Xan2D]*zoom)) >> 16
 	var15.DrawSimple(0, var4.Yan2D, var4.Zan2D, var4.Xan2D, var4.Xof2D, var16+var15.MaxY/2+var4.Yof2D, var17+var4.Yof2D)
 	for i := 31; i >= 0; i-- {
 		for j := 31; j >= 0; j-- {
@@ -416,24 +441,49 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 			}
 		}
 	}
-	for i := 31; i >= 0; i-- {
-		for j := 31; j >= 0; j-- {
-			if var3.Pixels[i+j*32] == 0 && i > 0 && j > 0 && var3.Pixels[i-1+(j-1)*32] > 0 {
-				var3.Pixels[i+j*32] = 3153952
+	if outlineRgb > 0 {
+		// Java: ObjType.java:567-582 (new in 244) — paint the selection
+		// outline around the silhouette.
+		for i := 31; i >= 0; i-- {
+			for j := 31; j >= 0; j-- {
+				if var3.Pixels[i+j*32] == 0 {
+					if i > 0 && var3.Pixels[i-1+j*32] == 1 {
+						var3.Pixels[i+j*32] = outlineRgb
+					} else if j > 0 && var3.Pixels[i+(j-1)*32] == 1 {
+						var3.Pixels[i+j*32] = outlineRgb
+					} else if i < 31 && var3.Pixels[i+1+j*32] == 1 {
+						var3.Pixels[i+j*32] = outlineRgb
+					} else if j < 31 && var3.Pixels[i+(j+1)*32] == 1 {
+						var3.Pixels[i+j*32] = outlineRgb
+					}
+				}
+			}
+		}
+	} else if outlineRgb == 0 {
+		// Java: ObjType.java:583-591 — the dark drop-shadow pass is gated to
+		// the plain variant in 244.
+		for i := 31; i >= 0; i-- {
+			for j := 31; j >= 0; j-- {
+				if var3.Pixels[i+j*32] == 0 && i > 0 && j > 0 && var3.Pixels[i-1+(j-1)*32] > 0 {
+					var3.Pixels[i+j*32] = 3153952
+				}
 			}
 		}
 	}
 	if var4.CertTemplate != -1 {
-		var20 := GetIcon(var4.CertLink, 10)
-		var21 := var20.OWi
-		var22 := var20.OHi
-		var20.OWi = 32
-		var20.OHi = 32
-		var20.Crop(22, 5, 22, 5)
-		var20.OWi = var21
-		var20.OHi = var22
+		// Java: ObjType.java:593-601 — 1:1 plotSprite blit of the cert-link
+		// icon over the note background (225 used the crop/scale routine).
+		var21 := linkedIcon.OWi
+		var22 := linkedIcon.OHi
+		linkedIcon.OWi = 32
+		linkedIcon.OHi = 32
+		linkedIcon.PlotSprite(0, 0)
+		linkedIcon.OWi = var21
+		linkedIcon.OHi = var22
 	}
-	IconCache.Put(int64(arg0), var3)
+	if outlineRgb == 0 { // Java: ObjType.java:602-604
+		IconCache.Put(int64(id), var3)
+	}
 	pix2d.Bind(var9, var8, var10)
 	pix2d.SetClipping(var14, var13, var12, var11)
 	pix3d.CenterW3D = var5
@@ -445,7 +495,7 @@ func GetIcon(arg0, arg2 int) *pix32.Pix32 {
 	} else {
 		var3.OWi = 32
 	}
-	var3.OHi = arg2
+	var3.OHi = count
 	return var3
 }
 

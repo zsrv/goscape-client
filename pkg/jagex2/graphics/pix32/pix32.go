@@ -345,90 +345,10 @@ func (p *Pix32) Plot(pix2dData []int, pix32PixelsSrc []int, srcOff, dstOff, w, h
 	}
 }
 
-func (p *Pix32) Crop(arg0, arg1, arg2, arg4 int) {
-	// Java: crop() wraps its body in try { ... } catch (Exception var17) {
-	// System.out.println("error in sprite clipping routine"); } (Pix32.java:302-353)
-	// — an out-of-bounds index aborts this single draw, logs, and continues.
-	defer func() {
-		if recover() != nil {
-			fmt.Println("error in sprite clipping routine")
-		}
-	}()
-	var6 := p.Wi
-	var7 := p.Hi
-	var8 := 0
-	var9 := 0
-	_ = (var6 << 16) / arg2
-	_ = (var7 << 16) / arg0
-	var12 := p.OWi
-	var13 := p.OHi
-	var18 := (var12 << 16) / arg2
-	var19 := (var13 << 16) / arg0
-	arg4 += (p.XOf*arg2 + var12 - 1) / var12
-	arg1 += (p.YOf*arg0 + var13 - 1) / var13
-	if p.XOf*arg2%var12 != 0 {
-		var8 = ((var12 - (p.XOf*arg2)%var12) << 16) / arg2
-	}
-	if p.YOf*arg0%var13 != 0 {
-		var9 = ((var13 - (p.YOf*arg0)%var13) << 16) / arg0
-	}
-	arg2 = arg2 * (p.Wi - (var8 >> 16)) / var12
-	arg0 = arg0 * (p.Hi - (var9 >> 16)) / var13
-	var14 := arg4 + arg1*pix2d.Width2D
-	var15 := pix2d.Width2D - arg2
-	if arg1 < pix2d.Top {
-		var16 := pix2d.Top - arg1
-		arg0 -= var16
-		arg1 = 0
-		var14 += var16 * pix2d.Width2D
-		var9 += var19 * var16
-	}
-	if arg1+arg0 > pix2d.Bottom {
-		arg0 -= arg1 + arg0 - pix2d.Bottom
-	}
-	if arg4 < pix2d.Left {
-		var16 := pix2d.Left - arg4
-		arg2 -= var16
-		arg4 = 0
-		var14 += var16
-		var8 += var18 * var16
-		var15 += var16
-	}
-	if arg4+arg2 > pix2d.Right {
-		var16 := arg4 + arg2 - pix2d.Right
-		arg2 -= var16
-		var15 += var16
-	}
-	p.Scale(var8, var18, pix2d.Data, var19, var9, p.Pixels, var15, var14, arg0, var6, arg2)
-}
-
-func (p *Pix32) Scale(arg0 int, arg1 int, arg2 []int, arg4 int, arg5 int, arg7 []int, arg8, arg9, arg10, arg11, arg12 int) {
-	// Java: scale() wraps its body in try { ... } catch (Exception var18) {
-	// System.out.println("error in plot_scale"); } (Pix32.java:357-378) — an
-	// out-of-bounds index aborts this single draw, logs, and continues.
-	defer func() {
-		if recover() != nil {
-			fmt.Println("error in plot_scale")
-		}
-	}()
-	var14 := arg0
-	for i := -arg10; i < 0; i++ {
-		var16 := (arg5 >> 16) * arg11
-		for j := -arg12; j < 0; j++ {
-			var19 := arg7[(arg0>>16)+var16]
-			if var19 == 0 {
-				arg9++
-			} else {
-				arg2[arg9] = var19
-				arg9++
-			}
-			arg0 += arg1
-		}
-		arg5 += arg4
-		arg0 = var14
-		arg9 += arg8
-	}
-}
+// Java: 244 Pix32 has no crop()/scale() — those were 225-clean-only methods
+// (225 Pix32.java:302-379) dropped in the 244 deob. Their sole live caller
+// (ObjType.getIcon's cert overlay) uses plotSprite in 244, so the Go ports
+// were removed with the getIcon 244 migration.
 
 func (p *Pix32) DrawAlpha(arg0, x, y int) {
 	x += p.XOf

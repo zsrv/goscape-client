@@ -3708,31 +3708,65 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 							var33 = 0
 							var21 = 0
 							var22 = var14.InvSlotObjId[var27] - 1
-							if var18 >= -32 && var18 <= 512 && var32 >= -32 && var32 <= 334 || c.ObjDragArea != 0 && c.ObjDragSlot == var27 {
-								var23 := objtype.GetIcon(var22, var14.InvSlotObjCount[var27])
-								if c.ObjDragArea != 0 && c.ObjDragSlot == var27 && c.ObjDragInterfaceID == var14.Id {
-									var33 = c.MouseX - c.ObjGrabX
-									var21 = c.MouseY - c.ObjGrabY
-									if var33 < 5 && var33 > -5 {
-										var33 = 0
-									}
-									if var21 < 5 && var21 > -5 {
-										var21 = 0
-									}
-									if c.ObjDragCycles < 5 {
-										var33 = 0
-										var21 = 0
-									}
-									var23.DrawAlpha(128, var18+var33, var32+var21)
-								} else if c.SelectedArea != 0 && c.SelectedItem == var27 && c.SelectedInterface == var14.Id {
-									var23.DrawAlpha(128, var18, var32)
-								} else {
-									var23.PlotSprite(var32, var18)
+							// Java: slot visibility uses the CURRENT clip rectangle
+							// (Client.java:10574), not hardcoded bounds.
+							if var18 > pix2d.Left-32 && var18 < pix2d.Right && var32 > pix2d.Top-32 && var32 < pix2d.Bottom || c.ObjDragArea != 0 && c.ObjDragSlot == var27 {
+								// Java: Client.java:10575-10580 (new in 244) — white
+								// outline on the selected/being-used inventory item.
+								outline := 0
+								if c.ObjSelected == 1 && c.ObjSelectedSlot == var27 && c.ObjSelectedInterface == var14.Id {
+									outline = 16777215
 								}
-								if var23.OWi == 33 || var14.InvSlotObjCount[var27] != 1 {
-									var24 := var14.InvSlotObjCount[var27]
-									c.FontPlain11.DrawString(var18+1+var33, var32+10+var21, 0, FormatObjCount(var24))
-									c.FontPlain11.DrawString(var18+var33, var32+9+var21, 0xFFFF00, FormatObjCount(var24))
+								var23 := objtype.GetIcon(outline, var14.InvSlotObjCount[var27], var22)
+								if var23 != nil {
+									if c.ObjDragArea != 0 && c.ObjDragSlot == var27 && c.ObjDragInterfaceID == var14.Id {
+										var33 = c.MouseX - c.ObjGrabX
+										var21 = c.MouseY - c.ObjGrabY
+										if var33 < 5 && var33 > -5 {
+											var33 = 0
+										}
+										if var21 < 5 && var21 > -5 {
+											var21 = 0
+										}
+										if c.ObjDragCycles < 5 {
+											var33 = 0
+											var21 = 0
+										}
+										var23.DrawAlpha(128, var18+var33, var32+var21)
+										// Java: Client.java:10602-10628 — drag-to-edge
+										// autoscroll of the parent scrollable.
+										if var32+var21 < pix2d.Top && var14.ScrollPosition > 0 {
+											var35 := (pix2d.Top - var32 - var21) * c.SceneDelta / 3
+											if var35 > c.SceneDelta*10 {
+												var35 = c.SceneDelta * 10
+											}
+											if var35 > var14.ScrollPosition {
+												var35 = var14.ScrollPosition
+											}
+											var14.ScrollPosition -= var35
+											c.ObjGrabY += var35
+										}
+										if var32+var21+32 > pix2d.Bottom && var14.ScrollPosition < var14.Scroll-var14.Height {
+											var35 := (var32 + var21 + 32 - pix2d.Bottom) * c.SceneDelta / 3
+											if var35 > c.SceneDelta*10 {
+												var35 = c.SceneDelta * 10
+											}
+											if var35 > var14.Scroll-var14.Height-var14.ScrollPosition {
+												var35 = var14.Scroll - var14.Height - var14.ScrollPosition
+											}
+											var14.ScrollPosition += var35
+											c.ObjGrabY -= var35
+										}
+									} else if c.SelectedArea != 0 && c.SelectedItem == var27 && c.SelectedInterface == var14.Id {
+										var23.DrawAlpha(128, var18, var32)
+									} else {
+										var23.PlotSprite(var32, var18)
+									}
+									if var23.OWi == 33 || var14.InvSlotObjCount[var27] != 1 {
+										var24 := var14.InvSlotObjCount[var27]
+										c.FontPlain11.DrawString(var18+1+var33, var32+10+var21, 0, FormatObjCount(var24))
+										c.FontPlain11.DrawString(var18+var33, var32+9+var21, 0xFFFF00, FormatObjCount(var24))
+									}
 								}
 							}
 						} else if var14.InvSlotSprite != nil && var27 < 20 {
