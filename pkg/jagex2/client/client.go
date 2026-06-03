@@ -504,31 +504,34 @@ type Client struct {
 	JagTitle                      *io.Jagfile
 	// OnDemand is the rev-244 model/anim/map on-demand loader, created from the
 	// versionlist archive at boot. Java: client.onDemand (OnDemand).
-	OnDemand            *ondemand.OnDemand
-	Stream              *clientstream.ClientStream
-	ModalMessage        string
-	ObjSelectedName     string
-	SpellCaption        string
-	MidiSyncName        string
-	CurrentMidi         string
-	AreaChatbackOffsets []int
-	AreaSidebarOffsets  []int
-	AreaViewportOffsets []int
-	FlameBuffer0        []int
-	FlameBuffer1        []int
-	FlameGradient       []int
-	FlameGradient0      []int
-	FlameGradient1      []int
-	FlameGradient2      []int
-	SceneMapIndex       []int
-	FlameBuffer3        []int
-	FlameBuffer2        []int
-	ImageRunes          []*pix8.Pix8
-	SceneMapLocData     [][]byte
-	SceneMapLandFile    []int      // Java: sceneMapLandFile[]; allocated/filled by WS2 opcode 165 (REBUILD_NORMAL, Client.java:7744) — nil until then
-	SceneMapLocFile     []int      // Java: sceneMapLocFile[];  allocated/filled by WS2 opcode 165 (Client.java:7745) — nil until then
-	LevelTileFlags      [][][]int8 // Java: byte[][][] (signed) — int8 so int() sign-extends
-	LevelHeightMap      [][][]int
+	OnDemand                   *ondemand.OnDemand
+	Stream                     *clientstream.ClientStream
+	ModalMessage               string
+	ObjSelectedName            string
+	SpellCaption               string
+	MidiSyncName               string
+	CurrentMidi                string
+	AreaChatbackOffsets        []int
+	AreaSidebarOffsets         []int
+	AreaViewportOffsets        []int
+	FlameBuffer0               []int
+	FlameBuffer1               []int
+	FlameGradient              []int
+	FlameGradient0             []int
+	FlameGradient1             []int
+	FlameGradient2             []int
+	SceneMapIndex              []int
+	FlameBuffer3               []int
+	FlameBuffer2               []int
+	ImageRunes                 []*pix8.Pix8
+	SceneMapLocData            [][]byte
+	SceneMapLandFile           []int      // Java: sceneMapLandFile[]; allocated/filled by WS2 opcode 165 (REBUILD_NORMAL, Client.java:7744) — nil until then
+	SceneMapLocFile            []int      // Java: sceneMapLocFile[];  allocated/filled by WS2 opcode 165 (Client.java:7745) — nil until then
+	LevelTileFlags             [][][]int8 // Java: byte[][][] (signed) — int8 so int() sign-extends
+	LevelHeightMap             [][][]int
+	NextMidiSong               int // Java: nextMidiSong (Client.java)
+	MembersAccount             int // Java: membersAccount (Client.java)
+	ViewportOverlayInterfaceID int // Java: viewportOverlayInterfaceId (Client.java) — WS2-followup: render viewportOverlay in DrawScene (Java Client.java:6555-6557)
 }
 
 func NewClient() *Client {
@@ -543,29 +546,31 @@ func NewClient() *Client {
 		KeyQueue:  make([]int, 128),
 		// END GameShell
 
-		CameraModifierEnabled: make([]bool, 5),
-		MergedLocations:       datastruct.NewLinkList[*entity.LocMergeEntity](),
-		IgnoreName37:          make([]int64, 100),
-		MessageIds:            make([]int, 100),
-		Out:                   io.Alloc(1),
-		SkillLevel:            make([]int, 50),
-		ChatInterface:         component.NewComponent(),
-		WaveLoops:             make([]int, 50),
-		LocalPID:              -1,
-		DesignColors:          make([]int, 5),
-		Login:                 io.Alloc(1),
-		FriendWorld:           make([]int, 100),
-		MinimapLevel:          -1,
-		ImageHitmarks:         make([]*pix32.Pix32, 20),
-		LastWaveID:            -1,
-		DesignIdentikits:      make([]int, 7),
-		ActiveMapFunctions:    make([]*pix32.Pix32, 1000),
-		ChatScrollHeight:      78,
-		In:                    io.Alloc(1),
-		JagChecksum:           make([]int, 9),
-		MidiThreadActive:      true,
-		ImageSideIcons:        make([]*pix8.Pix8, 13),
-		OrbitCameraPitch:      128,
+		CameraModifierEnabled:      make([]bool, 5),
+		MergedLocations:            datastruct.NewLinkList[*entity.LocMergeEntity](),
+		IgnoreName37:               make([]int64, 100),
+		MessageIds:                 make([]int, 100),
+		Out:                        io.Alloc(1),
+		SkillLevel:                 make([]int, 50),
+		ChatInterface:              component.NewComponent(),
+		WaveLoops:                  make([]int, 50),
+		LocalPID:                   -1,
+		NextMidiSong:               -1,
+		ViewportOverlayInterfaceID: -1,
+		DesignColors:               make([]int, 5),
+		Login:                      io.Alloc(1),
+		FriendWorld:                make([]int, 100),
+		MinimapLevel:               -1,
+		ImageHitmarks:              make([]*pix32.Pix32, 20),
+		LastWaveID:                 -1,
+		DesignIdentikits:           make([]int, 7),
+		ActiveMapFunctions:         make([]*pix32.Pix32, 1000),
+		ChatScrollHeight:           78,
+		In:                         io.Alloc(1),
+		JagChecksum:                make([]int, 9),
+		MidiThreadActive:           true,
+		ImageSideIcons:             make([]*pix8.Pix8, 13),
+		OrbitCameraPitch:           128,
 		// Java: deob/client.java:92 — `public int selectedTab = 3;`
 		// Latent in current flows (Login resets to 3 before InGame goes
 		// true) but the field-init keeps the Go state aligned with Java
@@ -1097,7 +1102,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 	var14 := 0
 	var15 := 0
 	var16 := 0
-	if arg2 == 59 || arg2 == 76 {
+	if arg2 == io.SERVERPROT_LOC_ADD_CHANGE || arg2 == io.SERVERPROT_LOC_DEL {
 		var4 = arg1.G1()
 		var5 = c.BaseX + ((var4 >> 4) & 0x7)
 		var6 = c.BaseZ + (var4 & 0x7)
@@ -1105,7 +1110,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 		var8 = var7 >> 2
 		var9 = var7 & 0x3
 		var10 = c.LOC_SHAPE_TO_LAYER[var8]
-		if arg2 == 76 {
+		if arg2 == io.SERVERPROT_LOC_DEL {
 			var11 = -1
 		} else {
 			var11 = arg1.G2()
@@ -1157,7 +1162,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 			var12.Angle = var9
 			c.AddLoc(var9, var5, var6, var10, var11, var8, c.CurrentLevel)
 		}
-	} else if arg2 == 42 {
+	} else if arg2 == io.SERVERPROT_LOC_ANIM {
 		// LOC_ANIM. Java: rev-244 readZonePacket LOC_ANIM — instead of the
 		// rev-225 LocList + PushLocs per-frame swap, fetch the scene node and
 		// point its ModelSource field at a fresh self-animating ClientLocAnim.
@@ -1206,7 +1211,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 			}
 		}
 	} else {
-		if arg2 == 223 {
+		if arg2 == io.SERVERPROT_OBJ_ADD {
 			var4 = arg1.G1()
 			var5 = c.BaseX + ((var4 >> 4) & 0x7)
 			var6 = c.BaseZ + (var4 & 0x7)
@@ -1222,7 +1227,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 				c.LevelObjStacks[c.CurrentLevel][var5][var6].AddTail(datastruct.NewLinkable(var32))
 				c.SortObjStacks(var5, var6)
 			}
-		} else if arg2 == 49 {
+		} else if arg2 == io.SERVERPROT_OBJ_DEL {
 			var4 = arg1.G1()
 			var5 = c.BaseX + ((var4 >> 4) & 0x7)
 			var6 = c.BaseZ + (var4 & 0x7)
@@ -1246,7 +1251,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 		} else {
 			var36 := 0
 			var37 := 0
-			if arg2 == 69 {
+			if arg2 == io.SERVERPROT_MAP_PROJANIM {
 				var4 = arg1.G1()
 				var5 = c.BaseX + ((var4 >> 4) & 0x7)
 				var6 = c.BaseZ + (var4 & 0x7)
@@ -1269,7 +1274,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 					var43.UpdateVelocity(c.GetHeightMapY(c.CurrentLevel, var7, var8)-var36, var8, var7, var37+clientextras.LoopCycle)
 					c.Projectiles.AddTail(datastruct.NewLinkable(var43))
 				}
-			} else if arg2 == 191 {
+			} else if arg2 == io.SERVERPROT_MAP_ANIM {
 				var4 = arg1.G1()
 				var5 = c.BaseX + ((var4 >> 4) & 0x7)
 				var6 = c.BaseZ + (var4 & 0x7)
@@ -1282,7 +1287,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 					var34 := entity.NewMapSpotAnim(var5, var7, var6, var9, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var8, c.CurrentLevel, clientextras.LoopCycle)
 					c.Spotanims.AddTail(datastruct.NewLinkable(var34))
 				}
-			} else if arg2 == 50 {
+			} else if arg2 == io.SERVERPROT_OBJ_REVEAL {
 				var4 = arg1.G1()
 				var5 = c.BaseX + ((var4 >> 4) & 0x7)
 				var6 = c.BaseZ + (var4 & 0x7)
@@ -1300,7 +1305,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 					c.SortObjStacks(var5, var6)
 				}
 			} else {
-				if arg2 == 23 {
+				if arg2 == io.SERVERPROT_LOC_MERGE {
 					var4 = arg1.G1()
 					var5 = c.BaseX + ((var4 >> 4) & 0x7)
 					var6 = c.BaseZ + (var4 & 0x7)
@@ -1361,7 +1366,7 @@ func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
 						var19.MaxTileZ = var6 + int(var42)
 					}
 				}
-				if arg2 == 151 {
+				if arg2 == io.SERVERPROT_OBJ_COUNT {
 					var4 = arg1.G1()
 					var5 = c.BaseX + ((var4 >> 4) & 0x7)
 					var6 = c.BaseZ + (var4 & 0x7)
@@ -9313,7 +9318,7 @@ func (c *Client) Read() (ok bool) {
 	// code-unit offset. Player names are ASCII-bound by the protocol, so for
 	// valid inputs the substring split below is identical to Java's
 	// substring(0, indexOf(":")). Fidelity-only divergence on non-ASCII names.
-	if c.PacketType == 4 {
+	if c.PacketType == io.SERVERPROT_MESSAGE_GAME {
 		var3 := c.In.GJStr()
 		if strings.HasSuffix(var3, ":tradereq:") {
 			var28 := var3[:strings.Index(var3, ":")]
@@ -9348,7 +9353,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 41 — private message inbound (client.java:10034-10069)
-	if c.PacketType == 41 {
+	if c.PacketType == io.SERVERPROT_MESSAGE_PRIVATE {
 		var39 := c.In.G8()
 		var5 := c.In.G4()
 		var6 := c.In.G1()
@@ -9398,13 +9403,13 @@ func (c *Client) Read() (ok bool) {
 	// Java: post-zone opcode dispatch (client.java:9697-10370). Unhandled
 	// opcodes fall through to the catch-all at client.java:10371-10372.
 	// Java: opcode 1 — NPC info (client.java:9454-9458)
-	if c.PacketType == 1 {
+	if c.PacketType == io.SERVERPROT_NPC_INFO {
 		c.GetNpcPos(c.In, c.PacketSize)
 		c.PacketType = -1
 		return true
 	}
 	// Java: opcode 162 — player info: base coords + appended zone packets (client.java:10299-10307)
-	if c.PacketType == 162 {
+	if c.PacketType == io.SERVERPROT_UPDATE_ZONE_PARTIAL_ENCLOSED {
 		c.BaseX = c.In.G1()
 		c.BaseZ = c.In.G1()
 		for c.In.Pos < c.PacketSize {
@@ -9415,7 +9420,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 184 — player info + scene build (client.java:10349-10369)
-	if c.PacketType == 184 {
+	if c.PacketType == io.SERVERPROT_PLAYER_INFO {
 		c.GetPlayer(c.In, c.PacketSize)
 		if c.SceneState == 1 {
 			c.SceneState = 2
@@ -9439,13 +9444,13 @@ func (c *Client) Read() (ok bool) {
 	}
 	// Java: zone-packet opcode group (client.java:9697-9700) — ten opcodes,
 	// each a thin pass-through to readZonePacket which dispatches internally.
-	if c.PacketType == 151 || c.PacketType == 23 || c.PacketType == 50 || c.PacketType == 191 || c.PacketType == 69 || c.PacketType == 49 || c.PacketType == 223 || c.PacketType == 42 || c.PacketType == 76 || c.PacketType == 59 {
+	if c.PacketType == io.SERVERPROT_OBJ_COUNT || c.PacketType == io.SERVERPROT_LOC_MERGE || c.PacketType == io.SERVERPROT_OBJ_REVEAL || c.PacketType == io.SERVERPROT_MAP_ANIM || c.PacketType == io.SERVERPROT_MAP_PROJANIM || c.PacketType == io.SERVERPROT_OBJ_DEL || c.PacketType == io.SERVERPROT_OBJ_ADD || c.PacketType == io.SERVERPROT_LOC_ANIM || c.PacketType == io.SERVERPROT_LOC_DEL || c.PacketType == io.SERVERPROT_LOC_ADD_CHANGE {
 		c.ReadZonePacket(c.In, c.PacketType)
 		c.PacketType = -1
 		return true
 	}
 	// Java: opcode 150 — varp set (byte) (client.java:9363-9377)
-	if c.PacketType == 150 {
+	if c.PacketType == io.SERVERPROT_VARP_SMALL {
 		var26 := c.In.G2()
 		var52 := c.In.G1B()
 		c.VarCache[var26] = int(var52)
@@ -9461,7 +9466,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 152 — friend list add/update + bubble-sort (client.java:9383-9431)
-	if c.PacketType == 152 {
+	if c.PacketType == io.SERVERPROT_UPDATE_FRIENDLIST {
 		var39 := c.In.G8()
 		var5 := c.In.G1()
 		var44 := jstring.FormatName(jstring.FromBase37(var39))
@@ -9512,7 +9517,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 43 — system update timer (client.java:9432-9436)
-	if c.PacketType == 43 {
+	if c.PacketType == io.SERVERPROT_UPDATE_REBOOT_TIMER {
 		c.SystemUpdateTimer = c.In.G2() * 30
 		c.PacketType = -1
 		return true
@@ -9684,14 +9689,14 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 197 — set component model to local player head (client.java:9609-9613)
-	if c.PacketType == 197 {
+	if c.PacketType == io.SERVERPROT_IF_SETPLAYERHEAD {
 		var26 := c.In.G2()
 		component.Instances[var26].Model = c.LocalPlayer.GetHeadModel()
 		c.PacketType = -1
 		return true
 	}
 	// Java: opcode 25 — hint arrow / minimap marker (client.java:9615-9650)
-	if c.PacketType == 25 {
+	if c.PacketType == io.SERVERPROT_HINT_ARROW {
 		c.HintType = c.In.G1()
 		if c.HintType == 1 {
 			c.HintNPC = c.In.G2()
@@ -9728,63 +9733,63 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 54 — MIDI music change (client.java:9652-9664)
-	if c.PacketType == 54 {
-		var3 := c.In.GJStr()
-		var4 := c.In.G4()
-		var5 := c.In.G4()
-		if var3 != c.CurrentMidi && c.MidiActive && !LowMemory {
-			c.SetMidi(var4, var3, var5)
+	// Java: opcode 240 — MIDI song change via on-demand archive 2 (Client.java:7534-7551)
+	if c.PacketType == io.SERVERPROT_MIDI_SONG {
+		id := c.In.G2()
+		if id == 65535 {
+			id = -1
 		}
-		c.CurrentMidi = var3
-		c.MidiCRC = var4
-		c.MidiSize = var5
+		if c.NextMidiSong != id && c.MidiActive && !LowMemory {
+			c.MidiSong = id
+			c.MidiFading = true
+			c.OnDemand.Request(2, c.MidiSong)
+		}
+		c.NextMidiSong = id
 		c.NextMusicDelay = 0
 		c.PacketType = -1
 		return true
 	}
+	// Java: opcode 173 — MIDI jingle via on-demand archive 2 (Client.java:7554-7568)
+	if c.PacketType == io.SERVERPROT_MIDI_JINGLE {
+		id := c.In.G2()
+		delay := c.In.G2()
+		if c.MidiActive && !LowMemory {
+			c.MidiSong = id
+			c.MidiFading = false
+			c.OnDemand.Request(2, c.MidiSong)
+			c.NextMusicDelay = delay
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 158 — open overlay interface in viewport (Client.java:7570-7575)
+	if c.PacketType == io.SERVERPROT_IF_OPENOVERLAY {
+		com := c.In.G2B()
+		c.ViewportOverlayInterfaceID = com
+		c.PacketType = -1
+		return true
+	}
 	// Java: opcode 142 — server-initiated logout (client.java:9666-9670)
-	if c.PacketType == 142 {
+	if c.PacketType == io.SERVERPROT_LOGOUT {
 		c.Logout()
 		c.PacketType = -1
 		return false
 	}
-	// Java: opcode 20 — scene map loc cache save (client.java:9671-9685)
-	if c.PacketType == 20 {
-		var26 := c.In.G1()
-		var4 := c.In.G1()
-		var5 := -1
-		for var6 := range len(c.SceneMapIndex) {
-			if c.SceneMapIndex[var6] == (var26<<8)+var4 {
-				var5 = var6
-			}
-		}
-		if var5 != -1 {
-			signlink.CacheSave(fmt.Sprintf("l%d_%d", var26, var4), c.SceneMapLocData[var5])
-			c.SceneState = 1
-		}
-		c.PacketType = -1
-		return true
-	}
 	// Java: opcode 19 — clear move-flag tile (client.java:9687-9690)
-	if c.PacketType == 19 {
+	if c.PacketType == io.SERVERPROT_UNSET_MAP_FLAG {
 		c.FlagSceneTileX = 0
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 139 — local player id (client.java:9692-9695)
-	if c.PacketType == 139 {
-		// Java: deob/client.java:9693 — `this.localPid = this.in.g2();`.
-		// The prior Go port had a duplicate field `LocalPid` (lowercase
-		// d) that this opcode wrote to, while every reader checked
-		// `LocalPID` — so local-player identity never updated and every
-		// "is this packet about me?" comparison silently failed.
+	// Java: opcode 210 — local player id + members flag (Client.java:7635-7641)
+	if c.PacketType == io.SERVERPROT_UPDATE_PID {
 		c.LocalPID = c.In.G2()
+		c.MembersAccount = c.In.G1()
 		c.PacketType = -1
 		return true
 	}
 	// Java: opcode 28 — open viewport+sidebar interface (client.java:9702-9720)
-	if c.PacketType == 28 {
+	if c.PacketType == io.SERVERPROT_IF_OPENMAIN_SIDE {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
 		if c.ChatInterfaceID != -1 {
@@ -9804,7 +9809,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 175 — varp set (g4) (client.java:9721-9735)
-	if c.PacketType == 175 {
+	if c.PacketType == io.SERVERPROT_VARP_LARGE {
 		var26 := c.In.G2()
 		var4 := c.In.G4()
 		c.VarCache[var26] = var4
@@ -9820,7 +9825,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 146 — component anim (client.java:9736-9742)
-	if c.PacketType == 146 {
+	if c.PacketType == io.SERVERPROT_IF_SETANIM {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
 		component.Instances[var26].Anim = var4
@@ -9828,7 +9833,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 167 — tab interface assign (client.java:9743-9754)
-	if c.PacketType == 167 {
+	if c.PacketType == io.SERVERPROT_IF_SETTAB {
 		var26 := c.In.G2()
 		var4 := c.In.G1()
 		if var26 == 65535 {
@@ -9840,29 +9845,8 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 220 — scene map loc-data inbound (client.java:9755-9774)
-	if c.PacketType == 220 {
-		var26 := c.In.G1()
-		var4 := c.In.G1()
-		var5 := c.In.G2()
-		var6 := c.In.G2()
-		var7 := -1
-		for var8 := range len(c.SceneMapIndex) {
-			if c.SceneMapIndex[var8] == (var26<<8)+var4 {
-				var7 = var8
-			}
-		}
-		if var7 != -1 {
-			if c.SceneMapLocData[var7] == nil || len(c.SceneMapLocData[var7]) != var6 {
-				c.SceneMapLocData[var7] = make([]byte, var6)
-			}
-			c.In.GData(c.PacketSize-6, var5, c.SceneMapLocData[var7])
-		}
-		c.PacketType = -1
-		return true
-	}
 	// Java: opcode 133 — InputTracking.stop → outbound packet 81 (client.java:9775-9785)
-	if c.PacketType == 133 {
+	if c.PacketType == io.SERVERPROT_FINISH_TRACKING {
 		var51 := inputtracking.Stop()
 		if var51 != nil {
 			c.Out.P1Isaac(81)
@@ -9874,7 +9858,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 98 — inventory slot full update (client.java:9787-9806)
-	if c.PacketType == 98 {
+	if c.PacketType == io.SERVERPROT_UPDATE_INV_FULL {
 		c.RedrawSidebar = true
 		var26 := c.In.G2()
 		var27 := component.Instances[var26]
@@ -9895,13 +9879,13 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 226 — InputTracking.setEnabled (client.java:9807-9811)
-	if c.PacketType == 226 {
+	if c.PacketType == io.SERVERPROT_ENABLE_TRACKING {
 		inputtracking.SetEnabled()
 		c.PacketType = -1
 		return true
 	}
 	// Java: opcode 243 — open chatback input prompt (client.java:9812-9819)
-	if c.PacketType == 243 {
+	if c.PacketType == io.SERVERPROT_P_COUNTDIALOG {
 		c.ShowSocialInput = false
 		c.ChatbackInputOpen = true
 		c.ChatbackInput = ""
@@ -9910,7 +9894,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 15 — clear inventory component (client.java:9820-9829)
-	if c.PacketType == 15 {
+	if c.PacketType == io.SERVERPROT_UPDATE_INV_STOP_TRANSMIT {
 		var26 := c.In.G2()
 		var27 := component.Instances[var26]
 		for var5 := range len(var27.InvSlotObjId) {
@@ -9921,7 +9905,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 140 — last-login info (client.java:9830-9853)
-	if c.PacketType == 140 {
+	if c.PacketType == io.SERVERPROT_LAST_LOGIN_INFO {
 		c.LastAddress = c.In.G4()
 		c.DaysSinceLastLogin = c.In.G2()
 		c.DaysSinceRecoveriesChanged = c.In.G1()
@@ -9946,7 +9930,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 126 — flashing tab (client.java:9854-9866)
-	if c.PacketType == 126 {
+	if c.PacketType == io.SERVERPROT_TUT_FLASH {
 		c.FlashingTab = c.In.G1()
 		if c.FlashingTab == c.SelectedTab {
 			if c.FlashingTab == 3 {
@@ -9959,28 +9943,14 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 212 — MIDI music push (bzip2) (client.java:9867-9878)
-	if c.PacketType == 212 {
-		if c.MidiActive && !LowMemory {
-			var26 := c.In.G2()
-			var4 := c.In.G4()
-			var5 := c.PacketSize - 6
-			var35 := make([]byte, var4)
-			bzip2.Read(var35, var4, c.In.Data, var5, c.In.Pos)
-			c.SaveMidi(var35, var4, false)
-			c.NextMusicDelay = var26
-		}
-		c.PacketType = -1
-		return true
-	}
 	// Java: opcode 254 — multizone flag (client.java:9880-9884)
-	if c.PacketType == 254 {
+	if c.PacketType == io.SERVERPROT_SET_MULTIWAY {
 		c.InMultizone = c.In.G1()
 		c.PacketType = -1
 		return true
 	}
 	// Java: opcode 12 — queue wave sound (client.java:9885-9897)
-	if c.PacketType == 12 {
+	if c.PacketType == io.SERVERPROT_SYNTH_SOUND {
 		var26 := c.In.G2()
 		var4 := c.In.G1()
 		var5 := c.In.G2()
@@ -9994,7 +9964,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 204 — component model = npc head (client.java:9898-9904)
-	if c.PacketType == 204 {
+	if c.PacketType == io.SERVERPROT_IF_SETNPCHEAD {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
 		var33 := npctype.Get(var4)
@@ -10003,27 +9973,14 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 7 — scene base coords (client.java:9906-9910)
-	if c.PacketType == 7 {
+	if c.PacketType == io.SERVERPROT_UPDATE_ZONE_PARTIAL_FOLLOWS {
 		c.BaseX = c.In.G1()
 		c.BaseZ = c.In.G1()
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 103 — recolor component model (client.java:9913-9923)
-	if c.PacketType == 103 {
-		var26 := c.In.G2()
-		var4 := c.In.G2()
-		var5 := c.In.G2()
-		var34 := component.Instances[var26]
-		var43 := var34.Model
-		if var43 != nil {
-			var43.Recolor(var4, var5)
-		}
-		c.PacketType = -1
-		return true
-	}
 	// Java: opcode 32 — privacy chat settings (client.java:9925-9932)
-	if c.PacketType == 32 {
+	if c.PacketType == io.SERVERPROT_CHAT_FILTER_SETTINGS {
 		c.PublicChatSetting = c.In.G1()
 		c.PrivateChatSetting = c.In.G1()
 		c.TradeChatSetting = c.In.G1()
@@ -10033,7 +9990,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 195 — open sidebar interface only (client.java:9934-9951)
-	if c.PacketType == 195 {
+	if c.PacketType == io.SERVERPROT_IF_OPENSIDE {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
 		if c.ChatInterfaceID != -1 {
@@ -10053,7 +10010,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 14 — open chat interface only (client.java:9953-9966)
-	if c.PacketType == 14 {
+	if c.PacketType == io.SERVERPROT_IF_OPENCHAT {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
 		if c.SidebarInterfaceID != -1 {
@@ -10069,7 +10026,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 209 — component x/y position (client.java:9968-9976)
-	if c.PacketType == 209 {
+	if c.PacketType == io.SERVERPROT_IF_SETPOSITION {
 		var26 := c.In.G2()
 		var4 := c.In.G2B()
 		var5 := c.In.G2B()
@@ -10080,7 +10037,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 3 — cutscene camera init (client.java:9978-9991)
-	if c.PacketType == 3 {
+	if c.PacketType == io.SERVERPROT_CAM_MOVETO {
 		c.Cutscene = true
 		c.CutsceneSrcLocalTileX = c.In.G1()
 		c.CutsceneSrcLocalTileZ = c.In.G1()
@@ -10096,7 +10053,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 135 — clear obj-stacks + reapply spawned locs in 8x8 region (client.java:9993-10011)
-	if c.PacketType == 135 {
+	if c.PacketType == io.SERVERPROT_UPDATE_ZONE_FULL_FOLLOWS {
 		c.BaseX = c.In.G1()
 		c.BaseZ = c.In.G1()
 		for var26 := c.BaseX; var26 < c.BaseX+8; var26++ {
@@ -10117,29 +10074,8 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 132 — scene map land-data inbound (client.java:10013-10031)
-	if c.PacketType == 132 {
-		var26 := c.In.G1()
-		var4 := c.In.G1()
-		var5 := c.In.G2()
-		var6 := c.In.G2()
-		var7 := -1
-		for var8 := range len(c.SceneMapIndex) {
-			if c.SceneMapIndex[var8] == (var26<<8)+var4 {
-				var7 = var8
-			}
-		}
-		if var7 != -1 {
-			if c.SceneMapLandData[var7] == nil || len(c.SceneMapLandData[var7]) != var6 {
-				c.SceneMapLandData[var7] = make([]byte, var6)
-			}
-			c.In.GData(c.PacketSize-6, var5, c.SceneMapLandData[var7])
-		}
-		c.PacketType = -1
-		return true
-	}
 	// Java: opcode 193 — flush varCache→varps (client.java:10071-10080)
-	if c.PacketType == 193 {
+	if c.PacketType == io.SERVERPROT_RESET_CLIENT_VARCACHE {
 		for var26 := range len(c.Varps) {
 			if c.Varps[var26] != c.VarCache[var26] {
 				c.Varps[var26] = c.VarCache[var26]
@@ -10151,7 +10087,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 87 — component model = new Model(id) (client.java:10082-10087)
-	if c.PacketType == 87 {
+	if c.PacketType == io.SERVERPROT_IF_SETMODEL {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
 		component.Instances[var26].Model = model.NewModel1(var4)
@@ -10159,7 +10095,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 185 — sticky chat interface (client.java:10089-10094)
-	if c.PacketType == 185 {
+	if c.PacketType == io.SERVERPROT_TUT_OPEN {
 		var26 := c.In.G2B()
 		c.StickyChatInterfaceID = var26
 		c.RedrawChatback = true
@@ -10167,7 +10103,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 68 — energy update (client.java:10096-10102)
-	if c.PacketType == 68 {
+	if c.PacketType == io.SERVERPROT_UPDATE_RUNENERGY {
 		if c.SelectedTab == 12 {
 			c.RedrawSidebar = true
 		}
@@ -10176,7 +10112,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 74 — cutscene camera-target init (client.java:10104-10129)
-	if c.PacketType == 74 {
+	if c.PacketType == io.SERVERPROT_CAM_LOOKAT {
 		c.Cutscene = true
 		c.CutsceneDstLocalTileX = c.In.G1()
 		c.CutsceneDstLocalTileZ = c.In.G1()
@@ -10204,7 +10140,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 84 — selected sidebar tab (client.java:10131-10136)
-	if c.PacketType == 84 {
+	if c.PacketType == io.SERVERPROT_IF_SETTAB_ACTIVE {
 		c.SelectedTab = c.In.G1()
 		c.RedrawSidebar = true
 		c.RedrawSideIcons = true
@@ -10212,7 +10148,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 46 — component obj-icon model (client.java:10174-10184)
-	if c.PacketType == 46 {
+	if c.PacketType == io.SERVERPROT_IF_SETOBJECT {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
 		var5 := c.In.G2()
@@ -10225,7 +10161,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 168 — open viewport interface only (client.java:10186-10205)
-	if c.PacketType == 168 {
+	if c.PacketType == io.SERVERPROT_IF_OPENMAIN {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
 		if c.SidebarInterfaceID != -1 {
@@ -10247,7 +10183,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 2 — component RGB15→RGB24 colour (client.java:10207-10215)
-	if c.PacketType == 2 {
+	if c.PacketType == io.SERVERPROT_IF_SETCOLOUR {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
 		var5 := var4 >> 10 & 0x1F
@@ -10258,7 +10194,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 136 — clear all primarySeqIds (client.java:10217-10229)
-	if c.PacketType == 136 {
+	if c.PacketType == io.SERVERPROT_RESET_ANIMS {
 		for var26 := range len(c.Players) {
 			if c.Players[var26] != nil {
 				c.Players[var26].PrimarySeqID = -1
@@ -10273,7 +10209,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 26 — component hide flag (client.java:10231-10236)
-	if c.PacketType == 26 {
+	if c.PacketType == io.SERVERPROT_IF_SETHIDE {
 		var26 := c.In.G2()
 		var29 := c.In.G1() == 1
 		component.Instances[var26].Hide = var29
@@ -10281,7 +10217,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 21 — ignore list bulk update (client.java:10238-10244)
-	if c.PacketType == 21 {
+	if c.PacketType == io.SERVERPROT_UPDATE_IGNORELIST {
 		c.IgnoreCount = c.PacketSize / 8
 		for var26 := range c.IgnoreCount {
 			c.IgnoreName37[var26] = c.In.G8()
@@ -10290,7 +10226,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 239 — cutscene end / clear camera modifiers (client.java:10246-10252)
-	if c.PacketType == 239 {
+	if c.PacketType == io.SERVERPROT_CAM_RESET {
 		c.Cutscene = false
 		for var26 := range 5 {
 			c.CameraModifierEnabled[var26] = false
@@ -10299,7 +10235,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 129 — close all interfaces (client.java:10254-10271)
-	if c.PacketType == 129 {
+	if c.PacketType == io.SERVERPROT_IF_CLOSE {
 		if c.SidebarInterfaceID != -1 {
 			c.SidebarInterfaceID = -1
 			c.RedrawSidebar = true
@@ -10319,7 +10255,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 201 — component text (client.java:10273-10281)
-	if c.PacketType == 201 {
+	if c.PacketType == io.SERVERPROT_IF_SETTEXT {
 		var26 := c.In.G2()
 		var28 := c.In.GJStr()
 		component.Instances[var26].Text = var28
@@ -10330,7 +10266,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 44 — skill XP/level update (client.java:10283-10297)
-	if c.PacketType == 44 {
+	if c.PacketType == io.SERVERPROT_UPDATE_STAT {
 		c.RedrawSidebar = true
 		var26 := c.In.G1()
 		var4 := c.In.G4()
@@ -10347,7 +10283,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 22 — weight carried (client.java:10309-10315)
-	if c.PacketType == 22 {
+	if c.PacketType == io.SERVERPROT_UPDATE_RUNWEIGHT {
 		if c.SelectedTab == 12 {
 			c.RedrawSidebar = true
 		}
@@ -10356,7 +10292,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 13 — camera shake/wobble modifier (client.java:10317-10328)
-	if c.PacketType == 13 {
+	if c.PacketType == io.SERVERPROT_CAM_SHAKE {
 		var26 := c.In.G1()
 		var4 := c.In.G1()
 		var5 := c.In.G1()
@@ -10370,7 +10306,7 @@ func (c *Client) Read() (ok bool) {
 		return true
 	}
 	// Java: opcode 213 — inventory slot partial update (client.java:10330-10347)
-	if c.PacketType == 213 {
+	if c.PacketType == io.SERVERPROT_UPDATE_INV_PARTIAL {
 		c.RedrawSidebar = true
 		var26 := c.In.G2()
 		var27 := component.Instances[var26]
