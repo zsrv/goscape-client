@@ -881,7 +881,7 @@ func (c *Client) Draw2DEntityElements() {
 }
 
 func (c *Client) CloseInterfaces() {
-	c.Out.P1Isaac(231)
+	c.Out.P1Isaac(io.CLIENTPROT_CLOSE_MODAL) // Java: pIsaac(187) client.java:4337
 	if c.SidebarInterfaceID != -1 {
 		c.SidebarInterfaceID = -1
 		c.RedrawSidebar = true
@@ -1086,7 +1086,7 @@ func (c *Client) AddIgnore(arg0 int64) {
 	c.IgnoreName37[c.IgnoreCount] = arg0
 	c.IgnoreCount++
 	c.RedrawSidebar = true
-	c.Out.P1Isaac(79)
+	c.Out.P1Isaac(io.CLIENTPROT_IGNORELIST_ADD) // Java: pIsaac(203) client.java:12247
 	c.Out.P8(arg0)
 }
 
@@ -1507,7 +1507,7 @@ func (c *Client) DrawScene(arg0 int) {
 		CycleLogic2++
 		if CycleLogic2 > 1802 {
 			CycleLogic2 = 0
-			c.Out.P1Isaac(146)
+			c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC2) // Java: pIsaac(148) client.java:5865
 			c.Out.P1(0)
 			var4 = c.Out.Pos
 			c.Out.P2(29711)
@@ -1952,7 +1952,7 @@ func (c *Client) HandleChatSettingsInput(arg0 int) {
 		c.PublicChatSetting = (c.PublicChatSetting + 1) % 4
 		c.RedrawPrivacySettings = true
 		c.RedrawChatback = true
-		c.Out.P1Isaac(244)
+		c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) client.java:4295
 		c.Out.P1(c.PublicChatSetting)
 		c.Out.P1(c.PrivateChatSetting)
 		c.Out.P1(c.TradeChatSetting)
@@ -1961,7 +1961,7 @@ func (c *Client) HandleChatSettingsInput(arg0 int) {
 		c.PrivateChatSetting = (c.PrivateChatSetting + 1) % 3
 		c.RedrawPrivacySettings = true
 		c.RedrawChatback = true
-		c.Out.P1Isaac(244)
+		c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) client.java:4305
 		c.Out.P1(c.PublicChatSetting)
 		c.Out.P1(c.PrivateChatSetting)
 		c.Out.P1(c.TradeChatSetting)
@@ -1970,7 +1970,7 @@ func (c *Client) HandleChatSettingsInput(arg0 int) {
 		c.TradeChatSetting = (c.TradeChatSetting + 1) % 3
 		c.RedrawPrivacySettings = true
 		c.RedrawChatback = true
-		c.Out.P1Isaac(244)
+		c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) client.java:4315
 		c.Out.P1(c.PublicChatSetting)
 		c.Out.P1(c.PrivateChatSetting)
 		c.Out.P1(c.TradeChatSetting)
@@ -2244,7 +2244,7 @@ func (c *Client) HandleInputKey() {
 							c.RemoveFriend(var8)
 						}
 						if c.SocialAction == 3 && len(c.SocialInput) > 0 {
-							c.Out.P1Isaac(148)
+							c.Out.P1Isaac(io.CLIENTPROT_MESSAGE_PRIVATE) // Java: pIsaac(170) client.java:4628
 							c.Out.P1(0)
 							var7 = c.Out.Pos
 							c.Out.P8(c.SocialName37)
@@ -2256,7 +2256,7 @@ func (c *Client) HandleInputKey() {
 							if c.PrivateChatSetting == 2 {
 								c.PrivateChatSetting = 1
 								c.RedrawPrivacySettings = true
-								c.Out.P1Isaac(244)
+								c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) client.java:4645
 								c.Out.P1(c.PublicChatSetting)
 								c.Out.P1(c.PrivateChatSetting)
 								c.Out.P1(c.TradeChatSetting)
@@ -2290,7 +2290,7 @@ func (c *Client) HandleInputKey() {
 							if v, perr := strconv.ParseInt(c.ChatbackInput, 10, 32); perr == nil {
 								var7 = int(v)
 							}
-							c.Out.P1Isaac(237)
+							c.Out.P1Isaac(io.CLIENTPROT_RESUME_P_COUNTDIALOG) // Java: pIsaac(190) client.java:4682
 							c.Out.P4(var7)
 						}
 						c.ChatbackInputOpen = false
@@ -2317,7 +2317,7 @@ func (c *Client) HandleInputKey() {
 						if c.ChatTyped == "::clientdrop" {
 							c.TryReconnect()
 						} else if strings.HasPrefix(c.ChatTyped, "::") {
-							c.Out.P1Isaac(4)
+							c.Out.P1Isaac(io.CLIENTPROT_CLIENT_CHEAT) // Java: pIsaac(76) client.java:4715
 							c.Out.P1(len(c.ChatTyped) - 1)
 							c.Out.PJStr(c.ChatTyped[2:])
 						} else {
@@ -2379,7 +2379,7 @@ func (c *Client) HandleInputKey() {
 								var4 = 2
 								c.ChatTyped = c.ChatTyped[7:]
 							}
-							c.Out.P1Isaac(158)
+							c.Out.P1Isaac(io.CLIENTPROT_MESSAGE_PUBLIC) // Java: pIsaac(171) client.java:4780
 							c.Out.P1(0)
 							var5 := c.Out.Pos
 							c.Out.P1(var3)
@@ -2396,7 +2396,7 @@ func (c *Client) HandleInputKey() {
 							if c.PublicChatSetting == 2 {
 								c.PublicChatSetting = 3
 								c.RedrawPrivacySettings = true
-								c.Out.P1Isaac(244)
+								c.Out.P1Isaac(io.CLIENTPROT_CHAT_SETMODE) // Java: pIsaac(98) client.java:4810
 								c.Out.P1(c.PublicChatSetting)
 								c.Out.P1(c.PrivateChatSetting)
 								c.Out.P1(c.TradeChatSetting)
@@ -2880,7 +2880,7 @@ func (c *Client) UpdateMergeLocs() {
 	CycleLogic5++
 	if CycleLogic5 > 85 {
 		CycleLogic5 = 0
-		c.Out.P1Isaac(85)
+		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC5) // Java: pIsaac(232) client.java:3575
 	}
 }
 
@@ -4329,7 +4329,7 @@ func (c *Client) DrawGame() {
 	if c.RedrawSideIcons {
 		if c.FlashingTab != -1 && c.FlashingTab == c.SelectedTab {
 			c.FlashingTab = -1
-			c.Out.P1Isaac(175)
+			c.Out.P1Isaac(io.CLIENTPROT_TUTORIAL_CLICKSIDE) // Java: pIsaac(233) client.java:5677
 			c.Out.P1(c.SelectedTab)
 		}
 		c.RedrawSideIcons = false
@@ -4562,10 +4562,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 				if var12 != nil && var12.Name != "" && strings.EqualFold(var12.Name, var9) {
 					c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var12.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var12.PathTileZ[0], 0, 0, 0)
 					if var5 == 903 {
-						c.Out.P1Isaac(206)
+						c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER4) // Java: pIsaac(43) client.java:10214
 					}
 					if var5 == 363 {
-						c.Out.P1Isaac(164)
+						c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER1) // Java: pIsaac(211) client.java:10218
 					}
 					c.Out.P2(c.PlayerIDs[i])
 					var10 = true
@@ -4577,7 +4577,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 		}
 	}
-	if var5 == 450 && c.InteractWithLoc(75, var3, var4, var6) {
+	if var5 == 450 && c.InteractWithLoc(io.CLIENTPROT_OPLOCU, var3, var4, var6) { // Java: interactWithLoc(106,...) client.java:9764
 		c.Out.P2(c.ObjInterface)
 		c.Out.P2(c.ObjSelectedSlot)
 		c.Out.P2(c.ObjSelectedInterface)
@@ -4588,26 +4588,26 @@ func (c *Client) UseMenuOption(arg1 int) {
 				OpLogic5++
 			}
 			if OpLogic5 >= 90 {
-				c.Out.P1Isaac(220)
+				c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC5) // Java: pIsaac(7) client.java:9949
 			}
-			c.Out.P1Isaac(157)
+			c.Out.P1Isaac(io.CLIENTPROT_OPHELD4) // Java: pIsaac(6) client.java:9953
 		}
 		if var5 == 347 {
-			c.Out.P1Isaac(211)
+			c.Out.P1Isaac(io.CLIENTPROT_OPHELD5) // Java: pIsaac(133) client.java:9938
 		}
 		if var5 == 422 {
-			c.Out.P1Isaac(133)
+			c.Out.P1Isaac(io.CLIENTPROT_OPHELD3) // Java: pIsaac(221) client.java:9941
 		}
 		if var5 == 405 {
 			OpLogic3 += var6
 			if OpLogic3 >= 97 {
-				c.Out.P1Isaac(30)
+				c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC3) // Java: pIsaac(37) client.java:9958
 				c.Out.P3(14953816)
 			}
-			c.Out.P1Isaac(195)
+			c.Out.P1Isaac(io.CLIENTPROT_OPHELD1) // Java: pIsaac(228) client.java:9963
 		}
 		if var5 == 38 {
-			c.Out.P1Isaac(71)
+			c.Out.P1Isaac(io.CLIENTPROT_OPHELD2) // Java: pIsaac(166) client.java:9966
 		}
 		c.Out.P2(var6)
 		c.Out.P2(var3)
@@ -4633,33 +4633,33 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossMode = 2
 			c.CrossCycle = 0
 			if var5 == 542 {
-				c.Out.P1Isaac(8)
+				c.Out.P1Isaac(io.CLIENTPROT_OPNPC2) // Java: pIsaac(84) client.java:10136
 			}
 			if var5 == 6 {
 				if var6&0x3 == 0 {
 					OpLogic2++
 				}
 				if OpLogic2 >= 124 {
-					c.Out.P1Isaac(88)
+					c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC2) // Java: pIsaac(218) client.java:10113
 					c.Out.P4(0)
 				}
-				c.Out.P1Isaac(27)
+				c.Out.P1Isaac(io.CLIENTPROT_OPNPC3) // Java: pIsaac(132) client.java:10118
 			}
 			if var5 == 963 {
-				c.Out.P1Isaac(113)
+				c.Out.P1Isaac(io.CLIENTPROT_OPNPC4) // Java: pIsaac(229) client.java:10105
 			}
 			if var5 == 728 {
-				c.Out.P1Isaac(194)
+				c.Out.P1Isaac(io.CLIENTPROT_OPNPC1) // Java: pIsaac(222) client.java:10133
 			}
 			if var5 == 245 {
 				if var6&0x3 == 0 {
 					OpLogic4++
 				}
 				if OpLogic4 >= 85 {
-					c.Out.P1Isaac(176)
+					c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC4) // Java: pIsaac(34) client.java:10125
 					c.Out.P2(39596)
 				}
-				c.Out.P1Isaac(100)
+				c.Out.P1Isaac(io.CLIENTPROT_OPNPC5) // Java: pIsaac(102) client.java:10130
 			}
 			c.Out.P2(var6)
 		}
@@ -4674,7 +4674,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.CrossY = c.MouseClickY
 		c.CrossMode = 2
 		c.CrossCycle = 0
-		c.Out.P1Isaac(239)
+		c.Out.P1Isaac(io.CLIENTPROT_OPOBJU) // Java: pIsaac(111) client.java:9757
 		c.Out.P2(var3 + c.SceneBaseTileX)
 		c.Out.P2(var4 + c.SceneBaseTileZ)
 		c.Out.P2(var6)
@@ -4693,10 +4693,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.AddMessage(0, var9, "")
 	}
 	if var5 == 285 {
-		c.InteractWithLoc(245, var3, var4, var6)
+		c.InteractWithLoc(io.CLIENTPROT_OPLOC1, var3, var4, var6) // Java: interactWithLoc(238,...) client.java:9915
 	}
 	if var5 == 881 {
-		c.Out.P1Isaac(130)
+		c.Out.P1Isaac(io.CLIENTPROT_OPHELDU) // Java: pIsaac(58) client.java:9887
 		c.Out.P2(var6)
 		c.Out.P2(var3)
 		c.Out.P2(var4)
@@ -4715,7 +4715,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	if var5 == 391 {
-		c.Out.P1Isaac(48)
+		c.Out.P1Isaac(io.CLIENTPROT_OPHELDT) // Java: pIsaac(143) client.java:10143
 		c.Out.P2(var6)
 		c.Out.P2(var3)
 		c.Out.P2(var4)
@@ -4748,7 +4748,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		return
 	}
 	if var5 == 44 && !c.PressedContinueOption {
-		c.Out.P1Isaac(235)
+		c.Out.P1Isaac(io.CLIENTPROT_RESUME_PAUSEBUTTON) // Java: pIsaac(11) client.java:9909
 		c.Out.P2(var4)
 		c.PressedContinueOption = true
 	}
@@ -4773,7 +4773,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
 			c.CrossCycle = 0
-			c.Out.P1Isaac(202)
+			c.Out.P1Isaac(io.CLIENTPROT_OPNPCU) // Java: pIsaac(52) client.java:10078
 			c.Out.P2(var6)
 			c.Out.P2(c.ObjInterface)
 			c.Out.P2(c.ObjSelectedSlot)
@@ -4790,21 +4790,21 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossMode = 2
 			c.CrossCycle = 0
 			if var5 == 1101 {
-				c.Out.P1Isaac(164)
+				c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER1) // Java: pIsaac(211) client.java:10293
 			}
 			if var5 == 151 {
 				OpLogic8++
 				if OpLogic8 >= 90 {
-					c.Out.P1Isaac(2)
+					c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC8) // Java: pIsaac(100) client.java:10285
 					c.Out.P2(31114)
 				}
-				c.Out.P1Isaac(53)
+				c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER2) // Java: pIsaac(219) client.java:10290
 			}
 			if var5 == 1373 {
-				c.Out.P1Isaac(206)
+				c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER4) // Java: pIsaac(43) client.java:10280
 			}
 			if var5 == 1544 {
-				c.Out.P1Isaac(185)
+				c.Out.P1Isaac(io.CLIENTPROT_OPPLAYER3) // Java: pIsaac(64) client.java:10277
 			}
 			c.Out.P2(var6)
 		}
@@ -4817,7 +4817,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
 			c.CrossCycle = 0
-			c.Out.P1Isaac(134)
+			c.Out.P1Isaac(io.CLIENTPROT_OPNPCT) // Java: pIsaac(101) client.java:9780
 			c.Out.P2(var6)
 			c.Out.P2(c.ActiveSpellID)
 		}
@@ -4846,7 +4846,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 		}
 	}
-	if var5 == 55 && c.InteractWithLoc(9, var3, var4, var6) {
+	if var5 == 55 && c.InteractWithLoc(io.CLIENTPROT_OPLOCT, var3, var4, var6) { // Java: interactWithLoc(182,...) client.java:9787
 		c.Out.P2(c.ActiveSpellID)
 	}
 	if var5 == 224 || var5 == 993 || var5 == 99 || var5 == 746 || var5 == 877 {
@@ -4859,19 +4859,19 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.CrossMode = 2
 		c.CrossCycle = 0
 		if var5 == 224 {
-			c.Out.P1Isaac(140)
+			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ1) // Java: pIsaac(231) client.java:9810
 		}
 		if var5 == 746 {
-			c.Out.P1Isaac(178)
+			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ4) // Java: pIsaac(17) client.java:9818
 		}
 		if var5 == 877 {
-			c.Out.P1Isaac(247)
+			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ5) // Java: pIsaac(225) client.java:9815
 		}
 		if var5 == 99 {
-			c.Out.P1Isaac(200)
+			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ3) // Java: pIsaac(27) client.java:9803
 		}
 		if var5 == 993 {
-			c.Out.P1Isaac(40)
+			c.Out.P1Isaac(io.CLIENTPROT_OPOBJ2) // Java: pIsaac(110) client.java:9806
 		}
 		c.Out.P2(var3 + c.SceneBaseTileX)
 		c.Out.P2(var4 + c.SceneBaseTileZ)
@@ -4889,7 +4889,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	if var5 == 504 {
-		c.InteractWithLoc(172, var3, var4, var6)
+		c.InteractWithLoc(io.CLIENTPROT_OPLOC2, var3, var4, var6) // Java: interactWithLoc(38,...) client.java:10300
 	}
 	var var22 *component.Component
 	if var5 == 930 {
@@ -4921,39 +4921,39 @@ func (c *Client) UseMenuOption(arg1 int) {
 			var23 = c.HandleInterfaceAction(var22)
 		}
 		if var23 {
-			c.Out.P1Isaac(155)
+			c.Out.P1Isaac(io.CLIENTPROT_IF_BUTTON) // Java: pIsaac(39) client.java:9861
 			c.Out.P2(var4)
 		}
 	}
 	if var5 == 602 || var5 == 596 || var5 == 22 || var5 == 892 || var5 == 415 {
 		if var5 == 22 {
-			c.Out.P1Isaac(212)
+			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON3) // Java: pIsaac(158) client.java:10018
 		}
 		if var5 == 415 {
 			if var4&0x3 == 0 {
 				OpLogic7++
 			}
 			if OpLogic7 >= 55 {
-				c.Out.P1Isaac(17)
+				c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC7) // Java: pIsaac(50) client.java:10010
 				c.Out.P4(0)
 			}
-			c.Out.P1Isaac(6)
+			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON5) // Java: pIsaac(212) client.java:10015
 		}
 		if var5 == 602 {
-			c.Out.P1Isaac(31)
+			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON1) // Java: pIsaac(153) client.java:10036
 		}
 		if var5 == 892 {
 			if var3&0x3 == 0 {
 				OpLogic9++
 			}
 			if OpLogic9 >= 130 {
-				c.Out.P1Isaac(238)
+				c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC9) // Java: pIsaac(169) client.java:10028
 				c.Out.P1(177)
 			}
-			c.Out.P1Isaac(38)
+			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON4) // Java: pIsaac(204) client.java:10033
 		}
 		if var5 == 596 {
-			c.Out.P1Isaac(59)
+			c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTON2) // Java: pIsaac(193) client.java:10021
 		}
 		c.Out.P2(var6)
 		c.Out.P2(var3)
@@ -4974,10 +4974,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 			OpLogic1++
 		}
 		if OpLogic1 >= 99 {
-			c.Out.P1Isaac(7)
+			c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC1) // Java: pIsaac(47) client.java:9828
 			c.Out.P4(0)
 		}
-		c.InteractWithLoc(97, var3, var4, var6)
+		c.InteractWithLoc(io.CLIENTPROT_OPLOC4, var3, var4, var6) // Java: interactWithLoc(55,...) client.java:9833
 	}
 	if var5 == 965 {
 		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 2, 0, var4, 0, 0, 0)
@@ -4988,7 +4988,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.CrossY = c.MouseClickY
 		c.CrossMode = 2
 		c.CrossCycle = 0
-		c.Out.P1Isaac(138)
+		c.Out.P1Isaac(io.CLIENTPROT_OPOBJT) // Java: pIsaac(25) client.java:10000
 		c.Out.P2(var3 + c.SceneBaseTileX)
 		c.Out.P2(var4 + c.SceneBaseTileZ)
 		c.Out.P2(var6)
@@ -4997,13 +4997,13 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 1501 {
 		OpLogic6 += c.SceneBaseTileZ
 		if OpLogic6 >= 92 {
-			c.Out.P1Isaac(66)
+			c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_OPLOGIC6) // Java: pIsaac(177) client.java:9692
 			c.Out.P4(0)
 		}
-		c.InteractWithLoc(116, var3, var4, var6)
+		c.InteractWithLoc(io.CLIENTPROT_OPLOC5, var3, var4, var6) // Java: interactWithLoc(243,...) client.java:9697
 	}
 	if var5 == 364 {
-		c.InteractWithLoc(96, var3, var4, var6)
+		c.InteractWithLoc(io.CLIENTPROT_OPLOC3, var3, var4, var6) // Java: interactWithLoc(19,...) client.java:9786
 	}
 	if var5 == 1102 {
 		var17 = objtype.Get(var6)
@@ -5015,7 +5015,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.AddMessage(0, var18, "")
 	}
 	if var5 == 960 {
-		c.Out.P1Isaac(155)
+		c.Out.P1Isaac(io.CLIENTPROT_IF_BUTTON) // Java: pIsaac(39) client.java:9861
 		c.Out.P2(var4)
 		var22 = component.Instances[var4]
 		if var22.Scripts != nil && var22.Scripts[0][0] == 5 {
@@ -5054,7 +5054,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
 			c.CrossCycle = 0
-			c.Out.P1Isaac(248)
+			c.Out.P1Isaac(io.CLIENTPROT_OPPLAYERU) // Java: pIsaac(48) client.java:9726
 			c.Out.P2(var6)
 			c.Out.P2(c.ObjInterface)
 			c.Out.P2(c.ObjSelectedSlot)
@@ -5062,7 +5062,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	if var5 == 465 {
-		c.Out.P1Isaac(155)
+		c.Out.P1Isaac(io.CLIENTPROT_IF_BUTTON) // Java: pIsaac(39) client.java:10057
 		c.Out.P2(var4)
 		var22 = component.Instances[var4]
 		if var22.Scripts != nil && var22.Scripts[0][0] == 5 {
@@ -5099,7 +5099,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
 			c.CrossCycle = 0
-			c.Out.P1Isaac(177)
+			c.Out.P1Isaac(io.CLIENTPROT_OPPLAYERT) // Java: pIsaac(73) client.java:10250
 			c.Out.P2(var6)
 			c.Out.P2(c.ActiveSpellID)
 		}
@@ -5554,7 +5554,7 @@ func (c *Client) HandleInterfaceAction(arg1 *component.Component) bool {
 		c.ValidateCharacterDesign()
 	}
 	if var3 == 326 {
-		c.Out.P1Isaac(52)
+		c.Out.P1Isaac(io.CLIENTPROT_IF_PLAYERDESIGN) // Java: pIsaac(8) client.java:11740
 		if c.DesignGenderMale {
 			c.Out.P1(0)
 		} else {
@@ -5574,7 +5574,7 @@ func (c *Client) HandleInterfaceAction(arg1 *component.Component) bool {
 	if var3 >= 601 && var3 <= 612 {
 		c.CloseInterfaces()
 		if len(c.ReportAbuseInput) > 0 {
-			c.Out.P1Isaac(190)
+			c.Out.P1Isaac(io.CLIENTPROT_REPORT_ABUSE) // Java: pIsaac(251) client.java:11759
 			c.Out.P8(jstring.ToBase37(c.ReportAbuseInput))
 			c.Out.P1(var3 - 601)
 			if c.ReportAbuseMuteOption {
@@ -6969,7 +6969,7 @@ func (c *Client) AddFriend(arg0 int64) {
 	c.FriendWorld[c.FriendCount] = 0
 	c.FriendCount++
 	c.RedrawSidebar = true
-	c.Out.P1Isaac(118)
+	c.Out.P1Isaac(io.CLIENTPROT_FRIENDLIST_ADD) // Java: pIsaac(9) client.java:12186
 	c.Out.P8(arg0)
 }
 
@@ -7245,7 +7245,7 @@ func (c *Client) UpdateGame() {
 	}
 	var11 := inputtracking.Flush()
 	if var11 != nil {
-		c.Out.P1Isaac(81)
+		c.Out.P1Isaac(io.CLIENTPROT_EVENT_TRACKING) // Java: pIsaac(217) client.java:2950
 		c.Out.P2(var11.Pos)
 		c.Out.PData(var11.Data, var11.Pos, 0)
 		var11.Release()
@@ -7317,7 +7317,7 @@ func (c *Client) UpdateGame() {
 					var14 := var13.InvSlotObjCount[c.HoveredSlot]
 					var13.InvSlotObjCount[c.HoveredSlot] = var13.InvSlotObjCount[c.ObjDragSlot]
 					var13.InvSlotObjCount[c.ObjDragSlot] = var14
-					c.Out.P1Isaac(159)
+					c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTOND) // Java: pIsaac(81) client.java:3038
 					c.Out.P2(c.ObjDragInterfaceID)
 					c.Out.P2(c.ObjDragSlot)
 					c.Out.P2(c.HoveredSlot)
@@ -7334,7 +7334,7 @@ func (c *Client) UpdateGame() {
 	CycleLogic3++
 	if CycleLogic3 > 127 {
 		CycleLogic3 = 0
-		c.Out.P1Isaac(215)
+		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC3) // Java: pIsaac(144) client.java:3060
 		c.Out.P3(4991788)
 	}
 	if world3d.ClickTileX != -1 {
@@ -7375,7 +7375,7 @@ func (c *Client) UpdateGame() {
 	if c.IdleCycles > 4500 {
 		c.IdleTimeout = 250
 		c.IdleCycles -= 500
-		c.Out.P1Isaac(70)
+		c.Out.P1Isaac(io.CLIENTPROT_IDLE_TIMER) // Java: pIsaac(146) client.java:3113
 	}
 	c.CameraOffsetCycle++
 	if c.CameraOffsetCycle > 500 {
@@ -7436,12 +7436,12 @@ func (c *Client) UpdateGame() {
 	CycleLogic4++
 	if CycleLogic4 > 110 {
 		CycleLogic4 = 0
-		c.Out.P1Isaac(236)
+		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC4) // Java: pIsaac(41) client.java:3180
 		c.Out.P4(0)
 	}
 	c.HeartbeatTimer++
 	if c.HeartbeatTimer > 50 {
-		c.Out.P1Isaac(108)
+		c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) client.java:3187
 	}
 	if c.Stream != nil && c.Out.Pos > 0 {
 		// Java: try { stream.write(...); out.pos = 0; heartbeatTimer = 0; }
@@ -7679,15 +7679,15 @@ func (c *Client) TryMove(arg0, arg1 int, arg2 bool, arg3, arg4, arg6, arg7, arg8
 		var25 := c.BFSStepX[var19]
 		var26 := c.BFSStepZ[var19]
 		if arg6 == 0 {
-			c.Out.P1Isaac(181)
+			c.Out.P1Isaac(io.CLIENTPROT_MOVE_GAMECLICK) // Java: pIsaac(63) client.java:7184
 			c.Out.P1(var21 + var21 + 3)
 		}
 		if arg6 == 1 {
-			c.Out.P1Isaac(165)
+			c.Out.P1Isaac(io.CLIENTPROT_MOVE_MINIMAPCLICK) // Java: pIsaac(56) client.java:7188
 			c.Out.P1(var21 + var21 + 3 + 14)
 		}
 		if arg6 == 2 {
-			c.Out.P1Isaac(93)
+			c.Out.P1Isaac(io.CLIENTPROT_MOVE_OPCLICK) // Java: pIsaac(167) client.java:7192
 			c.Out.P1(var21 + var21 + 3)
 		}
 		if c.ActionKey[5] == 1 {
@@ -7832,7 +7832,7 @@ func (c *Client) RemoveFriend(arg1 int64) {
 				c.FriendWorld[j] = c.FriendWorld[j+1]
 				c.FriendName37[j] = c.FriendName37[j+1]
 			}
-			c.Out.P1Isaac(11)
+			c.Out.P1Isaac(io.CLIENTPROT_FRIENDLIST_DEL) // Java: pIsaac(69) client.java:12209
 			c.Out.P8(arg1)
 			return
 		}
@@ -8185,7 +8185,7 @@ func (c *Client) HandleTabInput() {
 	CycleLogic1++
 	if CycleLogic1 > 150 {
 		CycleLogic1 = 0
-		c.Out.P1Isaac(233)
+		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC1) // Java: pIsaac(46) client.java:4278
 		c.Out.P1(43)
 	}
 }
@@ -8440,7 +8440,7 @@ func (c *Client) BuildScene() {
 	} else {
 		c.Scene.SetMinLevel(0)
 	}
-	c.Out.P1Isaac(108)
+	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) client.java:3329
 	for i := range var5 {
 		var8 := (c.SceneMapIndex[i]>>8)*64 - c.SceneBaseTileX
 		var9 := (c.SceneMapIndex[i]&0xFF)*64 - c.SceneBaseTileZ
@@ -8453,7 +8453,7 @@ func (c *Client) BuildScene() {
 			var3.ClearLandscape(var8, var9, 64, 64)
 		}
 	}
-	c.Out.P1Isaac(108)
+	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) client.java:3352
 	var16 := 0
 	for i := range var5 {
 		var14 := c.SceneMapLocData[i]
@@ -8465,10 +8465,10 @@ func (c *Client) BuildScene() {
 			var3.LoadLocations(var4, c.Scene, c.LevelCollisionMap, var12, var11)
 		}
 	}
-	c.Out.P1Isaac(108)
+	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) client.java:3365
 	var3.Build(c.Scene, c.LevelCollisionMap)
 	c.AreaViewport.Bind()
-	c.Out.P1Isaac(108)
+	c.Out.P1Isaac(io.CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(107) client.java:3371
 	// Java: rev-244 buildScene has no LocList bridge-level post-pass — animated
 	// locs are stored directly as scene-node ModelSources (self-animating
 	// ClientLocAnim) at the level World.build placed them; the rev-225 list pass
@@ -8853,7 +8853,7 @@ func (c *Client) RemoveIgnore(arg1 int64) {
 			for j := i; j < c.IgnoreCount; j++ {
 				c.IgnoreName37[j] = c.IgnoreName37[j+1]
 			}
-			c.Out.P1Isaac(171)
+			c.Out.P1Isaac(io.CLIENTPROT_IGNORELIST_DEL) // Java: pIsaac(207) client.java:12267
 			c.Out.P8(arg1)
 			return
 		}
@@ -9038,7 +9038,7 @@ func (c *Client) UpdatePlayers() {
 		return
 	}
 	CycleLogic6 = 0
-	c.Out.P1Isaac(219)
+	c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC6) // Java: pIsaac(215) client.java:4869
 	c.Out.P1(0)
 	var3 = c.Out.Pos
 	c.Out.P1(162)
@@ -9845,11 +9845,11 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 133 — InputTracking.stop → outbound packet 81 (client.java:9775-9785)
+	// Java: opcode 60 — InputTracking.stop → outbound EVENT_TRACKING (client.java:7959-7971)
 	if c.PacketType == io.SERVERPROT_FINISH_TRACKING {
 		var51 := inputtracking.Stop()
 		if var51 != nil {
-			c.Out.P1Isaac(81)
+			c.Out.P1Isaac(io.CLIENTPROT_EVENT_TRACKING) // Java: pIsaac(217) client.java:7964
 			c.Out.P2(var51.Pos)
 			c.Out.PData(var51.Data, var51.Pos, 0)
 			var51.Release()
