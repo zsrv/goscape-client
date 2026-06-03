@@ -155,29 +155,32 @@ type Client struct {
 	flameMu sync.Mutex
 	// END GameShell
 
-	HintTileZ                     int
-	HintHeight                    int
-	HintOffsetX                   int
-	HintOffsetZ                   int
-	MinimapOffsetCycle            int
-	RedrawFrame                   bool // Java: redrawBackground (deob/client.java:74)
-	RandomIn                      *io.Isaac
-	CameraModifierEnabled         []bool
-	PrivateChatSetting            int
-	SelectedTab                   int
-	BFSCost                       [][]int
-	SocialAction                  int
-	SceneBaseTileX                int
-	SceneBaseTileZ                int
-	MapLastBaseX                  int
-	MapLastBaseZ                  int
-	SocialInput                   string
-	IgnoreName37                  []int64
-	WeightCarried                 int
-	SceneMapLandData              [][]byte
-	Out                           *io.Packet
-	StartMidiThread               bool
-	ChatEffects                   int
+	HintTileZ             int
+	HintHeight            int
+	HintOffsetX           int
+	HintOffsetZ           int
+	MinimapOffsetCycle    int
+	RedrawFrame           bool // Java: redrawBackground (deob/client.java:74)
+	RandomIn              *io.Isaac
+	CameraModifierEnabled []bool
+	PrivateChatSetting    int
+	SelectedTab           int
+	BFSCost               [][]int
+	SocialAction          int
+	SceneBaseTileX        int
+	SceneBaseTileZ        int
+	MapLastBaseX          int
+	MapLastBaseZ          int
+	SocialInput           string
+	IgnoreName37          []int64
+	WeightCarried         int
+	SceneMapLandData      [][]byte
+	Out                   *io.Packet
+	StartMidiThread       bool
+	ChatEffects           int
+	// Java: bankArrangeMode (client.Nh, Client.java:426) — new in 244; set by
+	// SET_VARC clientCode 9 and read at the obj-drag INV_BUTTOND send site.
+	BankArrangeMode               int
 	HintNPC                       int
 	OverrideChat                  int
 	SkillLevel                    []int
@@ -3926,6 +3929,9 @@ func (c *Client) UpdateVarp(arg0 int) {
 		c.SplitPrivateChat = var4
 		c.RedrawChatback = true
 	}
+	if var3 == 9 { // Java: Client.java:11424-11425 (new in 244)
+		c.BankArrangeMode = var4
+	}
 }
 
 func (c *Client) UpdateNpcs() {
@@ -7507,16 +7513,36 @@ func (c *Client) UpdateGame() {
 				c.HandleInput()
 				if c.HoveredSlotParentID == c.ObjDragInterfaceID && c.HoveredSlot != c.ObjDragSlot {
 					var13 := component.Instances[c.ObjDragInterfaceID]
-					var6 = var13.InvSlotObjId[c.HoveredSlot]
-					var13.InvSlotObjId[c.HoveredSlot] = var13.InvSlotObjId[c.ObjDragSlot]
-					var13.InvSlotObjId[c.ObjDragSlot] = var6
-					var14 := var13.InvSlotObjCount[c.HoveredSlot]
-					var13.InvSlotObjCount[c.HoveredSlot] = var13.InvSlotObjCount[c.ObjDragSlot]
-					var13.InvSlotObjCount[c.ObjDragSlot] = var14
+					// Java: Client.java:3010-3033 (new in 244) — bank arrange-by-insert.
+					// mode 1 shifts items between src and dst via successive swaps;
+					// mode 0 is the plain swap. The mode byte is also sent to the server.
+					mode := 0
+					if c.BankArrangeMode == 1 && var13.ClientCode == 206 {
+						mode = 1
+					}
+					if var13.InvSlotObjId[c.HoveredSlot] <= 0 {
+						mode = 0
+					}
+					if mode == 1 {
+						src := c.ObjDragSlot
+						dst := c.HoveredSlot
+						for src != dst {
+							if src > dst {
+								var13.SwapObj(src, src-1)
+								src--
+							} else if src < dst {
+								var13.SwapObj(src, src+1)
+								src++
+							}
+						}
+					} else {
+						var13.SwapObj(c.ObjDragSlot, c.HoveredSlot)
+					}
 					c.Out.P1Isaac(io.CLIENTPROT_INV_BUTTOND) // Java: pIsaac(81) Client.java:3038
 					c.Out.P2(c.ObjDragInterfaceID)
 					c.Out.P2(c.ObjDragSlot)
 					c.Out.P2(c.HoveredSlot)
+					c.Out.P1(mode) // Java: Client.java:3041 — INV_BUTTOND is fixed length 7
 				}
 			} else if (c.MouseButtonsOption == 1 || c.IsAddFriendOption(c.MenuSize-1)) && c.MenuSize > 2 {
 				c.ShowContextMenu()

@@ -94,6 +94,13 @@ func NewComponent() *Component {
 	return new(Component)
 }
 
+// SwapObj swaps the inventory slots src and dst (id + count).
+// Java: Component.swapObj (Component.java:447-455, new in 244).
+func (c *Component) SwapObj(src, dst int) {
+	c.InvSlotObjId[src], c.InvSlotObjId[dst] = c.InvSlotObjId[dst], c.InvSlotObjId[src]
+	c.InvSlotObjCount[src], c.InvSlotObjCount[dst] = c.InvSlotObjCount[dst], c.InvSlotObjCount[src]
+}
+
 func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 	ImageCache = datastruct.NewLruCache[*pix32.Pix32](50000)
 	var4 := io.NewPacket(arg3.Read("data", nil))
