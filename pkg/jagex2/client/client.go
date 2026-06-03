@@ -2746,7 +2746,9 @@ func (c *Client) DrawMinimap() {
 	var2 := (c.OrbitCameraYaw + c.MinimapAnticheatAngle) & 0x7FF
 	var3 := c.LocalPlayer.X/32 + 48
 	var4 := 464 - c.LocalPlayer.Z/32
-	c.ImageMinimap.DrawRotatedMasked(var2, 146, c.MinimapMaskLineOffsets, 151, var4, c.MinimapZoom+256, var3, 21, 9, c.MinimapMaskLineLengths)
+	// Java: Client.java:11965 — 244 blits the minimap ring at (25,5) inside
+	// the mapback area (225: (21,9)), pairing with the Load mask rebase.
+	c.ImageMinimap.DrawRotatedMasked(var2, 146, c.MinimapMaskLineOffsets, 151, var4, c.MinimapZoom+256, var3, 25, 5, c.MinimapMaskLineLengths)
 	c.ImageCompass.DrawRotatedMasked(c.OrbitCameraYaw, 33, c.CompassMaskLineOffsets, 33, 25, 256, 25, 0, 0, c.CompassMaskLineLengths)
 	for i := range c.ActiveMapFunctionCount {
 		var3 = c.ActiveMapFunctionX[i]*4 + 2 - c.LocalPlayer.X/32
@@ -2791,11 +2793,31 @@ func (c *Client) DrawMinimap() {
 			}
 		}
 	}
-	// Java: Client.java:12021-12043 — the 244 minimap hint-arrow block
-	// (drawMinimapArrow / imageMapmarker1 / imageMapedge) is deferred to the
-	// UI-polish pass: it must land together with the 244 minimap coordinate
-	// shifts (drawOnMinimap's +4/-4 offsets etc.) or the arrows would be
-	// drawn into the wrong spot on the 225-era minimap layout kept here.
+	// Java: Client.java:12021-12043 — 244 minimap hint arrow (flashes at
+	// loopCycle%20 < 10) for npc (type 1), tile (type 2) and player (type 10)
+	// hints set by the HINT_ARROW handler.
+	if c.HintType != 0 && clientextras.LoopCycle%20 < 10 {
+		if c.HintType == 1 && c.HintNPC >= 0 && c.HintNPC < len(c.NPCs) {
+			var14 := c.NPCs[c.HintNPC]
+			if var14 != nil {
+				var3 = var14.X/32 - c.LocalPlayer.X/32
+				var4 = var14.Z/32 - c.LocalPlayer.Z/32
+				c.DrawMinimapArrow(var3, var4, c.ImageMapmarker1)
+			}
+		} else if c.HintType == 2 {
+			var3 = (c.HintTileX-c.SceneBaseTileX)*4 + 2 - c.LocalPlayer.X/32
+			var4 = (c.HintTileZ-c.SceneBaseTileZ)*4 + 2 - c.LocalPlayer.Z/32
+			c.DrawMinimapArrow(var3, var4, c.ImageMapmarker1)
+		} else if c.HintType == 10 && c.HintPlayer >= 0 && c.HintPlayer < len(c.Players) {
+			var9 := c.Players[c.HintPlayer]
+			if var9 != nil {
+				var3 = var9.X/32 - c.LocalPlayer.X/32
+				var4 = var9.Z/32 - c.LocalPlayer.Z/32
+				c.DrawMinimapArrow(var3, var4, c.ImageMapmarker1)
+			}
+		}
+	}
+
 	if c.FlagSceneTileX != 0 {
 		var3 = c.FlagSceneTileX*4 + 2 - c.LocalPlayer.X/32
 		var4 = c.FlagSceneTileZ*4 + 2 - c.LocalPlayer.Z/32
@@ -2803,7 +2825,10 @@ func (c *Client) DrawMinimap() {
 		// flag (the role 225's imageMapflag played).
 		c.DrawOnMinimap(var4, c.ImageMapmarker0, var3)
 	}
-	pix2d.FillRect(82, 93, 0xFFFFFF, 3, 3)
+	// Java: Pix2D.fillRect(16777215, 3, 3, 97, 78) (Client.java:12050) — the
+	// white player dot moves with the 244 (+4,-4) minimap origin shift
+	// (225: (93,82)).
+	pix2d.FillRect(78, 97, 0xFFFFFF, 3, 3)
 	c.AreaViewport.Bind()
 }
 
@@ -6042,10 +6067,12 @@ func (c *Client) Load() {
 	var48 := []*pixfont.PixFont{c.FontPlain11, c.FontPlain12, c.FontBold12, c.FontQuill8}
 	component.Unpack(jagMedia, var48, jagInterface)
 	c.DrawProgress("Preparing game engine", 97)
+	// Java: Client.java:1917-1933 — compass mask. 244 narrows the scan width
+	// to x < 34 (225 scanned 35 columns).
 	for i := range 33 {
 		var22 := 999
 		var23 := 0
-		for j := range 35 {
+		for j := range 34 {
 			if c.ImageMapback.Pixels[j+i*c.ImageMapback.Wi] == 0 {
 				if var22 == 999 {
 					var22 = j
@@ -6058,10 +6085,15 @@ func (c *Client) Load() {
 		c.CompassMaskLineOffsets[i] = var22
 		c.CompassMaskLineLengths[i] = var23 - var22
 	}
-	for i := 9; i < 160; i++ {
+	// Java: Client.java:1935-1952 — minimap mask. 244 moves the scan window
+	// to rows 5..155 / cols 25..171 (225: rows 9..159 / cols 10..167) and
+	// rebases offsets to -25 (225: -21), pairing with the (25,5) blit origin
+	// in DrawMinimap. The 244 mapback sprite is 172x156: 225's row bound of
+	// 160 read past its pixel buffer.
+	for i := 5; i < 156; i++ {
 		var23 := 999
 		var24 := 0
-		for j := 10; j < 168; j++ {
+		for j := 25; j < 172; j++ {
 			if c.ImageMapback.Pixels[j+i*c.ImageMapback.Wi] == 0 && (j > 34 || i > 34) {
 				if var23 == 999 {
 					var23 = j
@@ -6071,8 +6103,8 @@ func (c *Client) Load() {
 				break
 			}
 		}
-		c.MinimapMaskLineOffsets[i-9] = var23 - 21
-		c.MinimapMaskLineLengths[i-9] = var24 - var23
+		c.MinimapMaskLineOffsets[i-5] = var23 - 25
+		c.MinimapMaskLineLengths[i-5] = var24 - var23
 	}
 	pix3d.Init3D(96, 479)
 	c.AreaChatbackOffsets = pix3d.LineOffset
@@ -6316,6 +6348,36 @@ func (c *Client) RefreshFunc() {
 	c.RedrawFrame = true
 }
 
+// Java: drawMinimapArrow (Client.java:12056-12080) — new in 244: when the
+// hint target is moderately far away (65..300 map units) the imageMapedge
+// arrow is drawn rotated at the minimap rim pointing toward it; nearer or
+// very distant targets fall back to the plain on-minimap marker.
+func (c *Client) DrawMinimapArrow(dx int, dy int, image *pix32.Pix32) {
+	distance := dx*dx + dy*dy
+	if distance <= 4225 || distance >= 90000 {
+		// Go DrawOnMinimap keeps the 225-deob arg order (dy, image, dx).
+		c.DrawOnMinimap(dy, image, dx)
+		return
+	}
+
+	angle := (c.OrbitCameraYaw + c.MinimapAnticheatAngle) & 0x7FF
+	sinAngle := model.Sin[angle]
+	cosAngle := model.Cos[angle]
+	sinAngle = sinAngle * 256 / (c.MinimapZoom + 256)
+	cosAngle = cosAngle * 256 / (c.MinimapZoom + 256)
+
+	var11 := (dx*cosAngle + dy*sinAngle) >> 16
+	var12 := (dy*cosAngle - dx*sinAngle) >> 16
+
+	var13 := math.Atan2(float64(var11), float64(var12))
+	var15 := int(math.Sin(var13) * 63.0)
+	var16 := int(math.Cos(var13) * 57.0)
+
+	c.ImageMapedge.DrawRotated(83-var16-20, var13, 256, 15, 15, 20, 20, var15+94+4-10)
+}
+
+// Java: drawOnMinimap (Client.java:12083-12108). 244 shifts the plot origin
+// by (+4,-4) versus 225, pairing with the (25,5) minimap mask/blit origin.
 func (c *Client) DrawOnMinimap(arg0 int, arg2 *pix32.Pix32, arg3 int) {
 	var5 := (c.OrbitCameraYaw + c.MinimapAnticheatAngle) & 0x7FF
 	var6 := arg3*arg3 + arg0*arg0
@@ -6329,9 +6391,9 @@ func (c *Client) DrawOnMinimap(arg0 int, arg2 *pix32.Pix32, arg3 int) {
 	var9 := (arg0*var11 + arg3*var12) >> 16
 	var10 := (arg0*var12 - arg3*var11) >> 16
 	if var6 > 2500 {
-		arg2.DrawMasked(c.ImageMapback, 83-var10-arg2.OHi/2, var9+94-arg2.OWi/2)
+		arg2.DrawMasked(c.ImageMapback, 83-var10-arg2.OHi/2-4, var9+94-arg2.OWi/2+4)
 	} else {
-		arg2.PlotSprite(83-var10-arg2.OHi/2, var9+94-arg2.OWi/2)
+		arg2.PlotSprite(83-var10-arg2.OHi/2-4, var9+94-arg2.OWi/2+4)
 	}
 }
 

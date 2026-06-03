@@ -533,6 +533,46 @@ func (p *Pix32) DrawRotatedMasked(arg0 int, w int, lineStart []int, h int, ancho
 	}
 }
 
+// Java: drawRotated (244 Pix32.java:414-451) — new in 244; plotSprite-style
+// rotated blit that skips transparent (0) pixels. First consumer is the
+// minimap hint-arrow edge sprite (Client.DrawMinimapArrow). Like
+// drawRotatedMasked, Java wraps the body in try { ... } catch (Exception) {}
+// — the recover mirrors that silent swallow for out-of-bounds source coords.
+func (p *Pix32) DrawRotated(y int, theta float64, zoom, anchorX, anchorY, w, h, x int) {
+	defer func() { _ = recover() }()
+	centerX := -w / 2
+	centerY := -h / 2
+
+	sin := int(math.Sin(theta) * 65536.0)
+	cos := int(math.Cos(theta) * 65536.0)
+	sinZoom := (zoom * sin) >> 8
+	cosZoom := (zoom * cos) >> 8
+
+	leftX := (anchorX << 16) + (centerX*cosZoom + centerY*sinZoom)
+	leftY := (anchorY << 16) + (centerY*cosZoom - centerX*sinZoom)
+	leftOff := pix2d.Width2D*y + x
+
+	for range h {
+		dstX := leftOff
+		srcX := leftX
+		srcY := leftY
+
+		for j := -w; j < 0; j++ {
+			rgb := p.Pixels[(srcX>>16)+(srcY>>16)*p.Wi]
+			if rgb != 0 {
+				pix2d.Data[dstX] = rgb
+			}
+			dstX++
+			srcX += cosZoom
+			srcY -= sinZoom
+		}
+
+		leftX += sinZoom
+		leftY += cosZoom
+		leftOff += pix2d.Width2D
+	}
+}
+
 func (p *Pix32) DrawMasked(arg0 *pix8.Pix8, arg1 int, arg2 int) {
 	arg2 += p.XOf
 	arg1 += p.YOf
