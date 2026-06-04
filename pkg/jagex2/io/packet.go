@@ -259,7 +259,7 @@ func (p *Packet) GJStr() string {
 }
 
 // GStrByte reads a null-line-terminated (\n) byte sequence verbatim — Java
-// returns the raw bytes here (Packet.java:243-252, `gstrbyte`). Description
+// returns the raw bytes here (Packet.java:237, `gjstrraw`). Description
 // strings on objtype/loctype/npctype are stored byte-for-byte and later
 // decoded by the caller via `new String(bytes)`. We preserve the raw byte
 // semantics; consumers that need a Go string must call `latin1ToUTF8` or

@@ -90,7 +90,8 @@ type ClientStream struct {
 // NewClientStream wraps conn. It does not dial — the caller is responsible
 // for establishing the connection. Mirrors `ClientStream(GameShell, Socket)`
 // in Java; the GameShell argument is dropped because the Java side used it
-// only to spawn the writer thread via shell.startThread(this, 2), which the
+// only to spawn the writer thread via shell.startThread(this, 3)
+// (ClientStream.java:134), which the
 // Go side does directly with `go cs.run()` (PORTING.md §2.3).
 func NewClientStream(conn net.Conn) *ClientStream {
 	if tc, ok := conn.(*net.TCPConn); ok {

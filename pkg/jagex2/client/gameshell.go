@@ -199,9 +199,10 @@ func (c *Client) handleMouseButton(e platform.MouseButton) {
 
 // handleMouseMove maps a platform move/drag event onto mouseX/Y and
 // InputTracking. Java's mouseDragged and mouseMoved are identical at this rev
-// (GameShell.java:308-336): both set mouseX/Y and call
-// InputTracking.mouseMoved(y, x) — note the (y, x) swap. The Go port
-// preserves that swap.
+// (GameShell.java:381-407): both set mouseX/Y and call
+// InputTracking.mouseMoved(x, y). Go's MouseMoved signature is swapped vs
+// Java — (arg0=Y, arg2=X), encoding arg2+(arg0<<10) — so passing (e.Y, e.X)
+// reproduces Java's x+(y<<10) exactly.
 //
 // 245.2 (GameShell.java:381-407 @176a85f) drops the frame.insets
 // subtraction from both handlers — a no-op here; the platform backends
@@ -211,7 +212,7 @@ func (c *Client) handleMouseMove(e platform.MouseMove) {
 	c.MouseX = e.X
 	c.MouseY = e.Y
 	if inputtracking.Enabled {
-		inputtracking.MouseMoved(e.Y, e.X) // Java: InputTracking.mouseMoved(y, x) — note the swap
+		inputtracking.MouseMoved(e.Y, e.X) // Go signature is (y, x); ≡ Java mouseMoved(x, y) — see doc comment
 	}
 }
 

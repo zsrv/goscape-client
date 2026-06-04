@@ -11,6 +11,11 @@ import (
 // play_members.html's JS loop") — the half of the audio pipeline that ran
 // outside the signed Java applet and was never in the 225 sources.
 //
+// NOTE: all SignLink.java references in this package cite the Java-244 deob
+// (Client-Java @01f16088) — the 245.2 deob removed that reconstruction
+// entirely (sign/signlink.java is publisher-only), so no 245.2 counterpart
+// exists; this package is the documented Go-side consumer seam.
+//
 // Deviations from the Java reference (everything audible is faithful):
 //   - Track bytes travel in-memory through the signlink slot
 //     (signlink.SetMidiTrack) instead of the jingle<pos>.mid disk round-trip

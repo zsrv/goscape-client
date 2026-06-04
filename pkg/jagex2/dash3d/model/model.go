@@ -615,10 +615,12 @@ func NewModel2(arg1 []*Model, arg2 int) *Model {
 	return &m
 }
 
-// NewModel3 ports Java's `Model(Model[] arg0, byte arg1, int arg2)`
-// (Model.java:666). Java's arg1 is a deobfuscator-preserved overload
-// disambiguator — never read inside the constructor — and is dropped
-// here per the project's deob-artifact exclusion policy.
+// NewModel3 ports Java's `Model(int arg1, boolean arg2, Model[] arg3)`
+// (Model.java:629). Java's boolean arg2 is a deobfuscator-preserved
+// overload disambiguator — never read inside the constructor — and is
+// dropped here per the project's deob-artifact exclusion policy; Go's
+// (arg0 []*Model, arg2 int) maps arg0=Java arg3 (parts), arg2=Java arg1
+// (count).
 func NewModel3(arg0 []*Model, arg2 int) *Model {
 	var m Model
 

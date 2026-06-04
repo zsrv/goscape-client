@@ -1925,12 +1925,7 @@ func (w *World3D) PointInsideTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, 
 	if arg1 < arg2 && arg1 < arg3 && arg1 < arg4 {
 		return false
 	}
-	// Java: World3D.java:1889 — `arg1 > arg4` (all-three-greater early
-	// reject). The prior port flipped the third operator to `<`, producing
-	// a geometrically incoherent guard that spuriously rejected points
-	// whose vertical position lay between vertex 3 and vertex 4 of a
-	// triangle. Tile mouse-pick (DrawTileUnderlay / DrawTileOverlay)
-	// would mis-fire on certain vertex-Y orderings.
+	// Java: World3D.java:1889 — all-three-greater early reject.
 	if arg1 > arg2 && arg1 > arg3 && arg1 > arg4 {
 		return false
 	}

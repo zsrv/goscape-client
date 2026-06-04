@@ -20,7 +20,7 @@ var (
 	MembersWorld bool = true
 
 	ModelCache = datastruct.NewLruCache[*model.Model](50)
-	IconCache  = datastruct.NewLruCache[*pix32.Pix32](100) // Java: new LruCache(100) (244; 225 was 200)
+	IconCache  = datastruct.NewLruCache[*pix32.Pix32](100) // Java: new LruCache(100)
 )
 
 type ObjType struct {

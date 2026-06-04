@@ -24,7 +24,8 @@ var (
 // mu guards every package-level var above. Java made each tracker method
 // `synchronized` (one monitor per InputTracking class) because the AWT event
 // dispatch thread wrote tracker state while the game thread drained it via
-// Flush/Stop. The Go port runs Gio's app.Main() goroutine as the producer and
+// Flush/Stop. The Go port runs the platform event-loop goroutine (GLFW
+// callbacks / browser events) as the producer and
 // Client.Run() as the consumer, so the same race exists. Stop() calls
 // SetDisabled() while already holding the lock, so SetDisabled has a locked
 // public wrapper plus an unlocked internal body to avoid Go's non-reentrant

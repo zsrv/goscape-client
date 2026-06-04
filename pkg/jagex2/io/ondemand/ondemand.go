@@ -1,4 +1,4 @@
-// Package ondemand ports Java's jagex2.io.OnDemand (rev-244).
+// Package ondemand ports Java's jagex2.io.OnDemand.
 // Types, versionlist parse, Validate, getters, the request/cycle/prefetch/run/read
 // state machine, and the modernized /ondemand.zip bundle read path all live here.
 //
@@ -92,30 +92,30 @@ var _ jio.OnDemandProvider = (*OnDemand)(nil)
 // Fields, the request/cycle/prefetch/run/read state machine, and the modernized
 // read path all live in this file.
 type OnDemand struct {
-	// Java: vb.g — per-archive file version tables (4 archives)
+	// Java: vb.h — per-archive file version tables (4 archives)
 	versions [4][]int
-	// Java: vb.h — per-archive file CRC tables (4 archives)
+	// Java: vb.i — per-archive file CRC tables (4 archives)
 	crcs [4][]int
-	// Java: vb.i — per-archive per-file download priority — written in Unpack, read by the prefetch logic
+	// Java: vb.j — per-archive per-file download priority — written in Unpack, read by the prefetch logic
 	priorities [4][]byte
-	// Java: vb.j
+	// Java: vb.k
 	topPriority int
 
-	// Java: vb.k — model index flags (byte[], masked & 0xFF on read)
+	// Java: vb.l — model index flags (byte[], masked & 0xFF on read)
 	models []byte
 
-	// Java: vb.l/m/n/o — map coordinate and member flag tables
+	// Java: vb.m/n/o/p — map coordinate and member flag tables
 	mapIndex   []int
 	mapLand    []int
 	mapLoc     []int
 	mapMembers []int
 
-	// Java: vb.p — anim (seq) file index
+	// Java: vb.q — anim (seq) file index
 	animIndex []int
-	// Java: vb.q — midi prefetch flag (1 = prefetch)
+	// Java: vb.r — midi prefetch flag (1 = prefetch)
 	midiIndex []int
 
-	// Java: vb.r
+	// Java: vb.s
 	running bool
 
 	// active mirrors Client-TS OnDemand.active — set whenever the pump did
