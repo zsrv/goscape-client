@@ -200,3 +200,97 @@ for **package flattening**, prefer mirroring Java but treat it as build-verified
 if collapsing `entity`/`typ`/`model` into `dash3d` introduces an import cycle,
 keep the rename and leave the type in a renamed sub-package. The class *identity*
 map above is the durable part; final package boundaries follow what compiles.
+
+---
+
+# rev-254 Rename Map (245.2 → 254)
+
+Verified by class-level `@ObfuscatedName` key pairing between `176a85f`
+(245.2) and `2e62978` (254), 2026-06-04 — NOT by filename and NOT by git
+rename detection. Member-level keys are per-build and unusable for pairing.
+
+Extraction: 72 `.java` files at 176a85f, 74 at 2e62978. All 70 keyed classes
+in 245.2 joined to exactly one class in 254. Two keys (`rc`, `sc`) are new in
+254 (key-rotation artifacts — the deobfuscator re-keyed SpotAnimType, VarpType,
+and WordFilter when inserting two brand-new classes). See the key-rotation note
+below.
+
+## Key-rotation warning
+
+Between 245.2 and 254 the deobfuscator inserted two new classes and rotated
+three existing class keys one step "up" the alphabet to make room:
+
+| Class | 245.2 key | 254 key | Status |
+|---|---|---|---|
+| `config/SpotAnimType` | `oc` | `pc` | unchanged class, new key |
+| `config/VarpType` | `pc` | `rc` | unchanged class, new key |
+| `wordenc/WordFilter` | `qc` | `sc` | unchanged class, new key |
+| `client/Stats` | (new) | `oc` | NEW class — key `oc` reassigned to it |
+| `config/VarBitType` | (new) | `qc` | NEW class — key `qc` reassigned to it |
+
+A naive `join` on keys `oc`, `pc`, and `qc` produces three FALSE pairings
+(`SpotAnimType←→Stats`, `VarpType←→SpotAnimType`, `WordFilter←→VarBitType`).
+These were caught by reading both class heads — the joined pairs are structurally
+dissimilar. The correct treatment: all three existing classes are unchanged-name;
+the two new keys are brand-new classes.
+
+## Class renames and moves (Java) → Go actions
+
+| Obf key | 245.2 class | 254 class | Go action |
+|---|---|---|---|
+| `c` | `dash3d/World` (scene builder) | `dash3d/ClientBuild` | pkg `dash3d/world` → `dash3d/clientbuild`; type `World`→`ClientBuild` |
+| `s` | `dash3d/World3D` (scene graph) | `dash3d/World` | pkg `dash3d/world3d` → `dash3d/world`; type `World3D`→`World` |
+| `d` | `config/Component` | `config/IfType` | pkg `config/component` → `config/iftype`; type `Component`→`IfType` |
+| `yb` | `io/Jagfile` (case) | `io/JagFile` | type `Jagfile`→`JagFile` (case only; `io/jagfile.go` → `io/jagfile.go` filename unchanged, Go type renamed) |
+| `ic` | `io/Protocol` | `client/Protocol` | move `io/protocol.go` → `client/protocol.go`; package import path changes |
+
+> **Name-reuse trap:** "254 `World`" (key `s`, the scene graph) is NOT the same
+> as "245.2 `World`" (key `c`, the scene builder). Git's `M World.java` would
+> pair two different classes. The chained Go rename MUST land
+> `world`→`clientbuild` before `world3d`→`world`.
+
+## New in 254 (delta work, NOT rename churn)
+
+| Obf key (254) | Class | Notes |
+|---|---|---|
+| `oc` | `client/Stats` | 3-field skill-name/enabled constants table (25 skills). New `client/stats` pkg or file. |
+| `qc` | `config/VarBitType` | VarBit config type (basevar, startBit, endBit). New `config/varbittype` pkg. |
+
+## Deleted in 254
+
+None — all 70 keyed classes from 245.2 appear in 254 (some with rotated keys,
+none removed). The two path-paired unkeyed files (`deob/ObfuscatedName.java`,
+`sign/signlink.java`) are present in both trees unchanged.
+
+## Unchanged-name pairings
+
+All remaining 65 classes (keyed) pair 1:1 with the same path in both pins.
+No further renames or moves beyond the 5 listed above.
+
+Classes paired by path (no class-level obf key — annotation absent):
+- `deob/ObfuscatedName.java` — annotation definition itself; not ported (Go has no obf annotations)
+- `sign/signlink.java` — present in both with key `-`; no rename
+
+## Spot-checks performed
+
+Five same-name pairings verified by reading class heads in both pins and
+confirming field structure matches:
+- `pb` = `datastruct/LinkList` — `Linkable sentinel` field present in both; confirmed same class
+- `mb` = `io/Packet` — `extends DoublyLinkable`, same BigInteger import; confirmed same class
+- `gc` = `config/NpcType` — config type with `LruCache`, model field; confirmed same class
+- `t` = `datastruct/LruCache` — `int notFound` field in both; confirmed same class
+- `u` = `datastruct/HashTable` — `int bucketCount` in both; confirmed same class
+
+All 5 anchor cross-name pairings verified by reading both class heads:
+- `c`: `World` (245.2) has `@ObfuscatedName("c")` static scene-builder fields;
+  `ClientBuild` (254) has `@ObfuscatedName("c")` same structure — confirmed
+- `s`: `World3D` (245.2) → `World` (254) — same scene graph class
+- `d`: `Component` (245.2) → `IfType` (254) — same large UI config class (same imports, same role)
+- `yb`: `Jagfile` → `JagFile` — same JAG archive class (identical `byte[] data`, `int fileCount` fields)
+- `ic`: `io/Protocol` → `client/Protocol` — same protocol-lookup-table class (same array declarations, package-moved)
+
+Key-rotation pairings that look like renames but are NOT:
+- `oc`: `config/SpotAnimType` (245.2) vs `client/Stats` (254) — structurally dissimilar;
+  SpotAnimType has dozens of fields, Stats has 3 constants. FALSE join — key rotated.
+- `pc`: `config/VarpType` (245.2) vs `config/SpotAnimType` (254) — false join
+- `qc`: `wordenc/WordFilter` (245.2) vs `config/VarBitType` (254) — false join
