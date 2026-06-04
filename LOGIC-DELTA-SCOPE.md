@@ -151,7 +151,7 @@ an optional later cosmetic pass — existing names parse 244 correctly.
 - **`UnkType` — do NOT port:** empty deob stub, never loaded at 244 (only
   `UnkType.types = null` in unload). Mark `// Java: UnkType — empty stub … intentionally not ported`.
 
-### Workstream 5 — Audio consumer reconciliation  [L–XL]
+### Workstream 5 — Audio consumer reconciliation  [L–XL] — **DONE 2026-06-04**
 - 244 ports the **previously-missing wrapper-side audio consumer** (the known Go
   gap, `feedback_porting_signlink_wrapper_gap`): `SignLink.audioLoop()` (MIDI
   fade state machine ±8 toward `midivol`; `midi`/`wave` string protocol:
@@ -166,6 +166,13 @@ an optional later cosmetic pass — existing names parse 244 correctly.
   dat`/`.idx0..4`, deletes .dat if >50MB); configurable `storeid` (32–34 →
   `.file_store_<id>`); removed async `cacheload/cachesave`; defaults `midivol/
   wavevol=96`, `midi/wave="none"`; `clientversion 244`, `reporterror244.cgi`.
+- **Status (2026-06-04): DONE.** Faithful audioLoop state machine + linear
+  vol/256 volume model (proof in `pkg/jagex2/sound/audio/format.go`) on both
+  backends; loop-on-fade semantics restored (music no longer dies after one
+  pass). Deviations documented in `pkg/jagex2/sound/audio/audioloop.go`:
+  in-memory track handoff, non-blocking wave path, functional wavevol slider
+  (dead in Java 244), CC121 per-spec, no FileStream sector cache.
+  Side scope: storeid 32-34 via -store-id; midivol/wavevol=96 defaults.
 
 ### UI / rendering polish  [S–M, mostly independent]
 - **`Pix2D` [M]:** new `fillRectTrans/drawRectTrans/hlineTrans/vlineTrans/cls`;
