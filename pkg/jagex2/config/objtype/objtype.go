@@ -304,7 +304,15 @@ func (t *ObjType) ToCertificate() {
 	if var5 == 'A' || var5 == 'E' || var5 == 'I' || var5 == 'O' || var5 == 'U' {
 		var4 = "an"
 	}
-	t.Desc = []byte("Swap this note at any bank for " + var4 + " " + var3.Name + ".")
+	// Java: String.getBytes() emits ONE byte per char (platform/Latin-1);
+	// []byte(string) would emit multi-byte UTF-8 for chars like '£', and the
+	// Desc consumer transcodes Latin1→UTF8 on read (audit objtype-02).
+	var6 := "Swap this note at any bank for " + var4 + " " + var3.Name + "."
+	desc := make([]byte, 0, len(var6))
+	for _, r := range var6 {
+		desc = append(desc, byte(r))
+	}
+	t.Desc = desc
 	t.Stackable = true
 }
 

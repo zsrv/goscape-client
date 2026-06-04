@@ -44,6 +44,10 @@ func (l *LruCache[T]) Get(key int64) T {
 // node first; the Go map redesign drops that structural protection. All current
 // callers (objtype/loctype/npctype/spotanimtype/component/playerentity) follow
 // the Get-then-Put-if-miss pattern, so this is latent, not a live bug.
+// Re-confirmed by the 2026-06-04 audit (datastruct-07): Java's true duplicate-
+// key behavior (both nodes coexist in bucket+history; the OLDER one wins get)
+// is unreproducible on a Go map without restoring bucket chains — the caller
+// constraint stands.
 func (l *LruCache[T]) Put(key int64, v T) {
 	if l.Available == 0 {
 		evicted := l.History.Pop()

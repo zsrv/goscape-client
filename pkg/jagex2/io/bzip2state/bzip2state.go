@@ -17,16 +17,19 @@ var (
 )
 
 type BZip2State struct {
-	Stream          []byte
-	NextIn          int
-	AvailIn         int
-	TotalInLo32     int
-	TotalInHi32     int
+	Stream  []byte
+	NextIn  int
+	AvailIn int
+	// Java: total_in/out_lo32+hi32 are 32-bit ints whose carry idioms detect
+	// 2^32 wraparound; int32 typing keeps the carries live (audit bzip2-01/02).
+	// Write-only telemetry — no reader exists repo-wide.
+	TotalInLo32     int32
+	TotalInHi32     int32
 	Decompressed    []byte
 	NextOut         int
 	AvailOut        int
-	TotalOutLo32    int
-	TotalOutHi32    int
+	TotalOutLo32    int32
+	TotalOutHi32    int32
 	StateOutCh      byte
 	StateOutLen     int
 	BlockRandomized bool

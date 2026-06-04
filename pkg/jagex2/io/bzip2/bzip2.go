@@ -160,7 +160,7 @@ label67:
 	}
 
 	var13 := s.TotalOutLo32
-	s.TotalOutLo32 += availOutInit - csAvailOut
+	s.TotalOutLo32 += int32(availOutInit - csAvailOut)
 	if s.TotalOutLo32 < var13 {
 		s.TotalOutHi32++
 	}
