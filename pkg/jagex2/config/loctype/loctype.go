@@ -24,7 +24,7 @@ func init() {
 	ModelCacheStatic = datastruct.NewLruCache[*model.Model](500)
 	// DEVIATION from Java's faithful LruCache(30) (LocType.java:88). 30 thrashes
 	// for a region's unique transformed-loc working set, making the miss-path
-	// builders (CalculateNormals/NewModel4/CreateLabelReferences) ~45% of
+	// builders (CalculateNormals/NewModel4/PrepareAnim) ~45% of
 	// scene-build allocation churn. 256 holds the working set; render-identical
 	// (the cache key encodes every transform parameter, so eviction only decides
 	// whether we rebuild, never what we render). Worst-case retained ~6 MB vs an
@@ -303,12 +303,12 @@ func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *mode
 		}
 		var15 := ModelCacheStatic.Get(int64(var13))
 		if var15 == nil {
-			var15 = model.TryGet(var13 & 0xFFFF)
+			var15 = model.Load(var13 & 0xFFFF)
 			if var15 == nil {
 				return nil
 			}
 			if var14 {
-				var15.RotateY180()
+				var15.Rotate180()
 			}
 			ModelCacheStatic.Put(int64(var13), var15)
 		}
@@ -326,13 +326,13 @@ func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *mode
 		}
 		var18 := model.NewModel4(var15, loc.RecolS == nil, !loc.AnimHasAlpha, arg1 == 0 && arg6 == -1 && !var16 && !var17)
 		if arg6 != -1 {
-			var18.CreateLabelReferences()
-			var18.ApplyTransform(arg6)
+			var18.PrepareAnim()
+			var18.Animate(arg6)
 			var18.LabelFaces = nil
 			var18.LabelVertices = nil
 		}
 		for ; arg1 > 0; arg1-- {
-			var18.RotateY90()
+			var18.Rotate90()
 		}
 		if loc.RecolS != nil {
 			for i := range len(loc.RecolS) {
@@ -363,7 +363,7 @@ func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *mode
 				var25 := var23 + (var24-var23)*(var22+64)/128
 				var18.VertexY[i] += var25 - var19
 			}
-			var18.CalculateBoundsY()
+			var18.CalcHeight()
 		}
 		return var18
 	} else if Reset {
@@ -382,7 +382,7 @@ func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *mode
 				var19 := var29 + (var30-var29)*(var28+64)/128
 				var12.VertexY[i] += var19 - var13
 			}
-			var12.CalculateBoundsY()
+			var12.CalcHeight()
 		}
 		return var12
 	}
@@ -406,7 +406,7 @@ func (t *LocType) CheckModel(shape int) bool {
 		return true
 	}
 	m := t.Models[index]
-	return m == -1 || model.Request(m&0xFFFF)
+	return m == -1 || model.RequestDownload(m&0xFFFF)
 }
 
 // CheckModelAll reports whether all models for this loc are loaded.
@@ -425,7 +425,7 @@ func (t *LocType) CheckModelAll() bool {
 	}
 	for _, m := range t.Models {
 		if m != -1 {
-			if !model.Request(m & 0xFFFF) {
+			if !model.RequestDownload(m & 0xFFFF) {
 				ready = false
 			}
 		}

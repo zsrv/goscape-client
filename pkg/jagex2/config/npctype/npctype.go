@@ -202,7 +202,7 @@ func (t *NpcType) GetSequencedModel(target *model.Model, arg0 int, arg1 int, arg
 		// Java: `boolean ready = false; ... if (!Model.request(...)) { ready = true; }`
 		ready := false // Java: ready
 		for i := 0; i < len(t.Models); i++ {
-			if !model.Request(t.Models[i]) {
+			if !model.RequestDownload(t.Models[i]) {
 				ready = true
 			}
 		}
@@ -211,7 +211,7 @@ func (t *NpcType) GetSequencedModel(target *model.Model, arg0 int, arg1 int, arg
 		}
 		var6 := make([]*model.Model, len(t.Models))
 		for i := range len(t.Models) {
-			var6[i] = model.TryGet(t.Models[i])
+			var6[i] = model.Load(t.Models[i])
 		}
 		if len(var6) == 1 {
 			var5 = var6[0]
@@ -223,27 +223,27 @@ func (t *NpcType) GetSequencedModel(target *model.Model, arg0 int, arg1 int, arg
 				var5.Recolor(t.RecolS[i], t.RecolD[i])
 			}
 		}
-		var5.CreateLabelReferences()
+		var5.PrepareAnim()
 		var5.CalculateNormals(t.Ambient+64, t.Contrast+850, -30, -50, -30, true)
 		ModelCache.Put(t.Index, var5)
 	}
 	target.ResetFromModel6(var5, !t.AnimHasAlpha)
 	var4 := target
 	if arg0 != -1 && arg1 != -1 {
-		var4.ApplyTransforms(arg1, arg0, arg2)
+		var4.MaskAnimate(arg1, arg0, arg2)
 	} else if arg0 != -1 {
-		var4.ApplyTransform(arg0)
+		var4.Animate(arg0)
 	}
 	if t.ResizeH != 128 || t.ResizeV != 128 {
 		// Java: NpcType.getModel scale(resizev, resizeh, resizeh); Go Scale(arg0=z, arg2=y, arg3=x).
 		// So z=resizeh=ResizeH, y=resizev=ResizeV, x=resizeh=ResizeH → Scale(ResizeH, ResizeV, ResizeH).
 		var4.Scale(t.ResizeH, t.ResizeV, t.ResizeH)
 	}
-	var4.CalculateBoundsCylinder()
+	var4.CalcBoundingCylinder()
 	var4.LabelFaces = nil
 	var4.LabelVertices = nil
 	if t.Size == 1 {
-		var4.Pickable = true
+		var4.UseAABBMouseCheck = true
 	}
 	return var4
 }
@@ -257,7 +257,7 @@ func (t *NpcType) GetHeadModel() *model.Model {
 	// Java: `boolean exists = false; ... if (!Model.request(...)) { exists = true; }`
 	exists := false // Java: exists
 	for i := 0; i < len(t.Heads); i++ {
-		if !model.Request(t.Heads[i]) {
+		if !model.RequestDownload(t.Heads[i]) {
 			exists = true
 		}
 	}
@@ -266,7 +266,7 @@ func (t *NpcType) GetHeadModel() *model.Model {
 	}
 	var2 := make([]*model.Model, len(t.Heads))
 	for i := range t.Heads {
-		var2[i] = model.TryGet(t.Heads[i])
+		var2[i] = model.Load(t.Heads[i])
 	}
 	var var4 *model.Model
 	if len(var2) == 1 {

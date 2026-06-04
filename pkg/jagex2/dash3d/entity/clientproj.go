@@ -103,15 +103,15 @@ func (e *ClientProj) GetModel() *model.Model {
 	}
 	var3 := model.NewModel4(var2, true, !e.SpotAnim.AnimHasAlpha, false)
 	if e.SpotAnim.Seq != nil {
-		var3.CreateLabelReferences()
-		var3.ApplyTransform(e.SpotAnim.Seq.Frames[e.SeqFrame])
+		var3.PrepareAnim()
+		var3.Animate(e.SpotAnim.Seq.Frames[e.SeqFrame])
 		var3.LabelFaces = nil
 		var3.LabelVertices = nil
 	}
 	if e.SpotAnim.ResizeH != 128 || e.SpotAnim.ResizeV != 128 {
 		var3.Scale(e.SpotAnim.ResizeH, e.SpotAnim.ResizeV, e.SpotAnim.ResizeH)
 	}
-	var3.RotateX(e.Pitch)
+	var3.RotateXAxis(e.Pitch)
 	var3.CalculateNormals(e.SpotAnim.Ambient+64, e.SpotAnim.Contrast+850, -30, -50, -30, true)
 	return var3
 }

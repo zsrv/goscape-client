@@ -40,8 +40,8 @@ func (e *ClientNpc) GetModel() *model.Model {
 		if spotModel := var3.GetModel(); spotModel != nil {
 			var4 := model.NewModel4(spotModel, true, !var3.AnimHasAlpha, false)
 			var4.Translate(-e.SpotanimOffset, 0, 0)
-			var4.CreateLabelReferences()
-			var4.ApplyTransform(var3.Seq.Frames[e.SpotanimFrame])
+			var4.PrepareAnim()
+			var4.Animate(var3.Seq.Frames[e.SpotanimFrame])
 			var4.LabelFaces = nil
 			var4.LabelVertices = nil
 			if var3.ResizeH != 128 || var3.ResizeV != 128 {
@@ -54,7 +54,7 @@ func (e *ClientNpc) GetModel() *model.Model {
 		}
 	}
 	if e.Type.Size == 1 {
-		var2.Pickable = true
+		var2.UseAABBMouseCheck = true
 	}
 	return var2
 }

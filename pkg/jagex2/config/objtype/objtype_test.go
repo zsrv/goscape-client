@@ -9,9 +9,9 @@ import (
 
 // TestGetInterfaceModelNilWhenMetadataAbsent verifies that GetInterfaceModel
 // returns nil (not an empty husk via NewModel1) when model.Metadata is nil,
-// i.e. the lazy TryGet path is taken correctly.
+// i.e. the lazy Load path is taken correctly.
 func TestGetInterfaceModelNilWhenMetadataAbsent(t *testing.T) {
-	// Ensure Metadata is nil so TryGet returns nil.
+	// Ensure Metadata is nil so Load returns nil.
 	model.Reset()
 
 	obj := &objtype.ObjType{

@@ -332,7 +332,7 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 	if var4 != nil {
 		return var4
 	}
-	var4 = model.TryGet(t.Model)
+	var4 = model.Load(t.Model)
 	if var4 == nil {
 		return nil
 	}
@@ -346,7 +346,7 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 		}
 	}
 	var4.CalculateNormals(t.Ambient+64, t.Contrast+768, -50, -10, -50, true)
-	var4.Pickable = true
+	var4.UseAABBMouseCheck = true
 	ModelCache.Put(int64(t.Index), var4)
 	return var4
 }
@@ -524,13 +524,13 @@ func (t *ObjType) CheckWearModel(gender int) bool {
 		return true
 	}
 	ready := true //nolint:staticcheck // QF1007: kept split to mirror Java's flag shape (ObjType.java:639-648)
-	if !model.Request(wear) {
+	if !model.RequestDownload(wear) {
 		ready = false
 	}
-	if wear2 != -1 && !model.Request(wear2) {
+	if wear2 != -1 && !model.RequestDownload(wear2) {
 		ready = false
 	}
-	if wear3 != -1 && !model.Request(wear3) {
+	if wear3 != -1 && !model.RequestDownload(wear3) {
 		ready = false
 	}
 	return ready
@@ -550,16 +550,16 @@ func (t *ObjType) GetWornModel(arg1 int) *model.Model {
 		var4 = t.WomanWear2
 		var5 = t.WomanWear3
 	}
-	var6 := model.TryGet(var3)
+	var6 := model.Load(var3)
 	if var4 != -1 {
 		var var7 *model.Model
 		if var5 == -1 {
-			var7 = model.TryGet(var4)
+			var7 = model.Load(var4)
 			var11 := []*model.Model{var6, var7}
 			var6 = model.NewModel2(var11, 2)
 		} else {
-			var7 = model.TryGet(var4)
-			var8 := model.TryGet(var5)
+			var7 = model.Load(var4)
+			var8 := model.Load(var5)
 			var9 := []*model.Model{var6, var7, var8}
 			var6 = model.NewModel2(var9, 3)
 		}
@@ -591,10 +591,10 @@ func (t *ObjType) CheckHeadModel(gender int) bool {
 		return true
 	}
 	ready := true //nolint:staticcheck // QF1007: kept split to mirror Java's flag shape (ObjType.java:709-716)
-	if !model.Request(head) {
+	if !model.RequestDownload(head) {
 		ready = false
 	}
-	if head2 != -1 && !model.Request(head2) {
+	if head2 != -1 && !model.RequestDownload(head2) {
 		ready = false
 	}
 	return ready
@@ -612,9 +612,9 @@ func (t *ObjType) GetHeadModel(arg1 int) *model.Model {
 	if arg1 == 1 {
 		var4 = t.WomanHead2
 	}
-	var5 := model.TryGet(var3)
+	var5 := model.Load(var3)
 	if var4 != -1 {
-		var6 := model.TryGet(var4)
+		var6 := model.Load(var4)
 		var7 := []*model.Model{var5, var6}
 		var5 = model.NewModel2(var7, 2)
 	}
@@ -641,7 +641,7 @@ func (t *ObjType) GetInvModel(arg0 int) *model.Model {
 			return Get(var2).GetInvModel(1)
 		}
 	}
-	var4 := model.TryGet(t.Model)
+	var4 := model.Load(t.Model)
 	if var4 == nil {
 		return nil
 	}

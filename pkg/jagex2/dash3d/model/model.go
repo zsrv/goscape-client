@@ -47,7 +47,7 @@ var (
 	Metadata               []*metadata.Metadata
 	// Loaded counts every Model(int) decode. Java: Model.loaded.
 	Loaded int
-	// Provider is the on-demand hook used by TryGet/Request to fault in a model
+	// Provider is the on-demand hook used by Load/RequestDownload to fault in a model
 	// blob that has not arrived yet. Java: Model.provider (OnDemandProvider).
 	Provider io.OnDemandProvider
 )
@@ -133,7 +133,7 @@ type Model struct {
 	FaceColourC          []int
 	FaceInfo             []int
 	FacePriority         []int
-	Pickable             bool
+	UseAABBMouseCheck    bool
 	TexturedFaceCount    int
 	TexturedVertexA      []int
 	TexturedVertexB      []int
@@ -307,9 +307,9 @@ func UnloadOne(id int) {
 	Metadata[id] = nil
 }
 
-// TryGet returns the decoded model for id, or nil while it is still being
-// faulted in via the provider. Java: Model.tryGet(int).
-func TryGet(id int) *Model {
+// Load returns the decoded model for id, or nil while it is still being
+// faulted in via the provider. Java: Model.load (Model.java:341 @2e62978; was tryGet at 245.2).
+func Load(id int) *Model {
 	if Metadata == nil {
 		return nil
 	}
@@ -323,9 +323,9 @@ func TryGet(id int) *Model {
 	return NewModel1(id)
 }
 
-// Request reports whether id's metadata is present, requesting it otherwise.
-// Java: Model.request(int).
-func Request(id int) bool {
+// RequestDownload reports whether id's metadata is present, requesting it otherwise.
+// Java: Model.requestDownload (Model.java:355 @2e62978; was request at 245.2).
+func RequestDownload(id int) bool {
 	if Metadata == nil {
 		return false
 	}
@@ -731,7 +731,7 @@ func NewModel3(arg0 []*Model, arg2 int) *Model {
 			}
 		}
 	}
-	m.CalculateBoundsCylinder()
+	m.CalcBoundingCylinder()
 	return &m
 }
 
@@ -961,7 +961,7 @@ func (m *Model) AddVertex(arg0 *Model, arg1 int) int {
 	return var3
 }
 
-func (m *Model) CalculateBoundsCylinder() {
+func (m *Model) CalcBoundingCylinder() {
 	m.MaxY = 0
 	m.Radius = 0
 	m.MinY = 0
@@ -979,7 +979,7 @@ func (m *Model) CalculateBoundsCylinder() {
 	m.MaxDepth = m.MinDepth + int(math.Sqrt(float64(m.Radius*m.Radius+m.MinY*m.MinY))+0.99)
 }
 
-func (m *Model) CalculateBoundsY() {
+func (m *Model) CalcHeight() {
 	m.MaxY = 0
 	m.MinY = 0
 	for i := range m.VertexCount {
@@ -991,7 +991,7 @@ func (m *Model) CalculateBoundsY() {
 	m.MaxDepth = m.MinDepth + int(math.Sqrt(float64(m.Radius*m.Radius+m.MinY*m.MinY))+0.99)
 }
 
-func (m *Model) CalculateBoundsAABB() {
+func (m *Model) CalcAABB() {
 	m.MaxY = 0
 	m.Radius = 0
 	m.MinY = 0
@@ -1017,7 +1017,7 @@ func (m *Model) CalculateBoundsAABB() {
 	m.MaxDepth = m.MinDepth + int(math.Sqrt(float64(m.Radius*m.Radius+m.MinY*m.MinY)))
 }
 
-func (m *Model) CreateLabelReferences() {
+func (m *Model) PrepareAnim() {
 	if m.VertexLabel != nil {
 		var2 := make([]int, 256)
 		var3 := 0
@@ -1061,7 +1061,7 @@ func (m *Model) CreateLabelReferences() {
 	m.FaceLabel = nil
 }
 
-func (m *Model) ApplyTransform(arg1 int) {
+func (m *Model) Animate(arg1 int) {
 	if m.LabelVertices == nil || arg1 == -1 {
 		return
 	}
@@ -1077,16 +1077,16 @@ func (m *Model) ApplyTransform(arg1 int) {
 	BaseZ = 0
 	for i := range var3.Length {
 		var6 := var3.Groups[i]
-		m.ApplyTransform2(var4.Types[var6], var4.Labels[var6], var3.X[i], var3.Y[i], var3.Z[i])
+		m.Animate2(var4.Types[var6], var4.Labels[var6], var3.X[i], var3.Y[i], var3.Z[i])
 	}
 }
 
-func (m *Model) ApplyTransforms(arg0 int, arg2 int, arg3 []int) {
+func (m *Model) MaskAnimate(arg0 int, arg2 int, arg3 []int) {
 	if arg2 == -1 {
 		return
 	}
 	if arg3 == nil || arg0 == -1 {
-		m.ApplyTransform(arg2)
+		m.Animate(arg2)
 		return
 	}
 	// Java: both frames fetched via AnimFrame.get with null guards
@@ -1098,7 +1098,7 @@ func (m *Model) ApplyTransforms(arg0 int, arg2 int, arg3 []int) {
 	}
 	var6 := animframe.Get(arg0)
 	if var6 == nil {
-		m.ApplyTransform(arg2)
+		m.Animate(arg2)
 		return
 	}
 	var7 := var5.Base
@@ -1115,7 +1115,7 @@ func (m *Model) ApplyTransforms(arg0 int, arg2 int, arg3 []int) {
 			var13++
 		}
 		if var11 != var9 || var7.Types[var11] == 0 {
-			m.ApplyTransform2(var7.Types[var11], var7.Labels[var11], var5.X[i], var5.Y[i], var5.Z[i])
+			m.Animate2(var7.Types[var11], var7.Labels[var11], var5.X[i], var5.Y[i], var5.Z[i])
 		}
 	}
 	BaseX = 0
@@ -1131,12 +1131,12 @@ func (m *Model) ApplyTransforms(arg0 int, arg2 int, arg3 []int) {
 			var13++
 		}
 		if var12 == var9 || var7.Types[var12] == 0 {
-			m.ApplyTransform2(var7.Types[var12], var7.Labels[var12], var6.X[i], var6.Y[i], var6.Z[i])
+			m.Animate2(var7.Types[var12], var7.Labels[var12], var6.X[i], var6.Y[i], var6.Z[i])
 		}
 	}
 }
 
-func (m *Model) ApplyTransform2(arg0 int, arg1 []int, arg2 int, arg3 int, arg4 int) {
+func (m *Model) Animate2(arg0 int, arg1 []int, arg2 int, arg3 int, arg4 int) {
 	var6 := len(arg1)
 	if arg0 == 0 {
 		var7 := 0
@@ -1258,7 +1258,7 @@ func (m *Model) ApplyTransform2(arg0 int, arg1 []int, arg2 int, arg3 int, arg4 i
 	}
 }
 
-func (m *Model) RotateY90() {
+func (m *Model) Rotate90() {
 	for i := range m.VertexCount {
 		var3 := m.VertexX[i]
 		m.VertexX[i] = m.VertexZ[i]
@@ -1266,7 +1266,7 @@ func (m *Model) RotateY90() {
 	}
 }
 
-func (m *Model) RotateX(arg1 int) {
+func (m *Model) RotateXAxis(arg1 int) {
 	var3 := Sin[arg1]
 	var4 := Cos[arg1]
 	for i := range m.VertexCount {
@@ -1292,7 +1292,7 @@ func (m *Model) Recolor(arg0 int, arg1 int) {
 	}
 }
 
-func (m *Model) RotateY180() {
+func (m *Model) Rotate180() {
 	for i := range m.VertexCount {
 		m.VertexZ[i] = -m.VertexZ[i]
 	}
@@ -1374,9 +1374,9 @@ func (m *Model) CalculateNormals(arg0, arg1, arg2, arg3, arg4 int, arg5 bool) {
 		}
 	}
 	if arg5 {
-		m.CalculateBoundsCylinder()
+		m.CalcBoundingCylinder()
 	} else {
-		m.CalculateBoundsAABB()
+		m.CalcAABB()
 	}
 }
 
@@ -1554,7 +1554,7 @@ func (m *Model) Draw1(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) 
 		var26 = MouseX - pix3d.CenterW3D
 		var27 = MouseZ - pix3d.CenterH3D
 		if var26 > var15 && var26 < var16 && var27 > var21 && var27 < var19 {
-			if m.Pickable {
+			if m.UseAABBMouseCheck {
 				PickedBitsets[PickedCount] = arg8
 				PickedCount++
 			} else {

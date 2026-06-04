@@ -7,7 +7,7 @@ import (
 )
 
 // stubProvider is a no-op io.OnDemandProvider for tests: it records nothing and
-// never faults in data, so TryGet/Request behave deterministically.
+// never faults in data, so Load/RequestDownload behave deterministically.
 type stubProvider struct{}
 
 func (stubProvider) RequestModel(id int) {}
@@ -177,13 +177,13 @@ func TestResetFromModel6AlphaNoAliasAcrossModes(t *testing.T) {
 func TestResetFromModel6ClearsStaleFields(t *testing.T) {
 	src := sampleBaseModel(4, 2)
 	var m Model
-	m.Pickable = true
+	m.UseAABBMouseCheck = true
 	m.VertexNormal = make([]vertexnormal.VertexNormal, 4)
 	m.MaxY = 555
 	m.ResetFromModel6(src, true)
-	if m.Pickable || m.VertexNormal != nil || m.MaxY != 0 {
-		t.Errorf("stale fields not cleared: Pickable=%v VertexNormal=%v MaxY=%d",
-			m.Pickable, m.VertexNormal != nil, m.MaxY)
+	if m.UseAABBMouseCheck || m.VertexNormal != nil || m.MaxY != 0 {
+		t.Errorf("stale fields not cleared: UseAABBMouseCheck=%v VertexNormal=%v MaxY=%d",
+			m.UseAABBMouseCheck, m.VertexNormal != nil, m.MaxY)
 	}
 }
 

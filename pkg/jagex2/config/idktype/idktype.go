@@ -84,7 +84,7 @@ func (idk *IdkType) CheckModel() bool {
 	}
 	ready := true
 	for i := range len(idk.Models) {
-		if !model.Request(idk.Models[i]) {
+		if !model.RequestDownload(idk.Models[i]) {
 			ready = false
 		}
 	}
@@ -97,7 +97,7 @@ func (idk *IdkType) GetModel() *model.Model {
 	}
 	var1 := make([]*model.Model, len(idk.Models))
 	for i := range len(idk.Models) {
-		var1[i] = model.TryGet(idk.Models[i])
+		var1[i] = model.Load(idk.Models[i])
 	}
 	var var3 *model.Model
 	if len(var1) == 1 {
@@ -116,7 +116,7 @@ func (idk *IdkType) GetModel() *model.Model {
 func (idk *IdkType) CheckHead() bool {
 	ready := true
 	for i := range 5 {
-		if idk.Heads[i] != -1 && !model.Request(idk.Heads[i]) {
+		if idk.Heads[i] != -1 && !model.RequestDownload(idk.Heads[i]) {
 			ready = false
 		}
 	}
@@ -128,7 +128,7 @@ func (idk *IdkType) GetHeadModel() *model.Model {
 	var3 := 0
 	for i := range 5 {
 		if idk.Heads[i] != -1 {
-			var2[var3] = model.TryGet(idk.Heads[i])
+			var2[var3] = model.Load(idk.Heads[i])
 			var3++
 		}
 	}

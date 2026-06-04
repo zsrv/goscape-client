@@ -31,7 +31,7 @@ func TestCheckModelAll(t *testing.T) {
 		t.Error("CheckModelAll with all -1 models: want true, got false")
 	}
 
-	// One real model (id=5) + one -1. model.Request(5) returns false (Metadata==nil).
+	// One real model (id=5) + one -1. model.RequestDownload(5) returns false (Metadata==nil).
 	oneMiss := &loctype.LocType{
 		Models: []int{-1, 5},
 		Shapes: []int{10, 22},
@@ -52,9 +52,9 @@ func TestCheckModelAll(t *testing.T) {
 // even after the first miss.
 //
 // Mechanism: model.Init(count, provider) allocates Metadata[0..count-1] (all
-// nil entries). model.Request(id) with Metadata[id]==nil calls
+// nil entries). model.RequestDownload(id) with Metadata[id]==nil calls
 // provider.RequestModel(id) and returns false. A short-circuit implementation
-// (ready = ready && model.Request(id)) would skip the second call after the
+// (ready = ready && model.RequestDownload(id)) would skip the second call after the
 // first miss; the correct implementation calls both.
 func TestCheckModelAll_NonShortCircuit(t *testing.T) {
 	cp := &countingProvider{}
@@ -98,7 +98,7 @@ func TestCheckModel(t *testing.T) {
 		t.Error("CheckModel shape=10 (model=-1): want true, got false")
 	}
 
-	// shape 22 → index 1 → model 7. model.Request(7) returns false (Metadata==nil).
+	// shape 22 → index 1 → model 7. model.RequestDownload(7) returns false (Metadata==nil).
 	if loc.CheckModel(22) {
 		t.Error("CheckModel shape=22 (model=7, Metadata==nil): want false, got true")
 	}

@@ -5613,8 +5613,8 @@ func (c *Client) UpdateInterfaceContent(arg1 *iftype.IfType) {
 					}
 				}
 			}
-			var10.CreateLabelReferences()
-			var10.ApplyTransform(seqtype.Instances[c.LocalPlayer.SeqStandID].Frames[0])
+			var10.PrepareAnim()
+			var10.Animate(seqtype.Instances[c.LocalPlayer.SeqStandID].Frames[0])
 			var10.CalculateNormals(64, 850, -30, -50, -30, true)
 			arg1.ModelType = 5
 			arg1.Model = 0

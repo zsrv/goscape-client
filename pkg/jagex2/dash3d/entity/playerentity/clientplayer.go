@@ -142,7 +142,7 @@ func (e *ClientPlayer) GetModel() *model.Model {
 		return nil
 	}
 	e.Height = var2.MaxY // Java: super.height = model.minY (244 Model.minY ≡ Go Model.MaxY)
-	var2.Pickable = true
+	var2.UseAABBMouseCheck = true
 	if e.LowMemory {
 		return var2
 	}
@@ -152,8 +152,8 @@ func (e *ClientPlayer) GetModel() *model.Model {
 		if spotModel := var3.GetModel(); spotModel != nil {
 			var4 := model.NewModel4(spotModel, true, !var3.AnimHasAlpha, false)
 			var4.Translate(-e.SpotanimOffset, 0, 0)
-			var4.CreateLabelReferences()
-			var4.ApplyTransform(var3.Seq.Frames[e.SpotanimFrame])
+			var4.PrepareAnim()
+			var4.Animate(var3.Seq.Frames[e.SpotanimFrame])
 			var4.LabelFaces = nil
 			var4.LabelVertices = nil
 			if var3.ResizeH != 128 || var3.ResizeV != 128 {
@@ -172,31 +172,31 @@ func (e *ClientPlayer) GetModel() *model.Model {
 			var6 := e.LocModel
 			var6.Translate(e.LocOffsetY-e.Y, e.LocOffsetX-e.X, e.LocOffsetZ-e.Z)
 			if e.DstYaw == 512 {
-				var6.RotateY90()
-				var6.RotateY90()
-				var6.RotateY90()
+				var6.Rotate90()
+				var6.Rotate90()
+				var6.Rotate90()
 			} else if e.DstYaw == 0x400 {
-				var6.RotateY90()
-				var6.RotateY90()
+				var6.Rotate90()
+				var6.Rotate90()
 			} else if e.DstYaw == 1536 {
-				var6.RotateY90()
+				var6.Rotate90()
 			}
 			var8 := []*model.Model{var2, var6}
 			var2 = model.NewModel3(var8, 2)
 			if e.DstYaw == 512 {
-				var6.RotateY90()
+				var6.Rotate90()
 			} else if e.DstYaw == 0x400 {
-				var6.RotateY90()
-				var6.RotateY90()
+				var6.Rotate90()
+				var6.Rotate90()
 			} else if e.DstYaw == 1536 {
-				var6.RotateY90()
-				var6.RotateY90()
-				var6.RotateY90()
+				var6.Rotate90()
+				var6.Rotate90()
+				var6.Rotate90()
 			}
 			var6.Translate(e.Y-e.LocOffsetY, e.X-e.LocOffsetX, e.Z-e.LocOffsetZ)
 		}
 	}
-	var2.Pickable = true
+	var2.UseAABBMouseCheck = true
 	return var2
 }
 
@@ -300,7 +300,7 @@ func (e *ClientPlayer) GetSequencedModel() *model.Model {
 				}
 			}
 		}
-		var15.CreateLabelReferences()
+		var15.PrepareAnim()
 		var15.CalculateNormals(64, 850, -30, -50, -30, true)
 		ModelCache.Put(var2, var15)
 		// Java: ClientPlayer.java:361 — remember the last complete composite
@@ -316,11 +316,11 @@ func (e *ClientPlayer) GetSequencedModel() *model.Model {
 	e.seqModel.ResetFromModel6(var15, true)
 	var16 := e.seqModel
 	if var4 != -1 && var5 != -1 {
-		var16.ApplyTransforms(var5, var4, seqtype.Instances[e.PrimarySeqID].WalkMerge)
+		var16.MaskAnimate(var5, var4, seqtype.Instances[e.PrimarySeqID].WalkMerge)
 	} else if var4 != -1 {
-		var16.ApplyTransform(var4)
+		var16.Animate(var4)
 	}
-	var16.CalculateBoundsCylinder()
+	var16.CalcBoundingCylinder()
 	var16.LabelFaces = nil
 	var16.LabelVertices = nil
 	return var16

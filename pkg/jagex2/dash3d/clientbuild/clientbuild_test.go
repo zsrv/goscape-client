@@ -28,7 +28,7 @@ func TestChangeLocAvailableShapeNormalization(t *testing.T) {
 	fixture := loctype.NewLocType()
 	fixture.Index = id
 	fixture.Shapes = []int{4}
-	fixture.Models = []int{0} // model.Request(0) -> false (Metadata nil)
+	fixture.Models = []int{0} // model.RequestDownload(0) -> false (Metadata nil)
 
 	loctype.Cache = make([]*loctype.LocType, 10)
 	for i := range loctype.Cache {

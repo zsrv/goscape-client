@@ -96,7 +96,7 @@ func (t *SpotAnimType) GetModel() *model.Model {
 	if var1 != nil {
 		return var1
 	}
-	var1 = model.TryGet(t.Model)
+	var1 = model.Load(t.Model)
 	if var1 == nil {
 		return nil
 	}

@@ -362,13 +362,13 @@ func (c *IfType) GetModel(arg0 int, arg1 int, arg2 bool, localPlayer *playerenti
 	}
 	var5 := model.NewModel4(m, true, true, false)
 	if arg0 != -1 || arg1 != -1 {
-		var5.CreateLabelReferences()
+		var5.PrepareAnim()
 	}
 	if arg0 != -1 {
-		var5.ApplyTransform(arg0)
+		var5.Animate(arg0)
 	}
 	if arg1 != -1 {
-		var5.ApplyTransform(arg1)
+		var5.Animate(arg1)
 	}
 	var5.CalculateNormals(64, 768, -50, -10, -50, true)
 	return var5
@@ -384,7 +384,7 @@ func (c *IfType) LoadModel(arg0 int, arg1 int, localPlayer *playerentity.ClientP
 		return var3
 	}
 	if arg0 == 1 {
-		var3 = model.TryGet(arg1)
+		var3 = model.Load(arg1)
 	}
 	if arg0 == 2 {
 		var3 = npctype.Get(arg1).GetHeadModel()

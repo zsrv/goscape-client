@@ -58,8 +58,8 @@ func (e *MapSpotAnim) GetModel() *model.Model {
 	spot := model.NewModel4(mdl, true, !e.Type.AnimHasAlpha, false)
 
 	if !e.SeqComplete {
-		spot.CreateLabelReferences()
-		spot.ApplyTransform(e.Type.Seq.Frames[e.SeqFrame])
+		spot.PrepareAnim()
+		spot.Animate(e.Type.Seq.Frames[e.SeqFrame])
 		spot.LabelFaces = nil
 		spot.LabelVertices = nil
 	}
@@ -71,14 +71,14 @@ func (e *MapSpotAnim) GetModel() *model.Model {
 	if e.Type.Orientation != 0 {
 		switch e.Type.Orientation {
 		case 90:
-			spot.RotateY90()
+			spot.Rotate90()
 		case 180:
-			spot.RotateY90()
-			spot.RotateY90()
+			spot.Rotate90()
+			spot.Rotate90()
 		case 270:
-			spot.RotateY90()
-			spot.RotateY90()
-			spot.RotateY90()
+			spot.Rotate90()
+			spot.Rotate90()
+			spot.Rotate90()
 		}
 	}
 
