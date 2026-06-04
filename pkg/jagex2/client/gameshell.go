@@ -43,6 +43,11 @@ func (c *Client) PollKey() int {
 // c.JagTitle has been downloaded (i.e. when Client.DrawProgress falls
 // through to here because no title archive yet). Java:
 // GameShell.drawProgress(String, int) at GameShell.java:529-560.
+// 245.2 (GameShell.java:587 @176a85f) restores the (String message,
+// int percent) parameter order that 244's deob had flipped to
+// (int, String) — this port kept message-first throughout, so it
+// already matches; the 245.2 body also writes the black fill X as
+// `w/2 - 150 + percent*3`, the operand order the FillRect below uses.
 //
 // Java painted directly to the AWT base component's Graphics; the Go
 // port paints into a shared overlay PixMap (via ensureOverlay) using
@@ -142,6 +147,16 @@ func (c *Client) handleCharInput(e platform.CharInput) {
 // handleMouseButton maps a platform press/release event onto the same mouse*
 // fields and InputTracking calls Java's mousePressed/mouseReleased used.
 // Java reference: GameShell.java:263-300.
+//
+// 245.2 (GameShell.java:311-374 @176a85f) drops the `x -= frame.insets.left /
+// y -= frame.insets.top` adjustment from mousePressed — a no-op here: the
+// platform backends were always content-area-relative (GLFW cursor callbacks
+// report content-area coords; the browser backend uses offsetX/offsetY), so
+// this port never carried the subtraction. 245.2 also renames the
+// lastMouseClick* press-side latch fields to nextMouseClick*; this port maps
+// that double-buffer away entirely (events are polled on the loop goroutine,
+// not delivered by an async AWT event thread — see RunShell), so the rename
+// has no Go counterpart.
 func (c *Client) handleMouseButton(e platform.MouseButton) {
 	c.IdleCycles = 0
 	if e.Pressed {
@@ -184,6 +199,10 @@ func (c *Client) handleMouseButton(e platform.MouseButton) {
 // (GameShell.java:308-336): both set mouseX/Y and call
 // InputTracking.mouseMoved(y, x) — note the (y, x) swap. The Go port
 // preserves that swap.
+//
+// 245.2 (GameShell.java:381-407 @176a85f) drops the frame.insets
+// subtraction from both handlers — a no-op here; the platform backends
+// were always content-area-relative (see handleMouseButton).
 func (c *Client) handleMouseMove(e platform.MouseMove) {
 	c.IdleCycles = 0
 	c.MouseX = e.X
@@ -475,7 +494,9 @@ func (c *Client) RunShell() {
 	// Java: GameShell.java:136 — `long var1 = System.currentTimeMillis()`.
 	// Value is unconditionally reassigned before any read (line 152 below),
 	// so the initial value is observationally irrelevant; aligned with Java
-	// for literal-port hygiene.
+	// for literal-port hygiene. 245.2 keeps this exact pre-loop hoist
+	// (GameShell.java:150 @176a85f, `long ntime`); 244's deob had declared
+	// it inside the loop instead — already matching, nothing to re-port.
 	var1 := time.Now().UnixMilli() //nolint:ineffassign,staticcheck // Java: faithful pre-loop init; reassigned before any read (see comment above)
 	for c.State >= 0 && !platform.Active.ShouldClose() {
 		if c.State > 0 {
@@ -501,6 +522,9 @@ func (c *Client) RunShell() {
 			var4 = int(int64(c.DelTime*2560) / (var1 - c.OTim[var3]))
 		}
 		var4 = max(var4, 25)
+		// Independent `if` (not else-if): matches 245.2 (GameShell.java:178
+		// @176a85f). 244's deob chained it as `else if` — behaviorally
+		// identical (the 25-clamped value can never exceed 256).
 		if var4 > 256 {
 			var4 = 256
 			var5 = int(int64(c.DelTime) - (var1-c.OTim[var3])/10)

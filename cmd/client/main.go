@@ -145,9 +145,16 @@ func main() {
 	// PixMaps, which create backend textures via platform.Active). RunShell
 	// returns when the loop exits (window close / State == -1), then os.Exit(0)
 	// tears down the background signlink + audio goroutines.
-	// Java: 244 standalone is the classic 765x503 frame (GameShell
-	// initApplication(503, 765)); the 225-era port used 789x532.
-	platform.Main(765, 503, "Jagex", func() {
+	// Java: standalone is the classic 765x503 frame (GameShell
+	// initApplication(503, 765), unchanged in 245.2); the 225-era port used
+	// 789x532. Title: ViewBox.java:17 @176a85f — 245.2 sets "RS2 user client
+	// - release #" + signlink.clientversion (244 titled the frame "Jagex");
+	// the native backend applies it to the GLFW window, the browser backend
+	// to document.title. 245.2's setPreferredSize + pack (GameShell.java:106,
+	// ViewBox.java:24 @176a85f) size the Swing content area to exactly
+	// width x height — glfw.CreateWindow already sizes the content area
+	// directly, so that part is a no-op here.
+	platform.Main(765, 503, "RS2 user client - release #"+strconv.Itoa(signlink.ClientVersion), func() {
 		c := client.NewClient()
 		c.RunShell()
 		os.Exit(0)

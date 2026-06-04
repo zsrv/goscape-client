@@ -2923,8 +2923,13 @@ func (c *Client) DrawMinimap() {
 // Java getBaseComponent() (deob/client.java:3343-3350) returns the AWT
 // Component the game should draw on top of — either super.frame (the AWT
 // Frame opened by ViewBox), `this` (the Applet itself), or signlink.mainapp
-// when running under the signed-applet bridge. Every caller in the Java
-// source uses the result for one of two things:
+// when running under the signed-applet bridge. 245.2 collapses the frame
+// branch: GameShell.getBaseComponent (GameShell.java:575 @176a85f) now
+// always returns `this` (the shell), because the Swing ViewBox adds the
+// shell as a real child component (see viewbox.go) — so the frame-vs-shell
+// distinction this decision used to navigate is gone upstream, and the
+// non-port stands a fortiori. Every caller in the Java source uses the
+// result for one of two things:
 //
 //   1. As the first argument to `new PixMap(Component, w, h)` (~25 call
 //      sites in Java client.java) — the AWT PixMap constructor needs a
