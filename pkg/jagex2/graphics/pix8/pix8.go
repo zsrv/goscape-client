@@ -202,17 +202,16 @@ func (p *Pix8) PlotSprite(y int, x int) {
 		var8 += var10
 	}
 	if var7 > 0 && var6 > 0 {
-		p.Plot(pix2d.Data, var5, var9, p.Pixels, var6, 0, var7, var4, var8, p.BPal)
+		p.Plot(pix2d.Data, var5, var9, p.Pixels, var6, var7, var4, var8, p.BPal)
 	}
 }
 
 // was CopyPixels
-func (p *Pix8) Plot(arg0 []int, arg1 int, arg2 int, arg3 []byte, arg4 int, arg5 int, arg6 int, arg7 int, arg8 int, arg9 []int) {
+// Java: plot has 9 params in 245.2 — the 225-era deob dummy (former arg5)
+// and its dead guard are dropped (audit pix2d-pix8-pixmap-04).
+func (p *Pix8) Plot(arg0 []int, arg1 int, arg2 int, arg3 []byte, arg4 int, arg6 int, arg7 int, arg8 int, arg9 []int) {
 	var11 := -(arg6 >> 2)
 	var16 := -(arg6 & 0x3)
-	if arg5 != 0 {
-		return
-	}
 	for i := -arg4; i < 0; i++ {
 		for j := var11; j < 0; j++ {
 			var14 := arg3[arg1]

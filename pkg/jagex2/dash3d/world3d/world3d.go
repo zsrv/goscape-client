@@ -393,9 +393,6 @@ func (w *World3D) AddTemporary2(arg0 int, arg3, arg4, arg5, arg6, arg7, arg8 int
 }
 
 func (w *World3D) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, arg8 entity.ModelSource, arg10 int, arg11 bool, arg12 int, arg13 byte) bool {
-	if arg8 == nil {
-		return false
-	}
 	for i := arg1; i < arg1+arg3; i++ {
 		for j := arg2; j < arg2+arg4; j++ {
 			if i < 0 || j < 0 || i >= w.MaxTileX || j >= w.MaxTileZ {

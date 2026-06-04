@@ -235,7 +235,6 @@ type Client struct {
 	LastProgressMessage           string
 	ShowSocialInput               bool
 	PressedContinueOption         bool
-	MessageIDs                    []int
 	MenuVisible                   bool
 	ReportAbuseMuteOption         bool
 	LocChanges                    *datastruct.LinkList[*entity.LocChange] // Java: locChanges (merge of rev-225 SpawnedLocations + MergedLocations)
@@ -597,7 +596,6 @@ func NewClient() *Client {
 		CompassMaskLineOffsets:    make([]int, 33),
 		WaveDelay:                 make([]int, 50),
 		TabInterfaceID:            []int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-		MessageIDs:                make([]int, 100),
 		LocChanges:                datastruct.NewLinkList[*entity.LocChange](),
 		MessageType:               make([]int, 100),
 		MessageSender:             make([]string, 100),
@@ -1512,9 +1510,10 @@ func (c *Client) GetTopLevel() int {
 	return var2
 }
 
-func (c *Client) GetTopLevelCutscene(arg0 int) int {
+// Java: getTopLevelCutscene() — no parameter in 245.2; the deob dead-param
+// slot and its PacketSize accumulator are dropped (audit client-06-05).
+func (c *Client) GetTopLevelCutscene() int {
 	var2 := c.GetHeightMapY(c.CurrentLevel, c.CameraX, c.CameraZ)
-	c.PacketSize += arg0
 	// Java: deob/client.java:2014 — `var2 - this.cameraY >= 800` (height
 	// of ground above the camera position). The prior Go port substituted
 	// CameraYaw (rotation 0..2047), making the threshold meaningless.
@@ -1569,7 +1568,7 @@ func (c *Client) DrawScene() {
 		}
 	}
 	if c.Cutscene {
-		var2 = c.GetTopLevelCutscene(0)
+		var2 = c.GetTopLevelCutscene()
 	} else {
 		var2 = c.GetTopLevel()
 	}
@@ -1931,8 +1930,9 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *component.Comp
 	}
 }
 
-func (c *Client) HandleChatSettingsInput(arg0 int) {
-	c.PacketSize += arg0
+// Java: handleChatModeInput() — the deob junk-byte slot and its PacketSize
+// accumulator are dropped (audit client-04-06).
+func (c *Client) HandleChatSettingsInput() {
 	if c.MouseClickButton != 1 {
 		return
 	}
@@ -7900,7 +7900,7 @@ func (c *Client) UpdateGame() {
 	c.HandleMouseInput()
 	c.HandleMinimapInput()
 	c.HandleTabInput()
-	c.HandleChatSettingsInput(0)
+	c.HandleChatSettingsInput()
 	if c.MouseButton == 1 || c.MouseClickButton == 1 {
 		c.DragCycles++
 	}
