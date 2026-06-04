@@ -609,8 +609,8 @@ func NewClient() *Client {
 		ActiveMapFunctionX:        make([]int, 1000),
 		ActiveMapFunctionZ:        make([]int, 1000),
 		SkillBaseLevel:            make([]int, 50),
-		NPCs:                      make([]*entity.ClientNpc, 8192),
-		NPCIDs:                    make([]int, 8192),
+		NPCs:                      make([]*entity.ClientNpc, 16384), // Java: new ClientNpc[16384] (Client.java:55 @2e62978; 254 doubled from 8192)
+		NPCIDs:                    make([]int, 16384),               // Java: new int[16384] (Client.java:61 @2e62978; 254 doubled from 8192)
 		MinimapZoomModifier:       1,
 		Varps:                     make([]int, 2000),
 		EntityRemovalIDs:          make([]int, 1000),
@@ -5756,8 +5756,10 @@ func (c *Client) SetWaveVolume(volume int) {
 
 func (c *Client) GetNpcPosNewVis(arg1 *io.Packet, arg2 int) {
 	for arg1.BitPos+21 < arg2*8 {
-		var4 := arg1.GBit(13)
-		if var4 == 8191 {
+		// Java: gBit(14), sentinel 16383 (Client.java:8352-8355 @2e62978; 254
+		// widened the NPC local-index field from 13 bits/8191).
+		var4 := arg1.GBit(14)
+		if var4 == 16383 {
 			break
 		}
 		if c.NPCs[var4] == nil {
@@ -7185,7 +7187,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 			c.Players[i] = nil
 			c.PlayerAppearanceBuffer[i] = nil
 		}
-		for i := range 8192 {
+		for i := range 16384 { // Java: Client.java:2496 @2e62978 (254 doubled from 8192)
 			c.NPCs[i] = nil
 		}
 		c.Players[c.LOCAL_PLAYER_INDEX] = playerentity.NewClientPlayer()
@@ -10290,7 +10292,7 @@ func (c *Client) Read() (ok bool) {
 		var9 := c.SceneBaseTileZ - c.MapLastBaseZ
 		c.MapLastBaseX = c.SceneBaseTileX
 		c.MapLastBaseZ = c.SceneBaseTileZ
-		for var10 := range 8192 {
+		for var10 := range 16384 { // Java: Client.java:7456 @2e62978 (254 doubled from 8192)
 			var40 := c.NPCs[var10]
 			if var40 != nil {
 				for var46 := range 10 {
