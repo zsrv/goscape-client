@@ -14,6 +14,16 @@ import (
 	"github.com/sinshu/go-meltysynth/meltysynth"
 )
 
+// playerBufferBytes sizes the oto player's source read-ahead buffer to
+// ~100ms of PCM (stereo int16 @ 22050 Hz). oto's default is 0.5s
+// (mux.defaultBufferSize) — five times the context's 100ms device buffer —
+// read-ahead the swap flush in play() would otherwise race against and
+// that track changes have to drain through. 100ms keeps any residual swap
+// artifact below Gervill's own default synth latency in the Java client,
+// while staying at the device buffer size so refills (meltysynth renders
+// far faster than realtime) can't underrun.
+const playerBufferBytes = SampleRate * ChannelCount * 2 / 10
+
 // midiDriver is the native midiSink: a single persistent oto Player attached
 // to a midiSource whose internal sequencer is hot-swappable. Track changes,
 // stops, and volume changes mutate the source/player in place rather than
@@ -49,7 +59,7 @@ type midiDriver struct {
 
 func newMidiDriver(ctx *oto.Context) *midiDriver { return &midiDriver{ctx: ctx} }
 
-// play parses and starts a Standard MIDI File at linear gain vol/256.
+// play parses and starts a Standard MIDI File at linear gain vol/128.
 //
 // Java: MidiPlayer.play(Sequence, int loop, int volume) (MidiPlayer.java:
 // 36-44) — sequencer.setSequence (the new track replaces the old
@@ -58,6 +68,17 @@ func newMidiDriver(ctx *oto.Context) *midiDriver { return &midiDriver{ctx: ctx} 
 // MIDI_SONG region tracks loop, jingles play once), and setVolume runs
 // before sequencer.start() so the first samples are at the right gain.
 // A parse/synth failure maps to Java's swallowed InvalidMidiDataException.
+//
+// "Replaces immediately" needs help on the swap path: oto's player has
+// already read ahead up to playerBufferBytes of the OLD track's PCM, and
+// volume applies at mix time — without a flush that stale tail plays out
+// first (under a fade-in ramp the old track audibly ghosts back in; for a
+// no-fade jingle it delays the cut-in at full volume). So the swap is
+// silence -> flush -> install: swap(nil) makes any racing mux refill render
+// silence, haltAndFlush discards the stale queue, and Play()'s synchronous
+// prefill then starts the new track from tick 0 — the same machinery stop()
+// uses. Java needed none of this because setSequence drops the old
+// sequence's undelivered events inside the sequencer itself.
 func (d *midiDriver) play(midData []byte, loop bool, vol int) {
 	if d.ctx == nil {
 		return
@@ -90,6 +111,7 @@ func (d *midiDriver) play(midData []byte, loop bool, vol int) {
 		// First-ever play creates the persistent player and source.
 		d.src = newMidiSource(seq)
 		d.player = d.ctx.NewPlayer(d.src)
+		d.player.SetBufferSize(playerBufferBytes)
 		d.player.SetVolume(linearVolume(vol))
 		d.player.Play()
 		d.mu.Unlock()
@@ -98,10 +120,14 @@ func (d *midiDriver) play(midData []byte, loop bool, vol int) {
 	src, player := d.src, d.player
 	d.mu.Unlock()
 
+	// Silence -> flush -> install (see the doc comment): drop the old
+	// track's stale read-ahead so the new one is audible immediately.
+	src.swap(nil)
+	haltAndFlush(player)
 	player.SetVolume(linearVolume(vol))
 	src.swap(seq)
-	// Play() is idempotent on a playing player and revives one paused by a
-	// previous stop()'s haltAndFlush.
+	// Play() revives the player paused by haltAndFlush, synchronously
+	// prefilling the read-ahead from the new sequencer.
 	player.Play()
 }
 
@@ -110,8 +136,9 @@ func (d *midiDriver) play(midData []byte, loop bool, vol int) {
 // Java: MidiPlayer.stop() (MidiPlayer.java:46-49) — sequencer.stop() plus
 // the setTick(-1) broadcast (all-notes-off / all-sound-off / reset
 // controllers on all 16 channels, :59-83). swap(nil) makes the source
-// render silence, covering the note kill; haltAndFlush discards oto's
-// ~100ms pre-rendered queue so no stale audio replays on the next play.
+// render silence, covering the note kill; haltAndFlush discards the
+// player's pre-rendered read-ahead (playerBufferBytes, ~100ms) so no stale
+// audio replays on the next play.
 func (d *midiDriver) stop() {
 	d.mu.Lock()
 	src, player := d.src, d.player
@@ -127,15 +154,16 @@ func (d *midiDriver) stop() {
 	}
 }
 
-// setVolume applies linear gain vol/256 to the persistent player.
+// setVolume applies linear gain vol/128 to the persistent player.
 //
 // Java: MidiPlayer.setVolume(0, volume) (MidiPlayer.java:32-34, 113-121) —
-// rescales every channel's 14-bit CC7/CC39 by sqrt(volume/256), which
-// through meltysynth's GM-quadratic channel curve is exactly a linear
-// vol/256 output gain (see linearVolume). Player-side volume applies after
-// oto's internal buffer, so each 50ms fade step from the audioLoop is heard
-// ~immediately — matching javax.sound's immediate CC handling. The 8/256 ≈
-// 3% amplitude steps are the same zipper the Java wrapper produced.
+// rescales every channel's 14-bit CC7/CC39 before the synth, which through
+// meltysynth's GM-quadratic channel curve maps onto a linear post-gain (see
+// linearVolume for the curve and the /128 calibration). Player-side volume
+// applies at oto's mix stage — after the read-ahead buffer — so each 50ms
+// fade step from the audioLoop is heard ~immediately (oto even interpolates
+// between successive volumes across a device callback), matching
+// javax.sound's immediate CC handling.
 func (d *midiDriver) setVolume(vol int) {
 	d.mu.Lock()
 	player := d.player
@@ -161,8 +189,9 @@ func (d *midiDriver) running() bool {
 
 // haltAndFlush stops player AND discards oto's internal pre-read buffer —
 // the post-v3.4 replacement for the now-deprecated Player.Reset(), which
-// did both in one call. Pause() alone only halts: oto keeps ~100ms of
-// already-rendered PCM queued, which replays on the next Play(). Seeking
+// did both in one call. Pause() alone only halts: oto keeps a read-ahead of
+// already-rendered PCM queued (playerBufferBytes, ~100ms; oto's default
+// would be 0.5s), which replays on the next Play(). Seeking
 // flushes that queue — mux.Player.Seek resets its internal buffer before
 // delegating to the source. Pause MUST come first: Seek resumes playback
 // if the player was playing, so moving to the paused state before the
