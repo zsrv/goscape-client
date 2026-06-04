@@ -17,7 +17,7 @@ var (
 	ALLOWLIST []string = []string{"cook", "cook's", "cooks", "seeks", "sheet", "woop", "woops"}
 )
 
-func Unpack(jag *io.Jagfile) {
+func Unpack(jag *io.JagFile) {
 	fragments := io.NewPacket(jag.Read("fragmentsenc.txt", nil))
 	bad := io.NewPacket(jag.Read("badenc.txt", nil))
 	domain := io.NewPacket(jag.Read("domainenc.txt", nil))

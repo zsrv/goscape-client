@@ -158,7 +158,7 @@ func InitPool(size int) {
 	}
 }
 
-func UnpackTextures(jag *io.Jagfile) {
+func UnpackTextures(jag *io.JagFile) {
 	TextureCount = 0
 	for i := range 50 {
 		// Java: try { textures[var2] = new Pix8(...); ...; textureCount++; }

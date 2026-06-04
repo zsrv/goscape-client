@@ -74,7 +74,7 @@ func NewNpcType() *NpcType {
 	}
 }
 
-func Unpack(arg0 *io.Jagfile) {
+func Unpack(arg0 *io.JagFile) {
 	Dat = io.NewPacket(arg0.Read("npc.dat", nil))
 	var1 := io.NewPacket(arg0.Read("npc.idx", nil))
 	Count = var1.G2()

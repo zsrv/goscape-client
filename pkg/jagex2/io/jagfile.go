@@ -6,7 +6,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/io/bzip2"
 )
 
-type Jagfile struct {
+type JagFile struct {
 	Buffer           []byte
 	FileCount        int
 	FileHash         []int
@@ -16,14 +16,14 @@ type Jagfile struct {
 	Unpacked         bool
 }
 
-func NewJagfile(src []byte) *Jagfile {
-	var j Jagfile
+func NewJagFile(src []byte) *JagFile {
+	var j JagFile
 	j.Load(src)
 	return &j
 }
 
 // Unpack
-func (jf *Jagfile) Load(src []byte) {
+func (jf *JagFile) Load(src []byte) {
 	data := NewPacket(src)
 	unpackedSize := data.G3()
 	packedSize := data.G3()
@@ -56,8 +56,8 @@ func (jf *Jagfile) Load(src []byte) {
 	}
 }
 
-func (jf *Jagfile) Read(name string, dst []byte) []byte {
-	// Java: Jagfile.read walks arg1.toUpperCase().charAt(i) (UTF-16 code units).
+func (jf *JagFile) Read(name string, dst []byte) []byte {
+	// Java: JagFile.read walks arg1.toUpperCase().charAt(i) (UTF-16 code units).
 	// Archive entry names are ASCII-only by convention, but iterating runes
 	// matches Java's semantics for any BMP input.
 	hash := int32(0)

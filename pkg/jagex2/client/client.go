@@ -511,7 +511,7 @@ type Client struct {
 	AreaMapback                   *pixmap.PixMap
 	AreaViewport                  *pixmap.PixMap
 	AreaChatback                  *pixmap.PixMap
-	JagTitle                      *io.Jagfile
+	JagTitle                      *io.JagFile
 	// OnDemand is the rev-244 model/anim/map on-demand loader, created from the
 	// versionlist archive at boot. Java: client.onDemand (OnDemand).
 	OnDemand                   *ondemand.OnDemand
@@ -2563,7 +2563,7 @@ func (c *Client) UpdateTitle() {
 // equivalent — every Go failure surfaces on the connection path. The Java
 // signature gained an explicit fileStreams index (arg2) in 245.2; the Go seam
 // keys the store by name instead, so no extra param.
-func (c *Client) GetJagFile(displayName string, crc int, name string, progress int) *io.Jagfile {
+func (c *Client) GetJagFile(displayName string, crc int, name string, progress int) *io.JagFile {
 	retry := 5 // Java: retry
 	data := signlink.CacheLoad(name)
 
@@ -2575,7 +2575,7 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 	}
 
 	if data != nil {
-		return io.NewJagfile(data)
+		return io.NewJagFile(data)
 	}
 
 	loops := 0 // Java: loops
@@ -2674,7 +2674,7 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 			loadingError("Checksum error: " + strconv.Itoa(int(int32(checksum))))
 		}
 	}
-	return io.NewJagfile(data)
+	return io.NewJagFile(data)
 }
 
 func (c *Client) UnloadTitle() {

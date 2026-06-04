@@ -8,17 +8,17 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
-// buildDataArchive returns a Jagfile whose single "data" entry yields payload
+// buildDataArchive returns a JagFile whose single "data" entry yields payload
 // verbatim. Real archives are bzip2-compressed (and the repo has no bzip2
 // encoder), so the struct is populated directly with Unpacked=true — that path
-// in Jagfile.Read does a plain copy out of Buffer (no decompression).
-func buildDataArchive(payload []byte) *io.Jagfile {
-	// Java: Jagfile.read hashes the upper-cased entry name; "DATA" must match.
+// in JagFile.Read does a plain copy out of Buffer (no decompression).
+func buildDataArchive(payload []byte) *io.JagFile {
+	// Java: JagFile.read hashes the upper-cased entry name; "DATA" must match.
 	hash := int32(0)
 	for _, ch := range "DATA" {
 		hash = hash*61 + ch - 32
 	}
-	return &io.Jagfile{
+	return &io.JagFile{
 		Buffer:           payload,
 		FileCount:        1,
 		FileHash:         []int{int(hash)},

@@ -88,7 +88,7 @@ func init() {
 	}
 }
 
-func NewPixFont(arg0 *io.Jagfile, arg1 string) *PixFont {
+func NewPixFont(arg0 *io.JagFile, arg1 string) *PixFont {
 	p := &PixFont{
 		CharMask:       make([][]int8, 94),
 		CharMaskWidth:  make([]int, 94),

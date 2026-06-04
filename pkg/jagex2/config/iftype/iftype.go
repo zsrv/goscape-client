@@ -106,7 +106,7 @@ func (c *IfType) SwapObj(src, dst int) {
 	c.InvSlotObjCount[src], c.InvSlotObjCount[dst] = c.InvSlotObjCount[dst], c.InvSlotObjCount[src]
 }
 
-func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
+func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 	ImageCache = datastruct.NewLruCache[*pix32.Pix32](50000)
 	var4 := io.NewPacket(arg3.Read("data", nil))
 	var5 := -1
@@ -412,7 +412,7 @@ func CacheModel(m *model.Model, id int, typ int) {
 	}
 }
 
-func GetImage(arg0 *io.Jagfile, arg1 int, arg2 string) (result *pix32.Pix32) {
+func GetImage(arg0 *io.JagFile, arg1 int, arg2 string) (result *pix32.Pix32) {
 	var4 := (jstring.HashCode(arg2) << 8) + int64(arg1)
 	var6 := ImageCache.Get(var4)
 	if var6 != nil {

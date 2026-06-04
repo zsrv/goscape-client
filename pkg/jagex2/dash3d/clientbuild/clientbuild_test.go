@@ -21,7 +21,7 @@ func TestChangeLocAvailableShapeNormalization(t *testing.T) {
 	const id = 42
 
 	// Build a LocType cache by hand so loctype.Get(id) resolves without the
-	// Jagfile decode pipeline. Get scans Cache for a matching Index.
+	// JagFile decode pipeline. Get scans Cache for a matching Index.
 	prevCache := loctype.Cache
 	t.Cleanup(func() { loctype.Cache = prevCache })
 

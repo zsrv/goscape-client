@@ -76,8 +76,8 @@ type Cache interface {
 }
 
 // Archive is the versionlist source.
-// *io.Jagfile satisfies it structurally.
-// Java: OnDemand.unpack(Jagfile, Client); taken as a reader so the parse is unit-testable.
+// *io.JagFile satisfies it structurally.
+// Java: OnDemand.unpack(JagFile, Client); taken as a reader so the parse is unit-testable.
 type Archive interface {
 	Read(name string, dst []byte) []byte
 }
@@ -190,8 +190,8 @@ func New(versionlist Archive, dl Downloader, cache Cache) *OnDemand {
 
 // ---- versionlist parse -----------------------------------------------------
 
-// Unpack reads all version/crc/index tables from the versionlist Jagfile.
-// Java: OnDemand.unpack(Jagfile, Client) (vb.a(Lyb;Lclient;)V), lines 135–216.
+// Unpack reads all version/crc/index tables from the versionlist JagFile.
+// Java: OnDemand.unpack(JagFile, Client) (vb.a(Lyb;Lclient;)V), lines 135–216.
 // The trailing startThread call is not ported — Run() is driven once per frame instead.
 func (od *OnDemand) Unpack(versionlist Archive) {
 	// model_version / anim_version / midi_version / map_version

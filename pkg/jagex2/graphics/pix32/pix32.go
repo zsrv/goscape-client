@@ -78,7 +78,7 @@ func NewPix322(imageData []byte) *Pix32 {
 	return p
 }
 
-func NewPix323(jag *io.Jagfile, name string, sprite int) *Pix32 {
+func NewPix323(jag *io.JagFile, name string, sprite int) *Pix32 {
 	var p Pix32
 
 	dat := io.NewPacket(jag.Read(name+".dat", nil))

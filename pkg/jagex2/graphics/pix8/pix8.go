@@ -18,7 +18,7 @@ type Pix8 struct {
 	Hi     int   // height - was Height
 }
 
-func NewPix8(jag *io.Jagfile, name string, sprite int) *Pix8 {
+func NewPix8(jag *io.JagFile, name string, sprite int) *Pix8 {
 	p := new(Pix8)
 
 	dat := io.NewPacket(jag.Read(name+".dat", nil))

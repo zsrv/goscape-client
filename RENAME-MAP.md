@@ -218,7 +218,7 @@ the corresponding box is checked.
 - [x] **Pass A** `dash3d/world` → `dash3d/clientbuild` (type `World`→`ClientBuild`)
 - [x] **Pass B** `dash3d/world3d` → `dash3d/world` (type `World3D`→`World`; MUST follow A)
 - [x] **Pass C** `config/component` → `config/iftype` (type `Component`→`IfType`)
-- [ ] **Pass D** `io.Jagfile` → `io.JagFile` (case only)
+- [x] **Pass D** `io.Jagfile` → `io.JagFile` (case only)
 - [ ] **Pass E** `io/protocol.go` → `client/protocol.go`
 
 Extraction: 72 `.java` files at 176a85f, 74 at 2e62978. All 70 keyed classes

@@ -31,7 +31,7 @@ func NewIdkType() *IdkType {
 	}
 }
 
-func Unpack(arg0 *io.Jagfile) {
+func Unpack(arg0 *io.JagFile) {
 	var2 := io.NewPacket(arg0.Read("idk.dat", nil))
 	Count = var2.G2()
 	if Instances == nil {

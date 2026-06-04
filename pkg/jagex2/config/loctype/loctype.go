@@ -76,7 +76,7 @@ func NewLocType() *LocType {
 	}
 }
 
-func Unpack(arg0 *io.Jagfile) {
+func Unpack(arg0 *io.JagFile) {
 	Dat = io.NewPacket(arg0.Read("loc.dat", nil))
 	var1 := io.NewPacket(arg0.Read("loc.idx", nil))
 	Count = var1.G2()
