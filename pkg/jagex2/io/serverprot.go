@@ -24,7 +24,7 @@ const (
 	SERVERPROT_IF_SETTEXT               = 32
 	SERVERPROT_IF_SETNPCHEAD            = 76
 	SERVERPROT_IF_SETPOSITION           = 230
-	SERVERPROT_IF_SETSCROLLPOS          = 226 // NEW in 245.2, length 4 (g2 comId + g2 pos); handler lands with WS2
+	SERVERPROT_IF_SETSCROLLPOS          = 226 // NEW in 245.2, length 4 (g2 comId + g2 pos)
 	SERVERPROT_TUT_FLASH                = 132
 	SERVERPROT_TUT_OPEN                 = 152
 	SERVERPROT_UPDATE_INV_STOP_TRANSMIT = 143

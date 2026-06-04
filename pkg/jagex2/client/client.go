@@ -10836,6 +10836,26 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
+	// Java: ptype 226 — IF_SETSCROLLPOS, NEW at 245.2 (Client.java:7758-7775
+	// @176a85f). g2 comId + g2 pos; clamps pos into [0, scroll-height] for
+	// type-0 (layer) components only. The floor-to-0 clamp runs first, so a
+	// negative scroll-height cap wins — faithful to Java's clamp order.
+	if c.PacketType == io.SERVERPROT_IF_SETSCROLLPOS {
+		var85 := c.In.G2()                  // Java: var85 — comId
+		var86 := c.In.G2()                  // Java: var86 — pos
+		var87 := component.Instances[var85] // Java: var87
+		if var87 != nil && var87.Type == 0 {
+			if var86 < 0 {
+				var86 = 0
+			}
+			if var86 > var87.Scroll-var87.Height {
+				var86 = var87.Scroll - var87.Height
+			}
+			var87.ScrollPosition = var86
+		}
+		c.PacketType = -1
+		return true
+	}
 	// Java: opcode 214 — close all interfaces (Client.java:7860-7882)
 	if c.PacketType == io.SERVERPROT_IF_CLOSE {
 		if c.SidebarInterfaceID != -1 {
