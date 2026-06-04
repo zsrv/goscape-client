@@ -205,13 +205,14 @@ func (d *webMidiDriver) stop() {
 // running (midiSink): Java Sequencer.isRunning() — a looping track never
 // ends; a one-shot ends when its musical length elapses on the context
 // clock.
-// INVARIANT: a fresh one-shot render sets musicalEnd asynchronously
-// (streamRender parses the file first), so there is a window where
-// cur != nil && !looping && musicalEnd == 0 and this returns false.
-// Safe because the only caller (audioLoop.playMidi) consults running()
-// solely when midifade != 0 — and midifade != 0 ⇔ loop=true ⇔ d.looping,
-// which short-circuits true here the instant cur is set. If the
-// loop/midifade coupling ever changes, revisit this.
+// INVARIANT: a fresh track's cur/looping/musicalEnd are set
+// asynchronously by startTrack, so there is a window after play()
+// where this returns false for the track just started. Safe because
+// the only caller (audioLoop.playMidi) consults running() to decide
+// whether to fade out the CURRENTLY-PLAYING track — i.e. before any
+// new play() — at which point the old track's cur/looping/musicalEnd
+// are still live and accurate. If the audioLoop ever starts consulting
+// running() right after a play(), revisit this.
 func (d *webMidiDriver) running() bool {
 	d.mu.Lock()
 	defer d.mu.Unlock()
