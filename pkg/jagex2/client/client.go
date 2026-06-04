@@ -6984,7 +6984,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 			c.Login.P1(16)
 		}
 		c.Login.P1(c.Out.Pos + 36 + 1 + 1)
-		c.Login.P1(244)
+		c.Login.P1(245) // client version; Java: Client.java:2642 @176a85f
 		if LowMemory {
 			c.Login.P1(1)
 		} else {
