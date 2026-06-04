@@ -7,6 +7,14 @@ import (
 
 var Instances []*AnimFrame
 
+// Java: AnimFrame.opaque (h.j, AnimFrame.java:34 @2e62978) — new static
+// boolean[] at 254. Intentionally not ported: it is a dead-write deob
+// artifact (init() fills it all-true, unpack() clears entries on
+// base-type-5 transforms, unload() never clears it) with zero readers
+// anywhere at 2e62978 (re-verified by tree-wide grep 2026-06-04; the
+// only other `opaque` is the unrelated Pix3D.opaque). Project policy
+// excludes pure deob artifacts.
+
 type AnimFrame struct {
 	Delay  int
 	Base   *animbase.AnimBase
@@ -34,6 +42,15 @@ func Get(id int) *AnimFrame {
 		return nil
 	}
 	return Instances[id]
+}
+
+// ShareAlpha reports whether face alpha may be shared (not copied) when
+// deriving a transformed model for the given frame id: only when no frame
+// is applied (id == -1), since an applied animation may modify alpha.
+// Replaces the per-config animHasAlpha flag wholesale at 254.
+// Java: AnimFrame.shareAlpha (h.a(BI)Z, AnimFrame.java:144-147 @2e62978).
+func ShareAlpha(id int) bool {
+	return id == -1
 }
 
 // Unpack decodes a single per-id animation blob (rev-244). The 8-byte trailer
@@ -131,6 +148,9 @@ func Unpack(data []byte) {
 
 				lastGroup = j
 				current++
+				// Java 254 clears the dead-write opaque[id] here when
+				// base.types[j] == 5 (AnimFrame.java:119-121 @2e62978).
+				// Intentionally not ported — see the opaque note above.
 			}
 		}
 
