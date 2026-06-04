@@ -217,6 +217,12 @@ func (e *ClientPlayer) GetSequencedModel() *model.Model {
 			// Java: `var2 += var6 - appearances[5] << 8` is 32-bit int arithmetic,
 			// sign-extended into the long var2. int32(...) reproduces that wrap; Go's
 			// 64-bit int would otherwise diverge for high righthand/lefthand values.
+			// 245.2 normalizes 244's `<< 40`/`<< 48` literals to `<< 8`/`<< 16`
+			// (ClientPlayer.java:275-283 @176a85f) — a no-op: Java masks int shift
+			// counts to 5 bits (40&31=8, 48&31=16), so this port already matched.
+			// Naming: Go seqtype.RightHand = Java replaceheldleft (opcode 6) and
+			// LeftHand = replaceheldright (opcode 7); the slot/shift pairing is
+			// consistent with 245.2 throughout.
 			var2 += int64(int32((var6 - e.Appearances[5]) << 8))
 		}
 		if var8.LeftHand >= 0 {

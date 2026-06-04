@@ -2539,26 +2539,20 @@ func (c *Client) UpdateTitle() {
 	}
 }
 
-// Java: loadArchive (deob/client.java:3046-3047) — renamed to GetJagFile.
+// Java: getJagFile (Client.java:2283-2426 @176a85f) — adapted to the Go
+// transport/storage seam: fileStreams[0] read/write ↔ signlink.CacheLoad/
+// CacheSave, exceptions ↔ explicit error returns. Java's NullPointerException/
+// ArrayIndexOutOfBoundsException/generic catches ("Null error"/"Bounds error"/
+// "Unexpected error", each bailing out when !reporterror) have no Go
+// equivalent — every Go failure surfaces on the connection path. The Java
+// signature gained an explicit fileStreams index (arg2) in 245.2; the Go seam
+// keys the store by name instead, so no extra param.
 func (c *Client) GetJagFile(displayName string, crc int, name string, progress int) *io.Jagfile {
-	retry := 5
+	retry := 5 // Java: retry
 	data := signlink.CacheLoad(name)
-	checksum := 0
-
-	loadingError := func() {
-		data = nil
-		for checksum = retry; checksum > 0; checksum-- {
-			c.DrawProgress("Error loading - Will retry in "+strconv.Itoa(checksum)+" secs.", progress)
-			time.Sleep(1 * time.Second)
-		}
-		retry *= 2
-		if retry > 60 {
-			retry = 60
-		}
-	}
 
 	if data != nil {
-		checksum = int(crc32.ChecksumIEEE(data))
+		checksum := int(crc32.ChecksumIEEE(data)) // Java: checksum
 		if checksum != crc {
 			data = nil
 		}
@@ -2568,17 +2562,37 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 		return io.NewJagfile(data)
 	}
 
+	loops := 0 // Java: loops
+	// Java: Client.java:2403-2421 @176a85f — retry countdown shared by every
+	// failure path, with exponential backoff (5, 10, 20, 40, 60s). After 3
+	// checksum failures (loops >= 3) Java pins i = 10 every iteration and
+	// shows the reload banner forever (deliberate hang). C-style loop: the
+	// i = 10 mutation must persist (no range loop).
+	loadingError := func(errorMessage string) {
+		data = nil
+		for i := retry; i > 0; i-- {
+			if loops >= 3 {
+				c.DrawProgress("Game updated - please reload page", progress)
+				i = 10
+			} else {
+				c.DrawProgress(errorMessage+" - Retrying in "+strconv.Itoa(i), progress)
+			}
+			time.Sleep(1 * time.Second)
+		}
+		retry *= 2
+		if retry > 60 {
+			retry = 60
+		}
+	}
+
 	for data == nil {
 		c.DrawProgress("Requesting "+displayName, progress)
-		// Java: catch (IOException) — handled inline by loadingError() above on
-		// each I/O step (open, read, chunked read). Java retries with exponential
-		// backoff (5, 10, 20, 40, 60s).
 		lastDownloaded := 0
 
 		reader, err := c.OpenURL(name + strconv.Itoa(crc))
 		if err != nil {
 			log.Printf("client: GetJagFile error: %v", err)
-			loadingError()
+			loadingError("Connection error")
 			continue
 		}
 
@@ -2586,12 +2600,12 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 		n, err := reader.Read(header)
 		if err != nil {
 			log.Printf("client: GetJagFile read error: %v", err)
-			loadingError()
+			loadingError("Connection error")
 			continue
 		}
 		if n < 6 {
 			log.Printf("client: GetJagFile read %v bytes, expected 6", n)
-			loadingError()
+			loadingError("Connection error")
 			continue
 		}
 
@@ -2610,10 +2624,14 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 			chunkSize := packedSize - pos
 			chunkSize = min(chunkSize, 1000)
 
+			// Java: an EOF here first builds a dead `new StringBuffer("Length
+			// error: ").append(pos)…` whose result is discarded (Client.java:
+			// 2338-2341 @176a85f, residue of a removed call) — intentionally
+			// not ported.
 			n, err := reader.Read(data[pos : pos+chunkSize])
 			if err != nil {
 				log.Printf("client: GetJagFile read error: %v", err)
-				loadingError()
+				loadingError("Connection error")
 				readFailed = true
 				break
 			}
@@ -2629,8 +2647,19 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 		if readFailed {
 			continue
 		}
+
+		// Java: Client.java:2355-2371 @176a85f — the store write happens BEFORE
+		// the CRC re-validation (a corrupt copy may be stored; a later good
+		// download overwrites it).
+		signlink.CacheSave(name, data)
+		checksum := int(crc32.ChecksumIEEE(data)) // Java: checksum
+		if checksum != crc {
+			loops++
+			// Java renders the SIGNED int checksum; JagChecksum/crc use the Go
+			// unsigned-G4 convention, so only the displayed text converts.
+			loadingError("Checksum error: " + strconv.Itoa(int(int32(checksum))))
+		}
 	}
-	signlink.CacheSave(name, data)
 	return io.NewJagfile(data)
 }
 
@@ -7673,7 +7702,8 @@ func (c *Client) UpdateGame() {
 			func() {
 				defer func() { _ = recover() }()
 				if c.WaveIDs[i] != c.LastWaveID || c.WaveLoops[i] != c.LastWaveLoops {
-					var5 := wave.Generate(c.WaveLoops[i], c.WaveIDs[i])
+					// Java: Wave.generate(waveIds[wave], waveLoops[wave]) (Client.java:3601 @176a85f)
+					var5 := wave.Generate(c.WaveIDs[i], c.WaveLoops[i])
 					if time.Now().UnixMilli()+int64(var5.Pos/22) > c.LastWaveStartTime+int64(c.LastWaveLength/22) {
 						c.LastWaveLength = var5.Pos
 						c.LastWaveStartTime = time.Now().UnixMilli()
@@ -10583,7 +10613,7 @@ func (c *Client) Read() (ok bool) {
 		if c.WaveEnabled && !LowMemory && c.WaveCount < 50 {
 			c.WaveIDs[c.WaveCount] = var26
 			c.WaveLoops[c.WaveCount] = var4
-			c.WaveDelay[c.WaveCount] = var5 + wave.Delays[var26]
+			c.WaveDelay[c.WaveCount] = var5 + wave.Delay[var26]
 			c.WaveCount++
 		}
 		c.PacketType = -1

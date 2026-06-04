@@ -6,8 +6,9 @@ import (
 )
 
 var (
-	Tracks     []*Wave = make([]*Wave, 1000)
-	Delays     []int   = make([]int, 1000)
+	Tracks []*Wave = make([]*Wave, 1000)
+	// Java: delay (Wave.java:13 @176a85f) — 245.2 renames 244's delays.
+	Delay      []int = make([]int, 1000)
 	WaveBytes  []byte
 	WaveBuffer *io.Packet
 )
@@ -24,6 +25,9 @@ func NewWave() *Wave {
 	}
 }
 
+// Java: unpack (Wave.java:31-48 @176a85f) — 245.2 moves the static
+// waveBytes/waveBuffer initializers in here (lazy); the Go port already
+// allocated them here.
 func Unpack(buf *io.Packet) {
 	WaveBytes = make([]byte, 441_000)
 	WaveBuffer = io.NewPacket(WaveBytes)
@@ -37,16 +41,18 @@ func Unpack(buf *io.Packet) {
 		}
 		Tracks[id] = NewWave()
 		Tracks[id].Read(buf)
-		Delays[id] = Tracks[id].Trim()
+		Delay[id] = Tracks[id].Trim()
 	}
 }
 
-func Generate(loopCount, id int) *io.Packet {
+// Java: generate (Wave.java:52-59 @176a85f) — 245.2 swaps the params to
+// (id, loops); 244 was (loopCount, id).
+func Generate(id, loops int) *io.Packet {
 	if Tracks[id] == nil {
 		return nil
 	}
-	wave := Tracks[id]
-	return wave.GetWave(loopCount)
+	sound := Tracks[id] // Java: sound
+	return sound.GetWave(loops)
 }
 
 func (w *Wave) Read(buf *io.Packet) {
