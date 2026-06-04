@@ -73,6 +73,34 @@ Workflow when this happens:
    The alternative (keep the prior names and maintain a mapping table) trades
    rename churn for a permanently skewed Go↔Java diff.
 
+### Same lineage, fresh deob (the diff is *still* not a clean work list)
+
+The benign-looking middle case, first observed porting **rev-245.2**
+(`244` → `245.2`): the new branch adopts the *same naming convention* (no
+rename/restructure pass needed) but is a **fresh deob with a cleanup pass**,
+so the raw diff (~27k lines for 244→245.2) is still ~99% churn. What hides in
+it:
+
+- **Method reordering** — 245.2's `Client.java` was wholesale reordered,
+  defeating raw line diffing. Pair methods **by name** (verify the name sets
+  match 1:1 first; 144 ↔ 144 for 245.2) and compare bodies per pair.
+- **Local/param renames *and reorders*** (`move(boolean,int,int)` →
+  `move(int x, int z, boolean jump)`) — re-derive argument semantics from
+  callee bodies, never from names or positions alone.
+- **Wholesale wire-opcode renumbering** — every outbound/inbound/zone opcode
+  literal renumbers per build, and new values *collide* with old values of
+  *different* messages, so a partial carry-forward mis-routes silently.
+  Re-derive **all** opcode tables from the new reference; verify by full
+  enumeration, never by diff.
+- Compensated pairs (a ctor's parameter semantics swap + its call sites
+  swapping to match) are net-neutral but wrong if half-ported — land both
+  halves in one commit.
+
+Distill the real delta into a scope document first (the rev-245.2 method was
+a method-paired multi-agent comparison with adversarial verification of every
+claimed delta), then execute it as workstreams. Treat the scope doc's claims
+as strong hints, not gospel — one of its claims was refuted during execution.
+
 ---
 
 ## 3. Java → Go translation gotchas
@@ -86,6 +114,14 @@ against the Java source before "fixing" anything a linter flags.
   byte-typed fields as `int8` so promotion matches Java.
 - **Type map:** `byte`→`int8`, `short`→`int16`, `int`→`int32`, `long`→`int64`,
   `char`→`uint16` (see the per-revision README translation table).
+- **int64-vs-int32 truncation is the dominant latent class — three audits in a
+  row** (225, 244, 245.2). Java `int` arithmetic wraps at 32 bits; Go locals
+  typed `int` don't. Wrap with `int(int32(expr))` at multiply/accumulate/shift
+  sites that can exceed 2^31, or type a cluster of locals `int32` when wraps
+  chain through accumulators (Go `int32` arithmetic wraps mod 2^32 exactly like
+  Java `int`; sign-extend back with `int(...)` at the hand-off). Watch `g4()`
+  reads especially: Java's is a *signed* 32-bit value, and `>>`/comparison
+  semantics on it differ once bit 31 is set.
 
 ### Operators & precedence
 - **Operator precedence differs.** Java vs Go disagree on shift-vs-`&` and
@@ -199,19 +235,29 @@ lessons is obsolete, but the invariants survived the rewrite:
 
 ### The full parity audit (one per revision port — a standard phase, not an extra)
 
-Both completed ports ended with an exhaustive line-by-line audit of the Go
+All three completed ports ended with an exhaustive line-by-line audit of the Go
 branch against the pinned Java reference (rev-225: `PARITY-AUDIT-2026-05-28.md`,
-rev-244: `PARITY-AUDIT-2026-06-03.md`, each at its rev branch root), and both
-found real bugs that had survived every gate **and** a passing smoke test —
-14 bugs (225) vs 11 blockers + 62 bugs (244). The 4–5× jump is the divergent
-deob lineage (§2): rename churn multiplies the miss rate, so the dirtier the
-diff, the more the audit pays.
+rev-244: `PARITY-AUDIT-2026-06-03.md`, rev-245.2: `PARITY-AUDIT-2026-06-04.md`,
+each at its rev branch root), and every one found real bugs that had survived
+every gate **and** smoke testing — 14 bugs (225) vs 11 blockers + 62 bugs (244)
+vs 1 blocker + 6 bugs + 22 latent (245.2). The 4–5× jump at 244 is the
+divergent deob lineage (§2): rename churn multiplies the miss rate, so the
+dirtier the diff, the more the audit pays. The 245.2 numbers show the floor is
+NOT zero even for a clean same-lineage delta port whose base was audited the
+day before: its one blocker (a dropped bounds guard, panic reachable only via
+server-driven cutscene coords) could not have been caught by any smoke test —
+only full coverage finds the crash that needs unusual server input. Most 245.2
+bugs were in code the delta *touched or sat adjacent to* (stale rev-225
+constants, an if/else-if chain flattened during an earlier translation), i.e.
+full-coverage re-walks also catch what earlier audits missed.
 
-**When.** After the logic delta has fully landed and the first host smoke test
-passes. The smoke test proves the happy path boots; the audit catches the
-mistranslations that don't crash the login path.
+**When.** After the logic delta has fully landed; ideally after the first host
+smoke test passes (245.2 ran audit-then-smoke instead, with the single smoke
+run validating both the port and the fix pass — workable, but order fixes
+before smoke either way). The smoke test proves the happy path boots; the
+audit catches the mistranslations that don't crash the login path.
 
-**Method** (copy the structure of the two prior audit docs):
+**Method** (copy the structure of the prior audit docs):
 
 1. **Forward coverage — every Java file, no sampling.** One audit unit per Java
    file at the pinned reference commit; chunk big files by declaration-line
@@ -254,6 +300,7 @@ re-fix from the audit doc without checking HEAD first — the 244 close-out
 caught a ledger item still marked "deferred" that had in fact already landed.
 
 **Scale honestly.** The 244 audit ran as a single multi-agent workflow
-(50 units / 683 Java methods walked / every finding adversarially verified).
+(50 units / 683 Java methods walked / every finding adversarially verified);
+245.2's was 54 units / 674 methods / 89 agents with the same shape.
 The *method* — full coverage, per-statement checks, skeptic pass, reverse
 coverage — is the requirement; the tooling that delivers it is not.
