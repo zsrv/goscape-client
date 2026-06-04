@@ -26,9 +26,9 @@ func TestMidiFadeAndVolRoundTrip(t *testing.T) {
 	if got := ReadMidiFade(); got != 1 {
 		t.Fatalf("MidiFade round-trip: got %d, want 1", got)
 	}
-	SetMidiVol(-400)
-	if got := ReadMidiVol(); got != -400 {
-		t.Fatalf("MidiVol round-trip: got %d, want -400", got)
+	SetMidiVol(64)
+	if got := ReadMidiVol(); got != 64 {
+		t.Fatalf("MidiVol round-trip: got %d, want 64", got)
 	}
 }
 

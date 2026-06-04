@@ -33,6 +33,7 @@ func main() {
 	ondemandServer := flag.String("ondemand-server", "http://127.0.0.1:8888",
 		"on-demand/cache server as [http|https]://host:port")
 	showVersion := flag.Bool("version", false, "print build version information and exit")
+	storeID := flag.Int("store-id", 32, "disk cache directory id (.file_store_<id>, clamped to 32-34)")
 	flag.Parse()
 
 	// -version prints the build metadata stamped in by the Makefile's -ldflags
@@ -45,6 +46,10 @@ func main() {
 	}
 
 	fmt.Println("RS2 user client - release #" + strconv.Itoa(244)) // Java: Client.java:1281
+
+	// Java: SignLink.storeid — selects .file_store_<id>; must be set before
+	// the signlink store first resolves its directory (lazily, on first use).
+	signlink.StoreID = *storeID
 
 	client.NodeID = *nodeID
 

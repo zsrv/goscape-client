@@ -87,6 +87,12 @@ var (
 	//MainApp Applet
 	//SocketIP net.IPAddr // not needed in go
 	SunJava bool
+	// StoreID selects the .file_store_<id> disk cache directory; clamped to
+	// 32..34 by storeDirName. Set from the -store-id flag at boot, before
+	// StartPriv brings the store up. Java: storeid (SignLink.java:19),
+	// settable on the applet loader. The browser build's IndexedDB store
+	// does not use it.
+	StoreID int = 32
 )
 
 type SignLink struct {

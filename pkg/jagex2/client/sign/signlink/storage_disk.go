@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"strconv"
 	"sync"
 )
 
@@ -58,9 +59,19 @@ func (d *diskStore) save(name string, data []byte) {
 	}
 }
 
+// storeDirName clamps StoreID to the valid window and returns the cache
+// directory name. Java: findcachedir's clamp writes back to storeid before
+// building the target (SignLink.java:206-210).
+func storeDirName() string {
+	if StoreID < 32 || StoreID > 34 {
+		StoreID = 32
+	}
+	return ".file_store_" + strconv.Itoa(StoreID)
+}
+
 func FindCacheDir() string {
 	var0 := []string{"c:/windows/", "c:/winnt/", "d:/windows/", "d:/winnt/", "e:/windows/", "e:/winnt/", "f:/windows/", "f:/winnt/", "c:/", "~/", "/tmp/", ""}
-	var1 := ".file_store_32"
+	var1 := storeDirName()
 	for i := range len(var0) {
 		var3 := var0[i]
 		if len(var3) > 0 {

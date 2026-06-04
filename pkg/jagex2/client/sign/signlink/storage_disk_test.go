@@ -34,6 +34,23 @@ func TestDiskStoreRoundTrip(t *testing.T) {
 	}
 }
 
+// TestStoreDirNameClamp pins the Java storeid window: values outside 32..34
+// are clamped back to 32 (and written back to the field), valid values pick
+// their own .file_store_<id> directory. Java: SignLink.java:206-210.
+func TestStoreDirNameClamp(t *testing.T) {
+	t.Cleanup(func() { StoreID = 32 })
+
+	StoreID = 99
+	if got := storeDirName(); got != ".file_store_32" || StoreID != 32 {
+		t.Fatalf("clamp: got %q (StoreID=%d), want .file_store_32 (32)", got, StoreID)
+	}
+
+	StoreID = 33
+	if got := storeDirName(); got != ".file_store_33" || StoreID != 33 {
+		t.Fatalf("valid id: got %q (StoreID=%d), want .file_store_33 (33)", got, StoreID)
+	}
+}
+
 // TestGetUIDShortFileDoesNotPanic reproduces the parity bug where a short or
 // corrupt uid.dat (fewer than 4 bytes) that cannot be rewritten crashed the
 // client: binary.BigEndian.Uint32 panicked on the under-length slice. Java's
