@@ -1976,13 +1976,13 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 			if var7 < -20 {
 				break
 			}
-			// Java: Client.java:3792-3802 — the @cr1@/@cr2@ crown tag is
-			// stripped before the friend/self checks and all menu strings.
+			// Java: Client.java:3815-3821 @176a85f — the @cr1@/@cr2@ crown tag
+			// is stripped before the friend/self checks and all menu strings;
+			// 245.2 makes the two strips mutually exclusive (if/else if).
 			var10 := c.MessageSender[i]
 			if strings.HasPrefix(var10, "@cr1@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
 				var10 = var10[5:]
-			}
-			if strings.HasPrefix(var10, "@cr2@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
+			} else if strings.HasPrefix(var10, "@cr2@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
 				var10 = var10[5:]
 			}
 			if var6 == 0 {
@@ -2931,7 +2931,10 @@ func (c *Client) UpdateLocChanges() {
 				v.StartTime--
 			}
 
-			if v.StartTime == 0 && (v.NewType < 0 || world.ChangeLocAvailable(v.NewType, v.NewShape)) {
+			// Java: Client.java:3568 @176a85f — 245.2 adds a tile-bounds guard
+			// (x/z in [1,102]) before applying the queued newType change; the
+			// oldType revert branch below stays unguarded.
+			if v.StartTime == 0 && v.X >= 1 && v.Z >= 1 && v.X <= 102 && v.Z <= 102 && (v.NewType < 0 || world.ChangeLocAvailable(v.NewType, v.NewShape)) {
 				c.AddLoc(v.NewAngle, v.X, v.Z, v.Layer, v.NewType, v.NewShape, v.Level)
 				v.StartTime = -1
 
@@ -5398,30 +5401,38 @@ func (c *Client) HandlePrivateChatInput(arg2 int) {
 	for i := range 100 {
 		if c.MessageText[i] != "" {
 			var6 := c.MessageType[i]
-			// Java: Client.java:3737-3746 — strip the @cr1@/@cr2@ crown tag
-			// before isFriend() and the menu strings.
+			// Java: Client.java:3752-3759 @176a85f — strip the @cr1@/@cr2@
+			// crown tag before isFriend() and the menu strings; 245.2 makes
+			// the two strips mutually exclusive (if/else if).
 			var10 := c.MessageSender[i]
 			if strings.HasPrefix(var10, "@cr1@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
 				var10 = var10[5:]
-			}
-			if strings.HasPrefix(var10, "@cr2@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
+			} else if strings.HasPrefix(var10, "@cr2@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
 				var10 = var10[5:]
 			}
 			if (var6 == 3 || var6 == 7) && (var6 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(var10)) {
 				var7 := 329 - var4*13
-				// Java: Client.java:3752 — 244 viewport origin (4,4).
-				if c.MouseX > 4 && c.MouseX < 516 && arg2-4 > var7-10 && arg2-4 <= var7+3 {
-					if c.StaffModLevel >= 1 {
-						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + var10
-						c.MenuAction[c.MenuSize] = 2034
+				// Java: Client.java:3764-3782 @176a85f — 245.2 drops the fixed
+				// x<516 bound; the right-click region becomes the message's
+				// rendered width (capped at 450).
+				if c.MouseX > 4 && arg2-4 > var7-10 && arg2-4 <= var7+3 {
+					width := c.FontPlain12.StringWidth("From:  "+var10+c.MessageText[i]) + 25 // Java: width (Client.java:3765 @176a85f)
+					if width > 450 {
+						width = 450
+					}
+					if c.MouseX < width+4 {
+						if c.StaffModLevel >= 1 {
+							c.MenuOption[c.MenuSize] = "Report abuse @whi@" + var10
+							c.MenuAction[c.MenuSize] = 2034
+							c.MenuSize++
+						}
+						c.MenuOption[c.MenuSize] = "Add ignore @whi@" + var10
+						c.MenuAction[c.MenuSize] = 2436
+						c.MenuSize++
+						c.MenuOption[c.MenuSize] = "Add friend @whi@" + var10
+						c.MenuAction[c.MenuSize] = 2406
 						c.MenuSize++
 					}
-					c.MenuOption[c.MenuSize] = "Add ignore @whi@" + var10
-					c.MenuAction[c.MenuSize] = 2436
-					c.MenuSize++
-					c.MenuOption[c.MenuSize] = "Add friend @whi@" + var10
-					c.MenuAction[c.MenuSize] = 2406
-					c.MenuSize++
 				}
 				var4++
 				if var4 >= 5 {
@@ -6370,10 +6381,13 @@ func (c *Client) HandleInput() {
 		c.SidebarHoveredInterfaceIndex = c.LastHoveredInterfaceID
 	}
 	c.LastHoveredInterfaceID = 0
-	if c.MouseX > 17 && c.MouseY > 357 && c.MouseX < 426 && c.MouseY < 453 {
+	// Java: Client.java:3691-3697 @176a85f — 245.2 widens the chatback
+	// hit-box to x<496 (interface input); plain chat rows stay re-guarded
+	// to y<434 && x<426.
+	if c.MouseX > 17 && c.MouseY > 357 && c.MouseX < 496 && c.MouseY < 453 {
 		if c.ChatInterfaceID != -1 {
 			c.HandleInterfaceInput(c.MouseY, c.MouseX, 357, component.Instances[c.ChatInterfaceID], 17, 0)
-		} else if c.MouseY < 434 { // Java: Client.java:3681 — message rows only
+		} else if c.MouseY < 434 && c.MouseX < 426 { // Java: Client.java:3694 @176a85f — message rows only
 			c.HandleChatMouseInput(c.MouseY-357, 0)
 		}
 	}
