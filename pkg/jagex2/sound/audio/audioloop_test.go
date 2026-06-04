@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/sign/signlink"
+	"github.com/zsrv/goscape-client/pkg/sign/signlink"
 )
 
 // fakeSink records midiSink calls so tests can assert the exact sequence the

@@ -31,7 +31,7 @@ go test ./...
 
 # Run a single test
 go test ./pkg/jagex2/io/... -run TestIsaac
-go test ./pkg/jagex2/client/sign/signlink/... -run TestStartPriv
+go test ./pkg/sign/signlink/... -run TestStartPriv
 ```
 
 ## Architecture
@@ -68,7 +68,7 @@ The `main` goroutine flow (from `main.go`):
 | `sound/wave/` | PCM wave audio |
 | `sound/envelope/` & `tone/` | MIDI-style sound envelope/tone synthesis |
 | `wordenc/wordfilter/` & `wordpack/` | Chat word filter and word packing |
-| `client/sign/signlink/` | Filesystem/network bridge originally for the signed Java applet; handles cache directory, HTTP downloads, DNS, and audio requests (moved under `client/sign/` in rev-244 per Java `jagex2.client.sign`) |
+| `../sign/signlink/` (i.e. `pkg/sign/signlink/`) | Filesystem/network bridge originally for the signed Java applet; handles cache directory, HTTP downloads, DNS, and audio requests (moved to top-level `sign/` in rev-245.2 per Java `sign.signlink`) |
 
 ### Key Java→Go Translation Notes (from README.md)
 

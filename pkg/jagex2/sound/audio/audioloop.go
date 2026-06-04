@@ -3,7 +3,7 @@ package audio
 import (
 	"time"
 
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/sign/signlink"
+	"github.com/zsrv/goscape-client/pkg/sign/signlink"
 )
 
 // This file ports the wrapper-side MIDI consumer that the LostCityRS 244

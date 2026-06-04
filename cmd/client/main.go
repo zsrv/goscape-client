@@ -9,10 +9,10 @@ import (
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/client"
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/sign/signlink"
 	"github.com/zsrv/goscape-client/pkg/jagex2/platform"
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/audio"
 	"github.com/zsrv/goscape-client/pkg/profiling"
+	"github.com/zsrv/goscape-client/pkg/sign/signlink"
 	"github.com/zsrv/goscape-client/pkg/util/build"
 )
 
