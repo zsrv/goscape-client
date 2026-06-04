@@ -5440,9 +5440,12 @@ func (c *Client) HandlePrivateChatInput(arg2 int) {
 
 func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 	var3 := arg1.ClientCode
-	// Java: 244 extends the friend-name range with 701-900 and the
-	// friend-world range with 801-900 (Client.java:11434-11468).
-	if (var3 >= 1 && var3 <= 100) || (var3 >= 701 && var3 <= 900) {
+	// Java: Client.java:10792-10825 @176a85f — friends-list page 2.
+	// 7NN/8NN are the name/world columns for friends 101..200. 245.2
+	// tightens the name guard 900->800 so 801..900 reach the world branch
+	// below (-701 -> friendWorld[100..199]); at 244 they matched here and
+	// indexed past friendCount, blanking page 2's world column.
+	if (var3 >= 1 && var3 <= 100) || (var3 >= 701 && var3 <= 800) {
 		if var3 > 700 {
 			var3 -= 601
 		} else {
@@ -5455,7 +5458,7 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 			arg1.Text = c.FriendName[var3]
 			arg1.ButtonType = 1
 		}
-	} else if (var3 >= 101 && var3 <= 200) || !(var3 < 801 || var3 > 900) { //nolint:staticcheck // QF1001: mirrors Java's literal `!(clientCode < 801 || clientCode > 900)` (Client.java:11448)
+	} else if (var3 >= 101 && var3 <= 200) || !(var3 < 801 || var3 > 900) { //nolint:staticcheck // QF1001: mirrors Java's literal `!(var3 < 801 || var3 > 900)` (Client.java:10807 @176a85f)
 		if var3 > 800 {
 			var3 -= 701
 		} else {
