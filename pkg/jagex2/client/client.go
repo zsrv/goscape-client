@@ -9088,6 +9088,9 @@ func (c *Client) CheckScene() int {
 	c.SceneState = 2
 	clientbuild.LevelBuilt = c.CurrentLevel
 	c.BuildScene()
+	// Java: this.out.pIsaac(134) — MAP_BUILD_COMPLETE, NEW in 254; zero-length
+	// notification sent right after mapBuild() (Client.java:3121 @2e62978).
+	c.Out.P1Isaac(CLIENTPROT_MAP_BUILD_COMPLETE)
 	return 0
 }
 
