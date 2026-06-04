@@ -2095,6 +2095,10 @@ func (c *Client) PushPlayers() {
 func (c *Client) GetHeightMapY(arg0, arg1, arg3 int) int {
 	var5 := arg1 >> 7
 	var6 := arg3 >> 7
+	// Java: tile-bounds guard (Client.java:6446-6448) — out-of-scene coords return 0
+	if var5 < 0 || var6 < 0 || var5 > 103 || var6 > 103 {
+		return 0
+	}
 	var7 := arg0
 	if arg0 < 3 && c.LevelTileFlags[1][var5][var6]&0x2 == 2 {
 		var7 = arg0 + 1
