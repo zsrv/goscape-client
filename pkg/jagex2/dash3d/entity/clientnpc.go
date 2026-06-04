@@ -72,7 +72,7 @@ func (e *ClientNpc) GetSequencedModel() *model.Model {
 		if e.seqModel == nil {
 			e.seqModel = &model.Model{}
 		}
-		return e.Type.GetSequencedModel(e.seqModel, var2, var4, seqtype.Instances[e.PrimarySeqID].WalkMerge)
+		return e.Type.GetTempModel(e.seqModel, var2, var4, seqtype.Instances[e.PrimarySeqID].WalkMerge)
 	}
 	var2 := -1
 	if e.SecondarySeqID >= 0 {
@@ -81,7 +81,7 @@ func (e *ClientNpc) GetSequencedModel() *model.Model {
 	if e.seqModel == nil {
 		e.seqModel = &model.Model{}
 	}
-	return e.Type.GetSequencedModel(e.seqModel, var2, -1, nil)
+	return e.Type.GetTempModel(e.seqModel, var2, -1, nil)
 }
 
 func (e *ClientNpc) IsVisible() bool {

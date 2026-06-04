@@ -387,7 +387,7 @@ func (c *IfType) LoadModel(arg0 int, arg1 int, localPlayer *playerentity.ClientP
 		var3 = model.Load(arg1)
 	}
 	if arg0 == 2 {
-		var3 = npctype.Get(arg1).GetHeadModel()
+		var3 = npctype.Get(arg1).GetHead()
 	}
 	if arg0 == 3 {
 		var3 = localPlayer.GetHeadModel()

@@ -3,6 +3,7 @@ package npctype
 import (
 	"strings"
 
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
@@ -28,20 +29,20 @@ type NpcType struct {
 	// declaration + opcode-17 read order (NpcType.java:46-58 @176a85f). COUPLED
 	// with the direct (non-swapped) assignments in Client getNpcPos* — net
 	// behaviour identical to 244.
-	RunAnim      int
-	WalkAnim     int
-	WalkAnimB    int
-	WalkAnimL    int
-	WalkAnimR    int
-	AnimHasAlpha bool
-	RecolS       []int
-	RecolD       []int
-	Op           []string
-	// Java: NpcType.java:73-79 declares resizex/resizey/resizez —
-	// assigned by opcodes 90/91/92 but never read anywhere in Java
-	// or Go. Pure deobfuscator residue; fields omitted per the
-	// deob-artifact exclusion policy. The wire reads in Decode()
-	// are preserved as discards to keep packet-position alignment.
+	RunAnim   int
+	WalkAnim  int
+	WalkAnimB int
+	WalkAnimL int
+	WalkAnimR int
+	RecolS    []int
+	RecolD    []int
+	Op        []string
+	// Java: field998/field999/field1000 (gc.v/w/x @2e62978; were
+	// 245.2's field1010/1011/1012) — assigned by opcodes 90/91/92 but
+	// never read anywhere in Java or Go (re-verified at 2e62978).
+	// Pure deobfuscator residue; fields omitted per the deob-artifact
+	// exclusion policy. The wire reads in Decode() are preserved as
+	// discards to keep packet-position alignment.
 	Minimap  bool
 	VisLevel int
 	ResizeH  int
@@ -50,27 +51,31 @@ type NpcType struct {
 	// 99-102). Ambient/Contrast are consumed by CalculateNormals in GetSequencedModel.
 	AlwaysOnTop bool
 	HeadIcon    int
-	Ambient     int
-	Contrast    int
+	// Java: turnspeed (gc.G, NpcType.java:98 @2e62978) — new at 254;
+	// copied onto the entity by getNpcPosNewVis/Extended (WS5).
+	TurnSpeed int
+	Ambient   int
+	Contrast  int
 }
 
 func NewNpcType() *NpcType {
 	return &NpcType{
-		Index:        -1,
-		Size:         1,
-		RunAnim:      -1,
-		WalkAnim:     -1,
-		WalkAnimB:    -1,
-		WalkAnimL:    -1,
-		WalkAnimR:    -1,
-		AnimHasAlpha: false,
-		Minimap:      true,
-		VisLevel:     -1,
-		ResizeH:      128,
-		ResizeV:      128,
+		Index:     -1,
+		Size:      1,
+		RunAnim:   -1,
+		WalkAnim:  -1,
+		WalkAnimB: -1,
+		WalkAnimL: -1,
+		WalkAnimR: -1,
+		Minimap:   true,
+		VisLevel:  -1,
+		ResizeH:   128,
+		ResizeV:   128,
 		// Java: NpcType field initializers (rev-244). AlwaysOnTop/Ambient/
 		// Contrast default to the zero value; HeadIcon defaults to -1.
 		HeadIcon: -1,
+		// Java: turnspeed = 32 (NpcType.java:98 @2e62978) — new at 254.
+		TurnSpeed: 32,
 	}
 }
 
@@ -134,8 +139,7 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 			t.RunAnim = arg1.G2()
 		case 14:
 			t.WalkAnim = arg1.G2()
-		case 16:
-			t.AnimHasAlpha = true
+		// Java 254 drops opcode 16 (animHasAlpha) — WS3 shareAlpha rework.
 		case 17:
 			// Java: 245.2 reads walkanim_l before walkanim_r (NpcType.java:135-138
 			// @176a85f); 244 read _r then _l. Cache bytes are unchanged — the swap
@@ -190,11 +194,19 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 			t.Contrast = int(arg1.G1B()) * 5
 		case 102:
 			t.HeadIcon = arg1.G2()
+		case 103:
+			// Java: NpcType.java:236-237 @2e62978 — new at 254.
+			t.TurnSpeed = arg1.G2()
 		}
 	}
 }
 
-func (t *NpcType) GetSequencedModel(target *model.Model, arg0 int, arg1 int, arg2 []int) *model.Model {
+// GetTempModel builds the animated NPC model into target (the caller-owned
+// reusable Model — Go deviation replacing Java's Model.empty static; see
+// ResetFromModel6). arg0 is the primary frame, arg1 the secondary frame,
+// arg2 the walkmerge label set.
+// Java: getTempModel (NpcType.java:240-285 @2e62978; was getModel at 245.2).
+func (t *NpcType) GetTempModel(target *model.Model, arg0 int, arg1 int, arg2 []int) *model.Model {
 	var5 := ModelCache.Get(t.Index)
 	if var5 == nil {
 		// Java: NpcType.getModel precheck — loop calls Model.request on every
@@ -227,7 +239,10 @@ func (t *NpcType) GetSequencedModel(target *model.Model, arg0 int, arg1 int, arg
 		var5.CalculateNormals(t.Ambient+64, t.Contrast+850, -30, -50, -30, true)
 		ModelCache.Put(t.Index, var5)
 	}
-	target.ResetFromModel6(var5, !t.AnimHasAlpha)
+	// Java: var11.set(AnimFrame.shareAlpha(arg1) & AnimFrame.shareAlpha(arg3),
+	// var5) (NpcType.java:267 @2e62978) — was !animHasAlpha at 245.2 (WS3).
+	// shareAlpha has no side effects, so Go && is equivalent to Java's &.
+	target.ResetFromModel6(var5, animframe.ShareAlpha(arg0) && animframe.ShareAlpha(arg1))
 	var4 := target
 	if arg0 != -1 && arg1 != -1 {
 		var4.MaskAnimate(arg1, arg0, arg2)
@@ -248,7 +263,9 @@ func (t *NpcType) GetSequencedModel(target *model.Model, arg0 int, arg1 int, arg
 	return var4
 }
 
-func (t *NpcType) GetHeadModel() *model.Model {
+// GetHead builds the chathead model.
+// Java: getHead (NpcType.java:288-307 @2e62978; was getHeadModel at 245.2).
+func (t *NpcType) GetHead() *model.Model {
 	if t.Heads == nil {
 		return nil
 	}
