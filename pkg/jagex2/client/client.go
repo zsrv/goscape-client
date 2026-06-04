@@ -421,92 +421,102 @@ type Client struct {
 	HoveredSlot                   int
 	HoveredSlotParentID           int
 	FriendCount                   int
-	ChatCount                     int
-	WildernessLevel               int
-	TitleScreenState              int
-	CameraX                       int
-	CameraY                       int
-	CameraZ                       int
-	CameraPitch                   int
-	CameraYaw                     int
-	CameraAnticheatOffsetX        int
-	CameraAnticheatOffsetZ        int
-	CameraAnticheatAngle          int
-	MenuArea                      int
-	MenuX                         int
-	MenuY                         int
-	MenuWidth                     int
-	MenuHeight                    int
-	ScrollInputPadding            int
-	FlameCycle0                   int
-	LastWaveStartTime             int64
-	SocialName37                  int64
-	ServerSeed                    int64
-	Scene                         *world.World
-	LocalPlayer                   *playerentity.ClientPlayer
-	GenderButtonImage0            *pix32.Pix32
-	GenderButtonImage1            *pix32.Pix32
-	ImageFlamesLeft               *pix32.Pix32
-	ImageFlamesRight              *pix32.Pix32
-	ImageMapedge                  *pix32.Pix32
-	ImageMapmarker0               *pix32.Pix32
-	ImageMapmarker1               *pix32.Pix32
-	ImageMinimap                  *pix32.Pix32
-	ImageMapdot0                  *pix32.Pix32
-	ImageMapdot1                  *pix32.Pix32
-	ImageMapdot2                  *pix32.Pix32
-	ImageMapdot3                  *pix32.Pix32
-	ImageCompass                  *pix32.Pix32
-	ImageRedstone1                *pix8.Pix8
-	ImageRedstone2                *pix8.Pix8
-	ImageRedstone3                *pix8.Pix8
-	ImageRedstone1h               *pix8.Pix8
-	ImageRedstone2h               *pix8.Pix8
-	ImageBackbase1                *pix8.Pix8
-	ImageBackbase2                *pix8.Pix8
-	ImageBackhmid1                *pix8.Pix8
-	ImageInvback                  *pix8.Pix8
-	ImageMapback                  *pix8.Pix8
-	ImageChatback                 *pix8.Pix8
-	ImageRedstone1v               *pix8.Pix8
-	ImageRedstone2v               *pix8.Pix8
-	ImageRedstone3v               *pix8.Pix8
-	ImageRedstone1hv              *pix8.Pix8
-	ImageRedstone2hv              *pix8.Pix8
-	ImageScrollbar0               *pix8.Pix8
-	ImageScrollbar1               *pix8.Pix8
-	ImageTitleBox                 *pix8.Pix8
-	ImageTitleButton              *pix8.Pix8
-	FontPlain11                   *pixfont.PixFont
-	FontPlain12                   *pixfont.PixFont
-	FontBold12                    *pixfont.PixFont
-	FontQuill8                    *pixfont.PixFont
-	AreaBackbase1                 *pixmap.PixMap
-	AreaBackbase2                 *pixmap.PixMap
-	AreaBackhmid1                 *pixmap.PixMap
-	AreaBackleft1                 *pixmap.PixMap
-	AreaBackleft2                 *pixmap.PixMap
-	AreaBackright1                *pixmap.PixMap
-	AreaBackright2                *pixmap.PixMap
-	AreaBacktop1                  *pixmap.PixMap
-	AreaBackvmid1                 *pixmap.PixMap
-	AreaBackvmid2                 *pixmap.PixMap
-	AreaBackvmid3                 *pixmap.PixMap
-	AreaBackhmid2                 *pixmap.PixMap
-	ImageTitle2                   *pixmap.PixMap
-	ImageTitle3                   *pixmap.PixMap
-	ImageTitle4                   *pixmap.PixMap
-	ImageTitle0                   *pixmap.PixMap
-	ImageTitle1                   *pixmap.PixMap
-	ImageTitle5                   *pixmap.PixMap
-	ImageTitle6                   *pixmap.PixMap
-	ImageTitle7                   *pixmap.PixMap
-	ImageTitle8                   *pixmap.PixMap
-	AreaSidebar                   *pixmap.PixMap
-	AreaMapback                   *pixmap.PixMap
-	AreaViewport                  *pixmap.PixMap
-	AreaChatback                  *pixmap.PixMap
-	JagTitle                      *io.JagFile
+	// Java: friendListStatus (Client.java:988 @2e62978) — NEW in 254;
+	// friend-server connection state (0 none / 1 connecting / 2 loaded),
+	// written by FRIENDLIST_LOADED and reset at login.
+	FriendListStatus int
+	// Java: playerOptions / playerOptionsPushDown (Client.java:508/511
+	// @2e62978) — NEW in 254; server-driven player right-click options set by
+	// SET_PLAYER_OP. "" = Java null (slot empty). PushDown forces the option
+	// below "Walk here" (menu priority), like the combat-level rule for Attack.
+	PlayerOptions          [5]string
+	PlayerOptionsPushDown  [5]bool
+	ChatCount              int
+	WildernessLevel        int
+	TitleScreenState       int
+	CameraX                int
+	CameraY                int
+	CameraZ                int
+	CameraPitch            int
+	CameraYaw              int
+	CameraAnticheatOffsetX int
+	CameraAnticheatOffsetZ int
+	CameraAnticheatAngle   int
+	MenuArea               int
+	MenuX                  int
+	MenuY                  int
+	MenuWidth              int
+	MenuHeight             int
+	ScrollInputPadding     int
+	FlameCycle0            int
+	LastWaveStartTime      int64
+	SocialName37           int64
+	ServerSeed             int64
+	Scene                  *world.World
+	LocalPlayer            *playerentity.ClientPlayer
+	GenderButtonImage0     *pix32.Pix32
+	GenderButtonImage1     *pix32.Pix32
+	ImageFlamesLeft        *pix32.Pix32
+	ImageFlamesRight       *pix32.Pix32
+	ImageMapedge           *pix32.Pix32
+	ImageMapmarker0        *pix32.Pix32
+	ImageMapmarker1        *pix32.Pix32
+	ImageMinimap           *pix32.Pix32
+	ImageMapdot0           *pix32.Pix32
+	ImageMapdot1           *pix32.Pix32
+	ImageMapdot2           *pix32.Pix32
+	ImageMapdot3           *pix32.Pix32
+	ImageCompass           *pix32.Pix32
+	ImageRedstone1         *pix8.Pix8
+	ImageRedstone2         *pix8.Pix8
+	ImageRedstone3         *pix8.Pix8
+	ImageRedstone1h        *pix8.Pix8
+	ImageRedstone2h        *pix8.Pix8
+	ImageBackbase1         *pix8.Pix8
+	ImageBackbase2         *pix8.Pix8
+	ImageBackhmid1         *pix8.Pix8
+	ImageInvback           *pix8.Pix8
+	ImageMapback           *pix8.Pix8
+	ImageChatback          *pix8.Pix8
+	ImageRedstone1v        *pix8.Pix8
+	ImageRedstone2v        *pix8.Pix8
+	ImageRedstone3v        *pix8.Pix8
+	ImageRedstone1hv       *pix8.Pix8
+	ImageRedstone2hv       *pix8.Pix8
+	ImageScrollbar0        *pix8.Pix8
+	ImageScrollbar1        *pix8.Pix8
+	ImageTitleBox          *pix8.Pix8
+	ImageTitleButton       *pix8.Pix8
+	FontPlain11            *pixfont.PixFont
+	FontPlain12            *pixfont.PixFont
+	FontBold12             *pixfont.PixFont
+	FontQuill8             *pixfont.PixFont
+	AreaBackbase1          *pixmap.PixMap
+	AreaBackbase2          *pixmap.PixMap
+	AreaBackhmid1          *pixmap.PixMap
+	AreaBackleft1          *pixmap.PixMap
+	AreaBackleft2          *pixmap.PixMap
+	AreaBackright1         *pixmap.PixMap
+	AreaBackright2         *pixmap.PixMap
+	AreaBacktop1           *pixmap.PixMap
+	AreaBackvmid1          *pixmap.PixMap
+	AreaBackvmid2          *pixmap.PixMap
+	AreaBackvmid3          *pixmap.PixMap
+	AreaBackhmid2          *pixmap.PixMap
+	ImageTitle2            *pixmap.PixMap
+	ImageTitle3            *pixmap.PixMap
+	ImageTitle4            *pixmap.PixMap
+	ImageTitle0            *pixmap.PixMap
+	ImageTitle1            *pixmap.PixMap
+	ImageTitle5            *pixmap.PixMap
+	ImageTitle6            *pixmap.PixMap
+	ImageTitle7            *pixmap.PixMap
+	ImageTitle8            *pixmap.PixMap
+	AreaSidebar            *pixmap.PixMap
+	AreaMapback            *pixmap.PixMap
+	AreaViewport           *pixmap.PixMap
+	AreaChatback           *pixmap.PixMap
+	JagTitle               *io.JagFile
 	// OnDemand is the rev-244 model/anim/map on-demand loader, created from the
 	// versionlist archive at boot. Java: client.onDemand (OnDemand).
 	OnDemand                   *ondemand.OnDemand
@@ -7190,6 +7200,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 			}
 		}
 		c.LocChanges = datastruct.NewLinkList[*entity.LocChange]() // Java: this.locChanges = new LinkList() (Client.java:2742)
+		c.FriendListStatus = 0                                     // Java: Client.java:2510 @2e62978 (NEW in 254)
 		c.FriendCount = 0
 		c.StickyChatInterfaceID = -1
 		c.ChatInterfaceID = -1
@@ -7208,6 +7219,12 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.ValidateCharacterDesign()
 		for i := range 5 {
 			c.DesignColors[i] = 0
+		}
+		// Java: Client.java:2530-2533 @2e62978 (NEW in 254) — clear the
+		// server-driven player options on login.
+		for i := range 5 {
+			c.PlayerOptions[i] = ""
+			c.PlayerOptionsPushDown[i] = false
 		}
 		OpLogic1 = 0
 		OpLogic2 = 0
@@ -10813,6 +10830,13 @@ func (c *Client) Read() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
+	// Java: ptype 255 — FRIENDLIST_LOADED, NEW in 254 (Client.java:6919-6924
+	// @2e62978). g1 friend-server status (0 none / 1 connecting / 2 loaded).
+	if c.PacketType == SERVERPROT_FRIENDLIST_LOADED {
+		c.FriendListStatus = c.In.G1()
+		c.PacketType = -1
+		return true
+	}
 	// Java: opcode 153 — component obj-icon model (Client.java:8032)
 	if c.PacketType == SERVERPROT_IF_SETOBJECT {
 		var26 := c.In.G2()
@@ -10897,6 +10921,23 @@ func (c *Client) Read() (ok bool) {
 		c.Cutscene = false
 		for var26 := range 5 {
 			c.CameraModifierEnabled[var26] = false
+		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: ptype 204 — SET_PLAYER_OP, NEW in 254 (Client.java:6607-6621
+	// @2e62978). g1 slot (1-5) + g1 pushdown flag + gstr option text;
+	// "null" (case-insensitive) clears the slot.
+	if c.PacketType == SERVERPROT_SET_PLAYER_OP {
+		var6 := c.In.G1()    // Java: var6 — option slot
+		var7 := c.In.G1()    // Java: var7 — 0 = pushdown below "Walk here"
+		var8 := c.In.GJStr() // Java: var8 — option text
+		if var6 >= 1 && var6 <= 5 {
+			if strings.EqualFold(var8, "null") {
+				var8 = ""
+			}
+			c.PlayerOptions[var6-1] = var8
+			c.PlayerOptionsPushDown[var6-1] = var7 == 0
 		}
 		c.PacketType = -1
 		return true
