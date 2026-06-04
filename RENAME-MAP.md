@@ -209,6 +209,18 @@ Verified by class-level `@ObfuscatedName` key pairing between `176a85f`
 (245.2) and `2e62978` (254), 2026-06-04 — NOT by filename and NOT by git
 rename detection. Member-level keys are per-build and unusable for pairing.
 
+## Progress (Go rename pass)
+
+Each increment lands gate-green (build+vet+test -race+gofmt+golangci-lint),
+zero behavioral change. The "245.2 class" column below is **historical** once
+the corresponding box is checked.
+
+- [ ] **Pass A** `dash3d/world` → `dash3d/clientbuild` (type `World`→`ClientBuild`)
+- [ ] **Pass B** `dash3d/world3d` → `dash3d/world` (type `World3D`→`World`; MUST follow A)
+- [ ] **Pass C** `config/component` → `config/iftype` (type `Component`→`IfType`)
+- [ ] **Pass D** `io.Jagfile` → `io.JagFile` (case only)
+- [ ] **Pass E** `io/protocol.go` → `client/protocol.go`
+
 Extraction: 72 `.java` files at 176a85f, 74 at 2e62978. All 70 keyed classes
 in 245.2 joined to exactly one class in 254. Two keys (`rc`, `sc`) are new in
 254 (key-rotation artifacts — the deobfuscator re-keyed SpotAnimType, VarpType,
@@ -254,13 +266,16 @@ the two new keys are brand-new classes.
 | Obf key (254) | Class | Notes |
 |---|---|---|
 | `oc` | `client/Stats` | 3-field skill-name/enabled constants table (25 skills). New `client/stats` pkg or file. |
-| `qc` | `config/VarBitType` | VarBit config type (basevar, startBit, endBit). New `config/varbittype` pkg. |
+| `qc` | `config/VarBitType` | VarBit config type (basevar, startbit, endbit). New `config/varbittype` pkg. |
 
 ## Deleted in 254
 
 None — all 70 keyed classes from 245.2 appear in 254 (some with rotated keys,
 none removed). The two path-paired unkeyed files (`deob/ObfuscatedName.java`,
-`sign/signlink.java`) are present in both trees unchanged.
+`sign/signlink.java`) are present in both trees with the same names — but
+**both have content deltas** (verified by blob hash 2026-06-04); notably
+`signlink.java` carries `clientversion = 245→254` and the matching
+`reporterror254.cgi` URL — the critical-path login-version delta.
 
 ## Unchanged-name pairings
 
@@ -269,7 +284,7 @@ No further renames or moves beyond the 5 listed above.
 
 Classes paired by path (no class-level obf key — annotation absent):
 - `deob/ObfuscatedName.java` — annotation definition itself; not ported (Go has no obf annotations)
-- `sign/signlink.java` — present in both with key `-`; no rename
+- `sign/signlink.java` — present in both, no class-level annotation; no rename (content delta: clientversion 245→254, see above)
 
 ## Spot-checks performed
 
