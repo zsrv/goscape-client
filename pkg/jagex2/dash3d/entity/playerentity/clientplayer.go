@@ -284,7 +284,7 @@ func (e *ClientPlayer) GetSequencedModel() *model.Model {
 			}
 			if var12 >= 512 {
 				var13 := objtype.Get(var12 - 512)
-				var14 := var13.GetWornModel(e.Gender)
+				var14 := var13.GetWearModelNoCheck(e.Gender)
 				if var14 != nil {
 					var9[var10] = var14
 					var10++
@@ -357,7 +357,7 @@ func (e *ClientPlayer) GetHeadModel() *model.Model {
 			}
 		}
 		if var5 >= 512 {
-			var6 := objtype.Get(var5 - 512).GetHeadModel(e.Gender)
+			var6 := objtype.Get(var5 - 512).GetHeadModelNoCheck(e.Gender)
 			if var6 != nil {
 				var2[var3] = var6
 				var3++

@@ -36,11 +36,11 @@ type ObjType struct {
 	Zan2D  int
 	Xof2D  int
 	Yof2D  int
-	// Java: ObjType.java:70,73 declares code9/code10 — assigned by
-	// opcodes 9/10 but never read in Java or Go. Pure deobfuscator
-	// residue; fields omitted per the deob-artifact exclusion policy.
-	// Decode preserves the wire reads as discards (opcode 10 reads
-	// G2; opcode 9 has no wire payload, just sets the field).
+	// Java: field1034 (ObjType.java @2e62978; was 245.2's field1045) —
+	// assigned by opcode 10 but never read in Java or Go. Pure
+	// deobfuscator residue; field omitted per the deob-artifact
+	// exclusion policy; Decode keeps the G2 read as a discard. 254
+	// deletes opcode 9 + its boolean (245.2 field1044) outright.
 	Stackable        bool
 	Cost             int
 	ManWearOffsetY   int8
@@ -194,11 +194,10 @@ func (t *ObjType) Decode(arg1 *io.Packet) {
 			if t.Yof2D > 32767 {
 				t.Yof2D -= 65536
 			}
-		// Java: ObjType.java:264-266 — opcodes 9/10 write code9/code10.
-		// Fields are deob artifacts (never read); opcode 10's G2 read
-		// kept as a discard so packet-position alignment matches Java.
-		case 9:
-			// no wire payload
+		// Java: ObjType.java:278-279 @2e62978 — opcode 10 writes the dead
+		// field1034; G2 read kept as a discard so packet-position
+		// alignment matches Java. Opcode 9 (245.2 field1044) is deleted
+		// at 254.
 		case 10:
 			arg1.G2()
 		case 11:
@@ -536,46 +535,48 @@ func (t *ObjType) CheckWearModel(gender int) bool {
 	return ready
 }
 
-func (t *ObjType) GetWornModel(arg1 int) *model.Model {
-	var3 := t.ManWear
+// GetWearModelNoCheck builds the worn-equipment model for the given gender
+// without a load barrier (callers gate on CheckWearModel first).
+// Java: getWearModelNoCheck (ObjType.java:598-635 @2e62978; was getWearModel
+// at 245.2 — net-equivalent branch restructure). The Translate arg order is
+// the compensated Go body mapping — do not "fix" against the Java literals.
+func (t *ObjType) GetWearModelNoCheck(arg1 int) *model.Model {
+	var4 := t.ManWear  // Java: var4
+	var5 := t.ManWear2 // Java: var5
+	var6 := t.ManWear3 // Java: var6
 	if arg1 == 1 {
-		var3 = t.WomanWear
+		var4 = t.WomanWear
+		var5 = t.WomanWear2
+		var6 = t.WomanWear3
 	}
-	if var3 == -1 {
+	if var4 == -1 {
 		return nil
 	}
-	var4 := t.ManWear2
-	var5 := t.ManWear3
-	if arg1 == 1 {
-		var4 = t.WomanWear2
-		var5 = t.WomanWear3
-	}
-	var6 := model.Load(var3)
-	if var4 != -1 {
-		var var7 *model.Model
-		if var5 == -1 {
-			var7 = model.Load(var4)
-			var11 := []*model.Model{var6, var7}
-			var6 = model.NewModel2(var11, 2)
+	var7 := model.Load(var4) // Java: var7
+	if var5 != -1 {
+		if var6 == -1 {
+			var11 := model.Load(var5)
+			var12 := []*model.Model{var7, var11}
+			var7 = model.NewModel2(var12, 2)
 		} else {
-			var7 = model.Load(var4)
 			var8 := model.Load(var5)
-			var9 := []*model.Model{var6, var7, var8}
-			var6 = model.NewModel2(var9, 3)
+			var9 := model.Load(var6)
+			var10 := []*model.Model{var7, var8, var9}
+			var7 = model.NewModel2(var10, 3)
 		}
 	}
 	if arg1 == 0 && t.ManWearOffsetY != 0 {
-		var6.Translate(int(t.ManWearOffsetY), 0, 0)
+		var7.Translate(int(t.ManWearOffsetY), 0, 0)
 	}
 	if arg1 == 1 && t.WomanWearOffsetY != 0 {
-		var6.Translate(int(t.WomanWearOffsetY), 0, 0)
+		var7.Translate(int(t.WomanWearOffsetY), 0, 0)
 	}
 	if t.RecolS != nil {
 		for i := range len(t.RecolS) {
-			var6.Recolor(t.RecolS[i], t.RecolD[i])
+			var7.Recolor(t.RecolS[i], t.RecolD[i])
 		}
 	}
-	return var6
+	return var7
 }
 
 // Java: checkHeadModel (ObjType.java:697-717) — load barrier for the chat
@@ -600,17 +601,19 @@ func (t *ObjType) CheckHeadModel(gender int) bool {
 	return ready
 }
 
-func (t *ObjType) GetHeadModel(arg1 int) *model.Model {
-	var3 := t.ManHead
+// GetHeadModelNoCheck builds the chathead model for the given gender without
+// a load barrier (callers gate on CheckHeadModel first).
+// Java: getHeadModelNoCheck (ObjType.java:659-681 @2e62978; was getHeadModel
+// at 245.2).
+func (t *ObjType) GetHeadModelNoCheck(arg1 int) *model.Model {
+	var3 := t.ManHead  // Java: var3
+	var4 := t.ManHead2 // Java: var4
 	if arg1 == 1 {
 		var3 = t.WomanHead
+		var4 = t.WomanHead2
 	}
 	if var3 == -1 {
 		return nil
-	}
-	var4 := t.ManHead2
-	if arg1 == 1 {
-		var4 = t.WomanHead2
 	}
 	var5 := model.Load(var3)
 	if var4 != -1 {
