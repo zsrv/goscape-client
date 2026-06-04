@@ -1441,18 +1441,22 @@ func FlatRaster(arg0 []int, arg1, arg2, arg4, arg5 int) {
 func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18 int) {
 	var19 := GetTexels(arg18)
 	Opaque = !TextureTranslucent[arg18]
-	var36 := arg9 - arg10
-	var38 := arg12 - arg13
-	var40 := arg15 - arg16
-	var37 := arg11 - arg9
-	var39 := arg14 - arg12
-	var41 := arg17 - arg15
-	var20 := (var37*arg12 - var39*arg9) << 14
-	var21 := (var39*arg15 - var41*arg12) << 8
-	var22 := (var41*arg9 - var37*arg15) << 5
-	var23 := (var36*arg12 - var38*arg9) << 14
-	var24 := (var38*arg15 - var40*arg12) << 8
-	var25 := (var40*arg9 - var36*arg15) << 5
+	// Java: Pix3D.java:1420-1438 — the u/v/w gradient cross-products and their
+	// per-scanline accumulation are 32-bit int arithmetic in Java (wrap mod 2^32).
+	// Typed int32 here so Go reproduces the wrap; sign-extended back to int at
+	// the textureRaster hand-off (audit 2026-06-04 pix3d-2-01).
+	var36 := int32(arg9 - arg10)
+	var38 := int32(arg12 - arg13)
+	var40 := int32(arg15 - arg16)
+	var37 := int32(arg11 - arg9)
+	var39 := int32(arg14 - arg12)
+	var41 := int32(arg17 - arg15)
+	var20 := (var37*int32(arg12) - var39*int32(arg9)) << 14
+	var21 := (var39*int32(arg15) - var41*int32(arg12)) << 8
+	var22 := (var41*int32(arg9) - var37*int32(arg15)) << 5
+	var23 := (var36*int32(arg12) - var38*int32(arg9)) << 14
+	var24 := (var38*int32(arg15) - var40*int32(arg12)) << 8
+	var25 := (var40*int32(arg9) - var36*int32(arg15)) << 5
 	var26 := (var38*var37 - var36*var39) << 14
 	var27 := (var40*var39 - var38*var41) << 8
 	var28 := (var36*var41 - var40*var37) << 5
@@ -1474,7 +1478,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 		var33 = ((arg3 - arg5) << 16) / (arg0 - arg2)
 		var34 = ((arg6 - arg8) << 16) / (arg0 - arg2)
 	}
-	var35 := 0
+	var35 := int32(0)
 	if arg0 <= arg1 && arg0 <= arg2 {
 		if arg0 < pix2d.Bottom {
 			arg1 = min(arg1, pix2d.Bottom)
@@ -1498,7 +1502,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 					arg7 -= var32 * arg1
 					arg1 = 0
 				}
-				var35 = arg0 - CenterH3D
+				var35 = int32(arg0 - CenterH3D)
 				var20 += var22 * var35
 				var23 += var25 * var35
 				var26 += var28 * var35
@@ -1514,7 +1518,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								if arg2 < 0 {
 									return
 								}
-								TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg5>>16, arg4>>16, arg8>>8, arg7>>8, var20, var23, var26, var21, var24, var27)
+								TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg5>>16, arg4>>16, arg8>>8, arg7>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 								arg5 += var33
 								arg4 += var31
 								arg8 += var34
@@ -1525,7 +1529,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								var26 += var28
 							}
 						}
-						TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg5>>16, arg3>>16, arg8>>8, arg6>>8, var20, var23, var26, var21, var24, var27)
+						TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg5>>16, arg3>>16, arg8>>8, arg6>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 						arg5 += var33
 						arg3 += var29
 						arg8 += var34
@@ -1547,7 +1551,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								if arg2 < 0 {
 									return
 								}
-								TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg4>>16, arg5>>16, arg7>>8, arg8>>8, var20, var23, var26, var21, var24, var27)
+								TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg4>>16, arg5>>16, arg7>>8, arg8>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 								arg5 += var33
 								arg4 += var31
 								arg8 += var34
@@ -1558,7 +1562,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								var26 += var28
 							}
 						}
-						TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg3>>16, arg5>>16, arg6>>8, arg8>>8, var20, var23, var26, var21, var24, var27)
+						TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg3>>16, arg5>>16, arg6>>8, arg8>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 						arg5 += var33
 						arg3 += var29
 						arg8 += var34
@@ -1588,7 +1592,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 					arg8 -= var32 * arg2
 					arg2 = 0
 				}
-				var35 = arg0 - CenterH3D
+				var35 = int32(arg0 - CenterH3D)
 				var20 += var22 * var35
 				var23 += var25 * var35
 				var26 += var28 * var35
@@ -1604,7 +1608,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								if arg1 < 0 {
 									return
 								}
-								TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg3>>16, arg5>>16, arg6>>8, arg8>>8, var20, var23, var26, var21, var24, var27)
+								TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg3>>16, arg5>>16, arg6>>8, arg8>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 								arg5 += var31
 								arg3 += var29
 								arg8 += var32
@@ -1615,7 +1619,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								var26 += var28
 							}
 						}
-						TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg3>>16, arg4>>16, arg6>>8, arg7>>8, var20, var23, var26, var21, var24, var27)
+						TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg3>>16, arg4>>16, arg6>>8, arg7>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 						arg4 += var33
 						arg3 += var29
 						arg7 += var34
@@ -1637,7 +1641,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								if arg1 < 0 {
 									return
 								}
-								TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg5>>16, arg3>>16, arg8>>8, arg6>>8, var20, var23, var26, var21, var24, var27)
+								TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg5>>16, arg3>>16, arg8>>8, arg6>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 								arg5 += var31
 								arg3 += var29
 								arg8 += var32
@@ -1648,7 +1652,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								var26 += var28
 							}
 						}
-						TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg4>>16, arg3>>16, arg7>>8, arg6>>8, var20, var23, var26, var21, var24, var27)
+						TextureRaster(pix2d.Data, var19, 0, 0, arg0, arg4>>16, arg3>>16, arg7>>8, arg6>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 						arg4 += var33
 						arg3 += var29
 						arg7 += var34
@@ -1684,7 +1688,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 					arg8 -= var34 * arg2
 					arg2 = 0
 				}
-				var35 = arg1 - CenterH3D
+				var35 = int32(arg1 - CenterH3D)
 				var20 += var22 * var35
 				var23 += var25 * var35
 				var26 += var28 * var35
@@ -1700,7 +1704,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								if arg0 < 0 {
 									return
 								}
-								TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg3>>16, arg5>>16, arg6>>8, arg8>>8, var20, var23, var26, var21, var24, var27)
+								TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg3>>16, arg5>>16, arg6>>8, arg8>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 								arg3 += var29
 								arg5 += var33
 								arg6 += var30
@@ -1711,7 +1715,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								var26 += var28
 							}
 						}
-						TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg3>>16, arg4>>16, arg6>>8, arg7>>8, var20, var23, var26, var21, var24, var27)
+						TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg3>>16, arg4>>16, arg6>>8, arg7>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 						arg3 += var29
 						arg4 += var31
 						arg6 += var30
@@ -1733,7 +1737,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								if arg0 < 0 {
 									return
 								}
-								TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg5>>16, arg3>>16, arg8>>8, arg6>>8, var20, var23, var26, var21, var24, var27)
+								TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg5>>16, arg3>>16, arg8>>8, arg6>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 								arg3 += var29
 								arg5 += var33
 								arg6 += var30
@@ -1744,7 +1748,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								var26 += var28
 							}
 						}
-						TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg4>>16, arg3>>16, arg7>>8, arg6>>8, var20, var23, var26, var21, var24, var27)
+						TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg4>>16, arg3>>16, arg7>>8, arg6>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 						arg3 += var29
 						arg4 += var31
 						arg6 += var30
@@ -1774,7 +1778,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 					arg6 -= var34 * arg0
 					arg0 = 0
 				}
-				var35 = arg1 - CenterH3D
+				var35 = int32(arg1 - CenterH3D)
 				var20 += var22 * var35
 				var23 += var25 * var35
 				var26 += var28 * var35
@@ -1790,7 +1794,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								if arg2 < 0 {
 									return
 								}
-								TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg3>>16, arg4>>16, arg6>>8, arg7>>8, var20, var23, var26, var21, var24, var27)
+								TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg3>>16, arg4>>16, arg6>>8, arg7>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 								arg3 += var33
 								arg4 += var31
 								arg6 += var34
@@ -1801,7 +1805,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								var26 += var28
 							}
 						}
-						TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg5>>16, arg4>>16, arg8>>8, arg7>>8, var20, var23, var26, var21, var24, var27)
+						TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg5>>16, arg4>>16, arg8>>8, arg7>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 						arg5 += var29
 						arg4 += var31
 						arg8 += var30
@@ -1823,7 +1827,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								if arg2 < 0 {
 									return
 								}
-								TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg4>>16, arg3>>16, arg7>>8, arg6>>8, var20, var23, var26, var21, var24, var27)
+								TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg4>>16, arg3>>16, arg7>>8, arg6>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 								arg3 += var33
 								arg4 += var31
 								arg6 += var34
@@ -1834,7 +1838,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 								var26 += var28
 							}
 						}
-						TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg4>>16, arg5>>16, arg7>>8, arg8>>8, var20, var23, var26, var21, var24, var27)
+						TextureRaster(pix2d.Data, var19, 0, 0, arg1, arg4>>16, arg5>>16, arg7>>8, arg8>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 						arg5 += var29
 						arg4 += var31
 						arg8 += var30
@@ -1869,7 +1873,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 				arg6 -= var30 * arg0
 				arg0 = 0
 			}
-			var35 = arg2 - CenterH3D
+			var35 = int32(arg2 - CenterH3D)
 			var20 += var22 * var35
 			var23 += var25 * var35
 			var26 += var28 * var35
@@ -1885,7 +1889,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 							if arg1 < 0 {
 								return
 							}
-							TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg4>>16, arg3>>16, arg7>>8, arg6>>8, var20, var23, var26, var21, var24, var27)
+							TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg4>>16, arg3>>16, arg7>>8, arg6>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 							arg4 += var31
 							arg3 += var29
 							arg7 += var32
@@ -1896,7 +1900,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 							var26 += var28
 						}
 					}
-					TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg4>>16, arg5>>16, arg7>>8, arg8>>8, var20, var23, var26, var21, var24, var27)
+					TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg4>>16, arg5>>16, arg7>>8, arg8>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 					arg4 += var31
 					arg5 += var33
 					arg7 += var32
@@ -1918,7 +1922,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 							if arg1 < 0 {
 								return
 							}
-							TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg3>>16, arg4>>16, arg6>>8, arg7>>8, var20, var23, var26, var21, var24, var27)
+							TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg3>>16, arg4>>16, arg6>>8, arg7>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 							arg4 += var31
 							arg3 += var29
 							arg7 += var32
@@ -1929,7 +1933,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 							var26 += var28
 						}
 					}
-					TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg5>>16, arg4>>16, arg8>>8, arg7>>8, var20, var23, var26, var21, var24, var27)
+					TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg5>>16, arg4>>16, arg8>>8, arg7>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 					arg4 += var31
 					arg5 += var33
 					arg7 += var32
@@ -1959,7 +1963,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 				arg7 -= var30 * arg1
 				arg1 = 0
 			}
-			var35 = arg2 - CenterH3D
+			var35 = int32(arg2 - CenterH3D)
 			var20 += var22 * var35
 			var23 += var25 * var35
 			var26 += var28 * var35
@@ -1975,7 +1979,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 							if arg0 < 0 {
 								return
 							}
-							TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg4>>16, arg5>>16, arg7>>8, arg8>>8, var20, var23, var26, var21, var24, var27)
+							TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg4>>16, arg5>>16, arg7>>8, arg8>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 							arg4 += var29
 							arg5 += var33
 							arg7 += var30
@@ -1986,7 +1990,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 							var26 += var28
 						}
 					}
-					TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg3>>16, arg5>>16, arg6>>8, arg8>>8, var20, var23, var26, var21, var24, var27)
+					TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg3>>16, arg5>>16, arg6>>8, arg8>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 					arg3 += var31
 					arg5 += var33
 					arg6 += var32
@@ -2008,7 +2012,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 							if arg0 < 0 {
 								return
 							}
-							TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg5>>16, arg4>>16, arg8>>8, arg7>>8, var20, var23, var26, var21, var24, var27)
+							TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg5>>16, arg4>>16, arg8>>8, arg7>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 							arg4 += var29
 							arg5 += var33
 							arg7 += var30
@@ -2019,7 +2023,7 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 							var26 += var28
 						}
 					}
-					TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg5>>16, arg3>>16, arg8>>8, arg6>>8, var20, var23, var26, var21, var24, var27)
+					TextureRaster(pix2d.Data, var19, 0, 0, arg2, arg5>>16, arg3>>16, arg8>>8, arg6>>8, int(var20), int(var23), int(var26), int(var21), int(var24), int(var27))
 					arg3 += var31
 					arg5 += var33
 					arg6 += var32
@@ -2056,7 +2060,9 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 	} else {
 		if arg6-arg5 > 7 {
 			var16 = (arg6 - arg5) >> 3
-			var15 = ((arg8 - arg7) * DivTable[var16]) >> 6
+			// Java: Pix3D.java:2053 — 32-bit product wraps before the >>6
+			// (overflows on bright wide textured triangles; audit pix3d-3-03)
+			var15 = int(int32((arg8-arg7)*DivTable[var16])) >> 6
 		} else {
 			var16 = 0
 			var15 = 0

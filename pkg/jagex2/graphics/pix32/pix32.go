@@ -407,7 +407,9 @@ func (p *Pix32) TransPlot(arg0 int, arg2 []int, arg3 int, arg4 int, arg5 []int, 
 				arg0++
 			} else {
 				var15 := arg5[arg0]
-				arg5[arg0] = ((((var16&0xFF00FF)*arg3 + (var15&0xFF00FF)*var12) & 0xFF00FF00) + (((var16&0xFF00)*arg3 + (var15&0xFF00)*var12) & 0xFF0000)) >> 8
+				// Java: Pix32.java:384 — 32-bit blend sum; arithmetic >>8 sign-extends
+				// the top byte when the red term sets bit 31 (audit pix32-02)
+				arg5[arg0] = int(int32((((var16&0xFF00FF)*arg3+(var15&0xFF00FF)*var12)&0xFF00FF00)+(((var16&0xFF00)*arg3+(var15&0xFF00)*var12)&0xFF0000))) >> 8
 				arg0++
 			}
 		}

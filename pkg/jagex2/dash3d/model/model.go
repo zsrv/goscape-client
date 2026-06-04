@@ -1386,25 +1386,25 @@ func (m *Model) ApplyLighting(arg0, arg1, arg2, arg3, arg4 int) {
 		if m.FaceInfo == nil {
 			var12 := m.FaceColour[i]
 			var10 := m.VertexNormal[var7]
-			var11 := arg0 + (arg2*var10.X+arg3*var10.Y+arg4*var10.Z)/(arg1*var10.W)
+			var11 := int(int32(arg0 + int(int32(arg2*var10.X+arg3*var10.Y+arg4*var10.Z))/int(int32(arg1*var10.W))))
 			m.FaceColourA[i] = MulColourLightness(var12, var11, 0)
 			var14 := m.VertexNormal[var8]
-			var16 := arg0 + (arg2*var14.X+arg3*var14.Y+arg4*var14.Z)/(arg1*var14.W)
+			var16 := int(int32(arg0 + int(int32(arg2*var14.X+arg3*var14.Y+arg4*var14.Z))/int(int32(arg1*var14.W))))
 			m.FaceColourB[i] = MulColourLightness(var12, var16, 0)
 			var15 := m.VertexNormal[var9]
-			var17 := arg0 + (arg2*var15.X+arg3*var15.Y+arg4*var15.Z)/(arg1*var15.W)
+			var17 := int(int32(arg0 + int(int32(arg2*var15.X+arg3*var15.Y+arg4*var15.Z))/int(int32(arg1*var15.W))))
 			m.FaceColourC[i] = MulColourLightness(var12, var17, 0)
 		} else if m.FaceInfo[i]&0x1 == 0 {
 			var12 := m.FaceColour[i]
 			var13 := m.FaceInfo[i]
 			var10 := m.VertexNormal[var7]
-			var11 := arg0 + (arg2*var10.X+arg3*var10.Y+arg4*var10.Z)/(arg1*var10.W)
+			var11 := int(int32(arg0 + int(int32(arg2*var10.X+arg3*var10.Y+arg4*var10.Z))/int(int32(arg1*var10.W))))
 			m.FaceColourA[i] = MulColourLightness(var12, var11, var13)
 			var10 = m.VertexNormal[var8]
-			var11 = arg0 + (arg2*var10.X+arg3*var10.Y+arg4*var10.Z)/(arg1*var10.W)
+			var11 = int(int32(arg0 + int(int32(arg2*var10.X+arg3*var10.Y+arg4*var10.Z))/int(int32(arg1*var10.W))))
 			m.FaceColourB[i] = MulColourLightness(var12, var11, var13)
 			var10 = m.VertexNormal[var9]
-			var11 = arg0 + (arg2*var10.X+arg3*var10.Y+arg4*var10.Z)/(arg1*var10.W)
+			var11 = int(int32(arg0 + int(int32(arg2*var10.X+arg3*var10.Y+arg4*var10.Z))/int(int32(arg1*var10.W))))
 			m.FaceColourC[i] = MulColourLightness(var12, var11, var13)
 		}
 	}
@@ -1431,7 +1431,8 @@ func MulColourLightness(arg0, arg1, arg2 int) int {
 		}
 		return 127 - arg1
 	}
-	arg1 = (arg1 * (arg0 & 0x7F)) >> 7
+	// Java: Model.java:1462 — 32-bit product wraps before the >>7 (audit model-3-03)
+	arg1 = int(int32(arg1*(arg0&0x7F))) >> 7
 	if arg1 < 2 {
 		arg1 = 2
 	} else if arg1 > 126 {

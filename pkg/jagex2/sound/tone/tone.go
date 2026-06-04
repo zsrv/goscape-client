@@ -17,6 +17,11 @@ import (
 // [-32768, 32767] per sample with per-harmonic contributions bounded ~16-bit
 // across ≤5 harmonics. Left as int per the audit decision (document, don't
 // re-type) — no concrete wrapping input exists.
+//
+// Re-confirmed by the 2026-06-04 audit (tone-envelope-01, latent): the
+// weakest-bounded site is the intermediate `amplitude*TmpVolumes[h]` product
+// before >>15 in Generate (Java Tone.java generate harmonic loop), which still
+// stays under 2^31 for all real RS2 sound-cache data. Standing decision kept.
 var (
 	Buffer       []int
 	Noise        []int
