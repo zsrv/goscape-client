@@ -51,7 +51,7 @@ The `main` goroutine flow (from `main.go`):
 | `dash3d/` | Global scene variables for 3D rendering |
 | `dash3d/world/` | Scene/tile building; converts cache data into a renderable `World3d` scene |
 | `dash3d/world3d/` | The scene graph (tiles, entities, occlusion) |
-| `dash3d/entity/` | Entity types (244 names): `ClientEntity`, `ClientNpc`, `ClientPlayer`, `ClientLocAnim`, `ClientObj`, `ClientProj`, `MapSpotAnim`, `LocChange`, `ModelSource` (interface). `LocMergeEntity` is still present pending its logic-delta merge into `LocChange` |
+| `dash3d/entity/` | Entity types (244 names): `ClientEntity`, `ClientNpc`, `ClientPlayer`, `ClientLocAnim`, `ClientObj`, `ClientProj`, `MapSpotAnim`, `LocChange`, `ModelSource` (interface). `LocChange` is the rev-244 merge of the old `LocChange` + `LocMergeEntity` (see `locchange.go`) |
 | `dash3d/typ/` | Per-tile scene types (244 names): `Square` (tile aggregate), `Sprite` (loc), `Ground` (overlay mesh), `QuickGround` (underlay), `Wall`, `Decor`, `GroundDecor`, `GroundObject` |
 | `dash3d/model/` | 3D model data and rasterization (moved from `graphics/` in rev-244) |
 | `dash3d/animbase/` & `animframe/` | Skeletal animation base/frame data (moved from `graphics/`) |
