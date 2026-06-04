@@ -64,13 +64,14 @@ var (
 	URLReq    string
 	URLStream []byte // this was DataInputStream in java
 	LoopRate  int    = 50
-	// Midi is the single-slot audio command: "" (none), "stop", "voladjust",
-	// or "play" (track bytes pending in MidiData). Latest write wins —
-	// exactly Java's lone `midi` field, where a command can clobber a
+	// Midi is the single-slot audio command: "" (no command), "stop",
+	// "voladjust", or "play" (track bytes pending in MidiData). Latest write
+	// wins — exactly Java's lone `midi` field, where a command can clobber a
 	// pending track and vice versa.
-	// Java: midi = "none" (SignLink.java:45); "play" stands in for the
-	// jingle<pos>.mid path of the disk protocol (SignLink.java:179-182),
-	// which the Go port replaces with in-memory bytes.
+	// Java: midi = null (signlink.java:37 @176a85f; the 244 deob's "none"
+	// sentinel became null at 245.2 — Go's "" stands in for both); "play"
+	// stands in for the jingle<pos>.mid path of the disk protocol
+	// (SignLink.java:179-182), which the Go port replaces with in-memory bytes.
 	Midi string
 	// MidiData holds the pending track bytes when Midi == "play".
 	MidiData      []byte
@@ -79,11 +80,17 @@ var (
 	ErrorName     string
 	ClientVersion int = 244 // Java: clientversion = 244 (SignLink.java:53)
 	MidiFade      int
-	MidiVol       int = 96 // Java: midivol = 96 (SignLink.java:59)
-	SaveLen       int
+	// MidiVol holds the published music volume. 245.2 drops the 244
+	// initializer (= 96 linear): the zero default is 0 centibels = full
+	// volume. Java: midivol (signlink.java:51 @176a85f).
+	MidiVol int
+	SaveLen int
 	//ThreadLiveID  int // not needed in go
-	UID     int
-	WaveVol int = 96 // Java: wavevol = 96 (SignLink.java:71)
+	UID int
+	// WaveVol holds the published SFX volume; like MidiVol, 245.2 drops the
+	// 244 initializer (= 96) — zero default = 0 cB = full volume.
+	// Java: wavevol (signlink.java:63 @176a85f).
+	WaveVol int
 	//MainApp Applet
 	//SocketIP net.IPAddr // not needed in go
 	SunJava bool
@@ -403,10 +410,11 @@ func SetMidiFade(v int) {
 	MidiFade = v
 }
 
-// SetMidiVol publishes the music volume on the 244 linear scale (the
-// client sends 128/96/64/32; default 96; gain = vol/128 — see
-// audio.linearVolume). The consumer applies it on the next "voladjust",
-// track change, or fade step. Java: midivol (SignLink.java:59).
+// SetMidiVol publishes the music volume on the 245.2 centibel scale (the
+// client sends 0/-400/-800/-1200; default 0 = full; the consumer converts
+// back to its internal linear domain — see audio.centibelToVol128). The
+// consumer applies it on the next "voladjust", track change, or fade step.
+// Java: midivol (signlink.java:51 @176a85f).
 func SetMidiVol(v int) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -427,11 +435,12 @@ func ReadMidiVol() int {
 	return MidiVol
 }
 
-// SetWaveVol publishes the SFX volume on the 244 linear scale (see
+// SetWaveVol publishes the SFX volume on the 245.2 centibel scale (see
 // SetMidiVol). The audio driver reads it when spawning a per-SFX player
 // so the in-game slider affects freshly-triggered sound effects.
-// Java: wavevol (SignLink.java:71) — dead there; see the DEVIATION note
-// in audio/wave_native.go.
+// Java: wavevol (signlink.java:63 @176a85f) — dead in the deob (the 245.2
+// repo drops the wrapper-side consumer); see the DEVIATION note in
+// audio/wave_native.go.
 func SetWaveVol(v int) {
 	mu.Lock()
 	defer mu.Unlock()

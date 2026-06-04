@@ -102,5 +102,5 @@ func resetSignlinkAudioFields() {
 	Midi = ""
 	MidiData = nil
 	MidiFade = 0
-	MidiVol = 96
+	MidiVol = 0 // 245.2 default: no initializer, 0 cB = full volume
 }

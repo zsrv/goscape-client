@@ -3459,11 +3459,13 @@ func (c *Client) PushNPCs(alwaysOnTop bool) {
 	}
 }
 
-// SetMidiVolume publishes the music volume (244 linear scale: 128/96/64/32)
-// and, when music is active, tells the consumer to re-read it.
-// Java: setMidiVolume(int volume, boolean active) (Client.java:1459-1464).
-// 244 drops the 225-deob dummy first arg and its packetSize side effect.
-func (c *Client) SetMidiVolume(volume int, active bool) {
+// SetMidiVolume publishes the music volume (245.2 centibel scale:
+// 0/-400/-800/-1200; the audio seam converts back to its internal linear
+// domain — see audio.centibelToVol128) and, when music is active, tells the
+// consumer to re-read it. 245.2 swaps the param order (int,boolean)→
+// (boolean,int).
+// Java: setMidiVolume(boolean active, int volume) (Client.java:1445-1450 @176a85f).
+func (c *Client) SetMidiVolume(active bool, volume int) {
 	signlink.SetMidiVol(volume)
 	if active {
 		signlink.SetMidiCommand("voladjust")
@@ -3998,14 +4000,17 @@ func (c *Client) GetPlayerExtended1(arg2 *io.Packet) {
 	}
 }
 
-func (c *Client) UpdateVarp(arg0 int) {
-	var3 := varptype.Instances[arg0].ClientCode
-	if var3 == 0 {
+// Java: updateVarp (Client.java:10701-10789 @176a85f). 245.2 moves the
+// music/SFX volume ladders to the centibel scale {0,-400,-800,-1200}
+// (Client.java:10726-10738, 10758-10770) — see audio.centibelToVol128.
+func (c *Client) UpdateVarp(arg1 int) {
+	var4 := varptype.Instances[arg1].ClientCode
+	if var4 == 0 {
 		return
 	}
-	var4 := c.Varps[arg0]
-	if var3 == 1 {
-		switch var4 {
+	var5 := c.Varps[arg1]
+	if var4 == 1 {
+		switch var5 {
 		case 1:
 			pix3d.SetBrightness(0.9)
 		case 2:
@@ -4018,27 +4023,27 @@ func (c *Client) UpdateVarp(arg0 int) {
 		objtype.IconCache.Clear()
 		c.RedrawFrame = true
 	}
-	if var3 == 3 {
-		var5 := c.MidiActive
-		switch var4 {
+	if var4 == 3 {
+		var6 := c.MidiActive
+		switch var5 {
 		case 0:
-			c.SetMidiVolume(128, c.MidiActive)
+			c.SetMidiVolume(c.MidiActive, 0)
 			c.MidiActive = true
 		case 1:
-			c.SetMidiVolume(96, c.MidiActive)
+			c.SetMidiVolume(c.MidiActive, -400)
 			c.MidiActive = true
 		case 2:
-			c.SetMidiVolume(64, c.MidiActive)
+			c.SetMidiVolume(c.MidiActive, -800)
 			c.MidiActive = true
 		case 3:
-			c.SetMidiVolume(32, c.MidiActive)
+			c.SetMidiVolume(c.MidiActive, -1200)
 			c.MidiActive = true
 		case 4:
 			c.MidiActive = false
 		}
-		// Java: Client.java:11390-11399 — gated by !lowMem, and reactivation
-		// re-requests the song by id over OnDemand archive 2.
-		if c.MidiActive != var5 && !LowMemory {
+		// Java: Client.java:10744-10752 @176a85f — gated by !lowMem, and
+		// reactivation re-requests the song by id over OnDemand archive 2.
+		if c.MidiActive != var6 && !LowMemory {
 			if c.MidiActive {
 				c.MidiSong = c.NextMidiSong
 				c.MidiFading = false
@@ -4049,36 +4054,36 @@ func (c *Client) UpdateVarp(arg0 int) {
 			c.NextMusicDelay = 0
 		}
 	}
-	if var3 == 4 {
-		switch var4 {
+	if var4 == 4 {
+		switch var5 {
 		case 0:
 			c.WaveEnabled = true
-			c.SetWaveVolume(128)
+			c.SetWaveVolume(0)
 		case 1:
 			c.WaveEnabled = true
-			c.SetWaveVolume(96)
+			c.SetWaveVolume(-400)
 		case 2:
 			c.WaveEnabled = true
-			c.SetWaveVolume(64)
+			c.SetWaveVolume(-800)
 		case 3:
 			c.WaveEnabled = true
-			c.SetWaveVolume(32)
+			c.SetWaveVolume(-1200)
 		case 4:
 			c.WaveEnabled = false
 		}
 	}
-	if var3 == 5 {
-		c.MouseButtonsOption = var4
+	if var4 == 5 {
+		c.MouseButtonsOption = var5
 	}
-	if var3 == 6 {
-		c.ChatEffects = var4
+	if var4 == 6 {
+		c.ChatEffects = var5
 	}
-	if var3 == 8 {
-		c.SplitPrivateChat = var4
+	if var4 == 8 {
+		c.SplitPrivateChat = var5
 		c.RedrawChatback = true
 	}
-	if var3 == 9 { // Java: Client.java:11424-11425 (new in 244)
-		c.BankArrangeMode = var4
+	if var4 == 9 { // Java: Client.java:10786-10788 @176a85f (new in 244)
+		c.BankArrangeMode = var5
 	}
 }
 
@@ -5685,8 +5690,10 @@ func (c *Client) ReplayWave() bool {
 	return true
 }
 
-func (c *Client) SetWaveVolume(vol int) {
-	signlink.SetWaveVol(vol)
+// SetWaveVolume publishes the SFX volume (245.2 centibel scale, see
+// SetMidiVolume). Java: setWaveVolume(int volume) (Client.java:1467-1469 @176a85f).
+func (c *Client) SetWaveVolume(volume int) {
+	signlink.SetWaveVol(volume)
 }
 
 func (c *Client) GetNpcPosNewVis(arg1 *io.Packet, arg2 int) {

@@ -30,14 +30,17 @@ func (f *fakeSink) stop()           { f.stopCalls++; f.runningV = false }
 func (f *fakeSink) setVolume(v int) { f.volCalls = append(f.volCalls, v) }
 func (f *fakeSink) running() bool   { return f.runningV }
 
-// resetSignlinkAudio restores the signlink audio fields the loop reads to
-// their 244 defaults, before and after each test.
+// resetSignlinkAudio restores the signlink audio fields the loop reads,
+// before and after each test. The volume is published on the 245.2 centibel
+// scale: -400 cB converts to the internal linear 96 (centibelToVol128) that
+// the fade sequences below assume — the same audible level as the old 244
+// default. (The true 245.2 default is 0 cB = internal 128 = full volume.)
 func resetSignlinkAudio(t *testing.T) {
 	t.Helper()
 	reset := func() {
 		signlink.ClearMidi()
 		signlink.SetMidiFade(0)
-		signlink.SetMidiVol(96)
+		signlink.SetMidiVol(-400)
 	}
 	reset()
 	t.Cleanup(reset)
@@ -143,7 +146,7 @@ func TestStopAndVoladjust(t *testing.T) {
 		t.Fatalf("stop must clear when not fading, got %q", cmd)
 	}
 
-	signlink.SetMidiVol(64)
+	signlink.SetMidiVol(-800) // centibels; internal 64
 	signlink.SetMidiCommand("voladjust")
 	l.tick()
 	if !slices.Equal(sink.volCalls, []int{64}) {
@@ -235,6 +238,27 @@ func TestLinearVolume(t *testing.T) {
 	for _, c := range cases {
 		if got := linearVolume(c.vol); got != c.want {
 			t.Errorf("linearVolume(%d) = %v, want %v", c.vol, got, c.want)
+		}
+	}
+}
+
+// TestCentibelToVol128 pins the 245.2 centibel→internal-linear conversion
+// (see centibelToVol128's doc): the published ladder 0/-400/-800/-1200
+// restores the 244 ladder 128/96/64/32 exactly, the 245.2 zero default is
+// full volume, and out-of-ladder values clamp to [0,128].
+func TestCentibelToVol128(t *testing.T) {
+	cases := []struct {
+		cb   int
+		want int
+	}{
+		{0, 128}, {-400, 96}, {-800, 64}, {-1200, 32}, // the published ladder
+		{-1600, 0},             // exactly silent
+		{-2000, 0}, {-9999, 0}, // below the scale: clamp to silence
+		{100, 128}, {400, 128}, // above 0 cB never occurs: clamp to unity
+	}
+	for _, c := range cases {
+		if got := centibelToVol128(c.cb); got != c.want {
+			t.Errorf("centibelToVol128(%d) = %d, want %d", c.cb, got, c.want)
 		}
 	}
 }

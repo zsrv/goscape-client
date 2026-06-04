@@ -52,9 +52,10 @@ func playWaveBytes(data []byte) {
 	buf := ac.Call("createBuffer", 1, len(f), SampleRate)
 	buf.Call("copyToChannel", f32ToJSFloat32Array(f), 0)
 
-	// DEVIATION: 244's wavevol is dead in Java; Go keeps the slider working
-	// via the same linear vol/128 curve as music (see wave_native.go).
-	sfxGain.Get("gain").Set("value", linearVolume(signlink.ReadWaveVol()))
+	// DEVIATION: wavevol is dead in Java (244; consumer gone at 245.2); Go
+	// keeps the slider working via the same centibel→vol/128 mapping as
+	// music (see wave_native.go).
+	sfxGain.Get("gain").Set("value", linearVolume(centibelToVol128(signlink.ReadWaveVol())))
 
 	src := ac.Call("createBufferSource")
 	src.Set("buffer", buf)

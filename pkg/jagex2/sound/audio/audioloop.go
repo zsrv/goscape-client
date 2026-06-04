@@ -21,6 +21,10 @@ import (
 //     duration — in Java a playing SFX stalls any in-flight MIDI fade.
 //   - MidiPlayer's CC7/CC39/CC121 interception collapses to the linear
 //     vol/128 post-gain — see linearVolume for the curve and calibration.
+//   - The 245.2 client publishes volume in centibels (0..-1200);
+//     centibelToVol128 restores the internal linear 0..128 domain at
+//     ingestion, leaving the fade machine and gain curve unchanged — see
+//     format.go for the calibration.
 
 // midiSink is the per-backend playback primitive set the audioLoop drives,
 // mirroring the MidiPlayer surface SignLink uses. Implemented by *midiDriver
@@ -56,8 +60,8 @@ func (nullSink) running() bool          { return false }
 
 // audioLoopInterval is the consumer cadence AND the fade step rate: the Java
 // wrapper thread sleeps 50ms per iteration (SignLink.java:197-200), so the
-// ±8 fade steps tick every 50ms — a 600ms linear ramp at the default
-// midivol 96.
+// ±8 fade steps tick every 50ms — a 600ms linear ramp at -400 cB (internal
+// 96), 800ms at the 245.2 default of 0 cB (internal 128).
 const audioLoopInterval = 50 * time.Millisecond
 
 // audioLoop holds the MIDI fade state machine. Java: SignLink's instance
@@ -87,7 +91,7 @@ func runAudioLoop(sink midiSink) {
 // Java: SignLink.audioLoop() (SignLink.java:391-425; the wave branch at
 // :427-475 is handled by PlayWave — see the file comment).
 func (l *audioLoop) tick() {
-	midivol := signlink.ReadMidiVol()
+	midivol := centibelToVol128(signlink.ReadMidiVol())
 
 	// Fade step — Java: SignLink.java:392-411.
 	if l.midiFadingIn {
@@ -141,7 +145,7 @@ func (l *audioLoop) tick() {
 // the play maps to the sink logging-and-returning on a parse failure.
 func (l *audioLoop) playMidi(data []byte) {
 	midifade := signlink.ReadMidiFade()
-	midivol := signlink.ReadMidiVol()
+	midivol := centibelToVol128(signlink.ReadMidiVol())
 	if l.midiFadingOut {
 		return
 	}
