@@ -45,7 +45,9 @@ func main() {
 		return
 	}
 
-	fmt.Println("RS2 user client - release #" + strconv.Itoa(244)) // Java: Client.java:1281
+	// Java: Client.java:1272 @176a85f — 245.2 prints signlink.clientversion
+	// here (244 used a literal).
+	fmt.Println("RS2 user client - release #" + strconv.Itoa(signlink.ClientVersion))
 
 	// Java: SignLink.storeid — selects .file_store_<id>; must be set before
 	// the signlink store first resolves its directory (lazily, on first use).

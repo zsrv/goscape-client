@@ -74,12 +74,11 @@ var (
 	// (SignLink.java:179-182), which the Go port replaces with in-memory bytes.
 	Midi string
 	// MidiData holds the pending track bytes when Midi == "play".
-	MidiData      []byte
-	Save          string
-	ReportError   bool = true
-	ErrorName     string
-	ClientVersion int = 244 // Java: clientversion = 244 (SignLink.java:53)
-	MidiFade      int
+	MidiData    []byte
+	Save        string
+	ReportError bool = true
+	ErrorName   string
+	MidiFade    int
 	// MidiVol holds the published music volume. 245.2 drops the 244
 	// initializer (= 96 linear): the zero default is 0 centibels = full
 	// volume. Java: midivol (signlink.java:51 @176a85f).
@@ -101,6 +100,13 @@ var (
 	// does not use it.
 	StoreID int = 32
 )
+
+// ClientVersion is the game revision this client speaks. 245.2 makes the
+// Java field final (it was a plain static at 244), so it ports as a const.
+// The main banner prints it; the login handshake byte stays a literal,
+// matching Java (Client.java:2642 @176a85f).
+// Java: clientversion = 245 (signlink.java:45 @176a85f).
+const ClientVersion = 245
 
 type SignLink struct {
 }
@@ -459,23 +465,25 @@ func ReportErrorFunc(e string) {
 	if !ReportError {
 		return
 	}
-	fmt.Println("Error: " + e) // Java: System.out.println("Error: " + e) (sign/signlink.java:361)
-	// Java: SignLink.java:347-350 — four ordered replacements: ':' '@' '&' '#'.
-	var2 := strings.ReplaceAll(e, ":", "_")
-	var3 := strings.ReplaceAll(var2, "@", "_")
-	var4 := strings.ReplaceAll(var3, "&", "_")
-	var5 := strings.ReplaceAll(var4, "#", "_")
-	// Java: sign/signlink.java:366-368 explicitly does
-	//   DataInputStream var1 = openurl(...);
-	//   var1.readLine();
-	//   var1.close();
+	fmt.Println("Error: " + e) // Java: System.out.println("Error: " + arg0) (signlink.java:296 @176a85f)
+	// Java: signlink.java:298-301 @176a85f — four ordered replacements:
+	// ':' '@' '&' '#'.
+	var1 := strings.ReplaceAll(e, ":", "_")
+	var2 := strings.ReplaceAll(var1, "@", "_")
+	var3 := strings.ReplaceAll(var2, "&", "_")
+	var4 := strings.ReplaceAll(var3, "#", "_")
+	// Java: signlink.java:302-304 @176a85f explicitly does
+	//   DataInputStream var5 = openurl(...);
+	//   var5.readLine();
+	//   var5.close();
 	// Go's OpenURL reads the full response body (and closes the
 	// connection) before returning, so the readLine + close pair
 	// is subsumed by the call itself. Discarding the body is the
 	// equivalent of Java's readLine-then-close pattern; the HTTP
 	// transaction is observably identical.
-	// Java: "reporterror" + 244 + ".cgi?..." (SignLink.java:352).
-	_, err := OpenURL("reporterror" + strconv.Itoa(244) + ".cgi?error=" + ErrorName + " " + var5)
+	// Java: "reporterror" + 245 + ".cgi?..." (signlink.java:302 @176a85f) —
+	// a literal in Java, not clientversion.
+	_, err := OpenURL("reporterror" + strconv.Itoa(245) + ".cgi?error=" + ErrorName + " " + var4)
 	if err != nil {
 		log.Printf("signlink: failed to open url: %v", err)
 		return
