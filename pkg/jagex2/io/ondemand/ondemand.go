@@ -221,7 +221,9 @@ func (od *OnDemand) Unpack(versionlist Archive) {
 		od.crcs[i] = make([]int, count)
 
 		for j := range count {
-			od.crcs[i][j] = buf.G4()
+			// Java: g4() returns signed int32 — keeps the table comparable with
+			// Validate's (int) CRC32.getValue() narrowing (audit ondemand-07)
+			od.crcs[i][j] = int(int32(buf.G4()))
 		}
 	}
 

@@ -1117,7 +1117,8 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 		if var7&0x40 == 64 {
 			var6.SpotanimID = arg0.G2()
 			var8 = arg0.G4()
-			var6.SpotanimOffset = var8 >> 16
+			// Java: g4() is signed int32 — >>16 sign-extends (audit client-09-02)
+			var6.SpotanimOffset = int(int32(var8)) >> 16
 			var6.SpotanimLastCycle = clientextras.LoopCycle + (var8 & 0xFFFF)
 			var6.SpotanimFrame = 0
 			var6.SpotanimCycle = 0
@@ -10520,7 +10521,7 @@ func (c *Client) Read() (ok bool) {
 			var27.InvSlotObjId[var6] = c.In.G2()
 			var7 := c.In.G1()
 			if var7 == 255 {
-				var7 = c.In.G4()
+				var7 = int(int32(c.In.G4())) // Java: g4() signed int32 (audit client-08-02)
 			}
 			var27.InvSlotObjCount[var6] = var7
 		}
@@ -10559,7 +10560,7 @@ func (c *Client) Read() (ok bool) {
 	}
 	// Java: opcode 44 — last-login info (Client.java:7275-7304)
 	if c.PacketType == io.SERVERPROT_LAST_LOGIN_INFO {
-		c.LastAddress = c.In.G4()
+		c.LastAddress = int(int32(c.In.G4())) // Java: g4() signed int32 (audit client-08-01)
 		c.DaysSinceLastLogin = c.In.G2()
 		c.DaysSinceRecoveriesChanged = c.In.G1()
 		c.UnreadMessages = c.In.G2()
@@ -10995,7 +10996,7 @@ func (c *Client) Read() (ok bool) {
 			var6 := c.In.G2()
 			var7 := c.In.G1()
 			if var7 == 255 {
-				var7 = c.In.G4()
+				var7 = int(int32(c.In.G4())) // Java: g4() signed int32 (audit client-08-02)
 			}
 			if var5 >= 0 && var5 < len(var27.InvSlotObjId) {
 				var27.InvSlotObjId[var5] = var6
@@ -11177,7 +11178,8 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 	if arg2&0x100 == 256 {
 		arg4.SpotanimID = arg3.G2()
 		var6 = arg3.G4()
-		arg4.SpotanimOffset = var6 >> 16
+		// Java: g4() is signed int32 — >>16 sign-extends (audit client-09-01)
+		arg4.SpotanimOffset = int(int32(var6)) >> 16
 		arg4.SpotanimLastCycle = clientextras.LoopCycle + (var6 & 0xFFFF)
 		arg4.SpotanimFrame = 0
 		arg4.SpotanimCycle = 0

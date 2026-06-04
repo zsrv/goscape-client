@@ -126,5 +126,7 @@ func GetUID(arg0 string) int {
 		return 0
 	}
 	var6 := binary.BigEndian.Uint32(var5)
-	return int(var6 + 1)
+	// Java: getuid does signed int32 +1 (sign/signlink.java:209-211); int32()
+	// reinterprets the wrapped uint32 so the sign matches (audit signlink-02)
+	return int(int32(var6 + 1))
 }
