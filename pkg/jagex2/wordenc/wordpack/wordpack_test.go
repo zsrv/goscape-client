@@ -13,7 +13,7 @@ import (
 func TestPackUnpackPound(t *testing.T) {
 	in := "hello £5"
 	buf := io.NewPacket(make([]byte, 64))
-	Pack(buf, true, in)
+	Pack(buf, in)
 	packedLen := buf.Pos
 	buf.Pos = 0
 	got := Unpack(buf, packedLen)
@@ -27,7 +27,7 @@ func TestPackUnpackPound(t *testing.T) {
 func TestPackUnpackASCII(t *testing.T) {
 	in := "hello world"
 	buf := io.NewPacket(make([]byte, 64))
-	Pack(buf, true, in)
+	Pack(buf, in)
 	packedLen := buf.Pos
 	buf.Pos = 0
 	got := Unpack(buf, packedLen)
@@ -50,10 +50,10 @@ func TestPackTruncatesAt80(t *testing.T) {
 	in100 := strings.Repeat("a", 100)
 
 	buf80 := io.NewPacket(make([]byte, 128))
-	Pack(buf80, true, in80)
+	Pack(buf80, in80)
 
 	buf100 := io.NewPacket(make([]byte, 128))
-	Pack(buf100, true, in100)
+	Pack(buf100, in100)
 
 	if buf80.Pos != buf100.Pos {
 		t.Fatalf("80-char and 100-char inputs should pack to the same length after truncation: 80=%d 100=%d", buf80.Pos, buf100.Pos)

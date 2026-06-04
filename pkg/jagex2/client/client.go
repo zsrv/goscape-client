@@ -187,46 +187,52 @@ type Client struct {
 	// Java: warnMembersInNonMembers (client.rf, Client.java:881) — new in 244;
 	// 5th field of LAST_LOGIN_INFO, drives the members-on-free-world welcome
 	// warning (clientCodes 652-655).
-	WarnMembersInNonMembers       int
-	HintNPC                       int
-	OverrideChat                  int
-	SkillLevel                    []int
-	ChatInterface                 *component.Component
-	WaveLoops                     []int
-	MouseButtonsOption            int
-	LocalPID                      int
-	DesignColors                  []int
-	Login                         *io.Packet
-	FriendWorld                   []int
-	MinimapLevel                  int
-	SocialMessage                 string
-	ImageHitmarks                 []*pix32.Pix32
-	ChatbackInput                 string
-	LastWaveID                    int
-	UpdateDesignModel             bool
-	DesignIdentikits              []int
-	ActiveMapFunctions            []*pix32.Pix32
-	ChatScrollHeight              int
-	In                            *io.Packet
-	JagChecksum                   []int
-	ImageSideIcons                []*pix8.Pix8
-	ImageModIcons                 []*pix8.Pix8
-	OrbitCameraPitch              int
-	MAX_PLAYER_COUNT              int
-	LOCAL_PLAYER_INDEX            int
-	Players                       []*playerentity.ClientPlayer
-	PlayerIDs                     []int
-	EntityUpdateIDs               []int
-	PlayerAppearanceBuffer        []*io.Packet
-	Projectiles                   *datastruct.LinkList[*entity.ClientProj]
-	MenuOption                    []string
-	MidiActive                    bool
-	DesignGenderMale              bool
-	FlameLineOffset               []int
-	CompassMaskLineOffsets        []int
-	WaveDelay                     []int
-	TabInterfaceID                []int
-	ErrorLoading                  bool
+	WarnMembersInNonMembers int
+	HintNPC                 int
+	OverrideChat            int
+	SkillLevel              []int
+	ChatInterface           *component.Component
+	WaveLoops               []int
+	MouseButtonsOption      int
+	LocalPID                int
+	DesignColors            []int
+	Login                   *io.Packet
+	FriendWorld             []int
+	MinimapLevel            int
+	SocialMessage           string
+	ImageHitmarks           []*pix32.Pix32
+	ChatbackInput           string
+	LastWaveID              int
+	UpdateDesignModel       bool
+	DesignIdentikits        []int
+	ActiveMapFunctions      []*pix32.Pix32
+	ChatScrollHeight        int
+	In                      *io.Packet
+	JagChecksum             []int
+	ImageSideIcons          []*pix8.Pix8
+	ImageModIcons           []*pix8.Pix8
+	OrbitCameraPitch        int
+	MAX_PLAYER_COUNT        int
+	LOCAL_PLAYER_INDEX      int
+	Players                 []*playerentity.ClientPlayer
+	PlayerIDs               []int
+	EntityUpdateIDs         []int
+	PlayerAppearanceBuffer  []*io.Packet
+	Projectiles             *datastruct.LinkList[*entity.ClientProj]
+	MenuOption              []string
+	MidiActive              bool
+	DesignGenderMale        bool
+	FlameLineOffset         []int
+	CompassMaskLineOffsets  []int
+	WaveDelay               []int
+	TabInterfaceID          []int
+	ErrorLoading            bool
+	// Java: lastProgressPercent (Client.java:725) / lastProgressMessage
+	// (Client.java:1205) — written first thing in drawProgress; Java reads
+	// them in load()'s loaderror reporterror (Client.java:1960, catch path
+	// not ported).
+	LastProgressPercent           int
+	LastProgressMessage           string
 	ShowSocialInput               bool
 	PressedContinueOption         bool
 	MessageIDs                    []int
@@ -2247,7 +2253,7 @@ func (c *Client) HandleInputKey() {
 							c.Out.P1(0)
 							var7 = c.Out.Pos
 							c.Out.P8(c.SocialName37)
-							wordpack.Pack(c.Out, true, c.SocialInput)
+							wordpack.Pack(c.Out, c.SocialInput)
 							c.Out.PSize1(c.Out.Pos - var7)
 							c.SocialInput = jstring.ToSentenceCase(c.SocialInput)
 							c.SocialInput = wordfilter.Filter(c.SocialInput)
@@ -2392,7 +2398,7 @@ func (c *Client) HandleInputKey() {
 							var5 := c.Out.Pos
 							c.Out.P1(var3)
 							c.Out.P1(var4)
-							wordpack.Pack(c.Out, true, c.ChatTyped)
+							wordpack.Pack(c.Out, c.ChatTyped)
 							c.Out.PSize1(c.Out.Pos - var5)
 							c.ChatTyped = jstring.ToSentenceCase(c.ChatTyped)
 							c.ChatTyped = wordfilter.Filter(c.ChatTyped)
@@ -5967,7 +5973,7 @@ func (c *Client) Load() {
 
 	c.JagChecksum[8] = 0
 	for c.JagChecksum[8] == 0 {
-		c.DrawProgress("Connecting to fileserver", 10)
+		c.DrawProgress("Connecting to web server", 20)
 		reader, err := c.OpenURL("crc" + strconv.Itoa(int(rand.Float64()*9.9999999e7)))
 		if err != nil {
 			log.Printf("client: Client.Load OpenURL error: %v", err)
@@ -5992,7 +5998,7 @@ func (c *Client) Load() {
 		}
 	}
 
-	c.JagTitle = c.GetJagFile("title screen", c.JagChecksum[1], "title", 10)
+	c.JagTitle = c.GetJagFile("title screen", c.JagChecksum[1], "title", 25)
 	c.FontPlain11 = pixfont.NewPixFont(c.JagTitle, "p11")
 	c.FontPlain12 = pixfont.NewPixFont(c.JagTitle, "p12")
 	c.FontBold12 = pixfont.NewPixFont(c.JagTitle, "b12")
@@ -6001,13 +6007,12 @@ func (c *Client) Load() {
 	c.LoadTitleBackground()
 	c.LoadTitleImages()
 
-	jagConfig := c.GetJagFile("config", c.JagChecksum[2], "config", 15)
-	jagInterface := c.GetJagFile("interface", c.JagChecksum[3], "interface", 20)
-	jagMedia := c.GetJagFile("2d graphics", c.JagChecksum[4], "media", 30)
-	jagVersionList := c.GetJagFile("update list", c.JagChecksum[5], "versionlist", 60)
-	jagTextures := c.GetJagFile("textures", c.JagChecksum[6], "textures", 60)
-	jagWordEnc := c.GetJagFile("chat system", c.JagChecksum[7], "wordenc", 65)
-	jagSounds := c.GetJagFile("sound effects", c.JagChecksum[8], "sounds", 70)
+	jagConfig := c.GetJagFile("config", c.JagChecksum[2], "config", 30)
+	jagInterface := c.GetJagFile("interface", c.JagChecksum[3], "interface", 35)
+	jagMedia := c.GetJagFile("2d graphics", c.JagChecksum[4], "media", 40)
+	jagTextures := c.GetJagFile("textures", c.JagChecksum[6], "textures", 45)
+	jagWordEnc := c.GetJagFile("chat system", c.JagChecksum[7], "wordenc", 50)
+	jagSounds := c.GetJagFile("sound effects", c.JagChecksum[8], "sounds", 55)
 
 	c.LevelTileFlags = make([][][]int8, 4)
 	for level := range c.LevelTileFlags {
@@ -6032,7 +6037,131 @@ func (c *Client) Load() {
 
 	c.ImageMinimap = pix32.NewPix321(512, 512)
 
-	c.DrawProgress("Unpacking media", 75)
+	jagVersionList := c.GetJagFile("update list", c.JagChecksum[5], "versionlist", 60)
+
+	c.DrawProgress("Connecting to update server", 60)
+	// Java: rev-244 replaces the 225 bulk model/anim archives with an on-demand
+	// versionlist + per-id blobs. The OnDemand is created here and the model/anim
+	// index tables are sized from it; the actual blobs are faulted in at runtime
+	// by the request loops (WS1 Inc 3b).
+	c.OnDemand = ondemand.New(jagVersionList, onDemandDownloader{c}, nil)
+	animframe.Init(c.OnDemand.GetAnimCount())
+	model.Init(c.OnDemand.GetFileCount(0), c.OnDemand)
+
+	// Boot on-demand request loops: MIDI, animations, flagged models.
+	// Java: Client.load (Client.java:1599–1660).
+	// Client-TS: load (Client.ts:624–675). Thread.sleep() calls are omitted —
+	// Run() drives I/O directly (no worker thread) and is called inside
+	// UpdateOnDemand(), so a bare loop is correct and faithful.
+
+	if !LowMemory {
+		c.MidiSong = 0
+		c.MidiFading = false
+		c.OnDemand.Request(2, c.MidiSong)
+		for c.OnDemand.Remaining() > 0 {
+			c.UpdateOnDemand()
+		}
+	}
+
+	c.DrawProgress("Requesting animations", 65)
+	animCount := c.OnDemand.GetFileCount(1)
+	for i := range animCount {
+		c.OnDemand.Request(1, i)
+	}
+	for c.OnDemand.Remaining() > 0 {
+		progress := animCount - c.OnDemand.Remaining()
+		if progress > 0 {
+			c.DrawProgress("Loading animations - "+strconv.Itoa(progress*100/animCount)+"%", 65)
+		}
+		c.UpdateOnDemand()
+	}
+
+	c.DrawProgress("Requesting models", 70)
+	modelCount := c.OnDemand.GetFileCount(0)
+	for i := range modelCount {
+		if c.OnDemand.GetModelFlags(i)&0x1 != 0 {
+			c.OnDemand.Request(0, i)
+		}
+	}
+	modelPrefetch := c.OnDemand.Remaining()
+	for c.OnDemand.Remaining() > 0 {
+		progress := modelPrefetch - c.OnDemand.Remaining()
+		if progress > 0 {
+			c.DrawProgress("Loading models - "+strconv.Itoa(progress*100/modelPrefetch)+"%", 70)
+		}
+		c.UpdateOnDemand()
+	}
+
+	// Boot map prefetch block.
+	// Java: Client.load (Client.java:1662-1690), gated if (fileStreams[0] != null).
+	// Client-TS: load (Client.ts:677-704).
+	if c.OnDemand.HasCache() {
+		c.DrawProgress("Requesting maps", 75)
+		// tutorial-island + Lumbridge spawn regions
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 47, 0))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 47, 1))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 48, 0))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 48, 1))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 49, 0))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 49, 1))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(47, 47, 0))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(47, 47, 1))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(47, 48, 0))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(47, 48, 1))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(148, 48, 0))
+		c.OnDemand.Request(3, c.OnDemand.GetMapFile(148, 48, 1))
+		mapPrefetch := c.OnDemand.Remaining()
+		for c.OnDemand.Remaining() > 0 {
+			progress := mapPrefetch - c.OnDemand.Remaining()
+			if progress > 0 {
+				c.DrawProgress("Loading maps - "+strconv.Itoa(progress*100/mapPrefetch)+"%", 75)
+			}
+			c.UpdateOnDemand()
+		}
+	}
+
+	// Background model-priority prefetch.
+	// Java: Client.load (Client.java:1698–1736).
+	// Client-TS: load (Client.ts:706–745).
+	// PrefetchPriority is a no-op when cache==nil (bundle-only) — faithful.
+	modelCount2 := c.OnDemand.GetFileCount(0)
+	for i := range modelCount2 {
+		flags := c.OnDemand.GetModelFlags(i)
+		var priority byte
+		if flags&0x8 != 0 {
+			priority = 10
+		} else if flags&0x20 != 0 {
+			priority = 9
+		} else if flags&0x10 != 0 {
+			priority = 8
+		} else if flags&0x40 != 0 {
+			priority = 7
+		} else if flags&0x80 != 0 {
+			priority = 6
+		} else if flags&0x2 != 0 {
+			priority = 5
+		} else if flags&0x4 != 0 {
+			priority = 4
+		}
+		if flags&0x1 != 0 {
+			priority = 3
+		}
+		if priority != 0 {
+			c.OnDemand.PrefetchPriority(0, i, priority)
+		}
+	}
+	// Java: Client.load (Client.java:1728).
+	c.OnDemand.PrefetchMaps(MembersWorld)
+	if !LowMemory {
+		midiCount := c.OnDemand.GetFileCount(2)
+		for i := 1; i < midiCount; i++ {
+			if c.OnDemand.ShouldPrefetchMidi(i) {
+				c.OnDemand.PrefetchPriority(2, i, 1)
+			}
+		}
+	}
+
+	c.DrawProgress("Unpacking media", 80)
 
 	c.ImageInvback = pix8.NewPix8(jagMedia, "invback", 0)
 	c.ImageChatback = pix8.NewPix8(jagMedia, "chatback", 0)
@@ -6197,131 +6326,10 @@ func (c *Client) Load() {
 		}
 	}
 
-	c.DrawProgress("Unpacking textures", 80)
+	c.DrawProgress("Unpacking textures", 83)
 	pix3d.UnpackTextures(jagTextures)
 	pix3d.SetBrightness(0.8)
 	pix3d.InitPool(20)
-	c.DrawProgress("Unpacking models", 83)
-	// Java: rev-244 replaces the 225 bulk model/anim archives with an on-demand
-	// versionlist + per-id blobs. The OnDemand is created here and the model/anim
-	// index tables are sized from it; the actual blobs are faulted in at runtime
-	// by the request loops (WS1 Inc 3b).
-	c.OnDemand = ondemand.New(jagVersionList, onDemandDownloader{c}, nil)
-	animframe.Init(c.OnDemand.GetAnimCount())
-	model.Init(c.OnDemand.GetFileCount(0), c.OnDemand)
-
-	// Boot on-demand request loops: MIDI, animations, flagged models.
-	// Java: Client.load (Client.java:1599–1660).
-	// Client-TS: load (Client.ts:624–675). Thread.sleep() calls are omitted —
-	// Run() drives I/O directly (no worker thread) and is called inside
-	// UpdateOnDemand(), so a bare loop is correct and faithful.
-
-	if !LowMemory {
-		c.MidiSong = 0
-		c.MidiFading = false
-		c.OnDemand.Request(2, c.MidiSong)
-		for c.OnDemand.Remaining() > 0 {
-			c.UpdateOnDemand()
-		}
-	}
-
-	c.DrawProgress("Requesting animations", 65)
-	animCount := c.OnDemand.GetFileCount(1)
-	for i := range animCount {
-		c.OnDemand.Request(1, i)
-	}
-	for c.OnDemand.Remaining() > 0 {
-		progress := animCount - c.OnDemand.Remaining()
-		if progress > 0 {
-			c.DrawProgress("Loading animations - "+strconv.Itoa(progress*100/animCount)+"%", 65)
-		}
-		c.UpdateOnDemand()
-	}
-
-	c.DrawProgress("Requesting models", 70)
-	modelCount := c.OnDemand.GetFileCount(0)
-	for i := range modelCount {
-		if c.OnDemand.GetModelFlags(i)&0x1 != 0 {
-			c.OnDemand.Request(0, i)
-		}
-	}
-	modelPrefetch := c.OnDemand.Remaining()
-	for c.OnDemand.Remaining() > 0 {
-		progress := modelPrefetch - c.OnDemand.Remaining()
-		if progress > 0 {
-			c.DrawProgress("Loading models - "+strconv.Itoa(progress*100/modelPrefetch)+"%", 70)
-		}
-		c.UpdateOnDemand()
-	}
-
-	// Boot map prefetch block.
-	// Java: Client.load (Client.java:1662-1690), gated if (fileStreams[0] != null).
-	// Client-TS: load (Client.ts:677-704).
-	if c.OnDemand.HasCache() {
-		c.DrawProgress("Requesting maps", 75)
-		// tutorial-island + Lumbridge spawn regions
-		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 47, 0))
-		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 47, 1))
-		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 48, 0))
-		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 48, 1))
-		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 49, 0))
-		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 49, 1))
-		c.OnDemand.Request(3, c.OnDemand.GetMapFile(47, 47, 0))
-		c.OnDemand.Request(3, c.OnDemand.GetMapFile(47, 47, 1))
-		c.OnDemand.Request(3, c.OnDemand.GetMapFile(47, 48, 0))
-		c.OnDemand.Request(3, c.OnDemand.GetMapFile(47, 48, 1))
-		c.OnDemand.Request(3, c.OnDemand.GetMapFile(148, 48, 0))
-		c.OnDemand.Request(3, c.OnDemand.GetMapFile(148, 48, 1))
-		mapPrefetch := c.OnDemand.Remaining()
-		for c.OnDemand.Remaining() > 0 {
-			progress := mapPrefetch - c.OnDemand.Remaining()
-			if progress > 0 {
-				c.DrawProgress("Loading maps - "+strconv.Itoa(progress*100/mapPrefetch)+"%", 75)
-			}
-			c.UpdateOnDemand()
-		}
-	}
-
-	// Background model-priority prefetch.
-	// Java: Client.load (Client.java:1698–1736).
-	// Client-TS: load (Client.ts:706–745).
-	// PrefetchPriority is a no-op when cache==nil (bundle-only) — faithful.
-	modelCount2 := c.OnDemand.GetFileCount(0)
-	for i := range modelCount2 {
-		flags := c.OnDemand.GetModelFlags(i)
-		var priority byte
-		if flags&0x8 != 0 {
-			priority = 10
-		} else if flags&0x20 != 0 {
-			priority = 9
-		} else if flags&0x10 != 0 {
-			priority = 8
-		} else if flags&0x40 != 0 {
-			priority = 7
-		} else if flags&0x80 != 0 {
-			priority = 6
-		} else if flags&0x2 != 0 {
-			priority = 5
-		} else if flags&0x4 != 0 {
-			priority = 4
-		}
-		if flags&0x1 != 0 {
-			priority = 3
-		}
-		if priority != 0 {
-			c.OnDemand.PrefetchPriority(0, i, priority)
-		}
-	}
-	// Java: Client.load (Client.java:1728).
-	c.OnDemand.PrefetchMaps(MembersWorld)
-	if !LowMemory {
-		midiCount := c.OnDemand.GetFileCount(2)
-		for i := 1; i < midiCount; i++ {
-			if c.OnDemand.ShouldPrefetchMidi(i) {
-				c.OnDemand.PrefetchPriority(2, i, 1)
-			}
-		}
-	}
 
 	c.DrawProgress("Unpacking config", 86)
 	seqtype.Unpack(jagConfig)
@@ -6339,10 +6347,10 @@ func (c *Client) Load() {
 		var21 := io.NewPacket(var20)
 		wave.Unpack(var21)
 	}
-	c.DrawProgress("Unpacking interfaces", 92)
+	c.DrawProgress("Unpacking interfaces", 95)
 	var48 := []*pixfont.PixFont{c.FontPlain11, c.FontPlain12, c.FontBold12, c.FontQuill8}
 	component.Unpack(jagMedia, var48, jagInterface)
-	c.DrawProgress("Preparing game engine", 97)
+	c.DrawProgress("Preparing game engine", 100)
 	// Java: Client.java:1917-1933 — compass mask. 244 narrows the scan width
 	// to x < 34 (225 scanned 35 columns).
 	for i := range 33 {
@@ -11218,6 +11226,8 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 }
 
 func (c *Client) DrawProgress(message string, percent int) {
+	c.LastProgressPercent = percent // Java: Client.java:2168-2169
+	c.LastProgressMessage = message
 	c.LoadTitle()
 
 	if c.JagTitle == nil {
