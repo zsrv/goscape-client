@@ -108,6 +108,38 @@ references via `git show 176a85f:…`**, never the working tree.)
 > `// Java:` refs); untouched methods keep their current names. The Go↔Java
 > mapping converges as the delta lands, without a churn-only rename sweep.
 
+## rev-254 — Go branch `rev-254`
+
+| Repo | Role | URL | Branch | Pinned commit |
+|---|---|---|---|---|
+| Client-Java | **primary** — authoritative translation source; every Go change maps to a Java function | https://github.com/LostCityRS/Client-Java | `254` | `2e629784c3dcb671ee3aab134f9cb91d614d8094` |
+| Client-TS | secondary cross-check for ambiguous Java→Go translations | https://github.com/LostCityRS/Client-TS | `254` | `d340fc258c8d` |
+| Engine-TS | engine reference (TypeScript) + smoke-test server | https://github.com/LostCityRS/Engine-TS | `254` | `43e02957f355` |
+| Content | game content reference | https://github.com/LostCityRS/Content | `254` | `caee3f2eb3eb` |
+
+(Commits captured 2026-06-04. Go branch `rev-254` is cut from `rev-245.2`
+@ `05a7659`. All four local repos sit on `254-GOSCAPE` working branches —
+verified `254 ≡ 254-GOSCAPE` at capture time, but **always read references
+via `git show 2e62978:…`**, never the working tree.)
+
+> **Lineage note — fresh deob, webclient-research names, argN regression.**
+> `254` shares no git history with `245.2`. Same `jagex2/` layout, but with
+> **class-level renames** incl. a chained name-reuse trap (obf-key verified):
+> `World`→`ClientBuild` (obf `c`) and `World3D`→`World` (obf `s`) — "254
+> `World`" ≠ "245.2 `World`"; plus `Component`→`IfType`, `Jagfile`→`JagFile`,
+> `io/Protocol`→`client/Protocol`. Many locals/params REGRESSED to `argN`.
+> `@ObfuscatedName` keys are reassigned at member level AND can rotate at
+> class level (three 254 keys re-bind to different classes: `oc`/`pc`/`qc`) —
+> pair classes by key+name agreement with structural adjudication, never by
+> key alone or name alone. New surface: `config/VarBitType`, `client/Stats`.
+> Full opcode renumbering expected across the 9-revision gap. See
+> `RENAME-MAP.md` and `PORT-DESIGN-254.md` on `rev-254`.
+>
+> **Naming policy (user decision 2026-06-04): hybrid.** Go adopts 254
+> class/file-level names via an up-front mechanical rename pass; where 254
+> regressed locals/params to `argN`, Go keeps existing descriptive names
+> (annotated `// Java: argN`); adopt 254 local names where equal-or-better.
+
 ## Future revisions
 
 When porting revision *N*:
