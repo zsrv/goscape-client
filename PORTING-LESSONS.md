@@ -196,3 +196,64 @@ lessons is obsolete, but the invariants survived the rewrite:
   `//nolint:<linter>` with a `// Java:` reference rather than being rewritten.
 - The live game window can't run headless (no display in CI/sandbox); pre-window
   boot and in-process machinery are still observable via the real binary.
+
+### The full parity audit (one per revision port — a standard phase, not an extra)
+
+Both completed ports ended with an exhaustive line-by-line audit of the Go
+branch against the pinned Java reference (rev-225: `PARITY-AUDIT-2026-05-28.md`,
+rev-244: `PARITY-AUDIT-2026-06-03.md`, each at its rev branch root), and both
+found real bugs that had survived every gate **and** a passing smoke test —
+14 bugs (225) vs 11 blockers + 62 bugs (244). The 4–5× jump is the divergent
+deob lineage (§2): rename churn multiplies the miss rate, so the dirtier the
+diff, the more the audit pays.
+
+**When.** After the logic delta has fully landed and the first host smoke test
+passes. The smoke test proves the happy path boots; the audit catches the
+mistranslations that don't crash the login path.
+
+**Method** (copy the structure of the two prior audit docs):
+
+1. **Forward coverage — every Java file, no sampling.** One audit unit per Java
+   file at the pinned reference commit; chunk big files by declaration-line
+   windows (244: `Client.java` ×13, `Pix3D`/`World3D`/`Model` ×3, the rest
+   singly or bundled). Walk every method statement by statement against its Go
+   counterpart.
+2. **Per-statement checklist** — the recurring miss classes: packet read
+   widths; operator grouping (Java vs Go precedence, §3); branch polarity
+   (`== null`/`!= nil` flips); loop bounds and direction; argument semantics
+   traced through *callee bodies* (deob parameter names lie — the "arg
+   scramble"); 32-bit wrap, sign-extension, and shift-mask semantics;
+   side-effect ordering. Do not trust comments — re-verify every "equivalent
+   because…" claim against the cited code.
+3. **Adversarial verification.** Route every blocker/bug/latent finding to an
+   independent skeptic primed with the known false-positive classes: deob arg
+   scramble, cross-lineage name *inversions* (Java-244 `Model.minY` ≡ Go
+   `Model.MaxY`), restructured-but-equivalent control flow,
+   behaviour-lives-elsewhere, and documented seams. In the 244 run this killed
+   4 of 136 findings before they could burn fix time.
+4. **Reverse coverage.** Classify every Go file: each must be either the port
+   of a Java file or a seam-justified Go original (platform / transport /
+   storage / audio backend / profiling / build tooling). Zero unexplained
+   files.
+5. **Severity triage**, one bucket per finding: **Blocker** (crash, protocol or
+   cache-format desync) → **Bug** (wrong behaviour or rendering) → **Latent**
+   (edge-value / not-yet-reachable) → Cosmetic → Deferred (explicitly
+   unimplemented; consolidate into a ledger) → Intentional (documented
+   deviations). Fix in that order — any blocker can desync the session.
+
+**Fix pass.** Group the confirmed findings; one gate-green commit per group
+(build / vet / `test -race` / gofmt / golangci-lint). Then **re-run the host
+smoke test** — the fix pass is itself a port change (244: 16 commits
+`7b2d63e`..`7e9b28e`, post-fix smoke green same day).
+
+**The audit doc is a snapshot, not a tracker.** Commit it as
+`PARITY-AUDIT-<date>.md` at the rev branch root and don't edit findings
+afterwards; the fix pass lands *on top of it*, so its deferred ledger goes
+stale immediately. Keep live status in resume notes / a fix tracker, and never
+re-fix from the audit doc without checking HEAD first — the 244 close-out
+caught a ledger item still marked "deferred" that had in fact already landed.
+
+**Scale honestly.** The 244 audit ran as a single multi-agent workflow
+(50 units / 683 Java methods walked / every finding adversarially verified).
+The *method* — full coverage, per-statement checks, skeptic pass, reverse
+coverage — is the requirement; the tooling that delivers it is not.
