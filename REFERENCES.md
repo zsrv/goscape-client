@@ -113,9 +113,9 @@ references via `git show 176a85f:…`**, never the working tree.)
 | Repo | Role | URL | Branch | Pinned commit |
 |---|---|---|---|---|
 | Client-Java | **primary** — authoritative translation source; every Go change maps to a Java function | https://github.com/LostCityRS/Client-Java | `254` | `2e629784c3dcb671ee3aab134f9cb91d614d8094` |
-| Client-TS | secondary cross-check for ambiguous Java→Go translations | https://github.com/LostCityRS/Client-TS | `254` | `d340fc258c8d` |
-| Engine-TS | engine reference (TypeScript) + smoke-test server | https://github.com/LostCityRS/Engine-TS | `254` | `43e02957f355` |
-| Content | game content reference | https://github.com/LostCityRS/Content | `254` | `caee3f2eb3eb` |
+| Client-TS | secondary cross-check for ambiguous Java→Go translations | https://github.com/LostCityRS/Client-TS | `254` | `d340fc258c8d3becb1b7680793415621b40064e2` |
+| Engine-TS | engine reference (TypeScript) + smoke-test server | https://github.com/LostCityRS/Engine-TS | `254` | `43e02957f3559c4f1aaa5680c41e5305b7ca3bfe` |
+| Content | game content reference | https://github.com/LostCityRS/Content | `254` | `caee3f2eb3eb3df60126e2be88c436dc2dc98e43` |
 
 (Commits captured 2026-06-04. Go branch `rev-254` is cut from `rev-245.2`
 @ `05a7659`. All four local repos sit on `254-GOSCAPE` working branches —
