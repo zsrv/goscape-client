@@ -1105,11 +1105,14 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 		}
 		if var7&0x20 == 32 {
 			var6.Type = npctype.Get(arg0.G2())
+			// Java: 245.2 assigns walkanim_l/_r directly (Client.java:9006-9010
+			// @176a85f); 244 cross-swapped. Compensates the NpcType opcode-17
+			// read-order swap — net behaviour identical.
 			var6.SeqWalkID = var6.Type.WalkAnim
 			var6.SeqTurnAroundID = var6.Type.WalkAnimB
-			var6.SeqTurnLeftID = var6.Type.WalkAnimR
-			var6.SeqTurnRightId = var6.Type.WalkAnimL
-			var6.SeqStandID = var6.Type.ReadyAnim
+			var6.SeqTurnLeftID = var6.Type.WalkAnimL
+			var6.SeqTurnRightId = var6.Type.WalkAnimR
+			var6.SeqStandID = var6.Type.RunAnim
 		}
 		if var7&0x40 == 64 {
 			var6.SpotanimID = arg0.G2()
@@ -5711,11 +5714,14 @@ func (c *Client) GetNpcPosNewVis(arg1 *io.Packet, arg2 int) {
 		var5.Cycle = clientextras.LoopCycle
 		var5.Type = npctype.Get(arg1.GBit(11))
 		var5.Size = int(var5.Type.Size)
+		// Java: 245.2 assigns walkanim_l/_r directly (Client.java:8921-8925
+		// @176a85f); 244 cross-swapped. Compensates the NpcType opcode-17
+		// read-order swap — net behaviour identical.
 		var5.SeqWalkID = var5.Type.WalkAnim
 		var5.SeqTurnAroundID = var5.Type.WalkAnimB
-		var5.SeqTurnLeftID = var5.Type.WalkAnimR
-		var5.SeqTurnRightId = var5.Type.WalkAnimL
-		var5.SeqStandID = var5.Type.ReadyAnim
+		var5.SeqTurnLeftID = var5.Type.WalkAnimL
+		var5.SeqTurnRightId = var5.Type.WalkAnimR
+		var5.SeqStandID = var5.Type.RunAnim
 		var6 := arg1.GBit(5)
 		if var6 > 15 {
 			var6 -= 32

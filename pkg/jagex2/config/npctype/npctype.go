@@ -18,17 +18,21 @@ var (
 )
 
 type NpcType struct {
-	Index        int64
-	Name         string
-	Desc         []byte
-	Size         int8
-	Models       []int
-	Heads        []int
-	ReadyAnim    int
+	Index  int64
+	Name   string
+	Desc   []byte
+	Size   int8
+	Models []int
+	Heads  []int
+	// Java: 245.2 renames readyanim→runanim and swaps the walkanim_l/walkanim_r
+	// declaration + opcode-17 read order (NpcType.java:46-58 @176a85f). COUPLED
+	// with the direct (non-swapped) assignments in Client getNpcPos* — net
+	// behaviour identical to 244.
+	RunAnim      int
 	WalkAnim     int
 	WalkAnimB    int
-	WalkAnimR    int
 	WalkAnimL    int
+	WalkAnimR    int
 	AnimHasAlpha bool
 	RecolS       []int
 	RecolD       []int
@@ -54,11 +58,11 @@ func NewNpcType() *NpcType {
 	return &NpcType{
 		Index:        -1,
 		Size:         1,
-		ReadyAnim:    -1,
+		RunAnim:      -1,
 		WalkAnim:     -1,
 		WalkAnimB:    -1,
-		WalkAnimR:    -1,
 		WalkAnimL:    -1,
+		WalkAnimR:    -1,
 		AnimHasAlpha: false,
 		Minimap:      true,
 		VisLevel:     -1,
@@ -127,16 +131,19 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 		case 12:
 			t.Size = arg1.G1B()
 		case 13:
-			t.ReadyAnim = arg1.G2()
+			t.RunAnim = arg1.G2()
 		case 14:
 			t.WalkAnim = arg1.G2()
 		case 16:
 			t.AnimHasAlpha = true
 		case 17:
+			// Java: 245.2 reads walkanim_l before walkanim_r (NpcType.java:135-138
+			// @176a85f); 244 read _r then _l. Cache bytes are unchanged — the swap
+			// is compensated by the direct assigns in Client getNpcPos*.
 			t.WalkAnim = arg1.G2()
 			t.WalkAnimB = arg1.G2()
-			t.WalkAnimR = arg1.G2()
 			t.WalkAnimL = arg1.G2()
+			t.WalkAnimR = arg1.G2()
 		case 30, 31, 32, 33, 34, 35, 36, 37, 38, 39:
 			if t.Op == nil {
 				t.Op = make([]string, 5)
