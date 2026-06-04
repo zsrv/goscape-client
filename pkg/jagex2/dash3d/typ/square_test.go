@@ -6,7 +6,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
 )
 
-// TestGroundDrawQueueNodeIdentity locks in the World3D.DrawTile parity fix.
+// TestGroundDrawQueueNodeIdentity locks in the World.DrawTile parity fix.
 // Because Java's `Square extends Linkable`, enqueuing an already-queued tile
 // MOVES it to the tail (addTail unlinks first) and a Square can appear in
 // drawTileQueue at most once. The Go Square owns one reusable node

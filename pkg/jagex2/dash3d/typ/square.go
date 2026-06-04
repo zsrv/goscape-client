@@ -28,7 +28,7 @@ type Square struct {
 	Bridge               *Square
 
 	// Java: `Square extends Linkable` (Square.java:7) — a Square IS its own
-	// intrusive list node, so World3D.drawTileQueue.addTail moves an
+	// intrusive list node, so World.drawTileQueue.addTail moves an
 	// already-queued tile to the tail (addTail unlinks first) and a Square can
 	// appear in the queue at most once. Go can't embed the generic node as a
 	// base class, so each Square owns a single reusable node whose Value points

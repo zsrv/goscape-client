@@ -161,7 +161,7 @@ type Model struct {
 }
 
 // GetModel makes *Model satisfy the entity.ModelSource interface (rev-244:
-// Model extends ModelSource). It returns the receiver itself so World3D's
+// Model extends ModelSource). It returns the receiver itself so World's
 // resolve-then-draw path (m := node.GetModel(); m.Draw1(...)) works uniformly
 // for both static models and self-animating sources (ClientLocAnim).
 //
