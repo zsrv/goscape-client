@@ -1217,7 +1217,7 @@ func PrefetchLocations(buf *io.Packet, od *ondemand.OnDemand) {
 		locId += deltaId
 
 		loc := loctype.Get(locId)
-		loc.Prefetch(od)
+		loc.PrefetchModelAll(od)
 
 		for {
 			deltaPos := buf.GSmartS()
