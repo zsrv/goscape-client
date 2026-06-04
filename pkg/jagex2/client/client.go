@@ -3984,10 +3984,10 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 					}
 					var var34 *model.Model
 					if var33 == -1 {
-						var34 = var14.GetModel(-1, -1, var31, c.LocalPlayer)
+						var34 = var14.GetTempModel(-1, -1, var31, c.LocalPlayer)
 					} else {
 						var35 := seqtype.Instances[var33]
-						var34 = var14.GetModel(var35.Frames[var14.SeqFrame], var35.IFrames[var14.SeqFrame], var31, c.LocalPlayer)
+						var34 = var14.GetTempModel(var35.Frames[var14.SeqFrame], var35.IFrames[var14.SeqFrame], var31, c.LocalPlayer)
 					}
 					if var34 != nil {
 						var34.DrawSimple(0, var14.Yan, 0, var14.Xan, 0, var17, var18)
@@ -7664,10 +7664,12 @@ func (c *Client) Unload() {
 	flotype.Instances = nil
 	idktype.Instances = nil
 	iftype.Instances = nil
-	// Java: Client.java:2143 — `UnkType.types = null`.
+	// Java: `UnkType.list = null` (Client.java @2e62978; was UnkType.types).
 	// Intentionally not ported: UnkType is a deobfuscator-emitted
-	// stub class (never instantiated or read; re-verified at 245.2,
-	// audit config-small). Project policy excludes pure deob artifacts.
+	// stub class (never instantiated or read; re-verified at 245.2 and
+	// again at 254 — its new 7th boolean field1109 (mc.l, UnkType.java:42
+	// @2e62978) is equally dead). Project policy excludes pure deob
+	// artifacts.
 	seqtype.Instances = nil
 	spotanimtype.Instances = nil
 	spotanimtype.ModelCache = nil

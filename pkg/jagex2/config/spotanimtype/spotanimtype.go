@@ -15,29 +15,29 @@ var (
 	ModelCache = datastruct.NewLruCache[*model.Model](30)
 )
 
+// 254 deletes the animHasAlpha field + decode opcode 3 — alpha sharing is
+// now derived per-frame via animframe.ShareAlpha (WS3).
 type SpotAnimType struct {
-	Index        int
-	Model        int
-	Anim         int
-	Seq          *seqtype.SeqType
-	AnimHasAlpha bool
-	RecolS       []int
-	RecolD       []int
-	ResizeH      int
-	ResizeV      int
-	Orientation  int
-	Ambient      int
-	Contrast     int
+	Index       int
+	Model       int
+	Anim        int
+	Seq         *seqtype.SeqType
+	RecolS      []int
+	RecolD      []int
+	ResizeH     int
+	ResizeV     int
+	Orientation int
+	Ambient     int
+	Contrast    int
 }
 
 func NewSpotAnimType() *SpotAnimType {
 	return &SpotAnimType{
-		Anim:         -1,
-		AnimHasAlpha: false,
-		RecolS:       make([]int, 6),
-		RecolD:       make([]int, 6),
-		ResizeH:      128,
-		ResizeV:      128,
+		Anim:    -1,
+		RecolS:  make([]int, 6),
+		RecolD:  make([]int, 6),
+		ResizeH: 128,
+		ResizeV: 128,
 	}
 }
 
@@ -69,8 +69,8 @@ func (t *SpotAnimType) Decode(arg1 *io.Packet) {
 			if seqtype.Instances != nil {
 				t.Seq = seqtype.Instances[t.Anim]
 			}
-		case 3:
-			t.AnimHasAlpha = true
+		// Java 254 drops opcode 3 (animHasAlpha) — an opcode-3 byte in the
+		// data now falls through to the error println, as in Java.
 		case 4:
 			t.ResizeH = arg1.G2()
 		case 5:
@@ -91,7 +91,10 @@ func (t *SpotAnimType) Decode(arg1 *io.Packet) {
 	}
 }
 
-func (t *SpotAnimType) GetModel() *model.Model {
+// GetTempModel returns the (cached) recoloured spotanim model.
+// Java: getTempModel (SpotAnimType.java:103-121 @2e62978; was getModel at
+// 245.2).
+func (t *SpotAnimType) GetTempModel() *model.Model {
 	var1 := ModelCache.Get(int64(t.Index))
 	if var1 != nil {
 		return var1

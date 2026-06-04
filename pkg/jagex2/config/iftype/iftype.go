@@ -6,6 +6,7 @@ import (
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/npctype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/objtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity/playerentity"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
@@ -346,8 +347,9 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 	}
 }
 
-// Java: IfType.getModel (IfType.java:458-484).
-func (c *IfType) GetModel(arg0 int, arg1 int, arg2 bool, localPlayer *playerentity.ClientPlayer) *model.Model {
+// Java: getTempModel (IfType.java:437-463 @2e62978; was Component.getModel
+// at 245.2).
+func (c *IfType) GetTempModel(arg0 int, arg1 int, arg2 bool, localPlayer *playerentity.ClientPlayer) *model.Model {
 	var m *model.Model // Java: model — resolved deferred (type,id) pair
 	if arg2 {
 		m = c.LoadModel(c.ActiveModelType, c.ActiveModel, localPlayer)
@@ -360,7 +362,10 @@ func (c *IfType) GetModel(arg0 int, arg1 int, arg2 bool, localPlayer *playerenti
 	if arg0 == -1 && arg1 == -1 && m.FaceColour == nil {
 		return m
 	}
-	var5 := model.NewModel4(m, true, true, false)
+	// Java: new Model(AnimFrame.shareAlpha(arg1) & AnimFrame.shareAlpha(arg3),
+	// false, true, var5) (IfType.java:450 @2e62978) — the alpha-share flag was
+	// the constant true at 245.2 (WS3); the ctor arg reorder is signature-only.
+	var5 := model.NewModel4(m, true, animframe.ShareAlpha(arg0) && animframe.ShareAlpha(arg1), false)
 	if arg0 != -1 || arg1 != -1 {
 		var5.PrepareAnim()
 	}

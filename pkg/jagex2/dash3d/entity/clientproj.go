@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 )
 
@@ -95,23 +96,31 @@ func (e *ClientProj) Update(arg1 int) {
 	}
 }
 
+// Java: getTempModel (ClientProj.java:138-160 @2e62978; was getModel) — 254
+// computes the resolved frame id up front (-1 when there is no seq) and
+// gates prepareAnim/animate on it instead of on seq != null.
 func (e *ClientProj) GetModel() *model.Model {
-	var2 := e.SpotAnim.GetModel()
-	// Java: ClientProj.java:147-149 — nil while the spotanim model faults in.
+	var2 := e.SpotAnim.GetTempModel()
+	// Java: ClientProj.java:140-142 @2e62978 — nil while the spotanim model
+	// faults in.
 	if var2 == nil {
 		return nil
 	}
-	var3 := model.NewModel4(var2, true, !e.SpotAnim.AnimHasAlpha, false)
+	var3 := -1 // Java: var3
 	if e.SpotAnim.Seq != nil {
-		var3.PrepareAnim()
-		var3.Animate(e.SpotAnim.Seq.Frames[e.SeqFrame])
-		var3.LabelFaces = nil
-		var3.LabelVertices = nil
+		var3 = e.SpotAnim.Seq.Frames[e.SeqFrame]
+	}
+	var4 := model.NewModel4(var2, true, animframe.ShareAlpha(var3), false)
+	if var3 != -1 {
+		var4.PrepareAnim()
+		var4.Animate(var3)
+		var4.LabelFaces = nil
+		var4.LabelVertices = nil
 	}
 	if e.SpotAnim.ResizeH != 128 || e.SpotAnim.ResizeV != 128 {
-		var3.Scale(e.SpotAnim.ResizeH, e.SpotAnim.ResizeV, e.SpotAnim.ResizeH)
+		var4.Scale(e.SpotAnim.ResizeH, e.SpotAnim.ResizeV, e.SpotAnim.ResizeH)
 	}
-	var3.RotateXAxis(e.Pitch)
-	var3.CalculateNormals(e.SpotAnim.Ambient+64, e.SpotAnim.Contrast+850, -30, -50, -30, true)
-	return var3
+	var4.RotateXAxis(e.Pitch)
+	var4.CalculateNormals(e.SpotAnim.Ambient+64, e.SpotAnim.Contrast+850, -30, -50, -30, true)
+	return var4
 }

@@ -48,7 +48,7 @@ type NpcType struct {
 	ResizeH  int
 	ResizeV  int
 	// Java: NpcType alwaysontop/headicon/ambient/contrast (rev-244 opcodes
-	// 99-102). Ambient/Contrast are consumed by CalculateNormals in GetSequencedModel.
+	// 99-102). Ambient/Contrast are consumed by CalculateNormals in GetTempModel.
 	AlwaysOnTop bool
 	HeadIcon    int
 	// Java: turnspeed (gc.G, NpcType.java:98 @2e62978) — new at 254;

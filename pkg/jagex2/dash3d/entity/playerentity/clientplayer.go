@@ -6,6 +6,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/objtype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
@@ -136,7 +137,7 @@ func (e *ClientPlayer) GetModel() *model.Model {
 	if !e.Visible {
 		return nil
 	}
-	var2 := e.GetSequencedModel()
+	var2 := e.GetTempModel2()
 	// Java: ClientPlayer.java:179-181 — nil while appearance models fault in.
 	if var2 == nil {
 		return nil
@@ -148,9 +149,14 @@ func (e *ClientPlayer) GetModel() *model.Model {
 	}
 	if e.SpotanimID != -1 && e.SpotanimFrame != -1 {
 		var3 := spotanimtype.Instances[e.SpotanimID]
-		// Java: ClientPlayer.java:194 — spot model may be lazily absent.
-		if spotModel := var3.GetModel(); spotModel != nil {
-			var4 := model.NewModel4(spotModel, true, !var3.AnimHasAlpha, false)
+		// Java: ClientPlayer.java:176-177 @2e62978 — spot model may be
+		// lazily absent.
+		if spotModel := var3.GetTempModel(); spotModel != nil {
+			// Java: shareAlpha(super.spotanimFrame)
+			// (ClientPlayer.java:178 @2e62978) — the raw frame INDEX, unlike
+			// ClientNpc which passes the resolved frame id; faithful to the
+			// Java inconsistency.
+			var4 := model.NewModel4(spotModel, true, animframe.ShareAlpha(e.SpotanimFrame), false)
 			var4.Translate(-e.SpotanimOffset, 0, 0)
 			var4.PrepareAnim()
 			var4.Animate(var3.Seq.Frames[e.SpotanimFrame])
@@ -200,7 +206,9 @@ func (e *ClientPlayer) GetModel() *model.Model {
 	return var2
 }
 
-func (e *ClientPlayer) GetSequencedModel() *model.Model {
+// Java: getTempModel2 (ClientPlayer.java:244-341 @2e62978; was
+// getAnimatedModel). WS5 will add the 254 transmog short-circuit here.
+func (e *ClientPlayer) GetTempModel2() *model.Model {
 	var2 := e.AppearanceHashCode
 	var4 := -1
 	var5 := -1
@@ -313,7 +321,11 @@ func (e *ClientPlayer) GetSequencedModel() *model.Model {
 	if e.seqModel == nil {
 		e.seqModel = &model.Model{}
 	}
-	e.seqModel.ResetFromModel6(var15, true)
+	// Java: var22.set(shareAlpha(var6) & shareAlpha(var7), var11)
+	// (ClientPlayer.java:330-331 @2e62978) — was the constant true at 245.2
+	// (WS3). Go var4/var5 are Java 254's var6/var7 (primary/secondary
+	// resolved frame ids); shareAlpha has no side effects, so && ≡ Java &.
+	e.seqModel.ResetFromModel6(var15, animframe.ShareAlpha(var4) && animframe.ShareAlpha(var5))
 	var16 := e.seqModel
 	if var4 != -1 && var5 != -1 {
 		var16.MaskAnimate(var5, var4, seqtype.Instances[e.PrimarySeqID].WalkMerge)

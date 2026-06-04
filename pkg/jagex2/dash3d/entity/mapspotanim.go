@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 )
 
@@ -47,19 +48,23 @@ func (e *MapSpotAnim) Update(arg0 int) {
 	}
 }
 
-// GetModel
+// Java: getTempModel (MapSpotAnim.java:64-97 @2e62978; was getModel) — 254
+// hoists the resolved frame id before the ctor (it was only computed inside
+// the !seqComplete branch at 245.2) and derives the alpha-share flag from it.
 func (e *MapSpotAnim) GetModel() *model.Model {
-	mdl := e.Type.GetModel()
-	// Java: MapSpotAnim.java:67-69 — nil while the spotanim model faults in.
+	mdl := e.Type.GetTempModel()
+	// Java: MapSpotAnim.java:66-68 @2e62978 — nil while the spotanim model
+	// faults in.
 	if mdl == nil {
 		return nil
 	}
 
-	spot := model.NewModel4(mdl, true, !e.Type.AnimHasAlpha, false)
+	var3 := e.Type.Seq.Frames[e.SeqFrame] // Java: var3
+	spot := model.NewModel4(mdl, true, animframe.ShareAlpha(var3), false)
 
 	if !e.SeqComplete {
 		spot.PrepareAnim()
-		spot.Animate(e.Type.Seq.Frames[e.SeqFrame])
+		spot.Animate(var3)
 		spot.LabelFaces = nil
 		spot.LabelVertices = nil
 	}
