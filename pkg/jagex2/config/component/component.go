@@ -36,9 +36,10 @@ type Component struct {
 	ClientCode      int
 	Width           int
 	Height          int
-	// Java: Component.alpha (byte) — rev-244 header field read between height
-	// and overlayer. int8 to match Java's signed-byte sign extension.
-	Alpha            int8
+	// Java: Component.trans (Component.java:53 @176a85f; named alpha at 244) —
+	// header field read between height and overlayer. int8 to match Java's
+	// signed-byte sign extension.
+	Trans            int8
 	X                int
 	Y                int
 	Scripts          [][]int
@@ -61,6 +62,8 @@ type Component struct {
 	Colour           int
 	ActiveColour     int
 	OverColour       int
+	// Java: activeOverColour (Component.java:146 @176a85f) — new at 245.2
+	ActiveOverColour int
 	Anim             int
 	ActiveAnim       int
 	MarginX          int
@@ -78,9 +81,11 @@ type Component struct {
 	// (assigned for Type==1 components but never read). Pure deob
 	// residue; fields omitted per the deob-artifact exclusion policy.
 	// Decode preserves the wire reads as discards.
-	Draggable      bool
-	Interactable   bool
-	Usable         bool
+	Draggable    bool
+	Interactable bool
+	Usable       bool
+	// Java: swappable (Component.java:167 @176a85f) — new at 245.2
+	Swappable      bool
 	Fill           bool
 	Center         bool
 	Shadowed       bool
@@ -108,8 +113,8 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 	var6 := var4.G2()
 	Instances = make([]*Component, var6)
 	for {
-		var var8 *Component
-		for ok := true; ok; ok = var8.ButtonType != 1 && var8.ButtonType != 4 && var8.ButtonType != 5 && var8.ButtonType != 6 {
+		var com *Component
+		for ok := true; ok; ok = com.ButtonType != 1 && com.ButtonType != 4 && com.ButtonType != 5 && com.ButtonType != 6 {
 			if var4.Pos >= len(var4.Data) {
 				// Java: Component.java:443 nulls only imageCache; modelCache stays alive.
 				ImageCache = nil
@@ -121,86 +126,90 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 				var7 = var4.G2()
 			}
 			Instances[var7] = NewComponent()
-			var8 = Instances[var7]
-			var8.Id = var7
-			var8.Layer = var5
-			var8.Type = var4.G1()
-			var8.ButtonType = var4.G1()
-			var8.ClientCode = var4.G2()
-			var8.Width = var4.G2()
-			var8.Height = var4.G2()
-			// Java: com.alpha = (byte) data.g1() — rev-244 inserts this read
-			// between height and overlayer; shifts every following field.
-			var8.Alpha = int8(var4.G1())
-			var8.OverLayer = var4.G1()
-			if var8.OverLayer == 0 {
-				var8.OverLayer = -1
+			com = Instances[var7]
+			com.Id = var7
+			com.Layer = var5
+			com.Type = var4.G1()
+			com.ButtonType = var4.G1()
+			com.ClientCode = var4.G2()
+			com.Width = var4.G2()
+			com.Height = var4.G2()
+			// Java: com.trans = (byte) var4.g1() (Component.java:235 @176a85f;
+			// named alpha at 244) — header read between height and overlayer;
+			// shifts every following field.
+			com.Trans = int8(var4.G1())
+			com.OverLayer = var4.G1()
+			if com.OverLayer == 0 {
+				com.OverLayer = -1
 			} else {
-				var8.OverLayer = ((var8.OverLayer - 1) << 8) + var4.G1()
+				com.OverLayer = ((com.OverLayer - 1) << 8) + var4.G1()
 			}
 			var9 := var4.G1()
 			var10 := 0
 			if var9 > 0 {
-				var8.ScriptComparator = make([]int, var9)
-				var8.ScriptOperand = make([]int, var9)
+				com.ScriptComparator = make([]int, var9)
+				com.ScriptOperand = make([]int, var9)
 				for i := range var9 {
-					var8.ScriptComparator[i] = var4.G1()
-					var8.ScriptOperand[i] = var4.G2()
+					com.ScriptComparator[i] = var4.G1()
+					com.ScriptOperand[i] = var4.G2()
 				}
 			}
 			var10 = var4.G1()
 			var11 := 0
 			var12 := 0
 			if var10 > 0 {
-				var8.Scripts = make([][]int, var10)
+				com.Scripts = make([][]int, var10)
 				for i := range var10 {
 					var12 = var4.G2()
-					var8.Scripts[i] = make([]int, var12)
+					com.Scripts[i] = make([]int, var12)
 					for j := range var12 {
-						var8.Scripts[i][j] = var4.G2()
+						com.Scripts[i][j] = var4.G2()
 					}
 				}
 			}
-			if var8.Type == 0 {
-				var8.Scroll = var4.G2()
-				var8.Hide = var4.G1() == 1
+			if com.Type == 0 {
+				com.Scroll = var4.G2()
+				com.Hide = var4.G1() == 1
 				// Java: int childCount = data.g2() (Component.java:265) —
 				// rev-244 widens the Type==0 child count to g2 from 225's
 				// g1 (225-clean Component.java:253). Reading one byte here
 				// desyncs the whole sequential stream.
 				var11 = var4.G2()
-				var8.ChildID = make([]int, var11)
-				var8.ChildX = make([]int, var11)
-				var8.ChildY = make([]int, var11)
+				com.ChildID = make([]int, var11)
+				com.ChildX = make([]int, var11)
+				com.ChildY = make([]int, var11)
 				for i := range var11 {
-					var8.ChildID[i] = var4.G2()
-					var8.ChildX[i] = var4.G2B()
-					var8.ChildY[i] = var4.G2B()
+					com.ChildID[i] = var4.G2()
+					com.ChildX[i] = var4.G2B()
+					com.ChildY[i] = var4.G2B()
 				}
 			}
-			if var8.Type == 1 {
+			if com.Type == 1 {
 				// Java: Component.java:264-265 — Type==1 reads g2 + g1
 				// into unusedShort1 / unusedBoolean1. Reads kept as
 				// discards so packet-position alignment matches Java.
 				var4.G2()
 				var4.G1()
 			}
-			if var8.Type == 2 {
-				var8.InvSlotObjId = make([]int, var8.Width*var8.Height)
-				var8.InvSlotObjCount = make([]int, var8.Width*var8.Height)
-				var8.Draggable = var4.G1() == 1
-				var8.Interactable = var4.G1() == 1
-				var8.Usable = var4.G1() == 1
-				var8.MarginX = var4.G1()
-				var8.MarginY = var4.G1()
-				var8.InvSlotOffsetX = make([]int, 20)
-				var8.InvSlotOffsetY = make([]int, 20)
-				var8.InvSlotSprite = make([]*pix32.Pix32, 20)
+			if com.Type == 2 {
+				com.InvSlotObjId = make([]int, com.Width*com.Height)
+				com.InvSlotObjCount = make([]int, com.Width*com.Height)
+				com.Draggable = var4.G1() == 1
+				com.Interactable = var4.G1() == 1
+				com.Usable = var4.G1() == 1
+				// Java: Component.java:285 @176a85f — new at 245.2; shifts all
+				// later type-2 reads by 1 byte.
+				com.Swappable = var4.G1() == 1
+				com.MarginX = var4.G1()
+				com.MarginY = var4.G1()
+				com.InvSlotOffsetX = make([]int, 20)
+				com.InvSlotOffsetY = make([]int, 20)
+				com.InvSlotSprite = make([]*pix32.Pix32, 20)
 				for i := range 20 {
 					var12 = var4.G1()
 					if var12 == 1 {
-						var8.InvSlotOffsetX[i] = var4.G2B()
-						var8.InvSlotOffsetY[i] = var4.G2B()
+						com.InvSlotOffsetX[i] = var4.G2B()
+						com.InvSlotOffsetY[i] = var4.G2B()
 						var17 := var4.GJStr()
 						if arg0 != nil && len(var17) > 0 {
 							var14 := strings.LastIndex(var17, ",")
@@ -208,45 +217,48 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 							if err != nil {
 								panic(err)
 							}
-							var8.InvSlotSprite[i] = GetImage(arg0, v, var17[0:var14])
+							com.InvSlotSprite[i] = GetImage(arg0, v, var17[0:var14])
 						}
 					}
 				}
-				var8.IOps = make([]string, 5)
+				com.IOps = make([]string, 5)
 				// Java assigns iops[i] = null on length()==0; Go uses "" — see
 				// LocType.Decode for the convention's full rationale. The
 				// `= ""` re-assignment is a no-op (already ""), kept to mirror
 				// Java's nulling pass for readability.
 				for i := range 5 {
-					var8.IOps[i] = var4.GJStr()
-					if len(var8.IOps[i]) == 0 {
-						var8.IOps[i] = ""
+					com.IOps[i] = var4.GJStr()
+					if len(com.IOps[i]) == 0 {
+						com.IOps[i] = ""
 					}
 				}
 			}
-			if var8.Type == 3 {
-				var8.Fill = var4.G1() == 1
+			if com.Type == 3 {
+				com.Fill = var4.G1() == 1
 			}
-			if var8.Type == 4 || var8.Type == 1 {
-				var8.Center = var4.G1() == 1
+			if com.Type == 4 || com.Type == 1 {
+				com.Center = var4.G1() == 1
 				var11 = var4.G1()
 				if arg1 != nil {
-					var8.Font = arg1[var11]
+					com.Font = arg1[var11]
 				}
-				var8.Shadowed = var4.G1() == 1
+				com.Shadowed = var4.G1() == 1
 			}
-			if var8.Type == 4 {
-				var8.Text = var4.GJStr()
-				var8.ActiveText = var4.GJStr()
+			if com.Type == 4 {
+				com.Text = var4.GJStr()
+				com.ActiveText = var4.GJStr()
 			}
-			if var8.Type == 1 || var8.Type == 3 || var8.Type == 4 {
-				var8.Colour = var4.G4()
+			if com.Type == 1 || com.Type == 3 || com.Type == 4 {
+				com.Colour = var4.G4()
 			}
-			if var8.Type == 3 || var8.Type == 4 {
-				var8.ActiveColour = var4.G4()
-				var8.OverColour = var4.G4()
+			if com.Type == 3 || com.Type == 4 {
+				com.ActiveColour = var4.G4()
+				com.OverColour = var4.G4()
+				// Java: Component.java:332 @176a85f — new at 245.2; shifts all
+				// later type-3/4 reads by 4 bytes.
+				com.ActiveOverColour = var4.G4()
 			}
-			if var8.Type == 5 {
+			if com.Type == 5 {
 				var16 := var4.GJStr()
 				if arg0 != nil && len(var16) > 0 {
 					var12 = strings.LastIndex(var16, ",")
@@ -254,7 +266,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 					if err != nil {
 						panic(err)
 					}
-					var8.Graphic = GetImage(arg0, v, var16[0:var12])
+					com.Graphic = GetImage(arg0, v, var16[0:var12])
 				}
 				var16 = var4.GJStr()
 				if arg0 != nil && len(var16) > 0 {
@@ -263,72 +275,72 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 					if err != nil {
 						panic(err)
 					}
-					var8.ActiveGraphic = GetImage(arg0, v, var16[0:var12])
+					com.ActiveGraphic = GetImage(arg0, v, var16[0:var12])
 				}
 			}
-			if var8.Type == 6 {
+			if com.Type == 6 {
 				var7 = var4.G1()
 				if var7 != 0 {
-					var8.ModelType = 1
-					var8.Model = ((var7 - 1) << 8) + var4.G1()
+					com.ModelType = 1
+					com.Model = ((var7 - 1) << 8) + var4.G1()
 				}
 				var7 = var4.G1()
 				if var7 != 0 {
-					var8.ActiveModelType = 1
-					var8.ActiveModel = ((var7 - 1) << 8) + var4.G1()
+					com.ActiveModelType = 1
+					com.ActiveModel = ((var7 - 1) << 8) + var4.G1()
 				}
 				var7 = var4.G1()
 				if var7 == 0 {
-					var8.Anim = -1
+					com.Anim = -1
 				} else {
-					var8.Anim = ((var7 - 1) << 8) + var4.G1()
+					com.Anim = ((var7 - 1) << 8) + var4.G1()
 				}
 				var7 = var4.G1()
 				if var7 == 0 {
-					var8.ActiveAnim = -1
+					com.ActiveAnim = -1
 				} else {
-					var8.ActiveAnim = ((var7 - 1) << 8) + var4.G1()
+					com.ActiveAnim = ((var7 - 1) << 8) + var4.G1()
 				}
-				var8.Zoom = var4.G2()
-				var8.Xan = var4.G2()
-				var8.Yan = var4.G2()
+				com.Zoom = var4.G2()
+				com.Xan = var4.G2()
+				com.Yan = var4.G2()
 			}
-			if var8.Type == 7 {
-				var8.InvSlotObjId = make([]int, var8.Width*var8.Height)
-				var8.InvSlotObjCount = make([]int, var8.Width*var8.Height)
-				var8.Center = var4.G1() == 1
+			if com.Type == 7 {
+				com.InvSlotObjId = make([]int, com.Width*com.Height)
+				com.InvSlotObjCount = make([]int, com.Width*com.Height)
+				com.Center = var4.G1() == 1
 				var11 = var4.G1()
 				if arg1 != nil {
-					var8.Font = arg1[var11]
+					com.Font = arg1[var11]
 				}
-				var8.Shadowed = var4.G1() == 1
-				var8.Colour = var4.G4()
-				var8.MarginX = var4.G2B()
-				var8.MarginY = var4.G2B()
-				var8.Interactable = var4.G1() == 1
-				var8.IOps = make([]string, 5)
+				com.Shadowed = var4.G1() == 1
+				com.Colour = var4.G4()
+				com.MarginX = var4.G2B()
+				com.MarginY = var4.G2B()
+				com.Interactable = var4.G1() == 1
+				com.IOps = make([]string, 5)
 				for i := range 5 {
-					var8.IOps[i] = var4.GJStr()
-					if len(var8.IOps[i]) == 0 {
-						var8.IOps[i] = ""
+					com.IOps[i] = var4.GJStr()
+					if len(com.IOps[i]) == 0 {
+						com.IOps[i] = ""
 					}
 				}
 			}
-			if var8.ButtonType == 2 || var8.Type == 2 {
-				var8.ActionVerb = var4.GJStr()
-				var8.Action = var4.GJStr()
-				var8.ActionTarget = var4.G2()
+			if com.ButtonType == 2 || com.Type == 2 {
+				com.ActionVerb = var4.GJStr()
+				com.Action = var4.GJStr()
+				com.ActionTarget = var4.G2()
 			}
 		}
-		var8.Option = var4.GJStr()
-		if len(var8.Option) == 0 {
-			switch var8.ButtonType {
+		com.Option = var4.GJStr()
+		if len(com.Option) == 0 {
+			switch com.ButtonType {
 			case 1:
-				var8.Option = "Ok"
+				com.Option = "Ok"
 			case 4, 5:
-				var8.Option = "Select"
+				com.Option = "Select"
 			case 6:
-				var8.Option = "Continue"
+				com.Option = "Continue"
 			}
 		}
 	}

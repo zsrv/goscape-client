@@ -3788,15 +3788,28 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 				var var15 *pixfont.PixFont
 				if var14.Type == 4 {
 					var15 = var14.Font
-					var16 = var14.Colour
-					var29 := var14.Text
-					if (c.ChatHoveredInterfaceIndex == var14.Id || c.SidebarHoveredInterfaceIndex == var14.Id || c.ViewportHoveredInterfaceIndex == var14.Id) && var14.OverColour != 0 {
-						var16 = var14.OverColour
+					var29 := var14.Text // Java: var34
+					// Java: Client.java:10076-10090 @176a85f — 245.2 selects the
+					// colour script-first and adds the activeOverColour branch
+					// (active + hovered). 244 applied overColour first and let
+					// activeColour override it unconditionally.
+					var35 := false // Java: var35 — hovered
+					if c.ChatHoveredInterfaceIndex == var14.Id || c.SidebarHoveredInterfaceIndex == var14.Id || c.ViewportHoveredInterfaceIndex == var14.Id {
+						var35 = true
 					}
+					// Java: var36 — resolved colour (Go keeps the outer var16)
 					if c.ExecuteInterfaceScript(var14) {
 						var16 = var14.ActiveColour
+						if var35 && var14.ActiveOverColour != 0 {
+							var16 = var14.ActiveOverColour
+						}
 						if len(var14.ActiveText) > 0 {
 							var29 = var14.ActiveText
+						}
+					} else {
+						var16 = var14.Colour
+						if var35 && var14.OverColour != 0 {
+							var16 = var14.OverColour
 						}
 					}
 					if var14.ButtonType == 6 && c.PressedContinueOption {
@@ -3933,19 +3946,37 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 						}
 					}
 				}
-			} else if var14.Alpha == 0 {
-				// Java: type-3 rectangles (Client.java:10651-10662) — opaque
-				// path when alpha == 0, translucent fillRectTrans/drawRectTrans
-				// otherwise (new in 244).
-				if var14.Fill {
-					pix2d.FillRect(var26, var25, var14.Colour, var14.Width, var14.Height)
-				} else {
-					pix2d.DrawRect(var25, var14.Colour, var14.Height, var26, var14.Width)
-				}
-			} else if var14.Fill {
-				pix2d.FillRectTrans(var26, 256-(int(var14.Alpha)&0xFF), var14.Height, var14.Width, var14.Colour, var25)
 			} else {
-				pix2d.DrawRectTrans(var14.Height, var14.Colour, var25, var26, var14.Width, 256-(int(var14.Alpha)&0xFF))
+				// Java: type-3 rectangles (Client.java:10044-10071 @176a85f) —
+				// 245.2 adds a hovered flag + script-driven active/over colour
+				// selection (244 always drew com.colour); trans was named alpha.
+				var31 := false // Java: var31 — hovered
+				if c.ChatHoveredInterfaceIndex == var14.Id || c.SidebarHoveredInterfaceIndex == var14.Id || c.ViewportHoveredInterfaceIndex == var14.Id {
+					var31 = true
+				}
+				// Java: var32 — resolved colour (reuses the outer scratch local)
+				if c.ExecuteInterfaceScript(var14) {
+					var32 = var14.ActiveColour
+					if var31 && var14.ActiveOverColour != 0 {
+						var32 = var14.ActiveOverColour
+					}
+				} else {
+					var32 = var14.Colour
+					if var31 && var14.OverColour != 0 {
+						var32 = var14.OverColour
+					}
+				}
+				if var14.Trans == 0 {
+					if var14.Fill {
+						pix2d.FillRect(var26, var25, var32, var14.Width, var14.Height)
+					} else {
+						pix2d.DrawRect(var25, var32, var14.Height, var26, var14.Width)
+					}
+				} else if var14.Fill {
+					pix2d.FillRectTrans(var26, 256-(int(var14.Trans)&0xFF), var14.Height, var14.Width, var32, var25)
+				} else {
+					pix2d.DrawRectTrans(var14.Height, var32, var25, var26, var14.Width, 256-(int(var14.Trans)&0xFF))
+				}
 			}
 		}
 	}
@@ -7722,7 +7753,17 @@ func (c *Client) UpdateGame() {
 					if var13.InvSlotObjId[c.HoveredSlot] <= 0 {
 						mode = 0
 					}
-					if mode == 1 {
+					// Java: Client.java:3023-3030 @176a85f — new at 245.2:
+					// swappable inventories move the dragged stack directly
+					// into the target slot instead of swapping/inserting.
+					if var13.Swappable {
+						var6 := c.ObjDragSlot // Java: var6
+						var7 := c.HoveredSlot // Java: var7
+						var13.InvSlotObjId[var7] = var13.InvSlotObjId[var6]
+						var13.InvSlotObjCount[var7] = var13.InvSlotObjCount[var6]
+						var13.InvSlotObjId[var6] = -1
+						var13.InvSlotObjCount[var6] = 0
+					} else if mode == 1 {
 						src := c.ObjDragSlot
 						dst := c.HoveredSlot
 						for src != dst {
@@ -8341,7 +8382,10 @@ func (c *Client) HandleMouseInput() {
 				var4 = c.MenuParamB[c.MenuSize-1]
 				var5 = c.MenuParamC[c.MenuSize-1]
 				var6 := component.Instances[var5]
-				if var6.Draggable {
+				// Java: com.draggable || com.swappable (Client.java:4081
+				// @176a85f) — 245.2 widens drag eligibility to swappable
+				// inventories.
+				if var6.Draggable || var6.Swappable {
 					c.ObjGrabThreshold = false
 					c.ObjDragCycles = 0
 					c.ObjDragInterfaceID = var5

@@ -43,7 +43,7 @@ func buildType6Payload(id, modelHi, modelLo int) []byte {
 	p.P2(0)  // clientCode
 	p.P2(1)  // width
 	p.P2(1)  // height
-	p.P1(0)  // alpha
+	p.P1(0)  // trans (named alpha at 244)
 	p.P1(0)  // overLayer (0 → -1, no extra read)
 	p.P1(0)  // scriptComparator count
 	p.P1(0)  // scripts count
