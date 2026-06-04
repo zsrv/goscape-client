@@ -20,7 +20,7 @@ import (
 // The shared audioLoop (audioloop.go) owns all fade/latch sequencing and
 // drives the four midiSink primitives from its 50ms ticker; volume —
 // including the stepped ±8 fade — lands on the single musicGain node as the
-// linear vol/256 gain.
+// linear vol/128 gain.
 //
 // Looping (Java: setLoopCount(-1) for MIDI_SONG tracks, MidiPlayer.java:39)
 // re-schedules the rendered chunks one musical length apart, staying
@@ -177,9 +177,9 @@ func (d *webMidiDriver) play(midData []byte, loop bool, vol int) {
 	go d.startTrack(midData, loop, gen)
 }
 
-// setVolume (midiSink): linear vol/256 on the shared music gain node.
-// Java: MidiPlayer.setVolume(0, volume) — see linearVolume for the proof
-// that the CC rescale collapses to this.
+// setVolume (midiSink): linear vol/128 on the shared music gain node.
+// Java: MidiPlayer.setVolume(0, volume) — see linearVolume for how the CC
+// rescale collapses to a linear post-gain and the /128 calibration.
 func (d *webMidiDriver) setVolume(vol int) {
 	if !musicGain.Truthy() {
 		return

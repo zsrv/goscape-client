@@ -20,21 +20,21 @@ import (
 //     instead of synchronously blocking the consumer thread for the clip's
 //     duration — in Java a playing SFX stalls any in-flight MIDI fade.
 //   - MidiPlayer's CC7/CC39/CC121 interception collapses to the linear
-//     vol/256 post-gain — see linearVolume.
+//     vol/128 post-gain — see linearVolume for the curve and calibration.
 
 // midiSink is the per-backend playback primitive set the audioLoop drives,
 // mirroring the MidiPlayer surface SignLink uses. Implemented by *midiDriver
 // (native: oto + meltysynth) and *webMidiDriver (js: Web Audio prerender);
 // nullSink stands in when no audio backend is available.
 type midiSink interface {
-	// play starts a track at linear gain vol/256, replacing any current
+	// play starts a track at linear gain vol/128, replacing any current
 	// one. loop mirrors Java MidiPlayer.play's setLoopCount(loop==1 ? -1 : 0)
 	// (MidiPlayer.java:36-44): the fade flag doubles as loop-forever.
 	play(midData []byte, loop bool, vol int)
 	// stop halts playback immediately (Java: MidiPlayer.stop(),
 	// MidiPlayer.java:46-49).
 	stop()
-	// setVolume applies linear gain vol/256 to the current track
+	// setVolume applies linear gain vol/128 to the current track
 	// (Java: MidiPlayer.setVolume(0, volume), MidiPlayer.java:32-34).
 	setVolume(vol int)
 	// running reports whether a track is still playing

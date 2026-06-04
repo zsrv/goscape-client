@@ -220,15 +220,17 @@ func TestVoladjustLatchedDuringFadeOut(t *testing.T) {
 	}
 }
 
-// TestLinearVolume pins the vol/256 mapping (see linearVolume's doc for the
-// equivalence proof against Java's CC rescale).
+// TestLinearVolume pins the vol/128 mapping (see linearVolume's doc for the
+// calibration rationale): the 244 ladder 128/96/64/32 maps to gains
+// 1/0.75/0.5/0.25 — unity at the slider max, matching the TS reference
+// client (tinymidipcm.js:313, audio.js:64).
 func TestLinearVolume(t *testing.T) {
 	cases := []struct {
 		vol  int
 		want float64
 	}{
-		{0, 0}, {-8, 0}, {32, 0.125}, {64, 0.25}, {96, 0.375},
-		{128, 0.5}, {256, 1}, {300, 1},
+		{0, 0}, {-8, 0}, {32, 0.25}, {64, 0.5}, {96, 0.75},
+		{128, 1}, {256, 1}, {300, 1},
 	}
 	for _, c := range cases {
 		if got := linearVolume(c.vol); got != c.want {

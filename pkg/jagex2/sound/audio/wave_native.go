@@ -91,8 +91,10 @@ func playWaveBytes(ctx *oto.Context, data []byte) {
 	// branch applies no gain at all (SignLink.java:427-475), so the in-game
 	// SFX slider does nothing there. The Go port keeps the slider working,
 	// mapping the 244 linear scale (128/96/64/32, default 96) through the
-	// same vol/256 curve as music. Per-Player so only new sounds pick it up,
-	// matching the slider dispatch (UpdateVarp clientCode 4).
+	// same vol/128 curve as music — so the slider max (128) is unity gain,
+	// which IS Java's audible full-gain SFX, and lower positions attenuate
+	// (the TS reference model, audio.js:64). Per-Player so only new sounds
+	// pick it up, matching the slider dispatch (UpdateVarp clientCode 4).
 	p.SetVolume(linearVolume(signlink.ReadWaveVol()))
 	p.Play()
 	// Hold the only strong reference until the reader EOFs and oto stops, so the

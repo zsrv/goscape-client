@@ -404,7 +404,7 @@ func SetMidiFade(v int) {
 }
 
 // SetMidiVol publishes the music volume on the 244 linear scale (the
-// client sends 128/96/64/32; default 96; gain = vol/256 — see
+// client sends 128/96/64/32; default 96; gain = vol/128 — see
 // audio.linearVolume). The consumer applies it on the next "voladjust",
 // track change, or fade step. Java: midivol (SignLink.java:59).
 func SetMidiVol(v int) {

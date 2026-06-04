@@ -11,7 +11,7 @@ import (
 // user gesture (browsers block autoplay until then).
 var (
 	ac        js.Value // AudioContext
-	musicGain js.Value // GainNode: MIDI volume — the audioLoop's stepped vol/256 lands here
+	musicGain js.Value // GainNode: MIDI volume — the audioLoop's stepped vol/128 lands here
 	sfxGain   js.Value // GainNode: user SFX volume (WaveVol)
 	gestures  []js.Func
 )
