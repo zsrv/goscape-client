@@ -564,6 +564,11 @@ func (c *Client) RunShell() {
 		c.Draw()
 		platform.Active.EndFrame()
 	}
+	// Java: GameShell start()/stop()/destroy() and windowClosing()→destroy()
+	// drive applet pause/resume/teardown via the state field. Intentionally
+	// not ported: the standalone host shell collapses them to this single
+	// exit — ShouldClose() replaces windowClosing→destroy→state=-1
+	// (audit gameshell-05).
 	if c.State == -1 || platform.Active.ShouldClose() {
 		c.Shutdown()
 	}

@@ -1,5 +1,8 @@
 package typ
 
+// Java: Ground.java also declares static arrays shape0P1={1,0}, shape0P2={2,1},
+// shape0P3={3,3}. Intentionally not ported: zero reads in the entire 245.2
+// tree — dead obfuscator artifacts (audit ground-01).
 var (
 	TmpScreenX    []int   = make([]int, 6)
 	TmpScreenY    []int   = make([]int, 6)

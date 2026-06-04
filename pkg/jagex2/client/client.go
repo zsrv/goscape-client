@@ -7146,6 +7146,12 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		} else if var7 == 19 {
 			c.StaffModLevel = 2
 		}
+		// Java: Client.java:2679-2683 also writes field1528=0L, field1215=0,
+		// mouseTracking.length=0, super.hasFocus=true, field1537=true here.
+		// Intentionally not ported: all are write-only deob artifacts (never
+		// read; verified at 245.2) tied to the unported MouseTracking thread
+		// (instantiated Client.java:1958, never started — audit client-01-05,
+		// client-03-04, viewbox-input-04/07).
 		inputtracking.SetDisabled()
 		c.InGame = true
 		c.Out.Pos = 0
