@@ -563,12 +563,19 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 			}
 		}
 	}
-	RandomHueOffset += int(rand.Float64()*5.0) - 2
-	RandomHueOffset = max(RandomHueOffset, -8)
-	RandomHueOffset = min(RandomHueOffset, 8)
-	RandomLightnessOffset += int(rand.Float64()*5.0) - 2
-	RandomLightnessOffset = max(RandomLightnessOffset, -16)
-	RandomLightnessOffset = min(RandomLightnessOffset, 16)
+	// Java: World.java:589-607 — fullbright zeroes the per-build random tint
+	// drift instead of advancing it (audit world-1-01)
+	if FullBright {
+		RandomHueOffset = 0
+		RandomLightnessOffset = 0
+	} else {
+		RandomHueOffset += int(rand.Float64()*5.0) - 2
+		RandomHueOffset = max(RandomHueOffset, -8)
+		RandomHueOffset = min(RandomHueOffset, 8)
+		RandomLightnessOffset += int(rand.Float64()*5.0) - 2
+		RandomLightnessOffset = max(RandomLightnessOffset, -16)
+		RandomLightnessOffset = min(RandomLightnessOffset, 16)
+	}
 	var12 := 0
 	var13 := 0
 	var14 := 0

@@ -1749,7 +1749,7 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *component.Comp
 		if var12.Type == 0 {
 			c.HandleInterfaceInput(arg0, arg1, var21, var12, var20, var12.ScrollPosition)
 			if var12.Scroll > var12.Height {
-				c.HandleScrollInput(arg1, 0, arg0, var12.Scroll, var12.Height, true, var20+var12.Width, var21, var12)
+				c.HandleScrollInput(arg1, arg0, var12.Scroll, var12.Height, true, var20+var12.Width, var21, var12)
 			}
 		} else {
 			if var12.ButtonType == 1 && arg1 >= var20 && arg0 >= var21 && arg1 < var20+var12.Width && arg0 < var21+var12.Height {
@@ -2602,14 +2602,12 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 		}
 
 		header := make([]byte, 6)
-		n, err := reader.Read(header)
+		// Java: stream.readFully(header, 0, 6) (Client.java:2326) loops until 6
+		// bytes; a bare Read may return short on a streaming transport (audit
+		// client-02-17). ReadFull errors on short reads (ErrUnexpectedEOF).
+		_, err = io2.ReadFull(reader, header)
 		if err != nil {
 			log.Printf("client: GetJagFile read error: %v", err)
-			loadingError("Connection error")
-			continue
-		}
-		if n < 6 {
-			log.Printf("client: GetJagFile read %v bytes, expected 6", n)
 			loadingError("Connection error")
 			continue
 		}
@@ -4548,7 +4546,7 @@ func (c *Client) DrawGame() {
 	if c.ChatInterfaceID == -1 {
 		c.ChatInterface.ScrollPosition = c.ChatScrollHeight - c.ChatScrollOffset - 77
 		if c.MouseX > 448 && c.MouseX < 560 && c.MouseY > 332 {
-			c.HandleScrollInput(c.MouseX-17, 0, c.MouseY-357, c.ChatScrollHeight, 77, false, 463, 0, c.ChatInterface)
+			c.HandleScrollInput(c.MouseX-17, c.MouseY-357, c.ChatScrollHeight, 77, false, 463, 0, c.ChatInterface)
 		}
 		var3 := c.ChatScrollHeight - 77 - c.ChatInterface.ScrollPosition
 		var3 = max(var3, 0)
@@ -6982,14 +6980,16 @@ func (c *Client) RunFlames() {
 	c.FlameThread = false
 }
 
-func (c *Client) HandleScrollInput(arg0, arg1, arg2, arg3, arg4 int, arg5 bool, arg6 int, arg7 int, arg8 *component.Component) {
+// Java: handleScrollInput has 8 params in 245.2 (Client.java:10280); the
+// former 2nd int and its `packetSize +=` deob anti-tamper accumulator are
+// gone upstream — dropped here per the DrawScene precedent (audit client-11-02).
+func (c *Client) HandleScrollInput(arg0, arg2, arg3, arg4 int, arg5 bool, arg6 int, arg7 int, arg8 *component.Component) {
 	if c.ScrollGrabbed {
 		c.ScrollInputPadding = 32
 	} else {
 		c.ScrollInputPadding = 0
 	}
 	c.ScrollGrabbed = false
-	c.PacketSize += arg1
 	if arg0 >= arg6 && arg0 < arg6+16 && arg2 >= arg7 && arg2 < arg7+16 {
 		arg8.ScrollPosition -= c.DragCycles * 4
 		if arg5 {

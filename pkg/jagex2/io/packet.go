@@ -69,21 +69,17 @@ func packetPool(typ int) *sync.Pool {
 		return &CacheMin
 	case 1:
 		return &CacheMid
-	case 2:
-		return &CacheMax
 	default:
-		return nil
+		// Java: Packet.alloc catch-all else — any type other than 0/1 gets
+		// the 30000-byte buffer (Packet.java:49-80; audit packet-01)
+		return &CacheMax
 	}
 }
 
 func Alloc(typ int) *Packet {
-	pool := packetPool(typ)
-	if pool != nil {
-		p := pool.Get().(*Packet)
-		p.Pos = 0
-		return p
-	}
-	return nil
+	p := packetPool(typ).Get().(*Packet)
+	p.Pos = 0
+	return p
 }
 
 func (p *Packet) Release() {

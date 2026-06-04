@@ -112,6 +112,9 @@ func (c *Client) dispatchInputEvent(ev platform.Event) {
 func (c *Client) handleFocus(e platform.FocusChange) {
 	if e.Gained {
 		c.Refresh = true
+		// Java: this.refresh() (GameShell.java:517) dispatches to the Client
+		// override, which forces the full frame rebuild (audit gameshell-07)
+		c.RefreshFunc()
 		if inputtracking.Enabled {
 			inputtracking.FocusGained()
 		}

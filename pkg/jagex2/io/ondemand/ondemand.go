@@ -435,7 +435,11 @@ func (od *OnDemand) Cycle() *OnDemandRequest {
 	r := n.Value
 	r.node.Uncache() // Java: req.unlink2() — drop from the requests DoublyLinkList
 
-	if r.Data == nil {
+	// len(nil) == 0, so this also covers the no-data case; a present-but-
+	// truncated bundle entry (len 0/1) would panic the slice below — treat it
+	// like the corrupt-entry path (audit ondemand-01).
+	if len(r.Data) < 2 {
+		r.Data = nil
 		return r
 	}
 
