@@ -69,21 +69,24 @@ var (
 	MembersWorld    bool   = true
 	RSA_EXPONENT    *big.Int
 	RSA_MODULUS     *big.Int
-	OpLogic5        int
-	OpLogic1        int
-	OpLogic4        int
-	OpLogic6        int
-	OpLogic2        int
-	OpLogic9        int
-	CycleLogic1     int
-	OpLogic8        int
-	CycleLogic6     int
-	OpLogic7        int
-	CycleLogic3     int
-	CycleLogic4     int
-	CycleLogic5     int
-	LowMemory       bool
-	AlreadyStarted  bool
+	// Java: static mouseTracked (Client.java:1225 @2e62978) — NEW in 254; set
+	// by login reply 2, gates the EVENT_MOUSE_MOVE telemetry send (WS5).
+	MouseTracked   bool
+	OpLogic5       int
+	OpLogic1       int
+	OpLogic4       int
+	OpLogic6       int
+	OpLogic2       int
+	OpLogic9       int
+	CycleLogic1    int
+	OpLogic8       int
+	CycleLogic6    int
+	OpLogic7       int
+	CycleLogic3    int
+	CycleLogic4    int
+	CycleLogic5    int
+	LowMemory      bool
+	AlreadyStarted bool
 )
 
 func init() {
@@ -2453,7 +2456,7 @@ func (c *Client) Draw() {
 	if c.InGame {
 		c.DrawGame()
 	} else {
-		c.DrawTitleScreen()
+		c.DrawTitleScreen(false)
 	}
 	c.DragCycles = 0
 }
@@ -3528,7 +3531,10 @@ func (c *Client) SetMidiVolume(active bool, volume int) {
 	}
 }
 
-func (c *Client) DrawTitleScreen() {
+// DrawTitleScreen renders the title/login screen. arg0 mirrors Java 254's new
+// boolean (Client.java:5011 @2e62978): true while a login attempt is redrawing
+// the screen out-of-band, which hides the Login/Cancel buttons.
+func (c *Client) DrawTitleScreen(arg0 bool) {
 	c.LoadTitle()
 	c.ImageTitle4.Bind()
 	c.ImageTitleBox.PlotSprite(0, 0)
@@ -3573,13 +3579,17 @@ func (c *Client) DrawTitleScreen() {
 		}
 		c.FontBold12.DrawStringTaggable(var2/2-88, var4, "Password: "+jstring.ToAsterisks(c.Password)+tmp2, true, 0xFFFFFF)
 		var4 += 15 //nolint:ineffassign // Java: faithful dead final layout increment (var4 not read after)
-		var5 = var2/2 - 80
-		var6 = var3/2 + 50
-		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
-		c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Login")
-		var5 = var2/2 + 80
-		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
-		c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Cancel")
+		// Java: if (!arg0) — 254 hides the Login/Cancel buttons during an
+		// in-flight login attempt (Client.java:5045-5053 @2e62978).
+		if !arg0 {
+			var5 = var2/2 - 80
+			var6 = var3/2 + 50
+			c.ImageTitleButton.PlotSprite(var6-20, var5-73)
+			c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Login")
+			var5 = var2/2 + 80
+			c.ImageTitleButton.PlotSprite(var6-20, var5-73)
+			c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Cancel")
+		}
 	}
 	if c.TitleScreenState == 3 {
 		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var3/2-60, "Create a free account")
@@ -7041,7 +7051,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		// Out-of-band repaint: show "Connecting to server..." before blocking
 		// on the socket dial. Runs on the game goroutine, not the main loop
 		// iteration, so we present explicitly.
-		c.present(func() { c.DrawTitleScreen() })
+		c.present(func() { c.DrawTitleScreen(true) }) // Java: titleScreenDraw(true) (Client.java:2395 @2e62978)
 	}
 	// Java: openSocket(portOffset + 43594) (deob/client.java:6786). The port
 	// offset is not ported; instead the full game-server port comes from the
@@ -7104,7 +7114,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 			c.Login.P1(16)
 		}
 		c.Login.P1(c.Out.Pos + 36 + 1 + 1)
-		c.Login.P1(245) // client version; Java: Client.java:2642 @176a85f
+		c.Login.P1(254) // client version; Java: Client.java:2430 @2e62978
 		if LowMemory {
 			c.Login.P1(1)
 		} else {
@@ -7136,19 +7146,29 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.LoginFunc(arg0, arg1, arg2)
 		return
 	}
-	if var7 == 2 || var7 == 18 || var7 == 19 {
-		c.StaffModLevel = 0
-		if var7 == 18 {
-			c.StaffModLevel = 1
-		} else if var7 == 19 {
-			c.StaffModLevel = 2
+	if var7 == 2 {
+		// Java: Client.java:2451-2452 @2e62978 — 254 reads staffmodlevel and
+		// mouseTracked from the reply stream (245.2's staffmod reply variants
+		// 18/19 are gone). EOF reads -1 into staffmodlevel, like Java.
+		c.StaffModLevel, err = c.Stream.Read()
+		if err != nil {
+			c.LoginMessage0 = ""
+			c.LoginMessage1 = "Error connecting to server."
+			return
 		}
-		// Java: Client.java:2679-2683 also writes field1528=0L, field1215=0,
-		// mouseTracking.length=0, super.hasFocus=true, field1537=true here.
-		// Intentionally not ported: all are write-only deob artifacts (never
-		// read; verified at 245.2) tied to the unported MouseTracking thread
-		// (instantiated Client.java:1958, never started — audit client-01-05,
-		// client-03-04, viewbox-input-04/07).
+		var mouseTrackedByte int // Java: inline `this.stream.read() == 1` (Client.java:2452)
+		mouseTrackedByte, err = c.Stream.Read()
+		if err != nil {
+			c.LoginMessage0 = ""
+			c.LoginMessage1 = "Error connecting to server."
+			return
+		}
+		MouseTracked = mouseTrackedByte == 1
+		// Java: Client.java:2454-2458 @2e62978 also resets the mouse/focus
+		// telemetry here (prevMousePressTime=0L, mouseTrackedDelta=0,
+		// mouseTracking.length=0, super.hasFocus=true, focused=true). Unlike
+		// 245.2 (where the equivalents were write-only deob artifacts), these
+		// are LIVE at 254 — gameLoop telemetry reads them; ported with WS5.
 		inputtracking.SetDisabled()
 		c.InGame = true
 		c.Out.Pos = 0
@@ -7334,6 +7354,35 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.LoginMessage1 = "Please try using a different world."
 		return
 	}
+	if var7 == 21 {
+		// Java: Client.java:2604-2614 @2e62978 (NEW in 254) — profile-transfer
+		// countdown: redraw the title screen once per second while counting
+		// down, then retry the login. EOF reads -1, skipping the loop.
+		var20, err := c.Stream.Read() // Java: var20 — seconds remaining
+		if err != nil {
+			c.LoginMessage0 = ""
+			c.LoginMessage1 = "Error connecting to server."
+			return
+		}
+		for ; var20 >= 0; var20-- {
+			c.LoginMessage0 = "You have only just left another world"
+			c.LoginMessage1 = "Your profile will be transfered in: " + strconv.Itoa(var20) + " seconds"
+			// Out-of-band repaint, same mechanism as the "Connecting to
+			// server..." draw above.
+			c.present(func() { c.DrawTitleScreen(true) })
+			time.Sleep(1000 * time.Millisecond)
+		}
+		c.LoginFunc(arg0, arg1, arg2)
+		return
+	}
+	// Java: Client.java:2615-2617 @2e62978 (NEW in 254) — stream.read()
+	// returns -1 at EOF without throwing; clientstream mirrors this.
+	if var7 == -1 {
+		c.LoginMessage0 = "No response from server"
+		c.LoginMessage1 = "Please try using a different world."
+		return
+	}
+	fmt.Println("response:" + strconv.Itoa(var7)) // Java: System.out.println (Client.java:2619 @2e62978; NEW in 254)
 	c.LoginMessage0 = "Unexpected server response"
 	c.LoginMessage1 = "Please try using a different world."
 }

@@ -101,12 +101,12 @@ var (
 	StoreID int = 32
 )
 
-// ClientVersion is the game revision this client speaks. 245.2 makes the
+// ClientVersion is the game revision this client speaks. 245.2 made the
 // Java field final (it was a plain static at 244), so it ports as a const.
 // The main banner prints it; the login handshake byte stays a literal,
-// matching Java (Client.java:2642 @176a85f).
-// Java: clientversion = 245 (signlink.java:45 @176a85f).
-const ClientVersion = 245
+// matching Java (Client.java:2430 @2e62978).
+// Java: clientversion = 254 (signlink.java:45 @2e62978).
+const ClientVersion = 254
 
 type SignLink struct {
 }
@@ -481,9 +481,9 @@ func ReportErrorFunc(e string) {
 	// is subsumed by the call itself. Discarding the body is the
 	// equivalent of Java's readLine-then-close pattern; the HTTP
 	// transaction is observably identical.
-	// Java: "reporterror" + 245 + ".cgi?..." (signlink.java:302 @176a85f) —
+	// Java: "reporterror" + 254 + ".cgi?..." (signlink.java:302 @2e62978) —
 	// a literal in Java, not clientversion.
-	_, err := OpenURL("reporterror" + strconv.Itoa(245) + ".cgi?error=" + ErrorName + " " + var4)
+	_, err := OpenURL("reporterror" + strconv.Itoa(254) + ".cgi?error=" + ErrorName + " " + var4)
 	if err != nil {
 		log.Printf("signlink: failed to open url: %v", err)
 		return
