@@ -3787,26 +3787,26 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 										var23.DrawAlpha(128, var18+var33, var32+var21)
 										// Java: Client.java:10602-10628 — drag-to-edge
 										// autoscroll of the parent scrollable.
-										if var32+var21 < pix2d.Top && var14.ScrollPosition > 0 {
+										if var32+var21 < pix2d.Top && arg3.ScrollPosition > 0 {
 											var35 := (pix2d.Top - var32 - var21) * c.SceneDelta / 3
 											if var35 > c.SceneDelta*10 {
 												var35 = c.SceneDelta * 10
 											}
-											if var35 > var14.ScrollPosition {
-												var35 = var14.ScrollPosition
+											if var35 > arg3.ScrollPosition {
+												var35 = arg3.ScrollPosition
 											}
-											var14.ScrollPosition -= var35
+											arg3.ScrollPosition -= var35
 											c.ObjGrabY += var35
 										}
-										if var32+var21+32 > pix2d.Bottom && var14.ScrollPosition < var14.Scroll-var14.Height {
+										if var32+var21+32 > pix2d.Bottom && arg3.ScrollPosition < arg3.Scroll-arg3.Height {
 											var35 := (var32 + var21 + 32 - pix2d.Bottom) * c.SceneDelta / 3
 											if var35 > c.SceneDelta*10 {
 												var35 = c.SceneDelta * 10
 											}
-											if var35 > var14.Scroll-var14.Height-var14.ScrollPosition {
-												var35 = var14.Scroll - var14.Height - var14.ScrollPosition
+											if var35 > arg3.Scroll-arg3.Height-arg3.ScrollPosition {
+												var35 = arg3.Scroll - arg3.Height - arg3.ScrollPosition
 											}
-											var14.ScrollPosition += var35
+											arg3.ScrollPosition += var35
 											c.ObjGrabY -= var35
 										}
 									} else if c.SelectedArea != 0 && c.SelectedItem == var27 && c.SelectedInterface == var14.Id {
@@ -5002,6 +5002,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.ObjInterface = var6
 		c.ObjSelectedName = objtype.Get(var6).Name
 		c.SpellSelected = 0
+		c.RedrawSidebar = true
 		return
 	}
 	if var5 == 44 && !c.PressedContinueOption {
@@ -5155,6 +5156,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.ActiveSpellID = var4
 		c.ActiveSpellFlags = var22.ActionTarget
 		c.ObjSelected = 0
+		c.RedrawSidebar = true
 		var18 = var22.ActionVerb
 		if strings.Contains(var18, " ") {
 			var18 = var18[0:strings.Index(var18, " ")]
@@ -5417,14 +5419,14 @@ func (c *Client) DrawMenu() {
 	var8 := c.MouseY
 	switch c.MenuArea {
 	case 0:
-		var7 -= 8
-		var8 -= 11
+		var7 -= 4
+		var8 -= 4
 	case 1:
-		var7 -= 562
-		var8 -= 231
+		var7 -= 553
+		var8 -= 205
 	case 2:
-		var7 -= 22
-		var8 -= 375
+		var7 -= 17
+		var8 -= 357
 	}
 	for i := range c.MenuSize {
 		var10 := var3 + 31 + (c.MenuSize-1-i)*15
@@ -8653,68 +8655,55 @@ func (c *Client) HandleTabInput() {
 		c.RedrawSidebar = true
 		c.SelectedTab = 0
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 569 && c.MouseClickX <= 599 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[1] != -1 {
+	} else if c.MouseClickX >= 569 && c.MouseClickX <= 599 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[1] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 1
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 597 && c.MouseClickX <= 627 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[2] != -1 {
+	} else if c.MouseClickX >= 597 && c.MouseClickX <= 627 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[2] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 2
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 625 && c.MouseClickX <= 669 && c.MouseClickY >= 168 && c.MouseClickY < 203 && c.TabInterfaceID[3] != -1 {
+	} else if c.MouseClickX >= 625 && c.MouseClickX <= 669 && c.MouseClickY >= 168 && c.MouseClickY < 203 && c.TabInterfaceID[3] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 3
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 666 && c.MouseClickX <= 696 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[4] != -1 {
+	} else if c.MouseClickX >= 666 && c.MouseClickX <= 696 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[4] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 4
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 694 && c.MouseClickX <= 724 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[5] != -1 {
+	} else if c.MouseClickX >= 694 && c.MouseClickX <= 724 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[5] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 5
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 722 && c.MouseClickX <= 756 && c.MouseClickY >= 169 && c.MouseClickY < 205 && c.TabInterfaceID[6] != -1 {
+	} else if c.MouseClickX >= 722 && c.MouseClickX <= 756 && c.MouseClickY >= 169 && c.MouseClickY < 205 && c.TabInterfaceID[6] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 6
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 540 && c.MouseClickX <= 574 && c.MouseClickY >= 466 && c.MouseClickY < 502 && c.TabInterfaceID[7] != -1 {
+	} else if c.MouseClickX >= 540 && c.MouseClickX <= 574 && c.MouseClickY >= 466 && c.MouseClickY < 502 && c.TabInterfaceID[7] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 7
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 572 && c.MouseClickX <= 602 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[8] != -1 {
+	} else if c.MouseClickX >= 572 && c.MouseClickX <= 602 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[8] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 8
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 599 && c.MouseClickX <= 629 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[9] != -1 {
+	} else if c.MouseClickX >= 599 && c.MouseClickX <= 629 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[9] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 9
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 627 && c.MouseClickX <= 671 && c.MouseClickY >= 467 && c.MouseClickY < 502 && c.TabInterfaceID[10] != -1 {
+	} else if c.MouseClickX >= 627 && c.MouseClickX <= 671 && c.MouseClickY >= 467 && c.MouseClickY < 502 && c.TabInterfaceID[10] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 10
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 669 && c.MouseClickX <= 699 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[11] != -1 {
+	} else if c.MouseClickX >= 669 && c.MouseClickX <= 699 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[11] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 11
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 696 && c.MouseClickX <= 726 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[12] != -1 {
+	} else if c.MouseClickX >= 696 && c.MouseClickX <= 726 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[12] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 12
 		c.RedrawSideIcons = true
-	}
-	if c.MouseClickX >= 724 && c.MouseClickX <= 758 && c.MouseClickY >= 466 && c.MouseClickY < 502 && c.TabInterfaceID[13] != -1 {
+	} else if c.MouseClickX >= 724 && c.MouseClickX <= 758 && c.MouseClickY >= 466 && c.MouseClickY < 502 && c.TabInterfaceID[13] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 13
 		c.RedrawSideIcons = true
