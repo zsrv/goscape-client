@@ -40,6 +40,9 @@ func Unpack(arg0 *io.Jagfile) {
 		}
 		Instances[i].Decode(i, var2)
 	}
+	if var2.Pos != len(var2.Data) {
+		fmt.Println("varptype load mismatch") // Java: VarpType.java:76-78
+	}
 }
 
 func (t *VarpType) Decode(arg1 int, arg2 *io.Packet) {

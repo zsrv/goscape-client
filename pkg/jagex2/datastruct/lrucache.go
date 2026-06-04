@@ -12,6 +12,10 @@ package datastruct
 type LruCache[T any] struct {
 	Capacity  int32
 	Available int32
+	// Java: notFound/found (LruCache.java) — hit/miss telemetry written by
+	// get(); no reader exists at this rev (audit datastruct-05).
+	NotFound  int32
+	Found     int32
 	HashTable map[int64]*DoublyLinkable[T]
 	History   *DoublyLinkList[T]
 }
@@ -28,9 +32,11 @@ func NewLruCache[T any](size int32) *LruCache[T] {
 func (l *LruCache[T]) Get(key int64) T {
 	node, ok := l.HashTable[key]
 	if !ok {
+		l.NotFound++
 		var zero T
 		return zero
 	}
+	l.Found++
 	// Java: history.push(var3) — re-pushing an already-linked node
 	// Uncaches it then re-links at the tail (the most-recently-used slot).
 	l.History.Push(node)

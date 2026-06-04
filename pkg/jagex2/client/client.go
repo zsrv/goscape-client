@@ -2326,9 +2326,13 @@ func (c *Client) HandleInputKey() {
 								}
 							}
 							// Java also handles "::lag" here via the lag() stdout
-							// debug dump; lag() is not ported (its counters are
-							// debug-only and unported), so ::lag only reaches the
-							// server CLIENT_CHEAT below.
+							// debug dump; lag() and its whole diagnostic family are
+							// intentionally not ported (audit client-05-04/01-02/
+							// 02-06/13-02, gameshell-02): the drawCycle/flameCycle
+							// counters exist only to be printed here, and the
+							// GameShell.debug run-loop timing ring (otim/opos) was
+							// mapped away by the host-shell RunShell. ::lag still
+							// reaches the server CLIENT_CHEAT below.
 						}
 						if strings.HasPrefix(c.ChatTyped, "::") {
 							c.Out.P1Isaac(io.CLIENTPROT_CLIENT_CHEAT) // Java: pIsaac(11) Client.java:4709
@@ -6557,6 +6561,14 @@ func (c *Client) Draw3DEntityElements() {
 }
 
 func (c *Client) UpdateOrbitCamera(arg0 int) {
+	// Java: Client.java:4476-4480 — the catch reports camera state via
+	// signlink.reporterror then rethrows RuntimeException("eek").
+	defer func() {
+		if r := recover(); r != nil {
+			signlink.ReportErrorFunc("glfc_ex " + strconv.Itoa(c.LocalPlayer.X) + "," + strconv.Itoa(c.LocalPlayer.Z) + "," + strconv.Itoa(c.OrbitCameraX) + "," + strconv.Itoa(c.OrbitCameraZ) + "," + strconv.Itoa(c.SceneCenterZoneX) + "," + strconv.Itoa(c.SceneCenterZoneZ) + "," + strconv.Itoa(c.SceneBaseTileX) + "," + strconv.Itoa(c.SceneBaseTileZ))
+			panic("eek")
+		}
+	}()
 	var2 := c.LocalPlayer.X + c.CameraAnticheatOffsetX
 	var3 := c.LocalPlayer.Z + c.CameraAnticheatOffsetZ
 	if c.OrbitCameraX-var2 < -500 || c.OrbitCameraX-var2 > 500 || c.OrbitCameraZ-var3 < -500 || c.OrbitCameraZ-var3 > 500 {
@@ -7489,6 +7501,10 @@ func (c *Client) Unload() {
 	}
 	c.Stream = nil
 	c.StopMidi()
+	// Java: mouseTracking.active=false / mouseTracking=null (Client.java:
+	// 2015-2018) — MouseTracking is an intentionally unported deob artifact.
+	c.OnDemand.Stop() // Java: Client.java:2020-2021
+	c.OnDemand = nil
 	c.Out = nil
 	c.Login = nil
 	c.In = nil
