@@ -179,11 +179,6 @@ type Client struct {
 	// Java: bankArrangeMode (client.Nh, Client.java:426) — new in 244; set by
 	// SET_VARC clientCode 9 and read at the obj-drag INV_BUTTOND send site.
 	BankArrangeMode int
-	// Java: field1504 (Client.java:860) — set to 255 by opcode 108
-	// (VIEWPORT_FLASH), decremented by 2 per cycle (Client.java:2938-2939),
-	// drives the yellow sine-modulated viewport flash overlay; reset to 0 on
-	// login (Client.java:2696).
-	Field1504 int
 	// Java: warnMembersInNonMembers (client.rf, Client.java:881) — new in 244;
 	// 5th field of LAST_LOGIN_INFO, drives the members-on-free-world welcome
 	// warning (clientCodes 652-655).
@@ -6511,16 +6506,6 @@ func (c *Client) Draw3DEntityElements() {
 		c.UpdateInterfaceAnimation(c.ViewportOverlayInterfaceID, c.SceneDelta)
 		c.DrawInterface(0, 0, iftype.Instances[c.ViewportOverlayInterfaceID], 0)
 	}
-	// Java: Client.java:6560-6565 (new in 244) — yellow sine-modulated
-	// translucent flash band near the viewport bottom while field1264 > 0
-	// (alpha fades as the counter decays).
-	if c.Field1504 > 0 {
-		var17 := 302 - int(math.Abs(math.Sin(float64(c.Field1504)/10.0)*10.0))
-		for i := range 30 {
-			var19 := (30 - i) * 16
-			pix2d.HLineTrans(var17+i, var19, 16776960, 256-var19/2, c.Field1504)
-		}
-	}
 	if c.ViewportInterfaceID != -1 {
 		c.UpdateInterfaceAnimation(c.ViewportInterfaceID, c.SceneDelta)
 		c.DrawInterface(0, 0, iftype.Instances[c.ViewportInterfaceID], 0)
@@ -7165,7 +7150,6 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.SystemUpdateTimer = 0
 		c.IdleTimeout = 0
 		c.HintType = 0
-		c.Field1504 = 0 // Java: Client.java:2696
 		c.MenuSize = 0
 		c.MenuVisible = false
 		c.IdleCycles = 0
@@ -7715,9 +7699,6 @@ func (c *Client) UpdateGame() {
 	}
 	if c.IdleTimeout > 0 {
 		c.IdleTimeout--
-	}
-	if c.Field1504 > 0 { // Java: Client.java:2938-2939
-		c.Field1504 -= 2
 	}
 	for i := 0; i < 5 && c.Read(); i++ {
 	}
@@ -10161,12 +10142,6 @@ func (c *Client) Read() (ok bool) {
 				c.RedrawChatback = true
 			}
 		}
-		c.PacketType = -1
-		return true
-	}
-	// Java: opcode 108 — zero-length viewport-flash trigger (Client.java:8004)
-	if c.PacketType == SERVERPROT_VIEWPORT_FLASH {
-		c.Field1504 = 255
 		c.PacketType = -1
 		return true
 	}
