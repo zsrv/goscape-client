@@ -30,10 +30,10 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/varptype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/clientbuild"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity/playerentity"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
-	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/world"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/world3d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct/jstring"
@@ -1629,7 +1629,7 @@ func SetLowMem() {
 	world3d.LowMemory = true
 	pix3d.LowDetail = true
 	LowMemory = true
-	world.LowMemory = true
+	clientbuild.LowMemory = true
 }
 
 func (c *Client) DrawFlames() {
@@ -2985,7 +2985,7 @@ func (c *Client) UpdateLocChanges() {
 			// Java: Client.java:3568 @176a85f — 245.2 adds a tile-bounds guard
 			// (x/z in [1,102]) before applying the queued newType change; the
 			// oldType revert branch below stays unguarded.
-			if v.StartTime == 0 && v.X >= 1 && v.Z >= 1 && v.X <= 102 && v.Z <= 102 && (v.NewType < 0 || world.ChangeLocAvailable(v.NewType, v.NewShape)) {
+			if v.StartTime == 0 && v.X >= 1 && v.Z >= 1 && v.X <= 102 && v.Z <= 102 && (v.NewType < 0 || clientbuild.ChangeLocAvailable(v.NewType, v.NewShape)) {
 				c.AddLoc(v.NewAngle, v.X, v.Z, v.Layer, v.NewType, v.NewShape, v.Level)
 				v.StartTime = -1
 
@@ -2995,7 +2995,7 @@ func (c *Client) UpdateLocChanges() {
 					loc.Unlink()
 				}
 			}
-		} else if v.OldType < 0 || world.ChangeLocAvailable(v.OldType, v.OldShape) {
+		} else if v.OldType < 0 || clientbuild.ChangeLocAvailable(v.OldType, v.OldShape) {
 			c.AddLoc(v.OldAngle, v.X, v.Z, v.Layer, v.OldType, v.OldShape, v.Level)
 			loc.Unlink()
 		}
@@ -7262,7 +7262,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 	}
 	if var7 == 7 {
 		c.LoginMessage0 = "This world is full."
-		c.LoginMessage1 = "Please use a different world."
+		c.LoginMessage1 = "Please use a different clientbuild."
 		return
 	}
 	if var7 == 8 {
@@ -7286,13 +7286,13 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		return
 	}
 	if var7 == 12 {
-		c.LoginMessage0 = "You need a members account to login to this world."
-		c.LoginMessage1 = "Please subscribe, or use a different world."
+		c.LoginMessage0 = "You need a members account to login to this clientbuild."
+		c.LoginMessage1 = "Please subscribe, or use a different clientbuild."
 		return
 	}
 	if var7 == 13 {
 		c.LoginMessage0 = "Could not complete login."
-		c.LoginMessage1 = "Please try using a different world."
+		c.LoginMessage1 = "Please try using a different clientbuild."
 		return
 	}
 	if var7 == 14 {
@@ -7328,11 +7328,11 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 	}
 	if var7 == 20 {
 		c.LoginMessage0 = "Invalid loginserver requested"
-		c.LoginMessage1 = "Please try using a different world."
+		c.LoginMessage1 = "Please try using a different clientbuild."
 		return
 	}
 	c.LoginMessage0 = "Unexpected server response"
-	c.LoginMessage1 = "Please try using a different world."
+	c.LoginMessage1 = "Please try using a different clientbuild."
 }
 
 func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
@@ -7396,7 +7396,7 @@ func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
 	if arg7 < 3 && c.LevelTileFlags[1][arg1][arg2]&0x2 == 2 {
 		var13 = arg7 + 1
 	}
-	world.AddLoc(arg1, c.LevelCollisionMap[arg7], arg2, arg0, c.LevelHeightMap, arg7, arg4, arg5, c.Scene, var13)
+	clientbuild.AddLoc(arg1, c.LevelCollisionMap[arg7], arg2, arg0, c.LevelHeightMap, arg7, arg4, arg5, c.Scene, var13)
 }
 
 // AppendLoc finds-or-creates the LocChange at (level,x,z,layer) and records the
@@ -8083,7 +8083,7 @@ func SetHighMem() {
 	world3d.LowMemory = false
 	pix3d.LowDetail = false
 	LowMemory = false
-	world.LowMemory = false
+	clientbuild.LowMemory = false
 }
 
 func (c *Client) TryMove(arg0, arg1 int, arg2 bool, arg3, arg4, arg6, arg7, arg8, arg9, arg10, arg11 int) bool {
@@ -8978,7 +8978,7 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 // (b) sceneState==1 → checkScene + 6-minute load-timeout error report, (c)
 // minimap re-create when the current level changes.
 func (c *Client) UpdateSceneState() {
-	if LowMemory && c.SceneState == 2 && world.LevelBuilt != c.CurrentLevel {
+	if LowMemory && c.SceneState == 2 && clientbuild.LevelBuilt != c.CurrentLevel {
 		c.AreaViewport.Bind()
 		c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
 		c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
@@ -9027,7 +9027,7 @@ func (c *Client) CheckScene() int {
 			// Java: ready &= World.checkLocations(x, z, data) — bitwise &= is
 			// unconditional; checkLocations has model.Request side effects, so we
 			// must NOT short-circuit. Evaluate first, then AND into ready.
-			ok := world.CheckLocations(x, z, data)
+			ok := clientbuild.CheckLocations(x, z, data)
 			ready = ready && ok
 		}
 	}
@@ -9037,7 +9037,7 @@ func (c *Client) CheckScene() int {
 		return -4
 	}
 	c.SceneState = 2
-	world.LevelBuilt = c.CurrentLevel
+	clientbuild.LevelBuilt = c.CurrentLevel
 	c.BuildScene()
 	return 0
 }
@@ -9056,17 +9056,17 @@ func (c *Client) BuildScene() {
 	for i := range 4 {
 		c.LevelCollisionMap[i].Reset()
 	}
-	var3 := world.NewWorld(104, c.LevelTileFlags, 104, c.LevelHeightMap)
+	var3 := clientbuild.NewClientBuild(104, c.LevelTileFlags, 104, c.LevelHeightMap)
 	var5 := len(c.SceneMapLandData)
-	world.LowMemory = world3d.LowMemory
+	clientbuild.LowMemory = world3d.LowMemory
 	for i := range var5 {
 		var7 := c.SceneMapIndex[i] >> 8
 		var8 := c.SceneMapIndex[i] & 0xFF
 		if var7 == 33 && var8 >= 71 && var8 <= 73 {
-			world.LowMemory = false
+			clientbuild.LowMemory = false
 		}
 	}
-	if world.LowMemory {
+	if clientbuild.LowMemory {
 		c.Scene.SetMinLevel(c.CurrentLevel)
 	} else {
 		c.Scene.SetMinLevel(0)
@@ -9212,7 +9212,7 @@ func (c *Client) UpdateOnDemand() {
 			}
 		case req.Archive == 93 && c.OnDemand.HasMapLocFile(req.File):
 			// Java: Client.updateOnDemand (Client.java:2469).
-			world.PrefetchLocations(io.NewPacket(req.Data), c.OnDemand)
+			clientbuild.PrefetchLocations(io.NewPacket(req.Data), c.OnDemand)
 		}
 	}
 }

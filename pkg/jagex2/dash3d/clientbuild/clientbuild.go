@@ -1,4 +1,4 @@
-package world
+package clientbuild
 
 import (
 	"math"
@@ -23,8 +23,8 @@ var (
 	ROTATION_WALL_CORNER_TYPE          = []int{16, 32, 64, 128}
 	WALL_DECORATION_ROTATION_FORWARD_X = []int{1, 0, -1, 0}
 	WALL_DECORATION_ROTATION_FORWARD_Z = []int{0, -1, 0, 1}
-	// Java: randomHueOffset = (int)(Math.random()*17.0) - 8 (World.java:86),
-	// randomLightnessOffset = (int)(Math.random()*33.0) - 16 (World.java:89).
+	// Java: randomHueOffset = (int)(Math.random()*17.0) - 8 (ClientBuild.java:86),
+	// randomLightnessOffset = (int)(Math.random()*33.0) - 16 (ClientBuild.java:89).
 	// The cast binds ONLY to the non-negative product, then the subtraction is
 	// integer arithmetic — yielding a uniform -8..8 / -16..16. Casting the whole
 	// expression instead would truncate negatives toward zero (int(-2.5) == -2
@@ -49,7 +49,7 @@ func Reset() {
 	FullBright = false
 }
 
-type World struct {
+type ClientBuild struct {
 	MaxTileX       int
 	MaxTileZ       int
 	LevelHeightMap [][][]int
@@ -70,8 +70,8 @@ type World struct {
 	LevelOccludeMap          [][][]int
 }
 
-func NewWorld(arg0 int, arg1 [][][]int8, arg2 int, arg3 [][][]int) *World {
-	var w World
+func NewClientBuild(arg0 int, arg1 [][][]int8, arg2 int, arg3 [][][]int) *ClientBuild {
+	var w ClientBuild
 	w.MaxTileX = arg2
 	w.MaxTileZ = arg0
 	w.LevelHeightMap = arg3
@@ -130,13 +130,13 @@ func NewWorld(arg0 int, arg1 [][][]int8, arg2 int, arg3 [][][]int) *World {
 	return &w
 }
 
-// Java: spreadHeight (World.java:108-133) — new in 244, replacing 225's
+// Java: spreadHeight (ClientBuild.java:108-133) — new in 244, replacing 225's
 // clearLandscape (water-fill, deleted in 244) for absent neighbouring
 // mapsquares: clears the shadow and copies the ground heightmap inward from
 // the loaded edges so terrain slopes off smoothly instead of dropping to sea
 // level. Note the inclusive (<=) loop bounds: the spread covers 65 rows/cols
 // for a 64-tile square, faithful to Java.
-func (w *World) SpreadHeight(startX, startZ, endX, endZ int) {
+func (w *ClientBuild) SpreadHeight(startX, startZ, endX, endZ int) {
 	for z := startZ; z <= startZ+endZ; z++ {
 		for x := startX; x <= startX+endX; x++ {
 			if x >= 0 && x < w.MaxTileX && z >= 0 && z < w.MaxTileZ {
@@ -158,7 +158,7 @@ func (w *World) SpreadHeight(startX, startZ, endX, endZ int) {
 	}
 }
 
-func (w *World) LoadGround(arg0 []byte, arg1, arg3, arg4, arg5 int) {
+func (w *ClientBuild) LoadGround(arg0 []byte, arg1, arg3, arg4, arg5 int) {
 	var7 := io.NewPacket(arg0)
 	for i := range 4 {
 		for j := range 64 {
@@ -220,7 +220,7 @@ func (w *World) LoadGround(arg0 []byte, arg1, arg3, arg4, arg5 int) {
 	}
 }
 
-func (w *World) LoadLocations(src []byte, scene *world3d.World3D, collision []*dash3d.CollisionMap, zOffset int, xOffset int) {
+func (w *ClientBuild) LoadLocations(src []byte, scene *world3d.World3D, collision []*dash3d.CollisionMap, zOffset int, xOffset int) {
 	buf := io.NewPacket(src)
 	locId := -1
 
@@ -268,7 +268,7 @@ func (w *World) LoadLocations(src []byte, scene *world3d.World3D, collision []*d
 	}
 }
 
-func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape int, scene *world3d.World3D, locId, x int) {
+func (w *ClientBuild) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape int, scene *world3d.World3D, locId, x int) {
 	if LowMemory {
 		if w.LevelTileFlags[level][x][z]&0x10 != 0 {
 			return
@@ -301,7 +301,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 
 	// buildModel returns the scene ModelSource for a (shape, angle): a static loc
 	// model when this loc has no anim, else a self-animating ClientLocAnim. Java:
-	// rev-244 World.addLoc inlines this `if (loc.anim == -1) model =
+	// rev-244 ClientBuild.addLoc inlines this `if (loc.anim == -1) model =
 	// loc.getModel(...) else model = new ClientLocAnim(...)` idiom in every shape
 	// branch; it is hoisted to a closure here. ClientLocAnim's ctor takes the
 	// corner heights in (NW, NE, SW, ..., SE) order (its source arg labels are
@@ -333,7 +333,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 					width = loc.Length
 				}
 
-				// Java: World.java:274-285 — addLoc args are (var15=y, arg2=level,
+				// Java: ClientBuild.java:274-285 — addLoc args are (var15=y, arg2=level,
 				// var17=typeCode, arg3=z, arg9=x, var20=length, var18=info, var19=model,
 				// var22=yaw, var21=width). The shademap is indexed [level][x+i][z+j] and the
 				// outer loop bound is var20 (length); both match here. For an animated loc
@@ -420,7 +420,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 			}
 
 			if loc.WallWidth != 16 {
-				// Java: setDecorOffset(arg2, arg6, wallwidth, -23232, arg1) (World.java:434 @176a85f)
+				// Java: setDecorOffset(arg2, arg6, wallwidth, -23232, arg1) (ClientBuild.java:434 @176a85f)
 				scene.SetWallDecorationOffset(z, level, loc.WallWidth, -23232, x)
 			}
 		} else if shape == 1 {
@@ -476,7 +476,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 				}
 
 				if loc.WallWidth != 16 {
-					// Java: setDecorOffset(arg2, arg6, wallwidth, -23232, arg1) (World.java:489 @176a85f)
+					// Java: setDecorOffset(arg2, arg6, wallwidth, -23232, arg1) (ClientBuild.java:489 @176a85f)
 					scene.SetWallDecorationOffset(z, level, loc.WallWidth, -23232, x)
 				}
 			case 3:
@@ -546,7 +546,7 @@ func (w *World) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape in
 	}
 }
 
-func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
+func (w *ClientBuild) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 	var7 := 0
 	for i := range 4 {
 		for j := range 104 {
@@ -563,7 +563,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 			}
 		}
 	}
-	// Java: World.java:589-607 — fullbright zeroes the per-build random tint
+	// Java: ClientBuild.java:589-607 — fullbright zeroes the per-build random tint
 	// drift instead of advancing it (audit world-1-01)
 	if FullBright {
 		RandomHueOffset = 0
@@ -606,7 +606,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 				var20 = 65536 / var18
 				var21 = (var17 << 8) / var18
 				var22 = var46 + (var9*var19+var10*var20+var11*var21)/var13
-				// Java: World.java:543 — `(var45[k-1][j] >> 2) + ...`. Java `var45` is
+				// Java: ClientBuild.java:543 — `(var45[k-1][j] >> 2) + ...`. Java `var45` is
 				// `byte[][]`; each element is promoted byte->int (sign-extending) before the
 				// arithmetic `>>`. LevelShadeMap is now `[][]int8`, so int(...) per term
 				// reproduces that byte->int promotion exactly (values are 0..50, so the
@@ -722,7 +722,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 								arg0.SetTile(i, j, l, 0, 0, -1, var28, var29, var30, var31, MulHSL(var36, var32), MulHSL(var36, var33), MulHSL(var36, var34), MulHSL(var36, var35), 0, 0, 0, 0, var38, 0)
 							} else {
 								// Java: byte + 1 promotes to 32-bit int BEFORE the add
-								// (World.java:806); widen first so int8(127)+1 cannot wrap.
+								// (ClientBuild.java:806); widen first so int8(127)+1 cannot wrap.
 								var39 = int(w.LevelTileOverlayShape[i][j][l]) + 1
 								var56 := int(w.LevelTileOverlayRotation[i][j][l])
 								var41 := flotype.Instances[var27-1]
@@ -908,7 +908,7 @@ func (w *World) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
 	}
 }
 
-func (w *World) GetDrawLevel(arg0, arg2, arg3 int) int {
+func (w *ClientBuild) GetDrawLevel(arg0, arg2, arg3 int) int {
 	if w.LevelTileFlags[arg0][arg2][arg3]&0x8 == 0 {
 		if arg0 <= 0 || w.LevelTileFlags[1][arg2][arg3]&0x2 == 0 {
 			return arg0
@@ -975,7 +975,7 @@ func MulHSL(arg0, arg1 int) int {
 	return (arg0 & 0xFF80) + arg1
 }
 
-func (w *World) AdjustLightness(arg0, arg1 int) int {
+func (w *ClientBuild) AdjustLightness(arg0, arg1 int) int {
 	if arg0 == -2 {
 		return 12345678
 	}
@@ -996,7 +996,7 @@ func (w *World) AdjustLightness(arg0, arg1 int) int {
 	return (arg0 & 0xFF80) + arg1
 }
 
-func (w *World) HSL24To16(arg0, arg1, arg2 int) int {
+func (w *ClientBuild) HSL24To16(arg0, arg1, arg2 int) int {
 	if arg2 > 179 {
 		arg1 /= 2
 	}
@@ -1015,7 +1015,7 @@ func (w *World) HSL24To16(arg0, arg1, arg2 int) int {
 // ChangeLocAvailable reports whether the LocType id has the model required to
 // render at the given shape, normalizing shape variants first.
 //
-// Java: World.changeLocAvailable (World.java:1096-1105).
+// Java: ClientBuild.changeLocAvailable (ClientBuild.java:1096-1105).
 func ChangeLocAvailable(id, shape int) bool {
 	loc := loctype.Get(id)
 	if shape == 11 {
@@ -1044,8 +1044,8 @@ func AddLoc(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [
 
 	var19 := byte((angle << 6) + shape)
 
-	// See World.AddLoc.buildModel — a static loc model, or a self-animating
-	// ClientLocAnim when this loc has an anim. Java: rev-244 World.addLoc (static).
+	// See ClientBuild.AddLoc.buildModel — a static loc model, or a self-animating
+	// ClientLocAnim when this loc has an anim. Java: rev-244 ClientBuild.addLoc (static).
 	buildModel := func(shape, angle int) entity.ModelSource {
 		if locType.Anim == -1 {
 			return entity.ModelSourceOf(locType.GetModel(shape, angle, heightSW, heightSE, heightNE, heightNW, -1))
@@ -1150,7 +1150,7 @@ func AddLoc(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [
 // CheckLocations checks whether all models needed to render the locs encoded
 // in src are loaded, requesting any missing models as a side effect.
 // Returns true when every visible loc model is ready.
-// Java: World.checkLocations(int xOffset, int zOffset, byte[] src) (c.a(II[B)Z), lines 197-246.
+// Java: ClientBuild.checkLocations(int xOffset, int zOffset, byte[] src) (c.a(II[B)Z), lines 197-246.
 // Called by the WS2 scene-readiness check (Java: Client.java:3277).
 func CheckLocations(xOffset, zOffset int, src []byte) bool {
 	ready := true
@@ -1206,7 +1206,7 @@ outer:
 }
 
 // PrefetchLocations queues model prefetches for all locs encoded in buf.
-// Java: World.prefetchLocations(Packet buf, OnDemand od) (c.a(ILmb;Lvb;)V), lines 248-270.
+// Java: ClientBuild.prefetchLocations(Packet buf, OnDemand od) (c.a(ILmb;Lvb;)V), lines 248-270.
 func PrefetchLocations(buf *io.Packet, od *ondemand.OnDemand) {
 	locId := -1
 	for {

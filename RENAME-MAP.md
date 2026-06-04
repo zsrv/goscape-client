@@ -215,7 +215,7 @@ Each increment lands gate-green (build+vet+test -race+gofmt+golangci-lint),
 zero behavioral change. The "245.2 class" column below is **historical** once
 the corresponding box is checked.
 
-- [ ] **Pass A** `dash3d/world` → `dash3d/clientbuild` (type `World`→`ClientBuild`)
+- [x] **Pass A** `dash3d/world` → `dash3d/clientbuild` (type `World`→`ClientBuild`)
 - [ ] **Pass B** `dash3d/world3d` → `dash3d/world` (type `World3D`→`World`; MUST follow A)
 - [ ] **Pass C** `config/component` → `config/iftype` (type `Component`→`IfType`)
 - [ ] **Pass D** `io.Jagfile` → `io.JagFile` (case only)

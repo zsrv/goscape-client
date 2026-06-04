@@ -1,4 +1,4 @@
-package world
+package clientbuild
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 // TestChangeLocAvailableShapeNormalization verifies the shape normalization in
-// ChangeLocAvailable (Java World.changeLocAvailable, World.java:1096-1105):
+// ChangeLocAvailable (Java ClientBuild.changeLocAvailable, ClientBuild.java:1096-1105):
 // shape 11 maps to 10, and shapes 5..8 all map to 4, before LocType.CheckModel
 // is consulted.
 //
