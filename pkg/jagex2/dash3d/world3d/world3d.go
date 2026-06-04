@@ -496,17 +496,20 @@ func (w *World3D) RemoveLoc1(arg0 *typ.Sprite) {
 	}
 }
 
-func (w *World3D) SetWallDecorationOffset(arg0, arg1, arg2, arg3 int) {
-	var6 := w.LevelTiles[arg0][arg2][arg1]
+// Java: setDecorOffset (World3D.java:569 @176a85f)
+func (w *World3D) SetWallDecorationOffset(arg0, arg1, arg2, arg3, arg4 int) {
+	var6 := w.LevelTiles[arg1][arg4][arg0]
 	if var6 == nil {
 		return
 	}
-	var10 := var6.Decor
-	if var10 != nil {
-		var8 := arg2*128 + 64
-		var9 := arg1*128 + 64
-		var10.X = var8 + (var10.X-var8)*arg3/16
-		var10.Z = var9 + (var10.Z-var9)*arg3/16
+	var7 := var6.Decor
+	if var7 != nil {
+		var8 := arg4*128 + 64
+		var9 := arg0*128 + 64
+		var7.X = var8 + (var7.X-var8)*arg2/16
+		if arg3 == -23232 {
+			var7.Z = var9 + (var7.Z-var9)*arg2/16
+		}
 	}
 }
 

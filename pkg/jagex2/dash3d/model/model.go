@@ -458,6 +458,10 @@ func NewModel1(arg1 int) *Model {
 	var11 = 0
 	var12 := 0
 	var14 := 0
+	// Java: face-orientation decode (Model.java:480-519 @176a85f) — 245.2's
+	// independent if(==1..4) blocks with per-block vertex assignment (orientation
+	// 0/>4 leaves face vertices unassigned). The Go port already had this shape;
+	// 244's else-if chain + post-chain assignment is equivalent for valid data.
 	for i := range m.FaceCount {
 		var14 = vertex2.G1()
 		if var14 == 1 {

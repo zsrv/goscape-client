@@ -142,23 +142,28 @@ func (m *CollisionMap) AddWall(arg1 int, arg2 int, arg3 int, arg4 bool, arg5 int
 	}
 }
 
-func (m *CollisionMap) AddLoc(arg0, arg1, arg2, arg3, arg5 int, arg6 bool) {
+// Java: addLoc (CollisionMap.java:168 @176a85f); arg6 is a 245.2 dead guard —
+// every caller passes false.
+func (m *CollisionMap) AddLoc(arg0, arg1, arg2, arg3 int, arg4 bool, arg5 int, arg6 bool) {
 	var8 := 256
-	if arg6 {
+	if arg4 {
 		var8 += 131072
 	}
-	var11 := arg3 - m.OffsetX
-	var12 := arg5 - m.OffsetZ
-	if arg0 == 1 || arg0 == 3 {
-		var9 := arg2
-		arg2 = arg1
-		arg1 = var9
+	var9 := arg5 - m.OffsetX
+	var10 := arg0 - m.OffsetZ
+	if arg6 {
+		return
 	}
-	for i := var11; i < var11+arg2; i++ {
-		if i >= 0 && i < m.SizeX {
-			for j := var12; j < var12+arg1; j++ {
-				if j >= 0 && j < m.SizeZ {
-					m.AddCMap(i, j, var8)
+	if arg1 == 1 || arg1 == 3 {
+		var11 := arg2
+		arg2 = arg3
+		arg3 = var11
+	}
+	for var12 := var9; var12 < var9+arg2; var12++ {
+		if var12 >= 0 && var12 < m.SizeX {
+			for var13 := var10; var13 < var10+arg3; var13++ {
+				if var13 >= 0 && var13 < m.SizeZ {
+					m.AddCMap(var12, var13, var8)
 				}
 			}
 		}
@@ -442,6 +447,9 @@ func (m *CollisionMap) TestWall(arg1, arg2, arg3, arg4, arg5, arg6 int) bool {
 	return false
 }
 
+// Java: testWDecor (CollisionMap.java:491 @176a85f). 245.2 drops the 244 deob's
+// dead boolean param + NPE guard; the Go port never carried them, so the 6-int
+// shape already matches 245.2 (param numbering differs, logic verified identical).
 func (m *CollisionMap) TestWDecor(arg0, arg1, arg3, arg4, arg5, arg6 int) bool {
 	if arg3 == arg4 && arg5 == arg6 {
 		return true

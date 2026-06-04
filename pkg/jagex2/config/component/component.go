@@ -374,27 +374,34 @@ func (c *Component) GetModel(arg0 int, arg1 int, arg2 bool, localPlayer *playere
 	return var5
 }
 
-// Java: Component.loadModel (Component.java:492-515).
-func (c *Component) LoadModel(typ int, id int, localPlayer *playerentity.ClientPlayer) *model.Model {
-	m := ModelCache.Get((int64(typ) << 16) + int64(id)) // Java: model
-	if m != nil {
-		return m
+// Java: Component.loadModel (Component.java:458-483 @176a85f).
+func (c *Component) LoadModel(arg0 int, arg1 int, localPlayer *playerentity.ClientPlayer) *model.Model {
+	// Java: (long) ((arg0 << 16) + arg1) — 245.2 does int arithmetic and widens
+	// AFTER the add (244 widened type before the shift); int32 wrap preserves
+	// Java int overflow. Equivalent for valid ids.
+	var3 := ModelCache.Get(int64(int32((arg0 << 16) + arg1)))
+	if var3 != nil {
+		return var3
 	}
-	if typ == 1 {
-		m = model.TryGet(id)
-	} else if typ == 2 {
-		m = npctype.Get(id).GetHeadModel()
-	} else if typ == 3 {
-		m = localPlayer.GetHeadModel()
-	} else if typ == 4 {
-		m = objtype.Get(id).GetInvModel(50) // Java: Component.loadModel uses ObjType.getInvModel (not getInterfaceModel) — Component.java:505
-	} else if typ == 5 {
-		m = nil
+	if arg0 == 1 {
+		var3 = model.TryGet(arg1)
 	}
-	if m != nil {
-		ModelCache.Put((int64(typ)<<16)+int64(id), m)
+	if arg0 == 2 {
+		var3 = npctype.Get(arg1).GetHeadModel()
 	}
-	return m
+	if arg0 == 3 {
+		var3 = localPlayer.GetHeadModel()
+	}
+	if arg0 == 4 {
+		var3 = objtype.Get(arg1).GetInvModel(50) // Java: Component.loadModel uses ObjType.getInvModel (not getInterfaceModel) — Component.java:472 @176a85f
+	}
+	if arg0 == 5 {
+		var3 = nil
+	}
+	if var3 != nil {
+		ModelCache.Put(int64(int32((arg0<<16)+arg1)), var3)
+	}
+	return var3
 }
 
 // Java: Component.cacheModel (Component.java:518-523).
