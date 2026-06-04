@@ -65,7 +65,9 @@ type LocType struct {
 	Mirror        bool
 	Shadow        bool
 	ForceDecor    bool
-	Op            []string
+	// Java: breakroutefinding (LocType.java:134 @176a85f) — new at 245.2
+	BreakRouteFinding bool
+	Op                []string
 }
 
 func NewLocType() *LocType {
@@ -146,51 +148,43 @@ func (loc *LocType) Reset() {
 	loc.OffsetY = 0
 	loc.OffsetZ = 0
 	loc.ForceDecor = false
+	loc.BreakRouteFinding = false // Java: reset (LocType.java:220 @176a85f)
 }
 
-func (loc *LocType) Decode(arg1 *io.Packet) {
-	var3 := -1
+// Java: decode (LocType.java:224-345 @176a85f) — 245.2 moves the code==0
+// end-of-stream handling out of the loop and appends the new
+// breakroutefinding post-loop block.
+func (loc *LocType) Decode(buf *io.Packet) {
+	active := -1 // Java: active
+loop:
 	for {
-		var4 := arg1.G1()
-		switch var4 {
+		code := buf.G1() // Java: code
+		switch code {
 		case 0:
-			if loc.Shapes == nil {
-				loc.Shapes = make([]int, 0)
-			}
-			if var3 == -1 {
-				loc.Active = false
-				if len(loc.Shapes) > 0 && loc.Shapes[0] == 10 {
-					loc.Active = true
-				}
-				if loc.Op != nil {
-					loc.Active = true
-					return
-				}
-			}
-			return
+			break loop
 		case 1:
-			var5 := arg1.G1()
-			loc.Shapes = make([]int, var5)
-			loc.Models = make([]int, var5)
-			for i := range var5 {
-				loc.Models[i] = arg1.G2()
-				loc.Shapes[i] = arg1.G1()
+			count := buf.G1() // Java: count
+			loc.Shapes = make([]int, count)
+			loc.Models = make([]int, count)
+			for i := range count {
+				loc.Models[i] = buf.G2()
+				loc.Shapes[i] = buf.G1()
 			}
 		case 2:
-			loc.Name = arg1.GJStr()
+			loc.Name = buf.GJStr()
 		case 3:
-			loc.Desc = arg1.GStrByte()
+			loc.Desc = buf.GStrByte()
 		case 14:
-			loc.Width = arg1.G1()
+			loc.Width = buf.G1()
 		case 15:
-			loc.Length = arg1.G1()
+			loc.Length = buf.G1()
 		case 17:
 			loc.BlockWalk = false
 		case 18:
 			loc.BlockRange = false
 		case 19:
-			var3 = arg1.G1()
-			if var3 == 1 {
+			active = buf.G1()
+			if active == 1 {
 				loc.Active = true
 			}
 		case 21:
@@ -200,63 +194,82 @@ func (loc *LocType) Decode(arg1 *io.Packet) {
 		case 23:
 			loc.Occlude = true
 		case 24:
-			loc.Anim = arg1.G2()
+			loc.Anim = buf.G2()
 			if loc.Anim == 0xFFFF {
 				loc.Anim = -1
 			}
 		case 25:
 			loc.AnimHasAlpha = true
 		case 28:
-			loc.WallWidth = arg1.G1()
+			loc.WallWidth = buf.G1()
 		case 29:
-			loc.Ambient = arg1.G1B()
+			loc.Ambient = buf.G1B()
 		case 39:
-			loc.Contrast = arg1.G1B()
+			loc.Contrast = buf.G1B()
 		case 30, 31, 32, 33, 34, 35, 36, 37, 38:
 			if loc.Op == nil {
 				loc.Op = make([]string, 5)
 			}
-			loc.Op[var4-30] = arg1.GJStr()
+			loc.Op[code-30] = buf.GJStr()
 			// Java assigns op[i] = null here; Go uses "" as the absence marker.
 			// All read sites compare via `!= ""`. The wire format never sends ""
 			// as a legitimate option, so the two markers are equivalent in
 			// practice. Same convention in NpcType and ObjType.
-			if strings.ToLower(loc.Op[var4-30]) == "hidden" {
-				loc.Op[var4-30] = ""
+			if strings.ToLower(loc.Op[code-30]) == "hidden" {
+				loc.Op[code-30] = ""
 			}
 		case 40:
-			var5 := arg1.G1()
-			loc.RecolS = make([]int, var5)
-			loc.RecolD = make([]int, var5)
-			for i := range var5 {
-				loc.RecolS[i] = arg1.G2()
-				loc.RecolD[i] = arg1.G2()
+			count := buf.G1() // Java: count
+			loc.RecolS = make([]int, count)
+			loc.RecolD = make([]int, count)
+			for i := range count {
+				loc.RecolS[i] = buf.G2()
+				loc.RecolD[i] = buf.G2()
 			}
 		case 60:
-			loc.MapFunction = arg1.G2()
+			loc.MapFunction = buf.G2()
 		case 62:
 			loc.Mirror = true
 		case 64:
 			loc.Shadow = false
 		case 65:
-			loc.ResizeX = arg1.G2()
+			loc.ResizeX = buf.G2()
 		case 66:
-			loc.ResizeY = arg1.G2()
+			loc.ResizeY = buf.G2()
 		case 67:
-			loc.ResizeZ = arg1.G2()
+			loc.ResizeZ = buf.G2()
 		case 68:
-			loc.MapScene = arg1.G2()
+			loc.MapScene = buf.G2()
 		case 69:
-			loc.ForceApproach = arg1.G1()
+			loc.ForceApproach = buf.G1()
 		case 70:
-			loc.OffsetX = arg1.G2B()
+			loc.OffsetX = buf.G2B()
 		case 71:
-			loc.OffsetY = arg1.G2B()
+			loc.OffsetY = buf.G2B()
 		case 72:
-			loc.OffsetZ = arg1.G2B()
+			loc.OffsetZ = buf.G2B()
 		case 73:
 			loc.ForceDecor = true
+		case 74:
+			loc.BreakRouteFinding = true
 		}
+	}
+	if loc.Shapes == nil {
+		loc.Shapes = make([]int, 0)
+	}
+	if active == -1 {
+		loc.Active = false
+		if len(loc.Shapes) > 0 && loc.Shapes[0] == 10 {
+			loc.Active = true
+		}
+		if loc.Op != nil {
+			loc.Active = true
+		}
+	}
+	// Java: LocType.java:341-344 @176a85f — new at 245.2
+	if loc.BreakRouteFinding {
+		loc.BlockWalk = false
+		loc.BlockRange = false
 	}
 }
 
