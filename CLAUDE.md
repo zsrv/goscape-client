@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Go port of the RuneScape 2 (release #225) Java client. The codebase is a direct translation from Java to Go, preserving the original game logic while adapting to Go's idioms and type system.
+This is a Go port of the RuneScape 2 (release #254 on this branch) Java client. The codebase is a direct translation from Java to Go, preserving the original game logic while adapting to Go's idioms and type system.
 
 ## Build & Run
 
@@ -47,10 +47,10 @@ The `main` goroutine flow (from `main.go`):
 | `client/` | Top-level `Client` struct and `GameShell`; owns the main game loop, network I/O, and rendering orchestration |
 | `client/clientextras/` | Variables split out of `client` to avoid circular imports |
 | `client/inputtracking/` | Mouse/keyboard input state |
-| `config/{component,flotype,loctype,npctype,objtype,seqtype,spotanimtype,varptype,idktype}` | Game config/definition types loaded from cache files |
+| `config/{iftype,flotype,loctype,npctype,objtype,seqtype,spotanimtype,varptype,idktype}` | Game config/definition types loaded from cache files (`iftype` was `component` in ≤245.2; Java 254 `IfType`) |
 | `dash3d/` | Global scene variables for 3D rendering |
-| `dash3d/world/` | Scene/tile building; converts cache data into a renderable `World3d` scene |
-| `dash3d/world3d/` | The scene graph (tiles, entities, occlusion) |
+| `dash3d/clientbuild/` | Scene/tile building; converts cache data into a renderable scene (Java 254 `ClientBuild`; was `World` in ≤245.2) |
+| `dash3d/world/` | The scene graph (tiles, entities, occlusion) (Java 254 `World`; was `World3D` in ≤245.2 — **name-reuse trap**, see `RENAME-MAP.md`) |
 | `dash3d/entity/` | Entity types (244 names): `ClientEntity`, `ClientNpc`, `ClientPlayer`, `ClientLocAnim`, `ClientObj`, `ClientProj`, `MapSpotAnim`, `LocChange`, `ModelSource` (interface). `LocChange` is the rev-244 merge of the old `LocChange` + `LocMergeEntity` (see `locchange.go`) |
 | `dash3d/typ/` | Per-tile scene types (244 names): `Square` (tile aggregate), `Sprite` (loc), `Ground` (overlay mesh), `QuickGround` (underlay), `Wall`, `Decor`, `GroundDecor`, `GroundObject` |
 | `dash3d/model/` | 3D model data and rasterization (moved from `graphics/` in rev-244) |
@@ -64,7 +64,7 @@ The `main` goroutine flow (from `main.go`):
 | `graphics/pixfont/` | Bitmap font rendering |
 | `graphics/pixmap/` | CPU-side pixel buffer bridging the game renderer to GPU upload (via the `platform` backend) |
 | `datastruct/` | Generic `LruCache[T]`, doubly-linked list, `JString` |
-| `io/` | `Packet` (binary reader/writer), `Jagfile` (JAG archive), ISAAC CSPRNG, `bzip2` decompressor, network protocol constants |
+| `io/` | `Packet` (binary reader/writer), `JagFile` (JAG archive), ISAAC CSPRNG, `bzip2` decompressor (protocol constants moved to `client/` in rev-254, per Java `io/Protocol` → `client/Protocol`) |
 | `sound/wave/` | PCM wave audio |
 | `sound/envelope/` & `tone/` | MIDI-style sound envelope/tone synthesis |
 | `wordenc/wordfilter/` & `wordpack/` | Chat word filter and word packing |
@@ -85,4 +85,4 @@ The game renders to CPU-side pixel buffers (`pix2d`, `pix8`, `pix32`) and the fi
 
 ### Global State Pattern
 
-Most packages use package-level `var` blocks for state (mirroring Java statics). The `Client` struct in `client/` is the main aggregate, but rendering subsystems (`pix3d`, `model`, `world`) also carry significant global state. This is intentional — it mirrors the original Java architecture.
+Most packages use package-level `var` blocks for state (mirroring Java statics). The `Client` struct in `client/` is the main aggregate, but rendering subsystems (`pix3d`, `model`, `clientbuild`) also carry significant global state. This is intentional — it mirrors the original Java architecture.
