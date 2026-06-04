@@ -219,7 +219,9 @@ the corresponding box is checked.
 - [x] **Pass B** `dash3d/world3d` → `dash3d/world` (type `World3D`→`World`; MUST follow A)
 - [x] **Pass C** `config/component` → `config/iftype` (type `Component`→`IfType`)
 - [x] **Pass D** `io.Jagfile` → `io.JagFile` (case only)
-- [ ] **Pass E** `io/protocol.go` → `client/protocol.go`
+- [x] **Pass E** `io/protocol.go` → `client/protocol.go` (+ the Go-side named
+  opcode tables `io/serverprot.go`/`io/clientprot.go`, which materialize the
+  same protocol knowledge and had `client` as their only external consumer)
 
 Extraction: 72 `.java` files at 176a85f, 74 at 2e62978. All 70 keyed classes
 in 245.2 joined to exactly one class in 254. Two keys (`rc`, `sc`) are new in

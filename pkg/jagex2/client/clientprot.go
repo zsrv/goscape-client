@@ -1,4 +1,4 @@
-package io
+package client
 
 // 245.2 client→server opcodes. Numbers: Client.java pIsaac/interactWithLoc
 // sites @176a85f; names: the deob's adjacent // LABEL comments (verified

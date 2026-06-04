@@ -1,4 +1,4 @@
-package io
+package client
 
 // 245.2 server→client opcodes. Numbers: Client.java readPacket/readZonePacket
 // dispatch @176a85f; names: the deob's adjacent // LABEL comments (verified
