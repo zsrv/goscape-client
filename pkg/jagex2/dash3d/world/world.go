@@ -1,4 +1,4 @@
-package world3d
+package world
 
 import (
 	"fmt"
@@ -83,7 +83,7 @@ func init() {
 	}
 }
 
-type World3D struct {
+type World struct {
 	MaxLevel                 int
 	MaxTileX                 int
 	MaxTileZ                 int
@@ -100,8 +100,8 @@ type World3D struct {
 	MINIMAP_OVERLAY_ROTATION [][]int
 }
 
-func NewWorld3D(LevelHeightMaps [][][]int, maxTileZ, maxLevel, maxTileX int) *World3D {
-	var w World3D
+func NewWorld(LevelHeightMaps [][][]int, maxTileZ, maxLevel, maxTileX int) *World {
+	var w World
 	w.TemporaryLocs = make([]*typ.Sprite, 5000)
 	w.MergeIndexA = make([]int, 10000)
 	w.MergeIndexB = make([]int, 10000)
@@ -139,7 +139,7 @@ func Unload() {
 	VisibilityMap = nil
 }
 
-func (w *World3D) Reset() {
+func (w *World) Reset() {
 	for i := range w.MaxLevel {
 		for j := range w.MaxTileX {
 			for k := range w.MaxTileZ {
@@ -162,7 +162,7 @@ func (w *World3D) Reset() {
 	}
 }
 
-func (w *World3D) SetMinLevel(level int) {
+func (w *World) SetMinLevel(level int) {
 	w.Minlevel = level
 	for i := range w.MaxTileX {
 		for j := range w.MaxTileZ {
@@ -171,7 +171,7 @@ func (w *World3D) SetMinLevel(level int) {
 	}
 }
 
-func (w *World3D) SetBridge(arg0, arg1 int) {
+func (w *World) SetBridge(arg0, arg1 int) {
 	var4 := w.LevelTiles[0][arg1][arg0]
 	for i := range 3 {
 		w.LevelTiles[i][arg1][arg0] = w.LevelTiles[i+1][arg1][arg0]
@@ -203,14 +203,14 @@ func AddOccluder(arg0, arg1, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 	LevelOccluderCount[arg6]++
 }
 
-func (w *World3D) SetDrawLevel(arg0, arg1, arg2, arg3 int) {
+func (w *World) SetDrawLevel(arg0, arg1, arg2, arg3 int) {
 	var5 := w.LevelTiles[arg0][arg1][arg2]
 	if var5 != nil {
 		w.LevelTiles[arg0][arg1][arg2].DrawLevel = arg3
 	}
 }
 
-func (w *World3D) SetTile(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19 int) {
+func (w *World) SetTile(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19 int) {
 	switch arg3 {
 	case 0:
 		var21 := typ.NewQuickGround(arg10, arg11, arg12, arg13, -1, arg18, false)
@@ -239,7 +239,7 @@ func (w *World3D) SetTile(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, 
 	}
 }
 
-func (w *World3D) AddGroundDecoration(arg0 entity.ModelSource, arg2, arg3, arg4, arg5 int, arg6 byte, arg7 int) {
+func (w *World) AddGroundDecoration(arg0 entity.ModelSource, arg2, arg3, arg4, arg5 int, arg6 byte, arg7 int) {
 	if arg0 == nil {
 		return
 	}
@@ -256,7 +256,7 @@ func (w *World3D) AddGroundDecoration(arg0 entity.ModelSource, arg2, arg3, arg4,
 	w.LevelTiles[arg5][arg2][arg4].GroundDecor = var9
 }
 
-func (w *World3D) AddObjStack(arg0, arg1 entity.ModelSource, arg2, arg3, arg4, arg5, arg6 int, arg7 entity.ModelSource) {
+func (w *World) AddObjStack(arg0, arg1 entity.ModelSource, arg2, arg3, arg4, arg5, arg6 int, arg7 entity.ModelSource) {
 	var10 := typ.NewGroundObject()
 	var10.TopObj = arg0
 	var10.X = arg6*128 + 64
@@ -286,7 +286,7 @@ func (w *World3D) AddObjStack(arg0, arg1 entity.ModelSource, arg2, arg3, arg4, a
 	w.LevelTiles[arg3][arg6][arg5].GroundObj = var10
 }
 
-func (w *World3D) AddWall(angle2, y, level, angle1 int, model1 entity.ModelSource, model2 entity.ModelSource, tileX, typecode1, tileZ int, typecode2 byte) {
+func (w *World) AddWall(angle2, y, level, angle1 int, model1 entity.ModelSource, model2 entity.ModelSource, tileX, typecode1, tileZ int, typecode2 byte) {
 	if model1 == nil && model2 == nil {
 		return
 	}
@@ -312,7 +312,7 @@ func (w *World3D) AddWall(angle2, y, level, angle1 int, model1 entity.ModelSourc
 }
 
 // AddDecor
-func (w *World3D) SetWallDecoration(y, z, zOffset, typecode, angle2, angle1, xOffset, x int, modelSrc entity.ModelSource, typecode2 byte, level int) {
+func (w *World) SetWallDecoration(y, z, zOffset, typecode, angle2, angle1, xOffset, x int, modelSrc entity.ModelSource, typecode2 byte, level int) {
 	if modelSrc == nil {
 		return
 	}
@@ -340,7 +340,7 @@ func (w *World3D) SetWallDecoration(y, z, zOffset, typecode, angle2, angle1, xOf
 	w.LevelTiles[level][x][z].Decor = decor
 }
 
-func (w *World3D) AddLoc1(arg0 int, arg2 int, arg4, arg5, arg6, arg7 int, arg8 byte, arg9 entity.ModelSource, arg10, arg11 int) bool {
+func (w *World) AddLoc1(arg0 int, arg2 int, arg4, arg5, arg6, arg7 int, arg8 byte, arg9 entity.ModelSource, arg10, arg11 int) bool {
 	if arg9 == nil {
 		return true
 	}
@@ -349,7 +349,7 @@ func (w *World3D) AddLoc1(arg0 int, arg2 int, arg4, arg5, arg6, arg7 int, arg8 b
 	return w.AddLoc2(arg2, arg6, arg5, arg7, arg11, var13, var14, arg0, arg9, arg10, false, arg4, arg8)
 }
 
-func (w *World3D) AddTemporary1(arg1, arg2, yaw, arg4, arg5 int, forwardPadding bool, arg8 entity.ModelSource, arg9, arg10 int) bool {
+func (w *World) AddTemporary1(arg1, arg2, yaw, arg4, arg5 int, forwardPadding bool, arg8 entity.ModelSource, arg9, arg10 int) bool {
 	if arg8 == nil {
 		return true
 	}
@@ -385,14 +385,14 @@ func (w *World3D) AddTemporary1(arg1, arg2, yaw, arg4, arg5 int, forwardPadding 
 	return w.AddLoc2(arg10, x0, z0, x1-x0+1, z1-z0+1, arg4, arg1, arg9, arg8, yaw, true, arg5, byte(0))
 }
 
-func (w *World3D) AddTemporary2(arg0 int, arg3, arg4, arg5, arg6, arg7, arg8 int, arg9 entity.ModelSource, arg11, arg12, arg13 int) bool {
+func (w *World) AddTemporary2(arg0 int, arg3, arg4, arg5, arg6, arg7, arg8 int, arg9 entity.ModelSource, arg11, arg12, arg13 int) bool {
 	if arg9 == nil {
 		return true
 	}
 	return w.AddLoc2(arg11, arg8, arg7, arg0-arg8+1, arg12-arg7+1, arg13, arg3, arg4, arg9, arg6, true, arg5, byte(0))
 }
 
-func (w *World3D) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, arg8 entity.ModelSource, arg10 int, arg11 bool, arg12 int, arg13 byte) bool {
+func (w *World) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, arg8 entity.ModelSource, arg10 int, arg11 bool, arg12 int, arg13 byte) bool {
 	for i := arg1; i < arg1+arg3; i++ {
 		for j := arg2; j < arg2+arg4; j++ {
 			if i < 0 || j < 0 || i >= w.MaxTileX || j >= w.MaxTileZ {
@@ -458,7 +458,7 @@ func (w *World3D) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, ar
 }
 
 // ClearLocChanges
-func (w *World3D) ClearTemporaryLocs() {
+func (w *World) ClearTemporaryLocs() {
 	for i := range w.TemporaryLocCount {
 		loc := w.TemporaryLocs[i]
 		w.RemoveLoc1(loc)
@@ -468,7 +468,7 @@ func (w *World3D) ClearTemporaryLocs() {
 	w.TemporaryLocCount = 0
 }
 
-func (w *World3D) RemoveLoc1(arg0 *typ.Sprite) {
+func (w *World) RemoveLoc1(arg0 *typ.Sprite) {
 	for i := arg0.MinSceneTileX; i <= arg0.MaxSceneTileX; i++ {
 		for j := arg0.MinSceneTileZ; j <= arg0.MaxSceneTileZ; j++ {
 			var5 := w.LevelTiles[arg0.Level][i][j]
@@ -493,8 +493,8 @@ func (w *World3D) RemoveLoc1(arg0 *typ.Sprite) {
 	}
 }
 
-// Java: setDecorOffset (World3D.java:569 @176a85f)
-func (w *World3D) SetWallDecorationOffset(arg0, arg1, arg2, arg3, arg4 int) {
+// Java: setDecorOffset (World.java:569 @176a85f)
+func (w *World) SetWallDecorationOffset(arg0, arg1, arg2, arg3, arg4 int) {
 	var6 := w.LevelTiles[arg1][arg4][arg0]
 	if var6 == nil {
 		return
@@ -510,21 +510,21 @@ func (w *World3D) SetWallDecorationOffset(arg0, arg1, arg2, arg3, arg4 int) {
 	}
 }
 
-func (w *World3D) RemoveWall(arg0, arg1, arg2 int) {
+func (w *World) RemoveWall(arg0, arg1, arg2 int) {
 	var5 := w.LevelTiles[arg1][arg0][arg2]
 	if var5 != nil {
 		var5.Wall = nil
 	}
 }
 
-func (w *World3D) RemoveWallDecoration(arg0, arg1, arg3 int) {
+func (w *World) RemoveWallDecoration(arg0, arg1, arg3 int) {
 	var5 := w.LevelTiles[arg0][arg3][arg1]
 	if var5 != nil {
 		var5.Decor = nil
 	}
 }
 
-func (w *World3D) RemoveLoc2(arg0, arg1, arg3 int) {
+func (w *World) RemoveLoc2(arg0, arg1, arg3 int) {
 	var5 := w.LevelTiles[arg3][arg0][arg1]
 	if var5 == nil {
 		return
@@ -538,14 +538,14 @@ func (w *World3D) RemoveLoc2(arg0, arg1, arg3 int) {
 	}
 }
 
-func (w *World3D) RemoveGroundDecoration(arg0, arg2, arg3 int) {
+func (w *World) RemoveGroundDecoration(arg0, arg2, arg3 int) {
 	var5 := w.LevelTiles[arg0][arg2][arg3]
 	if var5 != nil {
 		var5.GroundDecor = nil
 	}
 }
 
-func (w *World3D) RemoveObjStack(arg0, arg1, arg2 int) {
+func (w *World) RemoveObjStack(arg0, arg1, arg2 int) {
 	var4 := w.LevelTiles[arg0][arg1][arg2]
 	if var4 != nil {
 		var4.GroundObj = nil
@@ -553,9 +553,9 @@ func (w *World3D) RemoveObjStack(arg0, arg1, arg2 int) {
 }
 
 // GetWall returns the wall node at (arg2=level, arg0, arg1), or nil. Java:
-// rev-244 World3D.getWall — used by the dynamic loc-anim / loc-change apply path
+// rev-244 World.getWall — used by the dynamic loc-anim / loc-change apply path
 // to retarget a node's ModelSource.
-func (w *World3D) GetWall(arg0, arg1, arg2 int) *typ.Wall {
+func (w *World) GetWall(arg0, arg1, arg2 int) *typ.Wall {
 	var6 := w.LevelTiles[arg2][arg0][arg1]
 	if var6 == nil {
 		return nil
@@ -564,8 +564,8 @@ func (w *World3D) GetWall(arg0, arg1, arg2 int) *typ.Wall {
 }
 
 // GetDecor returns the decor node at (arg1=level, arg0, arg3), or nil. Java:
-// rev-244 World3D.getDecor.
-func (w *World3D) GetDecor(arg0, arg1, arg3 int) *typ.Decor {
+// rev-244 World.getDecor.
+func (w *World) GetDecor(arg0, arg1, arg3 int) *typ.Decor {
 	var5 := w.LevelTiles[arg1][arg0][arg3]
 	if var5 == nil {
 		return nil
@@ -574,8 +574,8 @@ func (w *World3D) GetDecor(arg0, arg1, arg3 int) *typ.Decor {
 }
 
 // GetSprite returns the layer-2 loc sprite at (arg0=level, arg3, arg1), or nil.
-// Java: rev-244 World3D.getSprite.
-func (w *World3D) GetSprite(arg0, arg1, arg3 int) *typ.Sprite {
+// Java: rev-244 World.getSprite.
+func (w *World) GetSprite(arg0, arg1, arg3 int) *typ.Sprite {
 	var5 := w.LevelTiles[arg0][arg3][arg1]
 	if var5 == nil {
 		return nil
@@ -590,8 +590,8 @@ func (w *World3D) GetSprite(arg0, arg1, arg3 int) *typ.Sprite {
 }
 
 // GetGroundDecor returns the ground-decor node at (arg3=level, arg1, arg2), or
-// nil. Java: rev-244 World3D.getGroundDecor.
-func (w *World3D) GetGroundDecor(arg1, arg2, arg3 int) *typ.GroundDecor {
+// nil. Java: rev-244 World.getGroundDecor.
+func (w *World) GetGroundDecor(arg1, arg2, arg3 int) *typ.GroundDecor {
 	var5 := w.LevelTiles[arg3][arg1][arg2]
 	if var5 == nil || var5.GroundDecor == nil {
 		return nil
@@ -599,7 +599,7 @@ func (w *World3D) GetGroundDecor(arg1, arg2, arg3 int) *typ.GroundDecor {
 	return var5.GroundDecor
 }
 
-func (w *World3D) GetWallBitSet(arg0, arg1, arg2 int) int {
+func (w *World) GetWallBitSet(arg0, arg1, arg2 int) int {
 	var4 := w.LevelTiles[arg0][arg1][arg2]
 	if var4 == nil || var4.Wall == nil {
 		return 0
@@ -607,7 +607,7 @@ func (w *World3D) GetWallBitSet(arg0, arg1, arg2 int) int {
 	return var4.Wall.BitSet
 }
 
-func (w *World3D) GetWallDecorationBitSet(arg0, arg1, arg3 int) int {
+func (w *World) GetWallDecorationBitSet(arg0, arg1, arg3 int) int {
 	var5 := w.LevelTiles[arg0][arg3][arg1]
 	if var5 == nil || var5.Decor == nil {
 		return 0
@@ -615,7 +615,7 @@ func (w *World3D) GetWallDecorationBitSet(arg0, arg1, arg3 int) int {
 	return var5.Decor.BitSet
 }
 
-func (w *World3D) GetLocBitSet(arg0, arg1, arg2 int) int {
+func (w *World) GetLocBitSet(arg0, arg1, arg2 int) int {
 	var4 := w.LevelTiles[arg0][arg1][arg2]
 	if var4 == nil {
 		return 0
@@ -629,7 +629,7 @@ func (w *World3D) GetLocBitSet(arg0, arg1, arg2 int) int {
 	return 0
 }
 
-func (w *World3D) GetGroundDecorationBitSet(arg0, arg1, arg2 int) int {
+func (w *World) GetGroundDecorationBitSet(arg0, arg1, arg2 int) int {
 	var4 := w.LevelTiles[arg0][arg1][arg2]
 	if var4 == nil || var4.GroundDecor == nil {
 		return 0
@@ -637,7 +637,7 @@ func (w *World3D) GetGroundDecorationBitSet(arg0, arg1, arg2 int) int {
 	return var4.GroundDecor.BitSet
 }
 
-func (w *World3D) GetInfo(arg0, arg1, arg2, arg3 int) int {
+func (w *World) GetInfo(arg0, arg1, arg2, arg3 int) int {
 	var5 := w.LevelTiles[arg0][arg1][arg2]
 	if var5 == nil {
 		return -1
@@ -659,7 +659,7 @@ func (w *World3D) GetInfo(arg0, arg1, arg2, arg3 int) int {
 	return -1
 }
 
-func (w *World3D) BuildModels(arg0, arg1, arg2, lightAttenuation, arg4 int) {
+func (w *World) BuildModels(arg0, arg1, arg2, lightAttenuation, arg4 int) {
 	lightMagnitude := int(math.Sqrt(float64(arg2*arg2 + arg0*arg0 + arg4*arg4)))
 	attenuation := (lightAttenuation * lightMagnitude) >> 8
 
@@ -709,7 +709,7 @@ func (w *World3D) BuildModels(arg0, arg1, arg2, lightAttenuation, arg4 int) {
 	}
 }
 
-func (w *World3D) MergeGroundDecorationNormals(arg1 int, arg2 int, arg3 *model.Model, arg4 int) {
+func (w *World) MergeGroundDecorationNormals(arg1 int, arg2 int, arg3 *model.Model, arg4 int) {
 	// Java: rev-244 reads groundDecor.model.vertexNormal off the ModelSource
 	// then casts (Model); the (*model.Model) assertion below gates on a static
 	// model and skips self-animating ClientLocAnim ground decor.
@@ -748,7 +748,7 @@ func (w *World3D) MergeGroundDecorationNormals(arg1 int, arg2 int, arg3 *model.M
 	}
 }
 
-func (w *World3D) MergeLocNormals(arg0, arg1, arg2, arg3 int, arg5 *model.Model, arg6 int) {
+func (w *World) MergeLocNormals(arg0, arg1, arg2, arg3 int, arg5 *model.Model, arg6 int) {
 	var8 := true
 	var9 := arg0
 	var10 := arg0 + arg1
@@ -793,7 +793,7 @@ func (w *World3D) MergeLocNormals(arg0, arg1, arg2, arg3 int, arg5 *model.Model,
 	}
 }
 
-func (w *World3D) MergeNormals(modelA, modelB *model.Model, arg2, offsetY, arg4 int, arg5 bool) {
+func (w *World) MergeNormals(modelA, modelB *model.Model, arg2, offsetY, arg4 int, arg5 bool) {
 	w.TmpMergeIndex++
 
 	merged := 0
@@ -846,7 +846,7 @@ func (w *World3D) MergeNormals(modelA, modelB *model.Model, arg2, offsetY, arg4 
 	}
 }
 
-func (w *World3D) DrawMinimapTile(arg0 []int, arg1, arg2, arg3, arg4, arg5 int) {
+func (w *World) DrawMinimapTile(arg0 []int, arg1, arg2, arg3, arg4, arg5 int) {
 	var7 := w.LevelTiles[arg3][arg4][arg5]
 	if var7 == nil {
 		return
@@ -1026,7 +1026,7 @@ func TestPoint(arg0, arg1, arg2 int) bool {
 	}
 }
 
-func (w *World3D) Click(mouseY, mouseX int) {
+func (w *World) Click(mouseY, mouseX int) {
 	TakingInput = true
 	MouseX = mouseX
 	MouseY = mouseY
@@ -1034,7 +1034,7 @@ func (w *World3D) Click(mouseY, mouseX int) {
 	ClickTileZ = -1
 }
 
-func (w *World3D) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
+func (w *World) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 	if arg1 < 0 {
 		arg1 = 0
 	} else if arg1 >= w.MaxTileX*128 {
@@ -1185,7 +1185,7 @@ func (w *World3D) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 	}
 }
 
-func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
+func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 	DrawTileQueue.AddTail(next.DrawQueueNode)
 
 	for {
@@ -1746,7 +1746,7 @@ func (w *World3D) DrawTile(next *typ.Square, checkAdjacent bool) {
 	}
 }
 
-func (w *World3D) DrawTileUnderlay(arg0 *typ.QuickGround, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int) {
+func (w *World) DrawTileUnderlay(arg0 *typ.QuickGround, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int) {
 	var9 := (arg6 << 7) - EyeX
 	var10 := var9
 	var11 := (arg7 << 7) - EyeZ
@@ -1849,7 +1849,7 @@ func (w *World3D) DrawTileUnderlay(arg0 *typ.QuickGround, arg1, arg2, arg3, arg4
 	}
 }
 
-func (w *World3D) DrawTileOverlay(arg0 int, arg1 int, arg2 *typ.Ground, arg3, arg4, arg5, arg6 int) {
+func (w *World) DrawTileOverlay(arg0 int, arg1 int, arg2 *typ.Ground, arg3, arg4, arg5, arg6 int) {
 	var9 := len(arg2.VertexX)
 	for i := range var9 {
 		var11 := arg2.VertexX[i] - EyeX
@@ -1907,7 +1907,7 @@ func (w *World3D) DrawTileOverlay(arg0 int, arg1 int, arg2 *typ.Ground, arg3, ar
 	}
 }
 
-func (w *World3D) MulLightness(arg0, arg1 int) int {
+func (w *World) MulLightness(arg0, arg1 int) int {
 	var4 := 127 - arg0
 	arg0 = var4 * (arg1 & 0x7F) / 160
 	if arg0 < 2 {
@@ -1918,11 +1918,11 @@ func (w *World3D) MulLightness(arg0, arg1 int) int {
 	return (arg1 & 0xFF80) + arg0
 }
 
-func (w *World3D) PointInsideTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int) bool {
+func (w *World) PointInsideTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int) bool {
 	if arg1 < arg2 && arg1 < arg3 && arg1 < arg4 {
 		return false
 	}
-	// Java: World3D.java:1889 — all-three-greater early reject.
+	// Java: World.java:1889 — all-three-greater early reject.
 	if arg1 > arg2 && arg1 > arg3 && arg1 > arg4 {
 		return false
 	}
@@ -1938,7 +1938,7 @@ func (w *World3D) PointInsideTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, 
 	return var9*var11 > 0 && var11*var10 > 0
 }
 
-func (w *World3D) UpdateActiveOccluders() {
+func (w *World) UpdateActiveOccluders() {
 	var2 := LevelOccluderCount[TopLevel]
 	var3 := LevelOccluders[TopLevel]
 	ActiveOccluderCount = 0
@@ -2054,7 +2054,7 @@ func (w *World3D) UpdateActiveOccluders() {
 	}
 }
 
-func (w *World3D) TileVisible(arg0, arg1, arg2 int) bool {
+func (w *World) TileVisible(arg0, arg1, arg2 int) bool {
 	var4 := w.LevelTileOcclusionCycles[arg0][arg1][arg2]
 	if var4 == -Cycle {
 		return false
@@ -2075,7 +2075,7 @@ func (w *World3D) TileVisible(arg0, arg1, arg2 int) bool {
 	return false
 }
 
-func (w *World3D) WallVisible(arg0, arg1, arg2, arg3 int) bool {
+func (w *World) WallVisible(arg0, arg1, arg2, arg3 int) bool {
 	if !w.TileVisible(arg0, arg1, arg2) {
 		return false
 	}
@@ -2206,7 +2206,7 @@ func (w *World3D) WallVisible(arg0, arg1, arg2, arg3 int) bool {
 	return true
 }
 
-func (w *World3D) Visible(arg0, arg1, arg2, arg3 int) bool {
+func (w *World) Visible(arg0, arg1, arg2, arg3 int) bool {
 	if w.TileVisible(arg0, arg1, arg2) {
 		var5 := arg1 << 7
 		var6 := arg2 << 7
@@ -2218,7 +2218,7 @@ func (w *World3D) Visible(arg0, arg1, arg2, arg3 int) bool {
 	return false
 }
 
-func (w *World3D) LocVisible(arg0, arg1, arg2, arg3, arg4, arg5 int) bool {
+func (w *World) LocVisible(arg0, arg1, arg2, arg3, arg4, arg5 int) bool {
 	if arg1 != arg2 || arg3 != arg4 {
 		for i := arg1; i <= arg2; i++ {
 			for j := arg3; j <= arg4; j++ {
@@ -2257,7 +2257,7 @@ func (w *World3D) LocVisible(arg0, arg1, arg2, arg3, arg4, arg5 int) bool {
 	return false
 }
 
-func (w *World3D) Occluded(arg0, arg1, arg2 int) bool {
+func (w *World) Occluded(arg0, arg1, arg2 int) bool {
 	for i := range ActiveOccluderCount {
 		var5 := ActiveOccluders[i]
 		var6 := 0

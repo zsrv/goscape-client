@@ -1,4 +1,4 @@
-package world3d
+package world
 
 import (
 	"testing"
@@ -41,7 +41,7 @@ func TestOccludedMode5_UsesZDeltaForZProjection(t *testing.T) {
 	ActiveOccluders[0] = occ
 	ActiveOccluderCount = 1
 
-	w := &World3D{}
+	w := &World{}
 
 	// arg0=X=50, arg1=Y=200, arg2=Z=200.
 	// var6 = Y - MinY = 200.
@@ -74,7 +74,7 @@ func TestOccludedMode5_RejectsOutsideZWindow(t *testing.T) {
 	ActiveOccluders[0] = occ
 	ActiveOccluderCount = 1
 
-	w := &World3D{}
+	w := &World{}
 
 	// Z=50 with var6=200: projected Z window is [200, 300], Z=50 is below.
 	if got := w.Occluded(50, 200, 50); got {
@@ -103,7 +103,7 @@ func TestMergeNormalsAccumulatesCoincident(t *testing.T) {
 	b.VertexNormal[0] = vertexnormal.VertexNormal{X: 0, Y: 20, Z: 0, W: 1}
 	b.VertexNormalOriginal[0] = vertexnormal.VertexNormal{X: 0, Y: 20, Z: 0, W: 1}
 
-	w := &World3D{MergeIndexA: make([]int, 1), MergeIndexB: make([]int, 1)}
+	w := &World{MergeIndexA: make([]int, 1), MergeIndexB: make([]int, 1)}
 	w.MergeNormals(a, b, 0, 0, 0, false)
 
 	if got := a.VertexNormal[0]; got != (vertexnormal.VertexNormal{X: 10, Y: 20, Z: 0, W: 2}) {

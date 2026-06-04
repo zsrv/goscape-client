@@ -34,7 +34,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity/playerentity"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
-	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/world3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/world"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct/jstring"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/errorfont"
@@ -447,7 +447,7 @@ type Client struct {
 	LastWaveStartTime             int64
 	SocialName37                  int64
 	ServerSeed                    int64
-	Scene                         *world3d.World3D
+	Scene                         *world.World
 	LocalPlayer                   *playerentity.ClientPlayer
 	GenderButtonImage0            *pix32.Pix32
 	GenderButtonImage1            *pix32.Pix32
@@ -1626,7 +1626,7 @@ func (c *Client) DrawScene() {
 
 // SetLowMem is Java: setLowMemory (deob/client.java:2184).
 func SetLowMem() {
-	world3d.LowMemory = true
+	world.LowMemory = true
 	pix3d.LowDetail = true
 	LowMemory = true
 	clientbuild.LowMemory = true
@@ -6034,7 +6034,7 @@ func (c *Client) Load() {
 		}
 	}
 
-	c.Scene = world3d.NewWorld3D(c.LevelHeightMap, 104, 4, 104)
+	c.Scene = world.NewWorld(c.LevelHeightMap, 104, 4, 104)
 	for i := range 4 {
 		c.LevelCollisionMap[i] = dash3d.NewCollisionMap(104, 104)
 	}
@@ -6407,7 +6407,7 @@ func (c *Client) Load() {
 		var27 := pix3d.SinTable[var25]
 		var50[i] = (var26 * var27) >> 16
 	}
-	world3d.Init(var50, 800, 512, 334, 500)
+	world.Init(var50, 800, 512, 334, 500)
 	wordfilter.Unpack(jagWordEnc)
 }
 
@@ -7622,7 +7622,7 @@ func (c *Client) Unload() {
 	varptype.Instances = nil
 	playerentity.ModelCache = nil
 	pix3d.Unload()
-	world3d.Unload()
+	world.Unload()
 	model.Unload()
 	animframe.Instances = nil
 }
@@ -7902,11 +7902,11 @@ func (c *Client) UpdateGame() {
 		c.Out.P1Isaac(io.CLIENTPROT_ANTICHEAT_CYCLELOGIC3) // Java: pIsaac(181) Client.java:3070
 		c.Out.P3(4991788)
 	}
-	if world3d.ClickTileX != -1 {
-		var12 := world3d.ClickTileX
-		var6 = world3d.ClickTileZ
+	if world.ClickTileX != -1 {
+		var12 := world.ClickTileX
+		var6 = world.ClickTileZ
 		var7 := c.TryMove(c.LocalPlayer.PathTileX[0], 0, true, var12, c.LocalPlayer.PathTileZ[0], 0, 0, var6, 0, 0, 0)
-		world3d.ClickTileX = -1
+		world.ClickTileX = -1
 		if var7 {
 			c.CrossX = c.MouseClickX
 			c.CrossY = c.MouseClickY
@@ -8080,7 +8080,7 @@ func (c *Client) GetCodeBase() string {
 
 // SetHighMem is Java: setHighMemory (deob/client.java:7632).
 func SetHighMem() {
-	world3d.LowMemory = false
+	world.LowMemory = false
 	pix3d.LowDetail = false
 	LowMemory = false
 	clientbuild.LowMemory = false
@@ -9058,7 +9058,7 @@ func (c *Client) BuildScene() {
 	}
 	var3 := clientbuild.NewClientBuild(104, c.LevelTileFlags, 104, c.LevelHeightMap)
 	var5 := len(c.SceneMapLandData)
-	clientbuild.LowMemory = world3d.LowMemory
+	clientbuild.LowMemory = world.LowMemory
 	for i := range var5 {
 		var7 := c.SceneMapIndex[i] >> 8
 		var8 := c.SceneMapIndex[i] & 0xFF

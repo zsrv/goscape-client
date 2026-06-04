@@ -9,7 +9,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
-	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/world3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/world"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix3d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io/ondemand"
@@ -220,7 +220,7 @@ func (w *ClientBuild) LoadGround(arg0 []byte, arg1, arg3, arg4, arg5 int) {
 	}
 }
 
-func (w *ClientBuild) LoadLocations(src []byte, scene *world3d.World3D, collision []*dash3d.CollisionMap, zOffset int, xOffset int) {
+func (w *ClientBuild) LoadLocations(src []byte, scene *world.World, collision []*dash3d.CollisionMap, zOffset int, xOffset int) {
 	buf := io.NewPacket(src)
 	locId := -1
 
@@ -268,7 +268,7 @@ func (w *ClientBuild) LoadLocations(src []byte, scene *world3d.World3D, collisio
 	}
 }
 
-func (w *ClientBuild) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape int, scene *world3d.World3D, locId, x int) {
+func (w *ClientBuild) AddLoc(collision *dash3d.CollisionMap, level, z, angle, shape int, scene *world.World, locId, x int) {
 	if LowMemory {
 		if w.LevelTileFlags[level][x][z]&0x10 != 0 {
 			return
@@ -546,7 +546,7 @@ func (w *ClientBuild) AddLoc(collision *dash3d.CollisionMap, level, z, angle, sh
 	}
 }
 
-func (w *ClientBuild) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) {
+func (w *ClientBuild) Build(arg0 *world.World, arg2 []*dash3d.CollisionMap) {
 	var7 := 0
 	for i := range 4 {
 		for j := range 104 {
@@ -813,7 +813,7 @@ func (w *ClientBuild) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) 
 							var53 = 240
 							var20 = w.LevelHeightMap[var17][l][var14] - var53
 							var21 = w.LevelHeightMap[var16][l][var14]
-							world3d.AddOccluder(var15*128+128, l*128, var21, 1, l*128, i, var20, var14*128)
+							world.AddOccluder(var15*128+128, l*128, var21, 1, l*128, i, var20, var14*128)
 							for m := var16; m <= var17; m++ {
 								for n := var14; n <= var15; n++ {
 									w.LevelOccludeMap[m][l][n] &= ^var7
@@ -855,7 +855,7 @@ func (w *ClientBuild) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) 
 							var53 = 240
 							var20 = w.LevelHeightMap[var17][var14][k] - var53
 							var21 = w.LevelHeightMap[var16][var14][k]
-							world3d.AddOccluder(k*128, var14*128, var21, 2, var15*128+128, i, var20, k*128)
+							world.AddOccluder(k*128, var14*128, var21, 2, var15*128+128, i, var20, k*128)
 							for m := var16; m <= var17; m++ {
 								for n := var14; n <= var15; n++ {
 									w.LevelOccludeMap[m][n][k] &= ^var47
@@ -894,7 +894,7 @@ func (w *ClientBuild) Build(arg0 *world3d.World3D, arg2 []*dash3d.CollisionMap) 
 						}
 						if (var15-var14+1)*(var17-var16+1) >= 4 {
 							var18 = w.LevelHeightMap[j][var14][var16]
-							world3d.AddOccluder(var17*128+128, var14*128, var18, 4, var15*128+128, i, var18, var16*128)
+							world.AddOccluder(var17*128+128, var14*128, var18, 4, var15*128+128, i, var18, var16*128)
 							for m := var14; m <= var15; m++ {
 								for n := var16; n <= var17; n++ {
 									w.LevelOccludeMap[j][m][n] &= ^var48
@@ -1027,7 +1027,7 @@ func ChangeLocAvailable(id, shape int) bool {
 	return loc.CheckModel(shape)
 }
 
-func AddLoc(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [][][]int, arg7 int, arg8 int, shape int, scene *world3d.World3D, level int) {
+func AddLoc(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [][][]int, arg7 int, arg8 int, shape int, scene *world.World, level int) {
 	heightSW := heightMap[level][x][z]
 	heightSE := heightMap[level][x+1][z]
 	heightNE := heightMap[level][x+1][z+1]

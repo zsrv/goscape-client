@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
-	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/world3d"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/world"
 )
 
 // TestLogout_ResetsInGameAndTitleState pins the post-fix behavior at
@@ -20,7 +20,7 @@ import (
 // Logout's path uses package-level globals that are init()-allocated).
 func TestLogout_ResetsInGameAndTitleState(t *testing.T) {
 	c := NewClient()
-	c.Scene = &world3d.World3D{}
+	c.Scene = &world.World{}
 	for i := range 4 {
 		c.LevelCollisionMap[i] = dash3d.NewCollisionMap(0, 0)
 	}
