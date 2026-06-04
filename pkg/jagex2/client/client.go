@@ -7262,7 +7262,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 	}
 	if var7 == 7 {
 		c.LoginMessage0 = "This world is full."
-		c.LoginMessage1 = "Please use a different clientbuild."
+		c.LoginMessage1 = "Please use a different world."
 		return
 	}
 	if var7 == 8 {
@@ -7286,13 +7286,13 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		return
 	}
 	if var7 == 12 {
-		c.LoginMessage0 = "You need a members account to login to this clientbuild."
-		c.LoginMessage1 = "Please subscribe, or use a different clientbuild."
+		c.LoginMessage0 = "You need a members account to login to this world."
+		c.LoginMessage1 = "Please subscribe, or use a different world."
 		return
 	}
 	if var7 == 13 {
 		c.LoginMessage0 = "Could not complete login."
-		c.LoginMessage1 = "Please try using a different clientbuild."
+		c.LoginMessage1 = "Please try using a different world."
 		return
 	}
 	if var7 == 14 {
@@ -7328,11 +7328,11 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 	}
 	if var7 == 20 {
 		c.LoginMessage0 = "Invalid loginserver requested"
-		c.LoginMessage1 = "Please try using a different clientbuild."
+		c.LoginMessage1 = "Please try using a different world."
 		return
 	}
 	c.LoginMessage0 = "Unexpected server response"
-	c.LoginMessage1 = "Please try using a different clientbuild."
+	c.LoginMessage1 = "Please try using a different world."
 }
 
 func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
