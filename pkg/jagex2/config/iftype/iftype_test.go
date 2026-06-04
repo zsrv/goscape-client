@@ -1,4 +1,4 @@
-package component
+package iftype
 
 import (
 	"testing"
@@ -29,7 +29,7 @@ func buildDataArchive(payload []byte) *io.Jagfile {
 	}
 }
 
-// buildType6Component encodes a single Component header for a type==6,
+// buildType6Component encodes a single IfType header for a type==6,
 // buttonType==1 component (buttonType 1 terminates Unpack's inner read loop),
 // followed by the trailing option string. modelHi/modelLo are the two g1
 // values that produce the deferred model id ((modelHi-1)<<8)+modelLo.
@@ -96,7 +96,7 @@ func TestLoadModelType5Uncached(t *testing.T) {
 	ModelCache = datastruct.NewLruCache[*model.Model](30)
 	defer func() { ModelCache = nil }()
 
-	com := &Component{}
+	com := &IfType{}
 	// type 5 returns nil and does not deref localPlayer.
 	if got := com.LoadModel(5, 0, nil); got != nil {
 		t.Errorf("LoadModel(5, 0, nil) = %v, want nil", got)
@@ -113,7 +113,7 @@ func TestLoadModelCacheKeyByTypeAndId(t *testing.T) {
 
 	CacheModel(m, modelID, typ)
 
-	com := &Component{}
+	com := &IfType{}
 	// cache-check-first short-circuits before the type-5 nil case.
 	if got := com.LoadModel(typ, modelID, nil); got != m {
 		t.Errorf("LoadModel(%d, %d, nil) = %v, want cached %v", typ, modelID, got, m)

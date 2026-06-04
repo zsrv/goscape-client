@@ -1,4 +1,4 @@
-package component
+package iftype
 
 import (
 	"strconv"
@@ -16,15 +16,15 @@ import (
 )
 
 var (
-	Instances  []*Component
+	Instances  []*IfType
 	ImageCache *datastruct.LruCache[*pix32.Pix32]
-	// Java: Component.modelCache = new LruCache(30) (Component.java:119) — a static
+	// Java: IfType.modelCache = new LruCache(30) (IfType.java:119) — a static
 	// field initializer created once at class load and never nulled. unpack() only
-	// creates/nulls imageCache (Component.java:204,443); modelCache must survive it.
+	// creates/nulls imageCache (IfType.java:204,443); modelCache must survive it.
 	ModelCache = datastruct.NewLruCache[*model.Model](30)
 )
 
-type Component struct {
+type IfType struct {
 	InvSlotObjId    []int
 	InvSlotObjCount []int
 	SeqFrame        int
@@ -36,7 +36,7 @@ type Component struct {
 	ClientCode      int
 	Width           int
 	Height          int
-	// Java: Component.trans (Component.java:53 @176a85f; named alpha at 244) —
+	// Java: IfType.trans (IfType.java:53 @176a85f; named alpha at 244) —
 	// header field read between height and overlayer. int8 to match Java's
 	// signed-byte sign extension.
 	Trans            int8
@@ -62,7 +62,7 @@ type Component struct {
 	Colour           int
 	ActiveColour     int
 	OverColour       int
-	// Java: activeOverColour (Component.java:146 @176a85f) — new at 245.2
+	// Java: activeOverColour (IfType.java:146 @176a85f) — new at 245.2
 	ActiveOverColour int
 	Anim             int
 	ActiveAnim       int
@@ -77,14 +77,14 @@ type Component struct {
 	Font             *pixfont.PixFont
 	Text             string
 	ActiveText       string
-	// Java: Component.java:130,160 declares unusedShort1/unusedBoolean1
+	// Java: IfType.java:130,160 declares unusedShort1/unusedBoolean1
 	// (assigned for Type==1 components but never read). Pure deob
 	// residue; fields omitted per the deob-artifact exclusion policy.
 	// Decode preserves the wire reads as discards.
 	Draggable    bool
 	Interactable bool
 	Usable       bool
-	// Java: swappable (Component.java:167 @176a85f) — new at 245.2
+	// Java: swappable (IfType.java:167 @176a85f) — new at 245.2
 	Swappable      bool
 	Fill           bool
 	Center         bool
@@ -95,13 +95,13 @@ type Component struct {
 	IOps           []string
 }
 
-func NewComponent() *Component {
-	return new(Component)
+func NewIfType() *IfType {
+	return new(IfType)
 }
 
 // SwapObj swaps the inventory slots src and dst (id + count).
-// Java: Component.swapObj (Component.java:447-455, new in 244).
-func (c *Component) SwapObj(src, dst int) {
+// Java: IfType.swapObj (IfType.java:447-455, new in 244).
+func (c *IfType) SwapObj(src, dst int) {
 	c.InvSlotObjId[src], c.InvSlotObjId[dst] = c.InvSlotObjId[dst], c.InvSlotObjId[src]
 	c.InvSlotObjCount[src], c.InvSlotObjCount[dst] = c.InvSlotObjCount[dst], c.InvSlotObjCount[src]
 }
@@ -111,12 +111,12 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 	var4 := io.NewPacket(arg3.Read("data", nil))
 	var5 := -1
 	var6 := var4.G2()
-	Instances = make([]*Component, var6)
+	Instances = make([]*IfType, var6)
 	for {
-		var com *Component
+		var com *IfType
 		for ok := true; ok; ok = com.ButtonType != 1 && com.ButtonType != 4 && com.ButtonType != 5 && com.ButtonType != 6 {
 			if var4.Pos >= len(var4.Data) {
-				// Java: Component.java:443 nulls only imageCache; modelCache stays alive.
+				// Java: IfType.java:443 nulls only imageCache; modelCache stays alive.
 				ImageCache = nil
 				return
 			}
@@ -125,7 +125,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 				var5 = var4.G2()
 				var7 = var4.G2()
 			}
-			Instances[var7] = NewComponent()
+			Instances[var7] = NewIfType()
 			com = Instances[var7]
 			com.Id = var7
 			com.Layer = var5
@@ -134,7 +134,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 			com.ClientCode = var4.G2()
 			com.Width = var4.G2()
 			com.Height = var4.G2()
-			// Java: com.trans = (byte) var4.g1() (Component.java:235 @176a85f;
+			// Java: com.trans = (byte) var4.g1() (IfType.java:235 @176a85f;
 			// named alpha at 244) — header read between height and overlayer;
 			// shifts every following field.
 			com.Trans = int8(var4.G1())
@@ -170,9 +170,9 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 			if com.Type == 0 {
 				com.Scroll = var4.G2()
 				com.Hide = var4.G1() == 1
-				// Java: int childCount = data.g2() (Component.java:265) —
+				// Java: int childCount = data.g2() (IfType.java:265) —
 				// rev-244 widens the Type==0 child count to g2 from 225's
-				// g1 (225-clean Component.java:253). Reading one byte here
+				// g1 (225-clean IfType.java:253). Reading one byte here
 				// desyncs the whole sequential stream.
 				var11 = var4.G2()
 				com.ChildID = make([]int, var11)
@@ -185,7 +185,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 				}
 			}
 			if com.Type == 1 {
-				// Java: Component.java:264-265 — Type==1 reads g2 + g1
+				// Java: IfType.java:264-265 — Type==1 reads g2 + g1
 				// into unusedShort1 / unusedBoolean1. Reads kept as
 				// discards so packet-position alignment matches Java.
 				var4.G2()
@@ -197,7 +197,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 				com.Draggable = var4.G1() == 1
 				com.Interactable = var4.G1() == 1
 				com.Usable = var4.G1() == 1
-				// Java: Component.java:285 @176a85f — new at 245.2; shifts all
+				// Java: IfType.java:285 @176a85f — new at 245.2; shifts all
 				// later type-2 reads by 1 byte.
 				com.Swappable = var4.G1() == 1
 				com.MarginX = var4.G1()
@@ -254,7 +254,7 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 			if com.Type == 3 || com.Type == 4 {
 				com.ActiveColour = var4.G4()
 				com.OverColour = var4.G4()
-				// Java: Component.java:332 @176a85f — new at 245.2; shifts all
+				// Java: IfType.java:332 @176a85f — new at 245.2; shifts all
 				// later type-3/4 reads by 4 bytes.
 				com.ActiveOverColour = var4.G4()
 			}
@@ -346,8 +346,8 @@ func Unpack(arg0 *io.Jagfile, arg1 []*pixfont.PixFont, arg3 *io.Jagfile) {
 	}
 }
 
-// Java: Component.getModel (Component.java:458-484).
-func (c *Component) GetModel(arg0 int, arg1 int, arg2 bool, localPlayer *playerentity.ClientPlayer) *model.Model {
+// Java: IfType.getModel (IfType.java:458-484).
+func (c *IfType) GetModel(arg0 int, arg1 int, arg2 bool, localPlayer *playerentity.ClientPlayer) *model.Model {
 	var m *model.Model // Java: model — resolved deferred (type,id) pair
 	if arg2 {
 		m = c.LoadModel(c.ActiveModelType, c.ActiveModel, localPlayer)
@@ -374,8 +374,8 @@ func (c *Component) GetModel(arg0 int, arg1 int, arg2 bool, localPlayer *playere
 	return var5
 }
 
-// Java: Component.loadModel (Component.java:458-483 @176a85f).
-func (c *Component) LoadModel(arg0 int, arg1 int, localPlayer *playerentity.ClientPlayer) *model.Model {
+// Java: IfType.loadModel (IfType.java:458-483 @176a85f).
+func (c *IfType) LoadModel(arg0 int, arg1 int, localPlayer *playerentity.ClientPlayer) *model.Model {
 	// Java: (long) ((arg0 << 16) + arg1) — 245.2 does int arithmetic and widens
 	// AFTER the add (244 widened type before the shift); int32 wrap preserves
 	// Java int overflow. Equivalent for valid ids.
@@ -393,7 +393,7 @@ func (c *Component) LoadModel(arg0 int, arg1 int, localPlayer *playerentity.Clie
 		var3 = localPlayer.GetHeadModel()
 	}
 	if arg0 == 4 {
-		var3 = objtype.Get(arg1).GetInvModel(50) // Java: Component.loadModel uses ObjType.getInvModel (not getInterfaceModel) — Component.java:472 @176a85f
+		var3 = objtype.Get(arg1).GetInvModel(50) // Java: IfType.loadModel uses ObjType.getInvModel (not getInterfaceModel) — IfType.java:472 @176a85f
 	}
 	if arg0 == 5 {
 		var3 = nil
@@ -404,7 +404,7 @@ func (c *Component) LoadModel(arg0 int, arg1 int, localPlayer *playerentity.Clie
 	return var3
 }
 
-// Java: Component.cacheModel (Component.java:518-523).
+// Java: IfType.cacheModel (IfType.java:518-523).
 func CacheModel(m *model.Model, id int, typ int) {
 	ModelCache.Clear()
 	if m != nil && typ != 4 {
@@ -418,7 +418,7 @@ func GetImage(arg0 *io.Jagfile, arg1 int, arg2 string) (result *pix32.Pix32) {
 	if var6 != nil {
 		return var6
 	}
-	// Java: Component.java:433-439 — try/catch returning null on any
+	// Java: IfType.java:433-439 — try/catch returning null on any
 	// exception during Pix32 construction (missing/corrupt media entry,
 	// bad format). The Go pix32 ctor can panic on malformed input; mirror
 	// Java's tolerance so a single bad asset doesn't brick boot/Unpack.

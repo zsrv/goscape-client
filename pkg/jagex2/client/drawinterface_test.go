@@ -3,7 +3,7 @@ package client
 import (
 	"testing"
 
-	"github.com/zsrv/goscape-client/pkg/jagex2/config/component"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/iftype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
 )
 
@@ -22,11 +22,11 @@ func TestDrawInterface_RendersChildren(t *testing.T) {
 	pix2d.Bind(w, make([]int, w*h), h)
 	t.Cleanup(pix2d.Reset)
 
-	prevInstances := component.Instances
-	t.Cleanup(func() { component.Instances = prevInstances })
+	prevInstances := iftype.Instances
+	t.Cleanup(func() { iftype.Instances = prevInstances })
 
 	const childID, fillColour = 1, 0x00FF00
-	child := &component.Component{
+	child := &iftype.IfType{
 		Id:     childID,
 		Type:   3,
 		Width:  10,
@@ -34,10 +34,10 @@ func TestDrawInterface_RendersChildren(t *testing.T) {
 		Colour: fillColour,
 		Fill:   true,
 	}
-	component.Instances = make([]*component.Component, childID+1)
-	component.Instances[childID] = child
+	iftype.Instances = make([]*iftype.IfType, childID+1)
+	iftype.Instances[childID] = child
 
-	parent := &component.Component{
+	parent := &iftype.IfType{
 		Type:    0,
 		Width:   30,
 		Height:  30,

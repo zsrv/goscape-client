@@ -19,9 +19,9 @@ import (
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/inputtracking"
-	"github.com/zsrv/goscape-client/pkg/jagex2/config/component"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/flotype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/idktype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/iftype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/loctype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/npctype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/objtype"
@@ -191,7 +191,7 @@ type Client struct {
 	HintNPC                 int
 	OverrideChat            int
 	SkillLevel              []int
-	ChatInterface           *component.Component
+	ChatInterface           *iftype.IfType
 	WaveLoops               []int
 	MouseButtonsOption      int
 	LocalPID                int
@@ -562,7 +562,7 @@ func NewClient() *Client {
 		MessageIds:                 make([]int, 100),
 		Out:                        io.Alloc(1),
 		SkillLevel:                 make([]int, 50),
-		ChatInterface:              component.NewComponent(),
+		ChatInterface:              iftype.NewIfType(),
 		WaveLoops:                  make([]int, 50),
 		LocalPID:                   -1,
 		NextMidiSong:               -1,
@@ -1734,7 +1734,7 @@ func (c *Client) DrawFlames() {
 	}
 }
 
-func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *component.Component, arg5 int, arg6 int) {
+func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *iftype.IfType, arg5 int, arg6 int) {
 	if arg3.Type != 0 || arg3.ChildID == nil || arg3.Hide || (arg1 < arg5 || arg0 < arg2 || arg1 > arg5+arg3.Width || arg0 > arg2+arg3.Height) {
 		return
 	}
@@ -1742,7 +1742,7 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *component.Comp
 	for i := range var8 {
 		var10 := arg3.ChildX[i] + arg5
 		var11 := arg3.ChildY[i] + arg2 - arg6
-		var12 := component.Instances[arg3.ChildID[i]]
+		var12 := iftype.Instances[arg3.ChildID[i]]
 		var20 := var10 + var12.X
 		var21 := var11 + var12.Y
 		if (var12.OverLayer >= 0 || var12.OverColour != 0) && arg1 >= var20 && arg0 >= var21 && arg1 < var20+var12.Width && arg0 < var21+var12.Height {
@@ -1969,9 +1969,9 @@ func (c *Client) HandleChatSettingsInput() {
 	c.CloseInterfaces()
 	c.ReportAbuseInput = ""
 	c.ReportAbuseMuteOption = false
-	for i := range len(component.Instances) {
-		if component.Instances[i] != nil && component.Instances[i].ClientCode == 600 {
-			c.ViewportInterfaceID = component.Instances[i].Layer
+	for i := range len(iftype.Instances) {
+		if iftype.Instances[i] != nil && iftype.Instances[i].ClientCode == 600 {
+			c.ViewportInterfaceID = iftype.Instances[i].Layer
 			c.ReportAbuseInterfaceID = c.ViewportInterfaceID
 			return
 		}
@@ -3713,7 +3713,7 @@ func (c *Client) Logout() {
 	c.NextMusicDelay = 0
 }
 
-func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, arg4 int) {
+func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int) {
 	// Java: deob/client.java:3981 — `arg3.childId == null` (return when there
 	// are no children). Java `== null` ports as Go `== nil`; the prior
 	// translation flipped the operator to `!= nil`, which made every Type-0
@@ -3730,7 +3730,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *component.Component, ar
 	for i := range var10 {
 		var12 := arg3.ChildX[i] + arg1
 		var13 := arg3.ChildY[i] + arg0 - arg4
-		var14 := component.Instances[arg3.ChildID[i]]
+		var14 := iftype.Instances[arg3.ChildID[i]]
 		var25 := var12 + var14.X
 		var26 := var13 + var14.Y
 		if var14.ClientCode > 0 {
@@ -4883,10 +4883,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
 		c.SelectedArea = 2
-		if component.Instances[var4].Layer == c.ViewportInterfaceID {
+		if iftype.Instances[var4].Layer == c.ViewportInterfaceID {
 			c.SelectedArea = 1
 		}
-		if component.Instances[var4].Layer == c.ChatInterfaceID {
+		if iftype.Instances[var4].Layer == c.ChatInterfaceID {
 			c.SelectedArea = 3
 		}
 	}
@@ -4974,10 +4974,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
 		c.SelectedArea = 2
-		if component.Instances[var4].Layer == c.ViewportInterfaceID {
+		if iftype.Instances[var4].Layer == c.ViewportInterfaceID {
 			c.SelectedArea = 1
 		}
-		if component.Instances[var4].Layer == c.ChatInterfaceID {
+		if iftype.Instances[var4].Layer == c.ChatInterfaceID {
 			c.SelectedArea = 3
 		}
 	}
@@ -4991,10 +4991,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
 		c.SelectedArea = 2
-		if component.Instances[var4].Layer == c.ViewportInterfaceID {
+		if iftype.Instances[var4].Layer == c.ViewportInterfaceID {
 			c.SelectedArea = 1
 		}
-		if component.Instances[var4].Layer == c.ChatInterfaceID {
+		if iftype.Instances[var4].Layer == c.ChatInterfaceID {
 			c.SelectedArea = 3
 		}
 	}
@@ -5159,9 +5159,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 504 {
 		c.InteractWithLoc(io.CLIENTPROT_OPLOC2, var3, var4, var6) // Java: interactWithLoc(219,...)
 	}
-	var var22 *component.Component
+	var var22 *iftype.IfType
 	if var5 == 930 {
-		var22 = component.Instances[var4]
+		var22 = iftype.Instances[var4]
 		c.SpellSelected = 1
 		c.ActiveSpellID = var4
 		c.ActiveSpellFlags = var22.ActionTarget
@@ -5184,7 +5184,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		return
 	}
 	if var5 == 951 {
-		var22 = component.Instances[var4]
+		var22 = iftype.Instances[var4]
 		var23 := true
 		if var22.ClientCode > 0 {
 			var23 = c.HandleInterfaceAction(var22)
@@ -5231,10 +5231,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
 		c.SelectedArea = 2
-		if component.Instances[var4].Layer == c.ViewportInterfaceID {
+		if iftype.Instances[var4].Layer == c.ViewportInterfaceID {
 			c.SelectedArea = 1
 		}
-		if component.Instances[var4].Layer == c.ChatInterfaceID {
+		if iftype.Instances[var4].Layer == c.ChatInterfaceID {
 			c.SelectedArea = 3
 		}
 	}
@@ -5286,7 +5286,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 960 {
 		c.Out.P1Isaac(io.CLIENTPROT_IF_BUTTON) // Java: pIsaac(177)
 		c.Out.P2(var4)
-		var22 = component.Instances[var4]
+		var22 = iftype.Instances[var4]
 		if var22.Scripts != nil && var22.Scripts[0][0] == 5 {
 			var8 = var22.Scripts[0][1]
 			if c.Varps[var8] != var22.ScriptOperand[0] {
@@ -5303,9 +5303,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CloseInterfaces()
 			c.ReportAbuseInput = strings.TrimSpace(var7[var8+5:])
 			c.ReportAbuseMuteOption = false
-			for i := range len(component.Instances) {
-				if component.Instances[i] != nil && component.Instances[i].ClientCode == 600 {
-					c.ViewportInterfaceID = component.Instances[i].Layer
+			for i := range len(iftype.Instances) {
+				if iftype.Instances[i] != nil && iftype.Instances[i].ClientCode == 600 {
+					c.ViewportInterfaceID = iftype.Instances[i].Layer
 					c.ReportAbuseInterfaceID = c.ViewportInterfaceID
 					break
 				}
@@ -5333,7 +5333,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 465 {
 		c.Out.P1Isaac(io.CLIENTPROT_IF_BUTTON) // Java: pIsaac(177)
 		c.Out.P2(var4)
-		var22 = component.Instances[var4]
+		var22 = iftype.Instances[var4]
 		if var22.Scripts != nil && var22.Scripts[0][0] == 5 {
 			var8 = var22.Scripts[0][1]
 			c.Varps[var8] = 1 - c.Varps[var8]
@@ -5507,7 +5507,7 @@ func (c *Client) HandlePrivateChatInput(arg2 int) {
 	}
 }
 
-func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
+func (c *Client) UpdateInterfaceContent(arg1 *iftype.IfType) {
 	var3 := arg1.ClientCode
 	// Java: Client.java:10792-10825 @176a85f — friends-list page 2.
 	// 7NN/8NN are the name/world columns for friends 101..200. 245.2
@@ -5603,7 +5603,7 @@ func (c *Client) UpdateInterfaceContent(arg1 *component.Component) {
 			var10.CalculateNormals(64, 850, -30, -50, -30, true)
 			arg1.ModelType = 5
 			arg1.Model = 0
-			component.CacheModel(var10, 0, 5)
+			iftype.CacheModel(var10, 0, 5)
 		}
 	} else if var3 == 324 {
 		if c.GenderButtonImage0 == nil {
@@ -5790,7 +5790,7 @@ func (c *Client) GetNpcPosNewVis(arg1 *io.Packet, arg2 int) {
 	arg1.AccessBytes()
 }
 
-func (c *Client) HandleInterfaceAction(arg1 *component.Component) bool {
+func (c *Client) HandleInterfaceAction(arg1 *iftype.IfType) bool {
 	var3 := arg1.ClientCode
 	switch var3 {
 	case 201:
@@ -6353,7 +6353,7 @@ func (c *Client) Load() {
 	}
 	c.DrawProgress("Unpacking interfaces", 95)
 	var48 := []*pixfont.PixFont{c.FontPlain11, c.FontPlain12, c.FontBold12, c.FontQuill8}
-	component.Unpack(jagMedia, var48, jagInterface)
+	iftype.Unpack(jagMedia, var48, jagInterface)
 	c.DrawProgress("Preparing game engine", 100)
 	// Java: Client.java:1917-1933 — compass mask. 244 narrows the scan width
 	// to x < 34 (225 scanned 35 columns).
@@ -6427,7 +6427,7 @@ func (c *Client) HandleInput() {
 		if c.ViewportInterfaceID == -1 {
 			c.HandleViewportOptions()
 		} else {
-			c.HandleInterfaceInput(c.MouseY, c.MouseX, 4, component.Instances[c.ViewportInterfaceID], 4, 0)
+			c.HandleInterfaceInput(c.MouseY, c.MouseX, 4, iftype.Instances[c.ViewportInterfaceID], 4, 0)
 		}
 	}
 	if c.LastHoveredInterfaceID != c.ViewportHoveredInterfaceIndex {
@@ -6436,9 +6436,9 @@ func (c *Client) HandleInput() {
 	c.LastHoveredInterfaceID = 0
 	if c.MouseX > 553 && c.MouseY > 205 && c.MouseX < 743 && c.MouseY < 466 {
 		if c.SidebarInterfaceID != -1 {
-			c.HandleInterfaceInput(c.MouseY, c.MouseX, 205, component.Instances[c.SidebarInterfaceID], 553, 0)
+			c.HandleInterfaceInput(c.MouseY, c.MouseX, 205, iftype.Instances[c.SidebarInterfaceID], 553, 0)
 		} else if c.TabInterfaceID[c.SelectedTab] != -1 {
-			c.HandleInterfaceInput(c.MouseY, c.MouseX, 205, component.Instances[c.TabInterfaceID[c.SelectedTab]], 553, 0)
+			c.HandleInterfaceInput(c.MouseY, c.MouseX, 205, iftype.Instances[c.TabInterfaceID[c.SelectedTab]], 553, 0)
 		}
 	}
 	if c.LastHoveredInterfaceID != c.SidebarHoveredInterfaceIndex {
@@ -6451,7 +6451,7 @@ func (c *Client) HandleInput() {
 	// to y<434 && x<426.
 	if c.MouseX > 17 && c.MouseY > 357 && c.MouseX < 496 && c.MouseY < 453 {
 		if c.ChatInterfaceID != -1 {
-			c.HandleInterfaceInput(c.MouseY, c.MouseX, 357, component.Instances[c.ChatInterfaceID], 17, 0)
+			c.HandleInterfaceInput(c.MouseY, c.MouseX, 357, iftype.Instances[c.ChatInterfaceID], 17, 0)
 		} else if c.MouseY < 434 && c.MouseX < 426 { // Java: Client.java:3694 @176a85f — message rows only
 			c.HandleChatMouseInput(c.MouseY-357, 0)
 		}
@@ -6509,7 +6509,7 @@ func (c *Client) Draw3DEntityElements() {
 	// interface (IF_OPENOVERLAY) renders before the main viewport interface.
 	if c.ViewportOverlayInterfaceID != -1 {
 		c.UpdateInterfaceAnimation(c.ViewportOverlayInterfaceID, c.SceneDelta)
-		c.DrawInterface(0, 0, component.Instances[c.ViewportOverlayInterfaceID], 0)
+		c.DrawInterface(0, 0, iftype.Instances[c.ViewportOverlayInterfaceID], 0)
 	}
 	// Java: Client.java:6560-6565 (new in 244) — yellow sine-modulated
 	// translucent flash band near the viewport bottom while field1264 > 0
@@ -6523,7 +6523,7 @@ func (c *Client) Draw3DEntityElements() {
 	}
 	if c.ViewportInterfaceID != -1 {
 		c.UpdateInterfaceAnimation(c.ViewportInterfaceID, c.SceneDelta)
-		c.DrawInterface(0, 0, component.Instances[c.ViewportInterfaceID], 0)
+		c.DrawInterface(0, 0, iftype.Instances[c.ViewportInterfaceID], 0)
 	}
 	c.DrawWildyLevel()
 	if !c.MenuVisible {
@@ -7004,7 +7004,7 @@ func (c *Client) RunFlames() {
 // Java: handleScrollInput has 8 params in 245.2 (Client.java:10280); the
 // former 2nd int and its `packetSize +=` deob anti-tamper accumulator are
 // gone upstream — dropped here per the DrawScene precedent (audit client-11-02).
-func (c *Client) HandleScrollInput(arg0, arg2, arg3, arg4 int, arg5 bool, arg6 int, arg7 int, arg8 *component.Component) {
+func (c *Client) HandleScrollInput(arg0, arg2, arg3, arg4 int, arg5 bool, arg6 int, arg7 int, arg8 *iftype.IfType) {
 	if c.ScrollGrabbed {
 		c.ScrollInputPadding = 32
 	} else {
@@ -7611,7 +7611,7 @@ func (c *Client) Unload() {
 	objtype.Unload()
 	flotype.Instances = nil
 	idktype.Instances = nil
-	component.Instances = nil
+	iftype.Instances = nil
 	// Java: Client.java:2143 — `UnkType.types = null`.
 	// Intentionally not ported: UnkType is a deobfuscator-emitted
 	// stub class (never instantiated or read; re-verified at 245.2,
@@ -7845,7 +7845,7 @@ func (c *Client) UpdateGame() {
 				c.HoveredSlotParentID = -1
 				c.HandleInput()
 				if c.HoveredSlotParentID == c.ObjDragInterfaceID && c.HoveredSlot != c.ObjDragSlot {
-					var13 := component.Instances[c.ObjDragInterfaceID]
+					var13 := iftype.Instances[c.ObjDragInterfaceID]
 					// Java: Client.java:3010-3033 (new in 244) — bank arrange-by-insert.
 					// mode 1 shifts items between src and dst via successive swaps;
 					// mode 0 is the plain swap. The mode byte is also sent to the server.
@@ -8316,9 +8316,9 @@ func (c *Client) GetPlayer(arg0 *io.Packet, arg1 int) {
 
 func (c *Client) UpdateInterfaceAnimation(arg0, arg1 int) bool {
 	var4 := false
-	var5 := component.Instances[arg0]
+	var5 := iftype.Instances[arg0]
 	for i := 0; i < len(var5.ChildID) && var5.ChildID[i] != -1; i++ {
-		var7 := component.Instances[var5.ChildID[i]]
+		var7 := iftype.Instances[var5.ChildID[i]]
 		if var7.Type == 1 {
 			// Java `|=` evaluates both sides; Go `||` short-circuits, which
 			// would skip the recursive tick once var4 is true.
@@ -8373,9 +8373,9 @@ func (c *Client) AddMessage(arg0 int, arg1 string, arg3 string) {
 }
 
 func (c *Client) ResetInterfaceAnimation(arg1 int) {
-	var3 := component.Instances[arg1]
+	var3 := iftype.Instances[arg1]
 	for i := 0; i < len(var3.ChildID) && var3.ChildID[i] != -1; i++ {
-		var5 := component.Instances[var3.ChildID[i]]
+		var5 := iftype.Instances[var3.ChildID[i]]
 		if var5.Type == 1 {
 			c.ResetInterfaceAnimation(var5.Id)
 		}
@@ -8404,7 +8404,7 @@ func (c *Client) RemoveFriend(arg1 int64) {
 	}
 }
 
-func (c *Client) ExecuteInterfaceScript(arg0 *component.Component) bool {
+func (c *Client) ExecuteInterfaceScript(arg0 *iftype.IfType) bool {
 	if arg0.ScriptComparator == nil {
 		return false
 	}
@@ -8484,7 +8484,7 @@ func (c *Client) HandleMouseInput() {
 			if var3 == 602 || var3 == 596 || var3 == 22 || var3 == 892 || var3 == 415 || var3 == 405 || var3 == 38 || var3 == 422 || var3 == 478 || var3 == 347 || var3 == 188 {
 				var4 = c.MenuParamB[c.MenuSize-1]
 				var5 = c.MenuParamC[c.MenuSize-1]
-				var6 := component.Instances[var5]
+				var6 := iftype.Instances[var5]
 				// Java: com.draggable || com.swappable (Client.java:4081
 				// @176a85f) — 245.2 widens drag eligibility to swappable
 				// inventories.
@@ -8496,10 +8496,10 @@ func (c *Client) HandleMouseInput() {
 					c.ObjDragArea = 2
 					c.ObjGrabX = c.MouseClickX
 					c.ObjGrabY = c.MouseClickY
-					if component.Instances[var5].Layer == c.ViewportInterfaceID {
+					if iftype.Instances[var5].Layer == c.ViewportInterfaceID {
 						c.ObjDragArea = 1
 					}
-					if component.Instances[var5].Layer == c.ChatInterfaceID {
+					if iftype.Instances[var5].Layer == c.ChatInterfaceID {
 						c.ObjDragArea = 3
 					}
 					return
@@ -8748,7 +8748,7 @@ func (c *Client) HandleTabInput() {
 	}
 }
 
-func (c *Client) HandleSocialMenuOption(arg0 *component.Component) bool {
+func (c *Client) HandleSocialMenuOption(arg0 *iftype.IfType) bool {
 	var3 := arg0.ClientCode
 	// Java: 244 extends the friend ranges with 701-900 (friends 100..199)
 	// and a 4-way index adjust (Client.java:11255-11263).
@@ -9258,7 +9258,7 @@ func (c *Client) UpdateEntityChats() {
 	}
 }
 
-func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) (result int) {
+func (c *Client) ExecuteClientscript1(arg0 *iftype.IfType, arg2 int) (result int) {
 	if arg0.Scripts == nil || arg2 >= len(arg0.Scripts) {
 		return -2
 	}
@@ -9292,11 +9292,11 @@ func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) (resu
 			var5 += c.SkillExperience[var4[var6]]
 			var6++
 		}
-		var var8 *component.Component
+		var var8 *iftype.IfType
 		var9 := 0
 		//var10 := 0
 		if var7 == 4 {
-			var8 = component.Instances[var4[var6]]
+			var8 = iftype.Instances[var4[var6]]
 			var6++
 			var9 = var4[var6] + 1
 			var6++
@@ -9331,7 +9331,7 @@ func (c *Client) ExecuteClientscript1(arg0 *component.Component, arg2 int) (resu
 			}
 		}
 		if var7 == 10 {
-			var8 = component.Instances[var4[var6]]
+			var8 = iftype.Instances[var4[var6]]
 			var6++
 			var9 = var4[var6] + 1
 			var6++
@@ -9821,7 +9821,7 @@ func (c *Client) DrawChatback() {
 		c.FontBold12.CentreString(40, 0, c.ModalMessage, 239)
 		c.FontBold12.CentreString(60, 128, "Click to continue", 239)
 	} else if c.ChatInterfaceID != -1 {
-		c.DrawInterface(0, 0, component.Instances[c.ChatInterfaceID], 0)
+		c.DrawInterface(0, 0, iftype.Instances[c.ChatInterfaceID], 0)
 	} else if c.StickyChatInterfaceID == -1 {
 		var2 := c.FontPlain12
 		var3 := 0
@@ -9922,7 +9922,7 @@ func (c *Client) DrawChatback() {
 		var2.DrawString(var2.StringWidth(var13+": ")+6, 90, 0xFF, c.ChatTyped+"*")
 		pix2d.HLine(0, 77, 479, 0)
 	} else {
-		c.DrawInterface(0, 0, component.Instances[c.StickyChatInterfaceID], 0)
+		c.DrawInterface(0, 0, iftype.Instances[c.StickyChatInterfaceID], 0)
 	}
 	if c.MenuVisible && c.MenuArea == 2 {
 		c.DrawMenu()
@@ -10373,8 +10373,8 @@ func (c *Client) Read() (ok bool) {
 	// Java: opcode 83 — set component model to local player head (Client.java:8024)
 	if c.PacketType == io.SERVERPROT_IF_SETPLAYERHEAD {
 		var26 := c.In.G2()
-		component.Instances[var26].ModelType = 3
-		component.Instances[var26].Model = (c.LocalPlayer.Appearances[8] << 6) + (c.LocalPlayer.Appearances[0] << 12) + (c.LocalPlayer.Colors[0] << 24) + (c.LocalPlayer.Colors[4] << 18) + c.LocalPlayer.Appearances[11]
+		iftype.Instances[var26].ModelType = 3
+		iftype.Instances[var26].Model = (c.LocalPlayer.Appearances[8] << 6) + (c.LocalPlayer.Appearances[0] << 12) + (c.LocalPlayer.Colors[0] << 24) + (c.LocalPlayer.Colors[4] << 18) + c.LocalPlayer.Appearances[11]
 		c.PacketType = -1
 		return true
 	}
@@ -10513,7 +10513,7 @@ func (c *Client) Read() (ok bool) {
 	if c.PacketType == io.SERVERPROT_IF_SETANIM {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
-		component.Instances[var26].Anim = var4
+		iftype.Instances[var26].Anim = var4
 		c.PacketType = -1
 		return true
 	}
@@ -10546,7 +10546,7 @@ func (c *Client) Read() (ok bool) {
 	if c.PacketType == io.SERVERPROT_UPDATE_INV_FULL {
 		c.RedrawSidebar = true
 		var26 := c.In.G2()
-		var27 := component.Instances[var26]
+		var27 := iftype.Instances[var26]
 		var5 := c.In.G1()
 		for var6 := range var5 {
 			var27.InvSlotObjId[var6] = c.In.G2()
@@ -10581,7 +10581,7 @@ func (c *Client) Read() (ok bool) {
 	// Java: opcode 143 — clear inventory component (Client.java:7510)
 	if c.PacketType == io.SERVERPROT_UPDATE_INV_STOP_TRANSMIT {
 		var26 := c.In.G2()
-		var27 := component.Instances[var26]
+		var27 := iftype.Instances[var26]
 		for var5 := range len(var27.InvSlotObjId) {
 			var27.InvSlotObjId[var5] = -1
 			var27.InvSlotObjId[var5] = 0
@@ -10605,9 +10605,9 @@ func (c *Client) Read() (ok bool) {
 			}
 			c.ReportAbuseInput = ""
 			c.ReportAbuseMuteOption = false
-			for var4 := range len(component.Instances) {
-				if component.Instances[var4] != nil && component.Instances[var4].ClientCode == var47 {
-					c.ViewportInterfaceID = component.Instances[var4].Layer
+			for var4 := range len(iftype.Instances) {
+				if iftype.Instances[var4] != nil && iftype.Instances[var4].ClientCode == var47 {
+					c.ViewportInterfaceID = iftype.Instances[var4].Layer
 					break
 				}
 			}
@@ -10653,8 +10653,8 @@ func (c *Client) Read() (ok bool) {
 	if c.PacketType == io.SERVERPROT_IF_SETNPCHEAD {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
-		component.Instances[var26].ModelType = 2
-		component.Instances[var26].Model = var4
+		iftype.Instances[var26].ModelType = 2
+		iftype.Instances[var26].Model = var4
 		c.PacketType = -1
 		return true
 	}
@@ -10716,7 +10716,7 @@ func (c *Client) Read() (ok bool) {
 		var26 := c.In.G2()
 		var4 := c.In.G2B()
 		var5 := c.In.G2B()
-		var34 := component.Instances[var26]
+		var34 := iftype.Instances[var26]
 		var34.X = var4
 		var34.Y = var5
 		c.PacketType = -1
@@ -10778,8 +10778,8 @@ func (c *Client) Read() (ok bool) {
 	if c.PacketType == io.SERVERPROT_IF_SETMODEL {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
-		component.Instances[var26].ModelType = 1
-		component.Instances[var26].Model = var4
+		iftype.Instances[var26].ModelType = 1
+		iftype.Instances[var26].Model = var4
 		c.PacketType = -1
 		return true
 	}
@@ -10844,11 +10844,11 @@ func (c *Client) Read() (ok bool) {
 		var4 := c.In.G2()
 		var5 := c.In.G2()
 		var31 := objtype.Get(var4)
-		component.Instances[var26].ModelType = 4
-		component.Instances[var26].Model = var4
-		component.Instances[var26].Xan = var31.Xan2D
-		component.Instances[var26].Yan = var31.Yan2D
-		component.Instances[var26].Zoom = var31.Zoom2D * 100 / var5
+		iftype.Instances[var26].ModelType = 4
+		iftype.Instances[var26].Model = var4
+		iftype.Instances[var26].Xan = var31.Xan2D
+		iftype.Instances[var26].Yan = var31.Yan2D
+		iftype.Instances[var26].Zoom = var31.Zoom2D * 100 / var5
 		c.PacketType = -1
 		return true
 	}
@@ -10881,7 +10881,7 @@ func (c *Client) Read() (ok bool) {
 		var5 := var4 >> 10 & 0x1F
 		var6 := var4 >> 5 & 0x1F
 		var7 := var4 & 0x1F
-		component.Instances[var26].Colour = (var5 << 19) + (var6 << 11) + (var7 << 3)
+		iftype.Instances[var26].Colour = (var5 << 19) + (var6 << 11) + (var7 << 3)
 		c.PacketType = -1
 		return true
 	}
@@ -10904,7 +10904,7 @@ func (c *Client) Read() (ok bool) {
 	if c.PacketType == io.SERVERPROT_IF_SETHIDE {
 		var26 := c.In.G2()
 		var29 := c.In.G1() == 1
-		component.Instances[var26].Hide = var29
+		iftype.Instances[var26].Hide = var29
 		c.PacketType = -1
 		return true
 	}
@@ -10931,9 +10931,9 @@ func (c *Client) Read() (ok bool) {
 	// type-0 (layer) components only. The floor-to-0 clamp runs first, so a
 	// negative scroll-height cap wins — faithful to Java's clamp order.
 	if c.PacketType == io.SERVERPROT_IF_SETSCROLLPOS {
-		var85 := c.In.G2()                  // Java: var85 — comId
-		var86 := c.In.G2()                  // Java: var86 — pos
-		var87 := component.Instances[var85] // Java: var87
+		var85 := c.In.G2()               // Java: var85 — comId
+		var86 := c.In.G2()               // Java: var86 — pos
+		var87 := iftype.Instances[var85] // Java: var87
 		if var87 != nil && var87.Type == 0 {
 			if var86 < 0 {
 				var86 = 0
@@ -10970,8 +10970,8 @@ func (c *Client) Read() (ok bool) {
 	if c.PacketType == io.SERVERPROT_IF_SETTEXT {
 		var26 := c.In.G2()
 		var28 := c.In.GJStr()
-		component.Instances[var26].Text = var28
-		if component.Instances[var26].Layer == c.TabInterfaceID[c.SelectedTab] {
+		iftype.Instances[var26].Text = var28
+		if iftype.Instances[var26].Layer == c.TabInterfaceID[c.SelectedTab] {
 			c.RedrawSidebar = true
 		}
 		c.PacketType = -1
@@ -11021,7 +11021,7 @@ func (c *Client) Read() (ok bool) {
 	if c.PacketType == io.SERVERPROT_UPDATE_INV_PARTIAL {
 		c.RedrawSidebar = true
 		var26 := c.In.G2()
-		var27 := component.Instances[var26]
+		var27 := iftype.Instances[var26]
 		for c.In.Pos < c.PacketSize {
 			var5 := c.In.G1()
 			var6 := c.In.G2()
@@ -11056,9 +11056,9 @@ func (c *Client) DrawSidebar() {
 		pix3d.LineOffset = c.AreaSidebarOffsets
 		c.ImageInvback.PlotSprite(0, 0)
 		if c.SidebarInterfaceID != -1 {
-			c.DrawInterface(0, 0, component.Instances[c.SidebarInterfaceID], 0)
+			c.DrawInterface(0, 0, iftype.Instances[c.SidebarInterfaceID], 0)
 		} else if c.TabInterfaceID[c.SelectedTab] != -1 {
-			c.DrawInterface(0, 0, component.Instances[c.TabInterfaceID[c.SelectedTab]], 0)
+			c.DrawInterface(0, 0, iftype.Instances[c.TabInterfaceID[c.SelectedTab]], 0)
 		}
 		if c.MenuVisible && c.MenuArea == 1 {
 			c.DrawMenu()

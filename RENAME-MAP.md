@@ -217,7 +217,7 @@ the corresponding box is checked.
 
 - [x] **Pass A** `dash3d/world` → `dash3d/clientbuild` (type `World`→`ClientBuild`)
 - [x] **Pass B** `dash3d/world3d` → `dash3d/world` (type `World3D`→`World`; MUST follow A)
-- [ ] **Pass C** `config/component` → `config/iftype` (type `Component`→`IfType`)
+- [x] **Pass C** `config/component` → `config/iftype` (type `Component`→`IfType`)
 - [ ] **Pass D** `io.Jagfile` → `io.JagFile` (case only)
 - [ ] **Pass E** `io/protocol.go` → `client/protocol.go`
 
