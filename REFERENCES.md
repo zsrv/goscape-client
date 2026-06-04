@@ -66,6 +66,48 @@ rev-225 pins remain the last-known reference.)
 > 1:1 for this and later revisions. See `PORTING-LESSONS.md` §2 "When deob
 > lineages diverge".
 
+## rev-245.2 — Go branch `rev-245.2`
+
+| Repo | Role | URL | Branch | Pinned commit |
+|---|---|---|---|---|
+| Client-Java | **primary** — authoritative translation source; every Go change maps to a Java function | https://github.com/LostCityRS/Client-Java | `245.2` | `176a85f7b423111c878a476e1ead048745e377c0` |
+| Client-TS | secondary cross-check for ambiguous Java→Go translations | https://github.com/LostCityRS/Client-TS | `245.2` | `bd29ce0127e1810a0b5bba43bc143461ce0ee4a1` |
+| Engine-TS | engine reference (TypeScript) + smoke-test server | https://github.com/LostCityRS/Engine-TS | `245.2` | `3c16994ca4ba51b4e04f88316c1f7395b0c4bb8a` |
+| Content | game content reference | https://github.com/LostCityRS/Content | `245.2` | `cbcfe6706ef9f4093e5b8e4c9cfee93577346993` |
+
+(Commits captured 2026-06-04. Go branch `rev-245.2` is cut from `rev-244`.
+`clientversion = 245`; the branch is named `245.2` upstream and the Go branch
+matches it. As with rev-244, the Client-Java working tree sits on a
+`245.2-GOSCAPE` branch that may accumulate local edits — **always read
+references via `git show 176a85f:…`**, never the working tree.)
+
+> **Lineage note — same convention, fresh deob with a cleanup pass.** The
+> `245.2` branch is a *new* 13-commit deob (`feat: Initial deob`…) with **no
+> shared git history** with `244`, but it **adopts the same naming convention**
+> (`ClientEntity`, `primarySeqId`, same `jagex2/` layout; 72 vs 73 files) — so
+> no rename/restructure pass is needed this time. The raw
+> `git diff -M20% -w 01f16088..176a85f` is still ~27 000 +/- lines, dominated
+> by: reassigned `@ObfuscatedName` keys (~2 600 lines), **`Client.java` method
+> reordering** (`chore: Reordered Client class methods` — defeats raw line
+> diffing; pair methods by name), local/param renames and *reorders*
+> (`var5`→`dx`; `move(boolean teleport, int, int)`→`move(int x, int z, boolean
+> jump)`), and blank-line reflow. Real deltas confirmed inside the churn:
+> `postanim_mode`→`postanim_move`, "New frame logic", packet identification,
+> `clientversion = 245`.
+>
+> **signlink reshape:** `jagex2/client/sign/SignLink.java` (477 ln) +
+> `MidiPlayer.java` → single top-level `sign/signlink.java` (308 ln, the
+> authentic original package name). The 244 deob's wrapper-side audio-consumer
+> reconstruction (audioLoop/MidiPlayer) is **absent** in 245.2, and
+> `midivol/wavevol` lost their `= 96` initializers — the Go consumer
+> (`audio/audioloop.go`, WS5) becomes a documented Go-side seam to reconcile
+> against the new publisher shape, not a line-port target.
+>
+> **Naming policy (user decision 2026-06-04): adopt-in-touched-methods.**
+> Methods rewritten for the 245.2 delta adopt the new local/param names (with
+> `// Java:` refs); untouched methods keep their current names. The Go↔Java
+> mapping converges as the delta lands, without a churn-only rename sweep.
+
 ## Future revisions
 
 When porting revision *N*:
