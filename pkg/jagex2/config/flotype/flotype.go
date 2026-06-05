@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	Count     int
-	Instances []*FloType
+	Count int
+	List  []*FloType
 )
 
 type FloType struct {
@@ -37,14 +37,14 @@ func NewFloType() *FloType {
 func Unpack(arg0 *io.JagFile) {
 	var2 := io.NewPacket(arg0.Read("flo.dat", nil))
 	Count = var2.G2()
-	if Instances == nil {
-		Instances = make([]*FloType, Count)
+	if List == nil {
+		List = make([]*FloType, Count)
 	}
 	for i := range Count {
-		if Instances[i] == nil {
-			Instances[i] = NewFloType()
+		if List[i] == nil {
+			List[i] = NewFloType()
 		}
-		Instances[i].Decode(var2)
+		List[i].Decode(var2)
 	}
 }
 

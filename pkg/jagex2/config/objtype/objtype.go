@@ -19,8 +19,8 @@ var (
 	CachePos     int
 	MembersWorld bool = true
 
-	ModelCache = datastruct.NewLruCache[*model.Model](50)
-	IconCache  = datastruct.NewLruCache[*pix32.Pix32](100) // Java: new LruCache(100)
+	ModelCache  = datastruct.NewLruCache[*model.Model](50)
+	SpriteCache = datastruct.NewLruCache[*pix32.Pix32](100) // Java: new LruCache(100)
 )
 
 type ObjType struct {
@@ -95,7 +95,7 @@ func Unpack(arg0 *io.JagFile) {
 
 func Unload() {
 	ModelCache = nil
-	IconCache = nil
+	SpriteCache = nil
 	Offsets = nil
 	Cache = nil
 	Dat = nil
@@ -350,21 +350,21 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 	return var4
 }
 
-// GetIcon renders (or fetches from IconCache) the 32x32 inventory icon for
+// GetSprite renders (or fetches from SpriteCache) the 32x32 inventory icon for
 // obj `id` at stack `count`. outlineRgb selects the 244 variant: 0 = plain
 // (cacheable, dark shadow pass), >0 = selection outline painted in that
 // colour (1.04x zoom), -1 = cert-link sub-icon (1.5x zoom, no outline/shadow).
 // Java: ObjType.getIcon(outlineRgb, count, id) (ObjType.java:474-622).
-func GetIcon(outlineRgb int, count int, id int) *pix32.Pix32 {
+func GetSprite(outlineRgb int, count int, id int) *pix32.Pix32 {
 	// Java: the icon cache is only consulted (and later populated) for the
 	// plain outlineRgb==0 variant (ObjType.java:475-486, 602-604).
 	if outlineRgb == 0 {
-		var3 := IconCache.Get(int64(id))
+		var3 := SpriteCache.Get(int64(id))
 		if var3 != nil && var3.OHi != count && var3.OHi != -1 {
 			// Java: var3.unlink() — DoublyLinkable's unlink() removes the node
 			// from both the hashtable bucket and the history list. The Go port
 			// of LruCache exposes Delete(key) for the same effect.
-			IconCache.Delete(int64(id))
+			SpriteCache.Delete(int64(id))
 			var3 = nil
 		}
 		if var3 != nil {
@@ -399,7 +399,7 @@ func GetIcon(outlineRgb int, count int, id int) *pix32.Pix32 {
 	// variant applies the 1.5x zoom.
 	var linkedIcon *pix32.Pix32
 	if var4.CertTemplate != -1 {
-		linkedIcon = GetIcon(-1, 10, var4.CertLink)
+		linkedIcon = GetSprite(-1, 10, var4.CertLink)
 		if linkedIcon == nil {
 			return nil
 		}
@@ -489,7 +489,7 @@ func GetIcon(outlineRgb int, count int, id int) *pix32.Pix32 {
 		linkedIcon.OHi = var22
 	}
 	if outlineRgb == 0 { // Java: ObjType.java:602-604
-		IconCache.Put(int64(id), var3)
+		SpriteCache.Put(int64(id), var3)
 	}
 	pix2d.Bind(var9, var8, var10)
 	pix2d.SetClipping(var14, var13, var12, var11)

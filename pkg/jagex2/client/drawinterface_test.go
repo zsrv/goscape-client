@@ -22,8 +22,8 @@ func TestDrawInterface_RendersChildren(t *testing.T) {
 	pix2d.Bind(w, make([]int, w*h), h)
 	t.Cleanup(pix2d.Reset)
 
-	prevInstances := iftype.Instances
-	t.Cleanup(func() { iftype.Instances = prevInstances })
+	prevInstances := iftype.List
+	t.Cleanup(func() { iftype.List = prevInstances })
 
 	const childID, fillColour = 1, 0x00FF00
 	child := &iftype.IfType{
@@ -34,8 +34,8 @@ func TestDrawInterface_RendersChildren(t *testing.T) {
 		Colour: fillColour,
 		Fill:   true,
 	}
-	iftype.Instances = make([]*iftype.IfType, childID+1)
-	iftype.Instances[childID] = child
+	iftype.List = make([]*iftype.IfType, childID+1)
+	iftype.List[childID] = child
 
 	parent := &iftype.IfType{
 		Type:    0,

@@ -72,7 +72,7 @@ func TestLruCachePutEvictsAndCleansMap(t *testing.T) {
 
 // TestLruCacheDelete verifies that explicit deletion removes the entry from
 // both the map and the history list, and frees a slot for new Puts.
-// ObjType.GetIcon depends on this for stale icon invalidation.
+// ObjType.GetSprite depends on this for stale icon invalidation.
 func TestLruCacheDelete(t *testing.T) {
 	c := NewLruCache[int](2)
 	c.Put(1, 100)

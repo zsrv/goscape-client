@@ -28,10 +28,10 @@ func TestBitmaskTable(t *testing.T) {
 // covered — they pull ObjType instances out of the cache-backed registry,
 // which needs real config data.
 func TestGetIfVar(t *testing.T) {
-	prevVarbits := varbittype.Instances
-	t.Cleanup(func() { varbittype.Instances = prevVarbits })
+	prevVarbits := varbittype.List
+	t.Cleanup(func() { varbittype.List = prevVarbits })
 	// varbit 0: bits 2..5 of varp 3.
-	varbittype.Instances = []*varbittype.VarBitType{{BaseVar: 3, StartBit: 2, EndBit: 5}}
+	varbittype.List = []*varbittype.VarBitType{{BaseVar: 3, StartBit: 2, EndBit: 5}}
 
 	c := &Client{}
 	c.Varps = make([]int, 8)

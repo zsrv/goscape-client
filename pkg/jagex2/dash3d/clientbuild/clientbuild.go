@@ -621,7 +621,7 @@ func (w *ClientBuild) Build(arg0 *world.World, arg2 []*dash3d.CollisionMap) {
 				if var18 >= 0 && var18 < w.MaxTileX {
 					var19 = int(w.LevelTileUnderlayIDs[i][var18][k]) & 0xFF
 					if var19 > 0 {
-						var51 := flotype.Instances[var19-1]
+						var51 := flotype.List[var19-1]
 						w.BlendChroma[k] += var51.Chroma
 						w.BlendSaturation[k] += var51.Saturation
 						w.BlendLightness[k] += var51.Lightness
@@ -633,7 +633,7 @@ func (w *ClientBuild) Build(arg0 *world.World, arg2 []*dash3d.CollisionMap) {
 				if var19 >= 0 && var19 < w.MaxTileX {
 					var20 = int(w.LevelTileUnderlayIDs[i][var19][k]) & 0xFF
 					if var20 > 0 {
-						var52 := flotype.Instances[var20-1]
+						var52 := flotype.List[var20-1]
 						w.BlendChroma[k] -= var52.Chroma
 						w.BlendSaturation[k] -= var52.Saturation
 						w.BlendLightness[k] -= var52.Lightness
@@ -700,7 +700,7 @@ func (w *ClientBuild) Build(arg0 *world.World, arg2 []*dash3d.CollisionMap) {
 								if var26 == 0 && w.LevelTileOverlayShape[i][j][l] != 0 {
 									var55 = false
 								}
-								if var27 > 0 && !flotype.Instances[var27-1].Occlude {
+								if var27 > 0 && !flotype.List[var27-1].Occlude {
 									var55 = false
 								}
 								if var55 && var28 == var29 && var28 == var30 && var28 == var31 {
@@ -718,7 +718,7 @@ func (w *ClientBuild) Build(arg0 *world.World, arg2 []*dash3d.CollisionMap) {
 								// (ClientBuild.java:806); widen first so int8(127)+1 cannot wrap.
 								var39 = int(w.LevelTileOverlayShape[i][j][l]) + 1
 								var56 := int(w.LevelTileOverlayRotation[i][j][l])
-								var41 := flotype.Instances[var27-1]
+								var41 := flotype.List[var27-1]
 								var42 := var41.Texture
 								var43 := 0
 								var44 := 0

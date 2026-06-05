@@ -15,8 +15,8 @@ import (
 // position alignment matches Java byte-for-byte.
 
 var (
-	Count     int           // Java: VarBitType.count
-	Instances []*VarBitType // Java: VarBitType.list (registry rename pending WS7)
+	Count int           // Java: VarBitType.count
+	List  []*VarBitType // Java: VarBitType.list (VarBitType.java:14 @2e62978)
 )
 
 type VarBitType struct {
@@ -32,14 +32,14 @@ func NewVarBitType() *VarBitType {
 func Unpack(arg1 *io.JagFile) {
 	var2 := io.NewPacket(arg1.Read("varbit.dat", nil))
 	Count = var2.G2()
-	if Instances == nil {
-		Instances = make([]*VarBitType, Count)
+	if List == nil {
+		List = make([]*VarBitType, Count)
 	}
 	for i := range Count {
-		if Instances[i] == nil {
-			Instances[i] = NewVarBitType()
+		if List[i] == nil {
+			List[i] = NewVarBitType()
 		}
-		Instances[i].Decode(i, var2)
+		List[i].Decode(i, var2)
 	}
 	if var2.Pos != len(var2.Data) {
 		fmt.Println("varbit load mismatch") // Java: VarBitType.java:42-44

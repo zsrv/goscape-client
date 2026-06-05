@@ -35,7 +35,7 @@ func buildDataArchive(payload []byte) *io.JagFile {
 // values that produce the deferred model id ((modelHi-1)<<8)+modelLo.
 func buildType6Payload(id, modelHi, modelLo int) []byte {
 	p := io.NewPacket(make([]byte, 64))
-	// Unpack reads a leading g2 as the Instances array size before the loop.
+	// Unpack reads a leading g2 as the List array size before the loop.
 	p.P2(id + 1)
 	p.P2(id) // component id
 	p.P1(6)  // type
@@ -72,10 +72,10 @@ func TestUnpackType6DeferredModel(t *testing.T) {
 
 	Unpack(nil, nil, archive)
 
-	if id >= len(Instances) || Instances[id] == nil {
-		t.Fatalf("component %d not decoded; Instances len=%d", id, len(Instances))
+	if id >= len(List) || List[id] == nil {
+		t.Fatalf("component %d not decoded; List len=%d", id, len(List))
 	}
-	com := Instances[id]
+	com := List[id]
 	if com.Type != 6 {
 		t.Fatalf("Type = %d, want 6", com.Type)
 	}

@@ -120,7 +120,7 @@ func (e *ClientEntity) AbortRoute() {
 func (e *ClientEntity) Teleport(arg1 bool, arg2 int, arg3 int) {
 	// Java: 244 cancels on postanim_mode == 1 (ClientEntity.java:174), not the
 	// 225 `priority <= 1` test.
-	if e.PrimarySeqID != -1 && seqtype.Instances[e.PrimarySeqID].PostanimMode == 1 {
+	if e.PrimarySeqID != -1 && seqtype.List[e.PrimarySeqID].PostanimMode == 1 {
 		e.PrimarySeqID = -1
 	}
 	if !arg1 {
@@ -182,7 +182,7 @@ func (e *ClientEntity) MoveCode(arg0 bool, arg1 int) {
 	}
 	// Java: 244 cancels on postanim_mode == 1 (ClientEntity.java:236), not the
 	// 225 `priority <= 1` test.
-	if e.PrimarySeqID != -1 && seqtype.Instances[e.PrimarySeqID].PostanimMode == 1 {
+	if e.PrimarySeqID != -1 && seqtype.List[e.PrimarySeqID].PostanimMode == 1 {
 		e.PrimarySeqID = -1
 	}
 	if e.PathLength < 9 {

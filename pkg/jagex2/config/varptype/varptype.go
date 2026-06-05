@@ -16,8 +16,8 @@ import (
 // matches Java byte-for-byte.
 
 var (
-	Count     int
-	Instances []*VarpType
+	Count int
+	List  []*VarpType
 )
 
 type VarpType struct {
@@ -31,14 +31,14 @@ func NewVarpType() *VarpType {
 func Unpack(arg0 *io.JagFile) {
 	var2 := io.NewPacket(arg0.Read("varp.dat", nil))
 	Count = var2.G2()
-	if Instances == nil {
-		Instances = make([]*VarpType, Count)
+	if List == nil {
+		List = make([]*VarpType, Count)
 	}
 	for i := range Count {
-		if Instances[i] == nil {
-			Instances[i] = NewVarpType()
+		if List[i] == nil {
+			List[i] = NewVarpType()
 		}
-		Instances[i].Decode(i, var2)
+		List[i].Decode(i, var2)
 	}
 	if var2.Pos != len(var2.Data) {
 		fmt.Println("varptype load mismatch") // Java: VarpType.java:76-78

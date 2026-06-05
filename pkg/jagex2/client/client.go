@@ -1101,7 +1101,7 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 			// Java: 244 ANIM form (Client.java:9479-9498) — duplicatebehavior
 			// restart branch, >= priority test, preanimRouteLength capture.
 			if var8 == var6.PrimarySeqID && var8 != -1 {
-				var18 := seqtype.Instances[var8].DuplicateBehavior
+				var18 := seqtype.List[var8].DuplicateBehavior
 				if var18 == 1 {
 					var6.PrimarySeqFrame = 0
 					var6.PrimarySeqCycle = 0
@@ -1110,7 +1110,7 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 				} else if var18 == 2 {
 					var6.PrimarySeqLoop = 0
 				}
-			} else if var8 == -1 || var6.PrimarySeqID == -1 || seqtype.Instances[var8].Priority >= seqtype.Instances[var6.PrimarySeqID].Priority {
+			} else if var8 == -1 || var6.PrimarySeqID == -1 || seqtype.List[var8].Priority >= seqtype.List[var6.PrimarySeqID].Priority {
 				var6.PrimarySeqID = var8
 				var6.PrimarySeqFrame = 0
 				var6.PrimarySeqCycle = 0
@@ -1761,7 +1761,7 @@ func (c *Client) HandleComponentInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 	for i := range var8 {
 		var10 := arg3.ChildX[i] + arg5
 		var11 := arg3.ChildY[i] + arg2 - arg6
-		var12 := iftype.Instances[arg3.ChildID[i]]
+		var12 := iftype.List[arg3.ChildID[i]]
 		var20 := var10 + var12.X
 		var21 := var11 + var12.Y
 		if (var12.OverLayer >= 0 || var12.OverColour != 0) && arg1 >= var20 && arg0 >= var21 && arg1 < var20+var12.Width && arg0 < var21+var12.Height {
@@ -1988,9 +1988,9 @@ func (c *Client) HandleChatSettingsInput() {
 	c.CloseModal()
 	c.ReportAbuseInput = ""
 	c.ReportAbuseMuteOption = false
-	for i := range len(iftype.Instances) {
-		if iftype.Instances[i] != nil && iftype.Instances[i].ClientCode == 600 {
-			c.MainLayerID = iftype.Instances[i].Layer
+	for i := range len(iftype.List) {
+		if iftype.List[i] != nil && iftype.List[i].ClientCode == 600 {
+			c.MainLayerID = iftype.List[i].Layer
 			c.ReportAbuseInterfaceID = c.MainLayerID
 			return
 		}
@@ -3788,7 +3788,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 	for i := range var10 {
 		var12 := arg3.ChildX[i] + arg1
 		var13 := arg3.ChildY[i] + arg0 - arg4
-		var14 := iftype.Instances[arg3.ChildID[i]]
+		var14 := iftype.List[arg3.ChildID[i]]
 		var25 := var12 + var14.X
 		var26 := var13 + var14.Y
 		if var14.ClientCode > 0 {
@@ -3837,7 +3837,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 								if c.ObjSelected == 1 && c.ObjSelectedSlot == var27 && c.ObjSelectedInterface == var14.Id {
 									outline = 16777215
 								}
-								var23 := objtype.GetIcon(outline, var14.InvSlotObjCount[var27], var22)
+								var23 := objtype.GetSprite(outline, var14.InvSlotObjCount[var27], var22)
 								if var23 != nil {
 									if c.ObjDragArea != 0 && c.ObjDragSlot == var27 && c.ObjDragInterfaceID == var14.Id {
 										var33 = c.MouseX - c.ObjGrabX
@@ -4029,7 +4029,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 					if var33 == -1 {
 						var34 = var14.GetTempModel(-1, -1, var31, c.LocalPlayer)
 					} else {
-						var35 := seqtype.Instances[var33]
+						var35 := seqtype.List[var33]
 						var34 = var14.GetTempModel(var35.Frames[var14.SeqFrame], var35.IFrames[var14.SeqFrame], var31, c.LocalPlayer)
 					}
 					if var34 != nil {
@@ -4113,7 +4113,7 @@ func (c *Client) GetPlayerExtended1(arg2 *io.Packet) {
 // music/SFX volume ladders to the centibel scale {0,-400,-800,-1200}
 // (Client.java:10726-10738, 10758-10770) — see audio.centibelToVol128.
 func (c *Client) UpdateVarp(arg1 int) {
-	var4 := varptype.Instances[arg1].ClientCode
+	var4 := varptype.List[arg1].ClientCode
 	if var4 == 0 {
 		return
 	}
@@ -4129,7 +4129,7 @@ func (c *Client) UpdateVarp(arg1 int) {
 		case 4:
 			pix3d.SetBrightness(0.6)
 		}
-		objtype.IconCache.Clear()
+		objtype.SpriteCache.Clear()
 		c.RedrawFrame = true
 	}
 	if var4 == 3 {
@@ -4278,7 +4278,7 @@ func (c *Client) UpdateForceMovement(arg0 *entity.ClientEntity) {
 
 func (c *Client) StartForceMovement(arg0 *entity.ClientEntity, arg1 int) {
 	c.PacketSize += arg1
-	if arg0.ForceMoveStartCycle == clientextras.LoopCycle || arg0.PrimarySeqID == -1 || arg0.PrimarySeqDelay != 0 || arg0.PrimarySeqCycle+1 > seqtype.Instances[arg0.PrimarySeqID].GetFrameDuration(arg0.PrimarySeqFrame) {
+	if arg0.ForceMoveStartCycle == clientextras.LoopCycle || arg0.PrimarySeqID == -1 || arg0.PrimarySeqDelay != 0 || arg0.PrimarySeqCycle+1 > seqtype.List[arg0.PrimarySeqID].GetDuration(arg0.PrimarySeqFrame) {
 		var3 := arg0.ForceMoveStartCycle - arg0.ForceMoveEndCycle
 		var4 := clientextras.LoopCycle - arg0.ForceMoveEndCycle
 		var5 := arg0.ForceMoveStartSceneTileX*128 + arg0.Size*64
@@ -4314,7 +4314,7 @@ func (c *Client) RouteMove(arg1 *entity.ClientEntity) {
 		// Java: 244 gates movement on preanimRouteLength + preanim_move /
 		// postanim_mode (Client.java:5002-5014), replacing 225's
 		// walkmerge==null test.
-		var3 := seqtype.Instances[arg1.PrimarySeqID]
+		var3 := seqtype.List[arg1.PrimarySeqID]
 		if arg1.PreanimRouteLength > 0 && var3.PreanimMove == 0 {
 			arg1.SeqTrigger++
 			return
@@ -4498,13 +4498,13 @@ func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 	arg1.SeqStretches = false
 	var var3 *seqtype.SeqType
 	if arg1.SecondarySeqID != -1 {
-		var3 = seqtype.Instances[arg1.SecondarySeqID]
+		var3 = seqtype.List[arg1.SecondarySeqID]
 		arg1.SecondarySeqCycle++
-		if arg1.SecondarySeqFrame < var3.FrameCount && arg1.SecondarySeqCycle > var3.GetFrameDuration(arg1.SecondarySeqFrame) {
+		if arg1.SecondarySeqFrame < var3.NumFrames && arg1.SecondarySeqCycle > var3.GetDuration(arg1.SecondarySeqFrame) {
 			arg1.SecondarySeqCycle = 0
 			arg1.SecondarySeqFrame++
 		}
-		if arg1.SecondarySeqFrame >= var3.FrameCount {
+		if arg1.SecondarySeqFrame >= var3.NumFrames {
 			arg1.SecondarySeqCycle = 0
 			arg1.SecondarySeqFrame = 0
 		}
@@ -4513,13 +4513,13 @@ func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 		if arg1.SpotanimFrame < 0 {
 			arg1.SpotanimFrame = 0
 		}
-		var3 = spotanimtype.Instances[arg1.SpotanimID].Seq
+		var3 = spotanimtype.List[arg1.SpotanimID].Seq
 		arg1.SpotanimCycle++
-		for arg1.SpotanimFrame < var3.FrameCount && arg1.SpotanimCycle > var3.GetFrameDuration(arg1.SpotanimFrame) {
-			arg1.SpotanimCycle -= var3.GetFrameDuration(arg1.SpotanimFrame)
+		for arg1.SpotanimFrame < var3.NumFrames && arg1.SpotanimCycle > var3.GetDuration(arg1.SpotanimFrame) {
+			arg1.SpotanimCycle -= var3.GetDuration(arg1.SpotanimFrame)
 			arg1.SpotanimFrame++
 		}
-		if arg1.SpotanimFrame >= var3.FrameCount && (arg1.SpotanimFrame < 0 || arg1.SpotanimFrame >= var3.FrameCount) {
+		if arg1.SpotanimFrame >= var3.NumFrames && (arg1.SpotanimFrame < 0 || arg1.SpotanimFrame >= var3.NumFrames) {
 			arg1.SpotanimID = -1
 		}
 	}
@@ -4527,26 +4527,26 @@ func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 	// still has route to walk, hold the primary seq on delay 1 instead of
 	// advancing it.
 	if arg1.PrimarySeqID != -1 && arg1.PrimarySeqDelay <= 1 {
-		var3 = seqtype.Instances[arg1.PrimarySeqID]
+		var3 = seqtype.List[arg1.PrimarySeqID]
 		if var3.PreanimMove == 1 && arg1.PreanimRouteLength > 0 && arg1.ForceMoveEndCycle <= clientextras.LoopCycle && arg1.ForceMoveStartCycle < clientextras.LoopCycle {
 			arg1.PrimarySeqDelay = 1
 			return
 		}
 	}
 	if arg1.PrimarySeqID != -1 && arg1.PrimarySeqDelay == 0 {
-		var3 = seqtype.Instances[arg1.PrimarySeqID]
+		var3 = seqtype.List[arg1.PrimarySeqID]
 		arg1.PrimarySeqCycle++
-		for arg1.PrimarySeqFrame < var3.FrameCount && arg1.PrimarySeqCycle > var3.GetFrameDuration(arg1.PrimarySeqFrame) {
-			arg1.PrimarySeqCycle -= var3.GetFrameDuration(arg1.PrimarySeqFrame)
+		for arg1.PrimarySeqFrame < var3.NumFrames && arg1.PrimarySeqCycle > var3.GetDuration(arg1.PrimarySeqFrame) {
+			arg1.PrimarySeqCycle -= var3.GetDuration(arg1.PrimarySeqFrame)
 			arg1.PrimarySeqFrame++
 		}
-		if arg1.PrimarySeqFrame >= var3.FrameCount {
+		if arg1.PrimarySeqFrame >= var3.NumFrames {
 			arg1.PrimarySeqFrame -= var3.ReplayOff
 			arg1.PrimarySeqLoop++
 			if arg1.PrimarySeqLoop >= var3.ReplayCount {
 				arg1.PrimarySeqID = -1
 			}
-			if arg1.PrimarySeqFrame < 0 || arg1.PrimarySeqFrame >= var3.FrameCount {
+			if arg1.PrimarySeqFrame < 0 || arg1.PrimarySeqFrame >= var3.NumFrames {
 				arg1.PrimarySeqID = -1
 			}
 		}
@@ -4964,10 +4964,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
 		c.SelectedArea = 2
-		if iftype.Instances[var4].Layer == c.MainLayerID {
+		if iftype.List[var4].Layer == c.MainLayerID {
 			c.SelectedArea = 1
 		}
-		if iftype.Instances[var4].Layer == c.ChatLayerID {
+		if iftype.List[var4].Layer == c.ChatLayerID {
 			c.SelectedArea = 3
 		}
 	}
@@ -5045,10 +5045,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
 		c.SelectedArea = 2
-		if iftype.Instances[var4].Layer == c.MainLayerID {
+		if iftype.List[var4].Layer == c.MainLayerID {
 			c.SelectedArea = 1
 		}
-		if iftype.Instances[var4].Layer == c.ChatLayerID {
+		if iftype.List[var4].Layer == c.ChatLayerID {
 			c.SelectedArea = 3
 		}
 	}
@@ -5062,10 +5062,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
 		c.SelectedArea = 2
-		if iftype.Instances[var4].Layer == c.MainLayerID {
+		if iftype.List[var4].Layer == c.MainLayerID {
 			c.SelectedArea = 1
 		}
-		if iftype.Instances[var4].Layer == c.ChatLayerID {
+		if iftype.List[var4].Layer == c.ChatLayerID {
 			c.SelectedArea = 3
 		}
 	}
@@ -5099,7 +5099,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		// var19.linkObjCount[var3] >= 100000 (Client.java:8765-8768 @2e62978)
 		// — 254 reads the stack count from the inventory component's slot
 		// (with a nil guard) instead of the raw menu param var4.
-		var19If := iftype.Instances[var4]
+		var19If := iftype.List[var4]
 		if var19If != nil && var19If.InvSlotObjCount[var3] >= 100000 {
 			var18 = strconv.Itoa(var19If.InvSlotObjCount[var3]) + " x " + var17.Name
 		} else if var17.Desc == nil {
@@ -5278,7 +5278,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	}
 	var var22 *iftype.IfType
 	if var5 == 274 {
-		var22 = iftype.Instances[var4]
+		var22 = iftype.List[var4]
 		c.SpellSelected = 1
 		c.ActiveSpellID = var4
 		c.ActiveSpellFlags = var22.ActionTarget
@@ -5301,7 +5301,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		return
 	}
 	if var5 == 231 {
-		var22 = iftype.Instances[var4]
+		var22 = iftype.List[var4]
 		var23 := true
 		if var22.ClientCode > 0 {
 			var23 = c.HandleInterfaceAction(var22)
@@ -5347,10 +5347,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
 		c.SelectedArea = 2
-		if iftype.Instances[var4].Layer == c.MainLayerID {
+		if iftype.List[var4].Layer == c.MainLayerID {
 			c.SelectedArea = 1
 		}
-		if iftype.Instances[var4].Layer == c.ChatLayerID {
+		if iftype.List[var4].Layer == c.ChatLayerID {
 			c.SelectedArea = 3
 		}
 	}
@@ -5401,7 +5401,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 225 {
 		c.Out.P1Isaac(CLIENTPROT_IF_BUTTON) // Java: pIsaac(177)
 		c.Out.P2(var4)
-		var22 = iftype.Instances[var4]
+		var22 = iftype.List[var4]
 		if var22.Scripts != nil && var22.Scripts[0][0] == 5 {
 			var8 = var22.Scripts[0][1]
 			if c.Varps[var8] != var22.ScriptOperand[0] {
@@ -5418,9 +5418,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CloseModal()
 			c.ReportAbuseInput = strings.TrimSpace(var7[var8+5:])
 			c.ReportAbuseMuteOption = false
-			for i := range len(iftype.Instances) {
-				if iftype.Instances[i] != nil && iftype.Instances[i].ClientCode == 600 {
-					c.MainLayerID = iftype.Instances[i].Layer
+			for i := range len(iftype.List) {
+				if iftype.List[i] != nil && iftype.List[i].ClientCode == 600 {
+					c.MainLayerID = iftype.List[i].Layer
 					c.ReportAbuseInterfaceID = c.MainLayerID
 					break
 				}
@@ -5448,7 +5448,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 435 {
 		c.Out.P1Isaac(CLIENTPROT_IF_BUTTON) // Java: pIsaac(177)
 		c.Out.P2(var4)
-		var22 = iftype.Instances[var4]
+		var22 = iftype.List[var4]
 		if var22.Scripts != nil && var22.Scripts[0][0] == 5 {
 			var8 = var22.Scripts[0][1]
 			c.Varps[var8] = 1 - c.Varps[var8]
@@ -5749,7 +5749,7 @@ func (c *Client) UpdateInterfaceContent(arg1 *iftype.IfType) {
 				}
 			}
 			var10.PrepareAnim()
-			var10.Animate(seqtype.Instances[c.LocalPlayer.SeqStandID].Frames[0])
+			var10.Animate(seqtype.List[c.LocalPlayer.SeqStandID].Frames[0])
 			var10.CalculateNormals(64, 850, -30, -50, -30, true)
 			arg1.ModelType = 5
 			arg1.Model = 0
@@ -6596,7 +6596,7 @@ func (c *Client) HandleInput() {
 		if c.MainLayerID == -1 {
 			c.HandleViewportOptions()
 		} else {
-			c.HandleComponentInput(c.MouseY, c.MouseX, 4, iftype.Instances[c.MainLayerID], 4, 0)
+			c.HandleComponentInput(c.MouseY, c.MouseX, 4, iftype.List[c.MainLayerID], 4, 0)
 		}
 	}
 	if c.LastHoveredInterfaceID != c.ViewportHoveredInterfaceIndex {
@@ -6605,9 +6605,9 @@ func (c *Client) HandleInput() {
 	c.LastHoveredInterfaceID = 0
 	if c.MouseX > 553 && c.MouseY > 205 && c.MouseX < 743 && c.MouseY < 466 {
 		if c.SideLayerID != -1 {
-			c.HandleComponentInput(c.MouseY, c.MouseX, 205, iftype.Instances[c.SideLayerID], 553, 0)
+			c.HandleComponentInput(c.MouseY, c.MouseX, 205, iftype.List[c.SideLayerID], 553, 0)
 		} else if c.TabInterfaceID[c.SideTab] != -1 {
-			c.HandleComponentInput(c.MouseY, c.MouseX, 205, iftype.Instances[c.TabInterfaceID[c.SideTab]], 553, 0)
+			c.HandleComponentInput(c.MouseY, c.MouseX, 205, iftype.List[c.TabInterfaceID[c.SideTab]], 553, 0)
 		}
 	}
 	if c.LastHoveredInterfaceID != c.SidebarHoveredInterfaceIndex {
@@ -6620,7 +6620,7 @@ func (c *Client) HandleInput() {
 	// to y<434 && x<426.
 	if c.MouseX > 17 && c.MouseY > 357 && c.MouseX < 496 && c.MouseY < 453 {
 		if c.ChatLayerID != -1 {
-			c.HandleComponentInput(c.MouseY, c.MouseX, 357, iftype.Instances[c.ChatLayerID], 17, 0)
+			c.HandleComponentInput(c.MouseY, c.MouseX, 357, iftype.List[c.ChatLayerID], 17, 0)
 		} else if c.MouseY < 434 && c.MouseX < 426 { // Java: Client.java:3694 @176a85f — message rows only
 			c.HandleChatMouseInput(c.MouseY-357, 0)
 		}
@@ -6660,7 +6660,7 @@ func (c *Client) ClearCaches() {
 	loctype.ModelCacheDynamic.Clear()
 	npctype.ModelCache.Clear()
 	objtype.ModelCache.Clear()
-	objtype.IconCache.Clear()
+	objtype.SpriteCache.Clear()
 	playerentity.ModelCache.Clear()
 	spotanimtype.ModelCache.Clear()
 }
@@ -6690,11 +6690,11 @@ func (c *Client) OtherOverlays() {
 	// interface (IF_OPENOVERLAY) renders before the main viewport interface.
 	if c.MainOverlayLayerID != -1 {
 		c.UpdateInterfaceAnimation(c.MainOverlayLayerID, c.SceneDelta)
-		c.DrawInterface(0, 0, iftype.Instances[c.MainOverlayLayerID], 0)
+		c.DrawInterface(0, 0, iftype.List[c.MainOverlayLayerID], 0)
 	}
 	if c.MainLayerID != -1 {
 		c.UpdateInterfaceAnimation(c.MainLayerID, c.SceneDelta)
-		c.DrawInterface(0, 0, iftype.Instances[c.MainLayerID], 0)
+		c.DrawInterface(0, 0, iftype.List[c.MainLayerID], 0)
 	}
 	c.GetSpecialArea()
 	if !c.MenuVisible {
@@ -7879,24 +7879,24 @@ func (c *Client) Unload() {
 	loctype.Unload()
 	npctype.Unload()
 	objtype.Unload()
-	flotype.Instances = nil
+	flotype.List = nil
 	idktype.Instances = nil
-	iftype.Instances = nil
+	iftype.List = nil
 	// Java: `UnkType.list = null` (Client.java @2e62978; was UnkType.types).
 	// Intentionally not ported: UnkType is a deobfuscator-emitted
 	// stub class (never instantiated or read; re-verified at 245.2 and
 	// again at 254 — its new 7th boolean field1109 (mc.l, UnkType.java:42
 	// @2e62978) is equally dead). Project policy excludes pure deob
 	// artifacts.
-	seqtype.Instances = nil
-	spotanimtype.Instances = nil
+	seqtype.List = nil
+	spotanimtype.List = nil
 	spotanimtype.ModelCache = nil
-	varptype.Instances = nil
+	varptype.List = nil
 	playerentity.ModelCache = nil
 	pix3d.Unload()
 	world.Unload()
 	model.Unload()
-	animframe.Instances = nil
+	animframe.List = nil
 }
 
 // OpenSocket dials the game server on the given port.
@@ -8247,7 +8247,7 @@ func (c *Client) GameLoop() {
 				c.HoveredSlotParentID = -1
 				c.HandleInput()
 				if c.HoveredSlotParentID == c.ObjDragInterfaceID && c.HoveredSlot != c.ObjDragSlot {
-					var13 := iftype.Instances[c.ObjDragInterfaceID]
+					var13 := iftype.List[c.ObjDragInterfaceID]
 					// Java: Client.java:3010-3033 (new in 244) — bank arrange-by-insert.
 					// mode 1 shifts items between src and dst via successive swaps;
 					// mode 0 is the plain swap. The mode byte is also sent to the server.
@@ -8717,9 +8717,9 @@ func (c *Client) GetPlayer(arg0 *io.Packet, arg1 int) {
 
 func (c *Client) UpdateInterfaceAnimation(arg0, arg1 int) bool {
 	var4 := false
-	var5 := iftype.Instances[arg0]
+	var5 := iftype.List[arg0]
 	for i := 0; i < len(var5.ChildID) && var5.ChildID[i] != -1; i++ {
-		var7 := iftype.Instances[var5.ChildID[i]]
+		var7 := iftype.List[var5.ChildID[i]]
 		if var7.Type == 1 {
 			// Java `|=` evaluates both sides; Go `||` short-circuits, which
 			// would skip the recursive tick once var4 is true.
@@ -8736,14 +8736,14 @@ func (c *Client) UpdateInterfaceAnimation(arg0, arg1 int) bool {
 				var9 = var7.Anim
 			}
 			if var9 != -1 {
-				var10 := seqtype.Instances[var9]
+				var10 := seqtype.List[var9]
 				var7.SeqCycle += arg1
-				for var7.SeqCycle > var10.GetFrameDuration(var7.SeqFrame) {
-					var7.SeqCycle -= var10.GetFrameDuration(var7.SeqFrame) + 1
+				for var7.SeqCycle > var10.GetDuration(var7.SeqFrame) {
+					var7.SeqCycle -= var10.GetDuration(var7.SeqFrame) + 1
 					var7.SeqFrame++
-					if var7.SeqFrame >= var10.FrameCount {
+					if var7.SeqFrame >= var10.NumFrames {
 						var7.SeqFrame -= var10.ReplayOff
-						if var7.SeqFrame < 0 || var7.SeqFrame >= var10.FrameCount {
+						if var7.SeqFrame < 0 || var7.SeqFrame >= var10.NumFrames {
 							var7.SeqFrame = 0
 						}
 					}
@@ -8774,9 +8774,9 @@ func (c *Client) AddChat(arg0 int, arg1 string, arg3 string) {
 }
 
 func (c *Client) ResetInterfaceAnimation(arg1 int) {
-	var3 := iftype.Instances[arg1]
+	var3 := iftype.List[arg1]
 	for i := 0; i < len(var3.ChildID) && var3.ChildID[i] != -1; i++ {
-		var5 := iftype.Instances[var3.ChildID[i]]
+		var5 := iftype.List[var3.ChildID[i]]
 		if var5.Type == 1 {
 			c.ResetInterfaceAnimation(var5.Id)
 		}
@@ -8888,7 +8888,7 @@ func (c *Client) HandleMouseInput() {
 			if var3 == 582 || var3 == 113 || var3 == 555 || var3 == 331 || var3 == 354 || var3 == 694 || var3 == 962 || var3 == 795 || var3 == 681 || var3 == 100 || var3 == 102 || var3 == 1328 {
 				var4 = c.MenuParamB[c.MenuSize-1]
 				var5 = c.MenuParamC[c.MenuSize-1]
-				var6 := iftype.Instances[var5]
+				var6 := iftype.List[var5]
 				// Java: com.draggable || com.swappable (Client.java:4081
 				// @176a85f) — 245.2 widens drag eligibility to swappable
 				// inventories.
@@ -8900,10 +8900,10 @@ func (c *Client) HandleMouseInput() {
 					c.ObjDragArea = 2
 					c.ObjGrabX = c.MouseClickX
 					c.ObjGrabY = c.MouseClickY
-					if iftype.Instances[var5].Layer == c.MainLayerID {
+					if iftype.List[var5].Layer == c.MainLayerID {
 						c.ObjDragArea = 1
 					}
-					if iftype.Instances[var5].Layer == c.ChatLayerID {
+					if iftype.List[var5].Layer == c.ChatLayerID {
 						c.ObjDragArea = 3
 					}
 					return
@@ -9731,7 +9731,7 @@ func (c *Client) GetIfVar(arg0 int, arg2 *iftype.IfType) (result int) {
 			var6++
 		}
 		if var8 == 4 {
-			var11 := iftype.Instances[var4[var6]]
+			var11 := iftype.List[var4[var6]]
 			var6++
 			var12 := var4[var6]
 			var6++
@@ -9768,7 +9768,7 @@ func (c *Client) GetIfVar(arg0 int, arg2 *iftype.IfType) (result int) {
 			}
 		}
 		if var8 == 10 {
-			var15 := iftype.Instances[var4[var6]]
+			var15 := iftype.List[var4[var6]]
 			var6++
 			var16 := var4[var6] + 1
 			var6++
@@ -9807,7 +9807,7 @@ func (c *Client) GetIfVar(arg0 int, arg2 *iftype.IfType) (result int) {
 			// NEW in 254: varbit read (Client.java:9861-9868 @2e62978).
 			var20 := var4[var6]
 			var6++
-			var21 := varbittype.Instances[var20]
+			var21 := varbittype.List[var20]
 			var22 := var21.BaseVar
 			var23 := var21.StartBit
 			var24 := var21.EndBit
@@ -10290,7 +10290,7 @@ func (c *Client) DrawChatback() {
 		c.FontBold12.CentreString(40, 0, c.ModalMessage, 239)
 		c.FontBold12.CentreString(60, 128, "Click to continue", 239)
 	} else if c.ChatLayerID != -1 {
-		c.DrawInterface(0, 0, iftype.Instances[c.ChatLayerID], 0)
+		c.DrawInterface(0, 0, iftype.List[c.ChatLayerID], 0)
 	} else if c.TutLayerID == -1 {
 		var2 := c.FontPlain12
 		var3 := 0
@@ -10391,7 +10391,7 @@ func (c *Client) DrawChatback() {
 		var2.DrawString(var2.StringWidth(var13+": ")+6, 90, 0xFF, c.ChatTyped+"*")
 		pix2d.HLine(0, 77, 479, 0)
 	} else {
-		c.DrawInterface(0, 0, iftype.Instances[c.TutLayerID], 0)
+		c.DrawInterface(0, 0, iftype.List[c.TutLayerID], 0)
 	}
 	if c.MenuVisible && c.MenuArea == 2 {
 		c.DrawMenu()
@@ -10842,8 +10842,8 @@ func (c *Client) TcpIn() (ok bool) {
 	// Java: opcode 83 — set component model to local player head (Client.java:8024)
 	if c.PacketType == SERVERPROT_IF_SETPLAYERHEAD {
 		var26 := c.In.G2()
-		iftype.Instances[var26].ModelType = 3
-		iftype.Instances[var26].Model = (c.LocalPlayer.Appearances[8] << 6) + (c.LocalPlayer.Appearances[0] << 12) + (c.LocalPlayer.Colors[0] << 24) + (c.LocalPlayer.Colors[4] << 18) + c.LocalPlayer.Appearances[11]
+		iftype.List[var26].ModelType = 3
+		iftype.List[var26].Model = (c.LocalPlayer.Appearances[8] << 6) + (c.LocalPlayer.Appearances[0] << 12) + (c.LocalPlayer.Colors[0] << 24) + (c.LocalPlayer.Colors[4] << 18) + c.LocalPlayer.Appearances[11]
 		c.PacketType = -1
 		return true
 	}
@@ -10982,7 +10982,7 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_IF_SETANIM {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
-		iftype.Instances[var26].Anim = var4
+		iftype.List[var26].Anim = var4
 		c.PacketType = -1
 		return true
 	}
@@ -11015,7 +11015,7 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_UPDATE_INV_FULL {
 		c.RedrawSidebar = true
 		var26 := c.In.G2()
-		var27 := iftype.Instances[var26]
+		var27 := iftype.List[var26]
 		var5 := c.In.G1()
 		for var6 := range var5 {
 			var27.InvSlotObjId[var6] = c.In.G2()
@@ -11050,7 +11050,7 @@ func (c *Client) TcpIn() (ok bool) {
 	// Java: opcode 143 — clear inventory component (Client.java:7510)
 	if c.PacketType == SERVERPROT_UPDATE_INV_STOP_TRANSMIT {
 		var26 := c.In.G2()
-		var27 := iftype.Instances[var26]
+		var27 := iftype.List[var26]
 		for var5 := range len(var27.InvSlotObjId) {
 			var27.InvSlotObjId[var5] = -1
 			var27.InvSlotObjId[var5] = 0
@@ -11074,9 +11074,9 @@ func (c *Client) TcpIn() (ok bool) {
 			}
 			c.ReportAbuseInput = ""
 			c.ReportAbuseMuteOption = false
-			for var4 := range len(iftype.Instances) {
-				if iftype.Instances[var4] != nil && iftype.Instances[var4].ClientCode == var47 {
-					c.MainLayerID = iftype.Instances[var4].Layer
+			for var4 := range len(iftype.List) {
+				if iftype.List[var4] != nil && iftype.List[var4].ClientCode == var47 {
+					c.MainLayerID = iftype.List[var4].Layer
 					break
 				}
 			}
@@ -11122,8 +11122,8 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_IF_SETNPCHEAD {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
-		iftype.Instances[var26].ModelType = 2
-		iftype.Instances[var26].Model = var4
+		iftype.List[var26].ModelType = 2
+		iftype.List[var26].Model = var4
 		c.PacketType = -1
 		return true
 	}
@@ -11185,7 +11185,7 @@ func (c *Client) TcpIn() (ok bool) {
 		var26 := c.In.G2()
 		var4 := c.In.G2B()
 		var5 := c.In.G2B()
-		var34 := iftype.Instances[var26]
+		var34 := iftype.List[var26]
 		var34.X = var4
 		var34.Y = var5
 		c.PacketType = -1
@@ -11247,8 +11247,8 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_IF_SETMODEL {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
-		iftype.Instances[var26].ModelType = 1
-		iftype.Instances[var26].Model = var4
+		iftype.List[var26].ModelType = 1
+		iftype.List[var26].Model = var4
 		c.PacketType = -1
 		return true
 	}
@@ -11320,11 +11320,11 @@ func (c *Client) TcpIn() (ok bool) {
 		var4 := c.In.G2()
 		var5 := c.In.G2()
 		var31 := objtype.Get(var4)
-		iftype.Instances[var26].ModelType = 4
-		iftype.Instances[var26].Model = var4
-		iftype.Instances[var26].Xan = var31.Xan2D
-		iftype.Instances[var26].Yan = var31.Yan2D
-		iftype.Instances[var26].Zoom = var31.Zoom2D * 100 / var5
+		iftype.List[var26].ModelType = 4
+		iftype.List[var26].Model = var4
+		iftype.List[var26].Xan = var31.Xan2D
+		iftype.List[var26].Yan = var31.Yan2D
+		iftype.List[var26].Zoom = var31.Zoom2D * 100 / var5
 		c.PacketType = -1
 		return true
 	}
@@ -11357,7 +11357,7 @@ func (c *Client) TcpIn() (ok bool) {
 		var5 := var4 >> 10 & 0x1F
 		var6 := var4 >> 5 & 0x1F
 		var7 := var4 & 0x1F
-		iftype.Instances[var26].Colour = (var5 << 19) + (var6 << 11) + (var7 << 3)
+		iftype.List[var26].Colour = (var5 << 19) + (var6 << 11) + (var7 << 3)
 		c.PacketType = -1
 		return true
 	}
@@ -11380,7 +11380,7 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_IF_SETHIDE {
 		var26 := c.In.G2()
 		var29 := c.In.G1() == 1
-		iftype.Instances[var26].Hide = var29
+		iftype.List[var26].Hide = var29
 		c.PacketType = -1
 		return true
 	}
@@ -11424,9 +11424,9 @@ func (c *Client) TcpIn() (ok bool) {
 	// type-0 (layer) components only. The floor-to-0 clamp runs first, so a
 	// negative scroll-height cap wins — faithful to Java's clamp order.
 	if c.PacketType == SERVERPROT_IF_SETSCROLLPOS {
-		var85 := c.In.G2()               // Java: var85 — comId
-		var86 := c.In.G2()               // Java: var86 — pos
-		var87 := iftype.Instances[var85] // Java: var87
+		var85 := c.In.G2()          // Java: var85 — comId
+		var86 := c.In.G2()          // Java: var86 — pos
+		var87 := iftype.List[var85] // Java: var87
 		if var87 != nil && var87.Type == 0 {
 			if var86 < 0 {
 				var86 = 0
@@ -11463,8 +11463,8 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_IF_SETTEXT {
 		var26 := c.In.G2()
 		var28 := c.In.GStr()
-		iftype.Instances[var26].Text = var28
-		if iftype.Instances[var26].Layer == c.TabInterfaceID[c.SideTab] {
+		iftype.List[var26].Text = var28
+		if iftype.List[var26].Layer == c.TabInterfaceID[c.SideTab] {
 			c.RedrawSidebar = true
 		}
 		c.PacketType = -1
@@ -11514,7 +11514,7 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_UPDATE_INV_PARTIAL {
 		c.RedrawSidebar = true
 		var26 := c.In.G2()
-		var27 := iftype.Instances[var26]
+		var27 := iftype.List[var26]
 		for c.In.Pos < c.PacketSize {
 			var5 := c.In.G1()
 			var6 := c.In.G2()
@@ -11549,9 +11549,9 @@ func (c *Client) DrawSidebar() {
 		pix3d.LineOffset = c.AreaSidebarOffsets
 		c.ImageInvback.PlotSprite(0, 0)
 		if c.SideLayerID != -1 {
-			c.DrawInterface(0, 0, iftype.Instances[c.SideLayerID], 0)
+			c.DrawInterface(0, 0, iftype.List[c.SideLayerID], 0)
 		} else if c.TabInterfaceID[c.SideTab] != -1 {
-			c.DrawInterface(0, 0, iftype.Instances[c.TabInterfaceID[c.SideTab]], 0)
+			c.DrawInterface(0, 0, iftype.List[c.TabInterfaceID[c.SideTab]], 0)
 		}
 		if c.MenuVisible && c.MenuArea == 1 {
 			c.DrawMenu()
@@ -11602,7 +11602,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		// Java: 244 ANIM form (Client.java:9159-9178) — duplicatebehavior
 		// restart branch, >= priority test, preanimRouteLength capture.
 		if var6 == arg4.PrimarySeqID && var6 != -1 {
-			var18 := seqtype.Instances[var6].DuplicateBehavior
+			var18 := seqtype.List[var6].DuplicateBehavior
 			if var18 == 1 {
 				arg4.PrimarySeqFrame = 0
 				arg4.PrimarySeqCycle = 0
@@ -11611,7 +11611,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 			} else if var18 == 2 {
 				arg4.PrimarySeqLoop = 0
 			}
-		} else if var6 == -1 || arg4.PrimarySeqID == -1 || seqtype.Instances[var6].Priority >= seqtype.Instances[arg4.PrimarySeqID].Priority {
+		} else if var6 == -1 || arg4.PrimarySeqID == -1 || seqtype.List[var6].Priority >= seqtype.List[arg4.PrimarySeqID].Priority {
 			arg4.PrimarySeqID = var6
 			arg4.PrimarySeqFrame = 0
 			arg4.PrimarySeqCycle = 0

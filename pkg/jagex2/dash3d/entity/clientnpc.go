@@ -37,7 +37,7 @@ func (e *ClientNpc) GetTempModel() *model.Model {
 	// (the deob lineages name the -y bound oppositely).
 	e.Height = var2.MaxY
 	if e.SpotanimID != -1 && e.SpotanimFrame != -1 {
-		var3 := spotanimtype.Instances[e.SpotanimID]
+		var3 := spotanimtype.List[e.SpotanimID]
 		if spotModel := var3.GetTempModel(); spotModel != nil {
 			// Java: var5 = var3.seq.frames[spotanimFrame] hoisted before the
 			// ctor at 254; shareAlpha takes the RESOLVED frame id — unlike
@@ -71,19 +71,19 @@ func (e *ClientNpc) GetTempModel() *model.Model {
 // branch in 225).
 func (e *ClientNpc) GetTempModel2() *model.Model {
 	if e.PrimarySeqID >= 0 && e.PrimarySeqDelay == 0 {
-		var2 := seqtype.Instances[e.PrimarySeqID].Frames[e.PrimarySeqFrame]
+		var2 := seqtype.List[e.PrimarySeqID].Frames[e.PrimarySeqFrame]
 		var4 := -1
 		if e.SecondarySeqID >= 0 && e.SecondarySeqID != e.SeqStandID {
-			var4 = seqtype.Instances[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
+			var4 = seqtype.List[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
 		}
 		if e.seqModel == nil {
 			e.seqModel = &model.Model{}
 		}
-		return e.Type.GetTempModel(e.seqModel, var2, var4, seqtype.Instances[e.PrimarySeqID].WalkMerge)
+		return e.Type.GetTempModel(e.seqModel, var2, var4, seqtype.List[e.PrimarySeqID].WalkMerge)
 	}
 	var2 := -1
 	if e.SecondarySeqID >= 0 {
-		var2 = seqtype.Instances[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
+		var2 = seqtype.List[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
 	}
 	if e.seqModel == nil {
 		e.seqModel = &model.Model{}

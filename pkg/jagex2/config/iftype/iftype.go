@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	Instances  []*IfType
+	List       []*IfType
 	ImageCache *datastruct.LruCache[*pix32.Pix32]
 	// Java: IfType.modelCache = new LruCache(30) (IfType.java:119) — a static
 	// field initializer created once at class load and never nulled. unpack() only
@@ -112,7 +112,7 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 	var4 := io.NewPacket(arg3.Read("data", nil))
 	var5 := -1
 	var6 := var4.G2()
-	Instances = make([]*IfType, var6)
+	List = make([]*IfType, var6)
 	for {
 		var com *IfType
 		for ok := true; ok; ok = com.ButtonType != 1 && com.ButtonType != 4 && com.ButtonType != 5 && com.ButtonType != 6 {
@@ -126,8 +126,8 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 				var5 = var4.G2()
 				var7 = var4.G2()
 			}
-			Instances[var7] = NewIfType()
-			com = Instances[var7]
+			List[var7] = NewIfType()
+			com = List[var7]
 			com.Id = var7
 			com.Layer = var5
 			com.Type = var4.G1()

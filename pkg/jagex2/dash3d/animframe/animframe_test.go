@@ -32,13 +32,13 @@ func TestUnpackOneFrameBlob(t *testing.T) {
 		0x00, 0x01, // delLength = 1 (g2)
 	}
 
-	Instances = nil
+	List = nil
 	Init(1)
 	Unpack(data)
 
-	f := Instances[0]
+	f := List[0]
 	if f == nil {
-		t.Fatal("Instances[0] is nil after Unpack")
+		t.Fatal("List[0] is nil after Unpack")
 	}
 	if f.Base == nil || f.Base.Length != 1 || f.Base.Types[0] != 0 {
 		t.Fatalf("base = %+v, want size 1 type[0]=0", f.Base)

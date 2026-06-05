@@ -8,12 +8,12 @@ import (
 )
 
 var (
-	Count     int
-	Instances []*SeqType
+	Count int
+	List  []*SeqType
 )
 
 type SeqType struct {
-	FrameCount  int
+	NumFrames   int
 	Frames      []int
 	IFrames     []int
 	Delay       []int
@@ -32,12 +32,12 @@ type SeqType struct {
 	DuplicateBehavior int
 }
 
-// GetFrameDuration returns the duration (in client cycles) of animation frame
+// GetDuration returns the duration (in client cycles) of animation frame
 // `frame`, lazily resolving a zero wire delay from the frame's AnimFrame
 // (caching into Delay[]) and falling back to 1. The AnimFrame may not be
 // loaded yet (frames arrive over OnDemand after seq.dat decodes), so the nil
 // guard is load-bearing. Java: SeqType.getFrameDuration (SeqType.java:77-93).
-func (t *SeqType) GetFrameDuration(frame int) int {
+func (t *SeqType) GetDuration(frame int) int {
 	duration := t.Delay[frame]
 	if duration == 0 {
 		transform := animframe.Get(t.Frames[frame])
@@ -70,14 +70,14 @@ func NewSeqType() *SeqType {
 func Unpack(arg0 *io.JagFile) {
 	var2 := io.NewPacket(arg0.Read("seq.dat", nil))
 	Count = var2.G2()
-	if Instances == nil {
-		Instances = make([]*SeqType, Count)
+	if List == nil {
+		List = make([]*SeqType, Count)
 	}
 	for i := range Count {
-		if Instances[i] == nil {
-			Instances[i] = NewSeqType()
+		if List[i] == nil {
+			List[i] = NewSeqType()
 		}
-		Instances[i].Decode(var2)
+		List[i].Decode(var2)
 	}
 }
 
@@ -86,8 +86,8 @@ func (t *SeqType) Decode(arg1 *io.Packet) {
 		var3 := arg1.G1()
 		switch var3 {
 		case 0:
-			if t.FrameCount == 0 {
-				t.FrameCount = 1
+			if t.NumFrames == 0 {
+				t.NumFrames = 1
 				t.Frames = make([]int, 1)
 				t.Frames[0] = -1
 				t.IFrames = make([]int, 1)
@@ -113,11 +113,11 @@ func (t *SeqType) Decode(arg1 *io.Packet) {
 			}
 			return
 		case 1:
-			t.FrameCount = arg1.G1()
-			t.Frames = make([]int, t.FrameCount)
-			t.IFrames = make([]int, t.FrameCount)
-			t.Delay = make([]int, t.FrameCount)
-			for i := range t.FrameCount {
+			t.NumFrames = arg1.G1()
+			t.Frames = make([]int, t.NumFrames)
+			t.IFrames = make([]int, t.NumFrames)
+			t.Delay = make([]int, t.NumFrames)
+			for i := range t.NumFrames {
 				t.Frames[i] = arg1.G2()
 				t.IFrames[i] = arg1.G2()
 				if t.IFrames[i] == 0xFFFF {

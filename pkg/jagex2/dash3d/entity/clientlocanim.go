@@ -48,14 +48,14 @@ func NewClientLocAnim(heightmapNW, heightmapNE, heightmapSW, shape, angle int, r
 		HeightmapSE: heightmapSE,
 		HeightmapNE: heightmapNE,
 		HeightmapNW: heightmapNW,
-		Seq:         seqtype.Instances[seq],
+		Seq:         seqtype.List[seq],
 		SeqFrame:    0,
 		SeqCycle:    clientextras.LoopCycle,
 	}
-	// Java: seq.loops (rev-225 name: ReplayOff). numFrames -> FrameCount.
+	// Java: seq.loops (rev-225 name: ReplayOff). Java numFrames = Go NumFrames.
 	if randomFrame && e.Seq.ReplayOff != -1 {
-		e.SeqFrame = int(rand.Float64() * float64(e.Seq.FrameCount))
-		e.SeqCycle -= int(rand.Float64() * float64(e.Seq.GetFrameDuration(e.SeqFrame)))
+		e.SeqFrame = int(rand.Float64() * float64(e.Seq.NumFrames))
+		e.SeqCycle -= int(rand.Float64() * float64(e.Seq.GetDuration(e.SeqFrame)))
 	}
 	return e
 }
@@ -70,17 +70,17 @@ func (e *ClientLocAnim) GetTempModel() *model.Model {
 			delta = 100
 		}
 
-		for delta > e.Seq.GetFrameDuration(e.SeqFrame) {
-			delta -= e.Seq.GetFrameDuration(e.SeqFrame)
+		for delta > e.Seq.GetDuration(e.SeqFrame) {
+			delta -= e.Seq.GetDuration(e.SeqFrame)
 			e.SeqFrame++
 
-			if e.SeqFrame < e.Seq.FrameCount {
+			if e.SeqFrame < e.Seq.NumFrames {
 				continue
 			}
 
 			e.SeqFrame -= e.Seq.ReplayOff
 
-			if e.SeqFrame < 0 || e.SeqFrame >= e.Seq.FrameCount {
+			if e.SeqFrame < 0 || e.SeqFrame >= e.Seq.NumFrames {
 				e.Seq = nil
 				break
 			}

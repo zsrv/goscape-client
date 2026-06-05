@@ -11,7 +11,7 @@ import (
 
 var (
 	Count      int
-	Instances  []*SpotAnimType
+	List       []*SpotAnimType
 	ModelCache = datastruct.NewLruCache[*model.Model](30)
 )
 
@@ -44,15 +44,15 @@ func NewSpotAnimType() *SpotAnimType {
 func Unpack(arg0 *io.JagFile) {
 	var2 := io.NewPacket(arg0.Read("spotanim.dat", nil))
 	Count = var2.G2()
-	if Instances == nil {
-		Instances = make([]*SpotAnimType, Count)
+	if List == nil {
+		List = make([]*SpotAnimType, Count)
 	}
 	for i := range Count {
-		if Instances[i] == nil {
-			Instances[i] = NewSpotAnimType()
+		if List[i] == nil {
+			List[i] = NewSpotAnimType()
 		}
-		Instances[i].Index = i
-		Instances[i].Decode(var2)
+		List[i].Index = i
+		List[i].Decode(var2)
 	}
 }
 
@@ -66,8 +66,8 @@ func (t *SpotAnimType) Decode(arg1 *io.Packet) {
 			t.Model = arg1.G2()
 		case 2:
 			t.Anim = arg1.G2()
-			if seqtype.Instances != nil {
-				t.Seq = seqtype.Instances[t.Anim]
+			if seqtype.List != nil {
+				t.Seq = seqtype.List[t.Anim]
 			}
 		// Java 254 drops opcode 3 (animHasAlpha) — an opcode-3 byte in the
 		// data now falls through to the error println, as in Java.

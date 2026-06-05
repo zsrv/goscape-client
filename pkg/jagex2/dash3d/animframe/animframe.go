@@ -5,7 +5,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
-var Instances []*AnimFrame
+var List []*AnimFrame
 
 // Java: AnimFrame.opaque (h.j, AnimFrame.java:34 @2e62978) — new static
 // boolean[] at 254. Intentionally not ported: it is a dead-write deob
@@ -31,17 +31,17 @@ func NewAnimFrame() *AnimFrame {
 
 // Init allocates the per-id frame table. Java: AnimFrame.init(int).
 func Init(capacity int) {
-	Instances = make([]*AnimFrame, capacity+1)
+	List = make([]*AnimFrame, capacity+1)
 }
 
 // Get returns the frame for id, or nil when the table or the frame itself has
 // not been loaded yet (frames arrive lazily over OnDemand archive 1).
 // Java: AnimFrame.get (AnimFrame.java:153-159).
 func Get(id int) *AnimFrame {
-	if Instances == nil {
+	if List == nil {
 		return nil
 	}
-	return Instances[id]
+	return List[id]
 }
 
 // ShareAlpha reports whether face alpha may be shared (not copied) when
@@ -97,7 +97,7 @@ func Unpack(data []byte) {
 		id := head.G2()
 
 		frame := NewAnimFrame()
-		Instances[id] = frame
+		List[id] = frame
 		frame.Delay = del.G1()
 		frame.Base = base
 

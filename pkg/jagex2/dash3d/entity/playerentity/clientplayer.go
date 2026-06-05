@@ -164,7 +164,7 @@ func (e *ClientPlayer) GetTempModel() *model.Model {
 		return var2
 	}
 	if e.SpotanimID != -1 && e.SpotanimFrame != -1 {
-		var3 := spotanimtype.Instances[e.SpotanimID]
+		var3 := spotanimtype.List[e.SpotanimID]
 		// Java: ClientPlayer.java:176-177 @2e62978 — spot model may be
 		// lazily absent.
 		if spotModel := var3.GetTempModel(); spotModel != nil {
@@ -231,9 +231,9 @@ func (e *ClientPlayer) GetTempModel2() *model.Model {
 	if e.Transmog != nil {
 		frame := -1 // Java: var2
 		if e.PrimarySeqID >= 0 && e.PrimarySeqDelay == 0 {
-			frame = seqtype.Instances[e.PrimarySeqID].Frames[e.PrimarySeqFrame]
+			frame = seqtype.List[e.PrimarySeqID].Frames[e.PrimarySeqFrame]
 		} else if e.SecondarySeqID >= 0 {
-			frame = seqtype.Instances[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
+			frame = seqtype.List[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
 		}
 		if e.seqModel == nil {
 			e.seqModel = &model.Model{}
@@ -249,10 +249,10 @@ func (e *ClientPlayer) GetTempModel2() *model.Model {
 	var6 := -1
 	var7 := -1
 	if e.PrimarySeqID >= 0 && e.PrimarySeqDelay == 0 {
-		var8 := seqtype.Instances[e.PrimarySeqID]
+		var8 := seqtype.List[e.PrimarySeqID]
 		var4 = var8.Frames[e.PrimarySeqFrame]
 		if e.SecondarySeqID >= 0 && e.SecondarySeqID != e.SeqStandID {
-			var5 = seqtype.Instances[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
+			var5 = seqtype.List[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
 		}
 		if var8.RightHand >= 0 {
 			var6 = var8.RightHand
@@ -272,7 +272,7 @@ func (e *ClientPlayer) GetTempModel2() *model.Model {
 			var2 += int64(int32((var7 - e.Appearances[3]) << 16))
 		}
 	} else if e.SecondarySeqID >= 0 {
-		var4 = seqtype.Instances[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
+		var4 = seqtype.List[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
 	}
 	var15 := ModelCache.Get(var2)
 	if var15 == nil {
@@ -362,7 +362,7 @@ func (e *ClientPlayer) GetTempModel2() *model.Model {
 	e.seqModel.ResetFromModel6(var15, animframe.ShareAlpha(var4) && animframe.ShareAlpha(var5))
 	var16 := e.seqModel
 	if var4 != -1 && var5 != -1 {
-		var16.MaskAnimate(var5, var4, seqtype.Instances[e.PrimarySeqID].WalkMerge)
+		var16.MaskAnimate(var5, var4, seqtype.List[e.PrimarySeqID].WalkMerge)
 	} else if var4 != -1 {
 		var16.Animate(var4)
 	}

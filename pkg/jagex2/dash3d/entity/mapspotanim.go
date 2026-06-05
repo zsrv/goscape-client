@@ -21,7 +21,7 @@ type MapSpotAnim struct {
 
 func NewMapSpotAnim(x, arg1, z, arg4, y, level, arg7 int) *MapSpotAnim {
 	return &MapSpotAnim{
-		Type:        spotanimtype.Instances[arg1],
+		Type:        spotanimtype.List[arg1],
 		Level:       level,
 		X:           x,
 		Z:           z,
@@ -34,12 +34,12 @@ func NewMapSpotAnim(x, arg1, z, arg4, y, level, arg7 int) *MapSpotAnim {
 func (e *MapSpotAnim) Update(arg0 int) {
 	e.SeqCycle += arg0
 	for {
-		for ok := true; ok; ok = e.SeqFrame >= 0 && e.SeqFrame < e.Type.Seq.FrameCount {
-			for ok2 := true; ok2; ok2 = e.SeqFrame < e.Type.Seq.FrameCount {
-				if e.SeqCycle <= e.Type.Seq.GetFrameDuration(e.SeqFrame) {
+		for ok := true; ok; ok = e.SeqFrame >= 0 && e.SeqFrame < e.Type.Seq.NumFrames {
+			for ok2 := true; ok2; ok2 = e.SeqFrame < e.Type.Seq.NumFrames {
+				if e.SeqCycle <= e.Type.Seq.GetDuration(e.SeqFrame) {
 					return
 				}
-				e.SeqCycle -= e.Type.Seq.GetFrameDuration(e.SeqFrame) + 1
+				e.SeqCycle -= e.Type.Seq.GetDuration(e.SeqFrame) + 1
 				e.SeqFrame++
 			}
 		}
