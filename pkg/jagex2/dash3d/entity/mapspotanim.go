@@ -51,7 +51,7 @@ func (e *MapSpotAnim) Update(arg0 int) {
 // Java: getTempModel (MapSpotAnim.java:64-97 @2e62978; was getModel) — 254
 // hoists the resolved frame id before the ctor (it was only computed inside
 // the !seqComplete branch at 245.2) and derives the alpha-share flag from it.
-func (e *MapSpotAnim) GetModel() *model.Model {
+func (e *MapSpotAnim) GetTempModel() *model.Model {
 	mdl := e.Type.GetTempModel()
 	// Java: MapSpotAnim.java:66-68 @2e62978 — nil while the spotanim model
 	// faults in.

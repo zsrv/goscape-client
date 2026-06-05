@@ -3,7 +3,10 @@ package entity
 import "github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 
 type ModelSource interface {
-	GetModel() *model.Model
+	// GetTempModel resolves the source's current drawable model.
+	// Java: ModelSource.getTempModel (ModelSource.java:25 @2e62978; was
+	// getModel in ≤245.2).
+	GetTempModel() *model.Model
 }
 
 // ModelSourceOf wraps a concrete *Model as a ModelSource, returning a genuine

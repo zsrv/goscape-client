@@ -148,7 +148,8 @@ func (e *ClientPlayer) SetAppearance(arg1 *io.Packet) {
 	e.AppearanceHashCode += int64(e.Gender)
 }
 
-func (e *ClientPlayer) GetModel() *model.Model {
+// Java: getTempModel (ClientPlayer.java @2e62978; was getModel in ≤245.2).
+func (e *ClientPlayer) GetTempModel() *model.Model {
 	if !e.Visible {
 		return nil
 	}
@@ -421,6 +422,7 @@ func (e *ClientPlayer) GetHeadModel() *model.Model {
 	return var7
 }
 
-func (e *ClientPlayer) IsVisible() bool {
+// Java: isReady (ClientPlayer.java:391 @2e62978; was isVisible in ≤245.2).
+func (e *ClientPlayer) IsReady() bool {
 	return e.Visible
 }

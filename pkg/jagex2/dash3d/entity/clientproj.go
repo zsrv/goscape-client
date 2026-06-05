@@ -99,7 +99,7 @@ func (e *ClientProj) Update(arg1 int) {
 // Java: getTempModel (ClientProj.java:138-160 @2e62978; was getModel) — 254
 // computes the resolved frame id up front (-1 when there is no seq) and
 // gates prepareAnim/animate on it instead of on seq != null.
-func (e *ClientProj) GetModel() *model.Model {
+func (e *ClientProj) GetTempModel() *model.Model {
 	var2 := e.SpotAnim.GetTempModel()
 	// Java: ClientProj.java:140-142 @2e62978 — nil while the spotanim model
 	// faults in.

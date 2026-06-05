@@ -769,7 +769,7 @@ func (c *Client) Draw2DEntityElements() {
 		} else {
 			var3 = c.NPCs[c.NPCIDs[i-c.PlayerCount]]
 		}
-		if var3 != nil && var3.IsVisible() {
+		if var3 != nil && var3.IsReady() {
 			pe := var3.Pathing()
 			if i < c.PlayerCount {
 				var5 := var3.(*playerentity.ClientPlayer)
@@ -2106,7 +2106,7 @@ func (c *Client) AddPlayers(arg0 bool) {
 			var5 = c.Players[c.PlayerIDs[var4]]
 			var6 = c.PlayerIDs[var4] << 14
 		}
-		if var5 != nil && var5.IsVisible() {
+		if var5 != nil && var5.IsReady() {
 			var5.LowMemory = false
 			if (LowMemory && c.PlayerCount > 50 || c.PlayerCount > 200) && !arg0 && var5.SecondarySeqID == var5.SeqStandID {
 				var5.LowMemory = true
@@ -2910,7 +2910,7 @@ func (c *Client) DrawMinimap() {
 	}
 	for i := range c.NPCCount {
 		var14 := c.NPCs[c.NPCIDs[i]]
-		if var14 != nil && var14.IsVisible() && var14.Type.Minimap {
+		if var14 != nil && var14.IsReady() && var14.Type.Minimap {
 			var3 = var14.X/32 - c.LocalPlayer.X/32
 			var4 = var14.Z/32 - c.LocalPlayer.Z/32
 			c.DrawOnMinimap(var4, c.ImageMapdot1, var3)
@@ -2918,7 +2918,7 @@ func (c *Client) DrawMinimap() {
 	}
 	for i := range c.PlayerCount {
 		var9 := c.Players[c.PlayerIDs[i]]
-		if var9 != nil && var9.IsVisible() {
+		if var9 != nil && var9.IsReady() {
 			var3 = var9.X/32 - c.LocalPlayer.X/32
 			var4 = var9.Z/32 - c.LocalPlayer.Z/32
 			var10 := false
@@ -3545,7 +3545,7 @@ func (c *Client) AddNpcs(alwaysOnTop bool) {
 	for i := range c.NPCCount {
 		var3 := c.NPCs[c.NPCIDs[i]]
 		var4 := (c.NPCIDs[i] << 14) + 536870912
-		if var3 != nil && var3.IsVisible() && var3.Type.AlwaysOnTop == alwaysOnTop {
+		if var3 != nil && var3.IsReady() && var3.Type.AlwaysOnTop == alwaysOnTop {
 			var5 := var3.X >> 7
 			var6 := var3.Z >> 7
 			if var5 >= 0 && var5 < 104 && var6 >= 0 && var6 < 104 {

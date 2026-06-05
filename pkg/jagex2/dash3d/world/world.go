@@ -1288,14 +1288,14 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 											}
 											var10 := var9.Wall
 											if var10 != nil {
-												if m := var10.ModelA.GetModel(); m != nil {
+												if m := var10.ModelA.GetTempModel(); m != nil {
 													m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var10.X-EyeX, var10.Y-EyeY, var10.Z-EyeZ, var10.BitSet)
 												}
 											}
 											for i := range var9.LocCount {
 												var12 = var9.Locs[i]
 												if var12 != nil {
-													if m := var12.Model.GetModel(); m != nil {
+													if m := var12.Model.GetTempModel(); m != nil {
 														var12.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
 														m.Draw1(var12.Yaw, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var12.X-EyeX, var12.Y-EyeY, var12.Z-EyeZ, var12.BitSet)
 													}
@@ -1357,12 +1357,12 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 												tile.InverseBlockLocSpans = 9 - tile.BlockLocSpans
 											}
 											if wall.TypeA&frontWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeA) {
-												if m := wall.ModelA.GetModel(); m != nil {
+												if m := wall.ModelA.GetTempModel(); m != nil {
 													m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
 												}
 											}
 											if wall.TypeB&frontWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeB) {
-												if m := wall.ModelB.GetModel(); m != nil {
+												if m := wall.ModelB.GetTempModel(); m != nil {
 													m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
 												}
 											}
@@ -1373,7 +1373,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 										// static model), not the resolved model's maxY (rev-225).
 										if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.MinY) {
 											if decor.Type&frontWallTypes != 0 {
-												if m := decor.Model.GetModel(); m != nil {
+												if m := decor.Model.GetTempModel(); m != nil {
 													decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
 													m.Draw1(decor.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, decor.X-EyeX, decor.Y-EyeY, decor.Z-EyeZ, decor.BitSet)
 												}
@@ -1400,7 +1400,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 												if decor.Type&0x100 != 0 && nearestZ < nearestX {
 													drawX := x + WALL_DECORATION_INSET_X[angle]
 													drawZ := z + WALL_DECORATION_INSET_Z[angle]
-													if m := decor.Model.GetModel(); m != nil {
+													if m := decor.Model.GetTempModel(); m != nil {
 														decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
 														m.Draw1(angle*512+256, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
 													}
@@ -1408,7 +1408,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 												if decor.Type&0x200 != 0 && nearestZ > nearestX {
 													drawX := x + WALL_DECORATION_OUTSET_X[angle]
 													drawZ := z + WALL_DECORATION_OUTSET_Z[angle]
-													if m := decor.Model.GetModel(); m != nil {
+													if m := decor.Model.GetTempModel(); m != nil {
 														decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
 														m.Draw1((angle*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
 													}
@@ -1419,7 +1419,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 										if tileDrawn {
 											groundDecor := tile.GroundDecor
 											if groundDecor != nil {
-												if m := groundDecor.Model.GetModel(); m != nil {
+												if m := groundDecor.Model.GetTempModel(); m != nil {
 													m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, groundDecor.X-EyeX, groundDecor.Y-EyeY, groundDecor.Z-EyeZ, groundDecor.BitSet)
 												}
 											}
@@ -1427,17 +1427,17 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 											objs := tile.GroundObj
 											if objs != nil && objs.Offset == 0 {
 												if objs.BottomObj != nil {
-													if m := objs.BottomObj.GetModel(); m != nil {
+													if m := objs.BottomObj.GetTempModel(); m != nil {
 														m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY, objs.Z-EyeZ, objs.BitSet)
 													}
 												}
 												if objs.MiddleObj != nil {
-													if m := objs.MiddleObj.GetModel(); m != nil {
+													if m := objs.MiddleObj.GetTempModel(); m != nil {
 														m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY, objs.Z-EyeZ, objs.BitSet)
 													}
 												}
 												if objs.TopObj != nil {
-													if m := objs.TopObj.GetModel(); m != nil {
+													if m := objs.TopObj.GetTempModel(); m != nil {
 														m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY, objs.Z-EyeZ, objs.BitSet)
 													}
 												}
@@ -1490,7 +1490,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 											wall := tile.Wall
 
 											if !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeA) {
-												if m := wall.ModelA.GetModel(); m != nil {
+												if m := wall.ModelA.GetTempModel(); m != nil {
 													m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
 												}
 											}
@@ -1599,7 +1599,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 										// static model / updated when last drawn), then resolves
 										// and draws — vs rev-225's resolved model.maxY.
 										if !w.LocVisible(originalLevel, farthest.MinSceneTileX, farthest.MaxSceneTileX, farthest.MinSceneTileZ, farthest.MaxSceneTileZ, farthest.MinY) {
-											if m := farthest.Model.GetModel(); m != nil {
+											if m := farthest.Model.GetTempModel(); m != nil {
 												farthest.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
 												m.Draw1(farthest.Yaw, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, farthest.X-EyeX, farthest.Y-EyeY, farthest.Z-EyeZ, farthest.BitSet)
 											}
@@ -1651,19 +1651,19 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 		objs := tile.GroundObj
 		if objs != nil && objs.Offset != 0 {
 			if objs.BottomObj != nil {
-				if m := objs.BottomObj.GetModel(); m != nil {
+				if m := objs.BottomObj.GetTempModel(); m != nil {
 					m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY-objs.Offset, objs.Z-EyeZ, objs.BitSet)
 				}
 			}
 
 			if objs.MiddleObj != nil {
-				if m := objs.MiddleObj.GetModel(); m != nil {
+				if m := objs.MiddleObj.GetTempModel(); m != nil {
 					m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY-objs.Offset, objs.Z-EyeZ, objs.BitSet)
 				}
 			}
 
 			if objs.TopObj != nil {
-				if m := objs.TopObj.GetModel(); m != nil {
+				if m := objs.TopObj.GetTempModel(); m != nil {
 					m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, objs.X-EyeX, objs.Y-EyeY-objs.Offset, objs.Z-EyeZ, objs.BitSet)
 				}
 			}
@@ -1673,7 +1673,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 			decor := tile.Decor
 			if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.MinY) {
 				if decor.Type&tile.BackWallTypes != 0 {
-					if m := decor.Model.GetModel(); m != nil {
+					if m := decor.Model.GetTempModel(); m != nil {
 						decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
 						m.Draw1(decor.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, decor.X-EyeX, decor.Y-EyeY, decor.Z-EyeZ, decor.BitSet)
 					}
@@ -1700,7 +1700,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 					if decor.Type&0x100 != 0 && nearestZ >= nearestX {
 						drawX := x + WALL_DECORATION_INSET_X[angle]
 						drawZ := z + WALL_DECORATION_INSET_Z[angle]
-						if m := decor.Model.GetModel(); m != nil {
+						if m := decor.Model.GetTempModel(); m != nil {
 							decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
 							m.Draw1(angle*512+256, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
 						}
@@ -1708,7 +1708,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 					if decor.Type&0x200 != 0 && nearestZ <= nearestX {
 						drawX := x + WALL_DECORATION_OUTSET_X[angle]
 						drawZ := z + WALL_DECORATION_OUTSET_Z[angle]
-						if m := decor.Model.GetModel(); m != nil {
+						if m := decor.Model.GetTempModel(); m != nil {
 							decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
 							m.Draw1((angle*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
 						}
@@ -1719,13 +1719,13 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 			wall := tile.Wall
 			if wall != nil {
 				if wall.TypeB&tile.BackWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeB) {
-					if m := wall.ModelB.GetModel(); m != nil {
+					if m := wall.ModelB.GetTempModel(); m != nil {
 						m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
 					}
 				}
 
 				if wall.TypeA&tile.BackWallTypes != 0 && !w.WallVisible(originalLevel, tileX, tileZ, wall.TypeA) {
-					if m := wall.ModelA.GetModel(); m != nil {
+					if m := wall.ModelA.GetTempModel(); m != nil {
 						m.Draw1(0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, wall.X-EyeX, wall.Y-EyeY, wall.Z-EyeZ, wall.BitSet)
 					}
 				}

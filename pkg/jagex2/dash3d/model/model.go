@@ -160,17 +160,18 @@ type Model struct {
 	seqAlphaBuf          []int // owned FaceAlpha reuse pool for ResetFromModel6; never aliases a shared/src slice
 }
 
-// GetModel makes *Model satisfy the entity.ModelSource interface (rev-244:
+// GetTempModel makes *Model satisfy the entity.ModelSource interface (rev-244:
 // Model extends ModelSource). It returns the receiver itself so World's
-// resolve-then-draw path (m := node.GetModel(); m.Draw1(...)) works uniformly
-// for both static models and self-animating sources (ClientLocAnim).
+// resolve-then-draw path (m := node.GetTempModel(); m.Draw1(...)) works
+// uniformly for both static models and self-animating sources (ClientLocAnim).
 //
-// Java: rev-244 Model.getModel() returns null — Model is drawn via its own
-// overridden draw(), so its getModel() is never invoked. Go has no virtual
-// draw() dispatch, so returning the receiver here unifies the field-resolution
-// without changing observable behaviour (see WS3-MODELSOURCE-DESIGN.md). Safe on
-// a nil receiver: it simply returns nil.
-func (m *Model) GetModel() *Model {
+// Java: ModelSource.getTempModel() returns null (@2e62978; was getModel in
+// ≤245.2) — Model is drawn via its own overridden draw(), so its
+// getTempModel() is never invoked. Go has no virtual draw() dispatch, so
+// returning the receiver here unifies the field-resolution without changing
+// observable behaviour (see WS3-MODELSOURCE-DESIGN.md). Safe on a nil
+// receiver: it simply returns nil.
+func (m *Model) GetTempModel() *Model {
 	return m
 }
 

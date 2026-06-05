@@ -12,9 +12,9 @@ import (
 // ClientLocAnim is a self-animating scene loc. Java: rev-244 ClientLocAnim
 // extends ModelSource. It is stored directly as a scene node's ModelSource
 // (Wall.Model{A,B}, Sprite.Model, Decor.Model, GroundDecor.Model); each draw,
-// GetModel advances the seq frame against Client's global loop cycle and returns
-// the current-frame loc model. This replaces the rev-225 LocEntity-list +
-// Client.PushLocs per-frame model-swap mechanism.
+// GetTempModel advances the seq frame against Client's global loop cycle and
+// returns the current-frame loc model. This replaces the rev-225 LocEntity-list
+// + Client.PushLocs per-frame model-swap mechanism.
 type ClientLocAnim struct {
 	Index       int
 	Shape       int
@@ -37,8 +37,8 @@ type ClientLocAnim struct {
 // this ctor with a permuted arg order whose labels (heightNE/heightNW/...) are
 // swapped relative to Go's; callers here pass by the matching value, so a loc
 // caller writes NewClientLocAnim(heightNW, heightNE, heightSW, ..., heightSE,
-// ...). The stored fields then feed GetModel in the same positional order the
-// static loc.GetModel call uses, keeping the two paths identical.
+// ...). The stored fields then feed GetTempModel in the same positional order
+// the static loc.GetModel call uses, keeping the two paths identical.
 func NewClientLocAnim(heightmapNW, heightmapNE, heightmapSW, shape, angle int, randomFrame bool, heightmapSE, index, seq int) *ClientLocAnim {
 	e := &ClientLocAnim{
 		Index:       index,
@@ -60,9 +60,10 @@ func NewClientLocAnim(heightmapNW, heightmapNE, heightmapSW, shape, angle int, r
 	return e
 }
 
-// GetModel advances the animation against Client.loopCycle and returns the
-// current-frame model. Java: rev-244 ClientLocAnim.getModel().
-func (e *ClientLocAnim) GetModel() *model.Model {
+// GetTempModel advances the animation against Client.loopCycle and returns
+// the current-frame model. Java: ClientLocAnim.getTempModel @2e62978 (was
+// getModel in ≤245.2).
+func (e *ClientLocAnim) GetTempModel() *model.Model {
 	if e.Seq != nil {
 		delta := clientextras.LoopCycle - e.SeqCycle
 		if delta > 100 && e.Seq.ReplayOff > 0 {

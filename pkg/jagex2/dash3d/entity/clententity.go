@@ -194,10 +194,11 @@ func (e *ClientEntity) MoveAlongRoute(arg0 bool, arg1 int) {
 	e.PathRunning[0] = arg0
 }
 
-// IsVisible is the default implementation; ClientNpc and ClientPlayer
+// IsReady is the default implementation; ClientNpc and ClientPlayer
 // override it. Callers reach it via the PathableEntity interface, which
-// dispatches to the concrete type's method.
-func (e *ClientEntity) IsVisible() bool {
+// dispatches to the concrete type's method. Java: isReady
+// (ClientEntity.java:262 @2e62978; was isVisible in ≤245.2).
+func (e *ClientEntity) IsReady() bool {
 	return false
 }
 
@@ -213,6 +214,6 @@ func (e *ClientEntity) Pathing() *ClientEntity {
 type PathableEntity interface {
 	Teleport(bool, int, int)
 	MoveAlongRoute(bool, int)
-	IsVisible() bool
+	IsReady() bool
 	Pathing() *ClientEntity
 }

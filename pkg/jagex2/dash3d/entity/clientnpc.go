@@ -25,7 +25,7 @@ func NewClientNpc() *ClientNpc {
 // nil-guards the lazily-loaded animated model (nil while the model file is
 // still faulting in via OnDemand), reads height before the spotanim merge,
 // and guards the spot model the same way.
-func (e *ClientNpc) GetModel() *model.Model {
+func (e *ClientNpc) GetTempModel() *model.Model {
 	if e.Type == nil {
 		return nil
 	}
@@ -67,8 +67,8 @@ func (e *ClientNpc) GetModel() *model.Model {
 
 // Java: getTempModel2 (ClientNpc.java:50-66 @2e62978; was getAnimatedModel)
 // — may return nil while the npc model faults in; callers nil-guard. 244
-// moved the height update into getModel (it was set here on the idle branch
-// in 225).
+// moved the height update into getTempModel (it was set here on the idle
+// branch in 225).
 func (e *ClientNpc) GetTempModel2() *model.Model {
 	if e.PrimarySeqID >= 0 && e.PrimarySeqDelay == 0 {
 		var2 := seqtype.Instances[e.PrimarySeqID].Frames[e.PrimarySeqFrame]
@@ -91,6 +91,7 @@ func (e *ClientNpc) GetTempModel2() *model.Model {
 	return e.Type.GetTempModel(e.seqModel, var2, -1, nil)
 }
 
-func (e *ClientNpc) IsVisible() bool {
+// Java: isReady (ClientNpc.java:69 @2e62978; was isVisible in ≤245.2).
+func (e *ClientNpc) IsReady() bool {
 	return e.Type != nil
 }
