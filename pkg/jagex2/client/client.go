@@ -75,13 +75,19 @@ var (
 	RSA_MODULUS     *big.Int
 	// Java: static mouseTracked (Client.java:1225 @2e62978) — NEW in 254; set
 	// by login reply 2, gates the EVENT_MOUSE_MOVE telemetry send (WS5).
-	MouseTracked   bool
-	OpLogic5       int
-	OpLogic1       int
-	OpLogic4       int
-	OpLogic6       int
-	OpLogic2       int
-	OpLogic9       int
+	MouseTracked bool
+	OpLogic5     int
+	OpLogic1     int
+	OpLogic4     int
+	OpLogic6     int
+	OpLogic2     int
+	OpLogic9     int
+	// CycleLogicN ports Java 254's obfuscated anticheat counters
+	// (@2e62978), numbered after the ANTICHEAT_CYCLELOGICN opcode each one
+	// fires: 1=field1294 (addProjectiles), 2=field1285 (interactWithLoc),
+	// 3=field1354 (createMinimap), 4=field1339 (handleInputKey),
+	// 5=field1511 (otherOverlays), 6=field1587 (addPlayers),
+	// 7=field1596 (gameLoop).
 	CycleLogic1    int
 	OpLogic8       int
 	CycleLogic6    int
@@ -89,6 +95,7 @@ var (
 	CycleLogic3    int
 	CycleLogic4    int
 	CycleLogic5    int
+	CycleLogic7    int
 	LowMemory      bool
 	AlreadyStarted bool
 )
@@ -1600,28 +1607,9 @@ func (c *Client) DrawScene() {
 		}
 		var3 = (c.OrbitCameraYaw + c.CameraAnticheatAngle) & 0x7FF
 		c.OrbitCamera(c.GetHeightMapY(c.CurrentLevel, c.LocalPlayer.X, c.LocalPlayer.Z)-50, c.OrbitCameraX, var3, var2, c.OrbitCameraZ, var2*3+600)
-		CycleLogic2++
-		if CycleLogic2 > 1802 {
-			CycleLogic2 = 0
-			c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC2) // Java: pIsaac(223) Client.java:5831
-			c.Out.P1(0)
-			var4 = c.Out.Pos
-			c.Out.P2(29711)
-			c.Out.P1(70)
-			c.Out.P1(int(rand.Float64() * 256.0))
-			c.Out.P1(242)
-			c.Out.P1(186)
-			c.Out.P1(39)
-			c.Out.P1(61)
-			if int(rand.Float64()*2.0) == 0 {
-				c.Out.P1(13)
-			}
-			if int(rand.Float64()*2.0) == 0 {
-				c.Out.P2(57856)
-			}
-			c.Out.P2(int(rand.Float64() * 65536.0))
-			c.Out.PSize1(c.Out.Pos - var4)
-		}
+		// 245.2's CYCLELOGIC2 block here was removed in 254 (the anticheat
+		// layer was rewritten wholesale; 254 CYCLELOGIC2 lives in
+		// interactWithLoc — Client.java:6266-6288 @2e62978).
 	}
 	if c.Cutscene {
 		var2 = c.GetTopLevelCutscene()
@@ -2114,6 +2102,14 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 func (c *Client) PushPlayers() {
 	if c.LocalPlayer.X>>7 == c.FlagSceneTileX && c.LocalPlayer.Z>>7 == c.FlagSceneTileZ {
 		c.FlagSceneTileX = 0
+		// Java: field1587 (Client.java:5403-5410 @2e62978) — 254 CYCLELOGIC6
+		// fires from the map-flag-reached check.
+		CycleLogic6++
+		if CycleLogic6 > 122 {
+			CycleLogic6 = 0
+			c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC6) // Java: pIsaac(36) Client.java:5407
+			c.Out.P1(62)
+		}
 	}
 	for i := -1; i < c.PlayerCount; i++ {
 		var var3 *playerentity.ClientPlayer
@@ -2263,6 +2259,14 @@ func (c *Client) AddNPCOptions(arg0 *npctype.NpcType, arg2, arg3, arg4 int) {
 }
 
 func (c *Client) HandleInputKey() {
+	// Java: field1339 (Client.java:4264-4271 @2e62978) — 254 CYCLELOGIC4
+	// preamble, NEW position (245.2 kept CYCLELOGIC4 in updateGame).
+	CycleLogic4++
+	if CycleLogic4 > 192 {
+		CycleLogic4 = 0
+		c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC4) // Java: pIsaac(226) Client.java:4268
+		c.Out.P1(232)
+	}
 	for {
 		var2 := 0
 		for ok := true; ok; ok = (var2 < 97 || var2 > 122) && (var2 < 65 || var2 > 90) && (var2 < 48 || var2 > 57) && var2 != 32 {
@@ -3057,11 +3061,9 @@ func (c *Client) UpdateLocChanges() {
 		}
 	}
 
-	CycleLogic5++
-	if CycleLogic5 > 85 {
-		CycleLogic5 = 0
-		c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC5) // Java: pIsaac(63) Client.java:3589
-	}
+	// 245.2's CYCLELOGIC5 tail here was removed in 254 (254 CYCLELOGIC5
+	// lives in otherOverlays' crossMode==2 branch — Client.java:5952-5957
+	// @2e62978).
 }
 
 // ClearLocChanges re-arms each permanent (endTime == -1) LocChange against the
@@ -3153,6 +3155,14 @@ func (c *Client) CreateMinimap(arg0 int) {
 				}
 			}
 		}
+	}
+	// Java: field1354 (Client.java:3317-3323 @2e62978) — 254 CYCLELOGIC3
+	// tail (moved here from 245.2's updateGame anchor).
+	CycleLogic3++
+	if CycleLogic3 > 112 {
+		CycleLogic3 = 0
+		c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC3) // Java: pIsaac(4) Client.java:3321
+		c.Out.P1(50)
 	}
 }
 
@@ -4940,13 +4950,15 @@ func (c *Client) UseMenuOption(arg1 int) {
 	}
 	if var5 == 405 || var5 == 38 || var5 == 422 || var5 == 478 || var5 == 347 {
 		if var5 == 478 {
-			if var3&0x3 == 0 {
-				OpLogic5++
+			// Java: oplogic9 (Client.java:8605-8611 @2e62978) — 254 moves
+			// OPLOGIC9 here (unconditional increment; 245.2 had a &3-gated
+			// oplogic5 at this block).
+			OpLogic9++
+			if OpLogic9 >= 116 {
+				c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC9) // Java: pIsaac(162) Client.java:8609
+				c.Out.P3(13018169)
 			}
-			if OpLogic5 >= 90 {
-				c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC5) // Java: pIsaac(74) Client.java:9412
-			}
-			c.Out.P1Isaac(CLIENTPROT_OPHELD4) // Java: pIsaac(194) Client.java:9415
+			c.Out.P1Isaac(CLIENTPROT_OPHELD4) // Java: pIsaac(163) Client.java:8613
 		}
 		if var5 == 347 {
 			c.Out.P1Isaac(CLIENTPROT_OPHELD5) // Java: pIsaac(9) Client.java:9404
@@ -4955,12 +4967,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.Out.P1Isaac(CLIENTPROT_OPHELD3) // Java: pIsaac(115) Client.java:9419
 		}
 		if var5 == 405 {
-			OpLogic3 += var6
-			if OpLogic3 >= 97 {
-				c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC3) // Java: pIsaac(146) Client.java:9425
-				c.Out.P3(14953816)
-			}
-			c.Out.P1Isaac(CLIENTPROT_OPHELD1) // Java: pIsaac(104) Client.java:9429
+			// 245.2's oplogic3 here was removed in 254 (254 OPLOGIC3 lives
+			// in the OPOBJ5 block — Client.java:8833-8838 @2e62978).
+			c.Out.P1Isaac(CLIENTPROT_OPHELD1) // Java: pIsaac(243) Client.java:8621
 		}
 		if var5 == 38 {
 			c.Out.P1Isaac(CLIENTPROT_OPHELD2) // Java: pIsaac(193) Client.java:9400
@@ -4992,14 +5001,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 				c.Out.P1Isaac(CLIENTPROT_OPNPC2) // Java: pIsaac(252) Client.java:9231
 			}
 			if var5 == 6 {
-				if var6&0x3 == 0 {
-					OpLogic2++
-				}
-				if OpLogic2 >= 124 {
-					c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC2) // Java: pIsaac(95) Client.java:9239
-					c.Out.P4(0)
-				}
-				c.Out.P1Isaac(CLIENTPROT_OPNPC3) // Java: pIsaac(196) Client.java:9243
+				// 245.2's oplogic2 here was removed in 254 (254 OPLOGIC2
+				// lives in the OPLOC3 block — Client.java:9179-9186).
+				c.Out.P1Isaac(CLIENTPROT_OPNPC3) // Java: pIsaac(69) Client.java:8724
 			}
 			if var5 == 963 {
 				c.Out.P1Isaac(CLIENTPROT_OPNPC4) // Java: pIsaac(107) Client.java:9227
@@ -5008,14 +5012,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 				c.Out.P1Isaac(CLIENTPROT_OPNPC1) // Java: pIsaac(180) Client.java:9223
 			}
 			if var5 == 245 {
-				if var6&0x3 == 0 {
-					OpLogic4++
-				}
-				if OpLogic4 >= 85 {
-					c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC4) // Java: pIsaac(186) Client.java:9251
-					c.Out.P2(39596)
-				}
-				c.Out.P1Isaac(CLIENTPROT_OPNPC5) // Java: pIsaac(43) Client.java:9255
+				// 245.2's oplogic4 here was removed in 254 (254 OPLOGIC4
+				// lives at the OPPLAYER1 sites — Client.java:9066-9072).
+				c.Out.P1Isaac(CLIENTPROT_OPNPC5) // Java: pIsaac(118) Client.java:8736
 			}
 			c.Out.P2(var6)
 		}
@@ -5228,13 +5227,36 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.CrossMode = 2
 		c.CrossCycle = 0
 		if var5 == 224 {
-			c.Out.P1Isaac(CLIENTPROT_OPOBJ1) // Java: pIsaac(113) Client.java:9658
+			// Java: oplogic7 (Client.java:8846-8855 @2e62978) — NEW 254
+			// position (&3-gated on menuParamB).
+			if var3&0x3 == 0 {
+				OpLogic7++
+			}
+			if OpLogic7 >= 123 {
+				c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC7) // Java: pIsaac(187) Client.java:8852
+				c.Out.P4(0)
+			}
+			c.Out.P1Isaac(CLIENTPROT_OPOBJ1) // Java: pIsaac(141) Client.java:8856
 		}
 		if var5 == 746 {
-			c.Out.P1Isaac(CLIENTPROT_OPOBJ4) // Java: pIsaac(17) Client.java:9666
+			// Java: oplogic8 (Client.java:8858-8864 @2e62978) — NEW 254
+			// position (was at the player-attack block in 245.2).
+			OpLogic8 += var4
+			if OpLogic8 >= 75 {
+				c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC8) // Java: pIsaac(206) Client.java:8862
+				c.Out.P1(19)
+			}
+			c.Out.P1Isaac(CLIENTPROT_OPOBJ4) // Java: pIsaac(47) Client.java:8866
 		}
 		if var5 == 877 {
-			c.Out.P1Isaac(CLIENTPROT_OPOBJ5) // Java: pIsaac(247) Client.java:9662
+			// Java: oplogic3 (Client.java:8832-8838 @2e62978) — NEW 254
+			// position (was at the OPHELD1 block in 245.2).
+			OpLogic3 += c.SceneBaseTileZ
+			if OpLogic3 >= 118 {
+				c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC3) // Java: pIsaac(56) Client.java:8836
+				c.Out.P4(0)
+			}
+			c.Out.P1Isaac(CLIENTPROT_OPOBJ5) // Java: pIsaac(97) Client.java:8840
 		}
 		if var5 == 99 {
 			c.Out.P1Isaac(CLIENTPROT_OPOBJ3) // Java: pIsaac(55) Client.java:9650
@@ -5258,7 +5280,13 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	if var5 == 504 {
-		c.InteractWithLoc(CLIENTPROT_OPLOC2, var3, var4, var6) // Java: interactWithLoc(219,...)
+		// Java: oplogic1 (Client.java:8705-8710 @2e62978) — NEW 254 position.
+		OpLogic1 += var4
+		if OpLogic1 >= 139 {
+			c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC1) // Java: pIsaac(28) Client.java:8708
+			c.Out.P4(0)
+		}
+		c.InteractWithLoc(CLIENTPROT_OPLOC2, var3, var4, var6) // Java: interactWithLoc(..., 213) Client.java:8712
 	}
 	var var22 *iftype.IfType
 	if var5 == 930 {
@@ -5300,27 +5328,26 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON3) // Java: pIsaac(48) Client.java:9333
 		}
 		if var5 == 415 {
-			if var4&0x3 == 0 {
-				OpLogic7++
-			}
-			if OpLogic7 >= 55 {
-				c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC7) // Java: pIsaac(119) Client.java:9341
-				c.Out.P4(0)
-			}
-			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON5) // Java: pIsaac(242) Client.java:9345
+			// 245.2's oplogic7 here was removed in 254 (254 OPLOGIC7 lives
+			// in the OPOBJ1 block — Client.java:8846-8854).
+			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON5) // Java: pIsaac(62) Client.java:8980
 		}
 		if var5 == 602 {
-			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON1) // Java: pIsaac(13) Client.java:9361
+			// Java: oplogic6 (Client.java:8958-8966 @2e62978) — NEW 254
+			// position (&3-gated on menuParamA; was at the OPLOC5 block).
+			if var6&0x3 == 0 {
+				OpLogic6++
+			}
+			if OpLogic6 >= 133 {
+				c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC6) // Java: pIsaac(131) Client.java:8964
+				c.Out.P2(6118)
+			}
+			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON1) // Java: pIsaac(181) Client.java:8968
 		}
 		if var5 == 892 {
-			if var3&0x3 == 0 {
-				OpLogic9++
-			}
-			if OpLogic9 >= 130 {
-				c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC9) // Java: pIsaac(233) Client.java:9353
-				c.Out.P1(177)
-			}
-			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON4) // Java: pIsaac(183) Client.java:9357
+			// 245.2's oplogic9 here was removed in 254 (254 OPLOGIC9 lives
+			// in the OPHELD4 block — Client.java:8605-8611).
+			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON4) // Java: pIsaac(160) Client.java:8956
 		}
 		if var5 == 596 {
 			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON2) // Java: pIsaac(58) Client.java:9365
@@ -5340,14 +5367,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	if var5 == 581 {
-		if var6&0x3 == 0 {
-			OpLogic1++
-		}
-		if OpLogic1 >= 99 {
-			c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC1) // Java: pIsaac(87) Client.java:9184
-			c.Out.P4(0)
-		}
-		c.InteractWithLoc(CLIENTPROT_OPLOC4, var3, var4, var6) // Java: interactWithLoc(204,...)
+		// 245.2's oplogic1 here was removed in 254 (254 OPLOGIC1 lives in
+		// the OPLOC2 block — Client.java:8705-8710).
+		c.InteractWithLoc(CLIENTPROT_OPLOC4, var3, var4, var6) // Java: interactWithLoc(..., 87) Client.java:8801
 	}
 	if var5 == 965 {
 		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 2, 0, var4, 0, 0, 0)
@@ -5365,15 +5387,19 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.Out.P2(c.ActiveSpellID)
 	}
 	if var5 == 1501 {
-		OpLogic6 += c.SceneBaseTileZ
-		if OpLogic6 >= 92 {
-			c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC6) // Java: pIsaac(250) Client.java:9490
-			c.Out.P4(0)
-		}
-		c.InteractWithLoc(CLIENTPROT_OPLOC5, var3, var4, var6) // Java: interactWithLoc(86,...)
+		// 245.2's oplogic6 here was removed in 254 (254 OPLOGIC6 lives in
+		// the INV_BUTTON1 block — Client.java:8959-8966).
+		c.InteractWithLoc(CLIENTPROT_OPLOC5, var3, var4, var6) // Java: interactWithLoc(..., 147) Client.java:9128
 	}
 	if var5 == 364 {
-		c.InteractWithLoc(CLIENTPROT_OPLOC3, var3, var4, var6) // Java: interactWithLoc(226,...)
+		// Java: oplogic2 (Client.java:9180-9185 @2e62978) — NEW 254 position
+		// (was at the OPNPC3 block in 245.2).
+		OpLogic2++
+		if OpLogic2 >= 124 {
+			c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC2) // Java: pIsaac(77) Client.java:9183
+			c.Out.P2(37954)
+		}
+		c.InteractWithLoc(CLIENTPROT_OPLOC3, var3, var4, var6) // Java: interactWithLoc(..., 98) Client.java:9187
 	}
 	if var5 == 1102 {
 		var17 = objtype.Get(var6)
@@ -6659,6 +6685,13 @@ func (c *Client) Draw3DEntityElements() {
 	}
 	if c.CrossMode == 2 {
 		c.ImageCrosses[c.CrossCycle/100+4].PlotSprite(c.CrossY-8-4, c.CrossX-8-4)
+		// Java: field1511 (Client.java:5952-5957 @2e62978) — 254 CYCLELOGIC5
+		// fires from the red-cross (interact) branch only.
+		CycleLogic5++
+		if CycleLogic5 > 57 {
+			CycleLogic5 = 0
+			c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC5) // Java: pIsaac(100) Client.java:5956
+		}
 	}
 	// Java: Client.java:6555-6558 (new in 244) — the viewport overlay
 	// interface (IF_OPENOVERLAY) renders before the main viewport interface.
@@ -6808,6 +6841,34 @@ func (c *Client) PushProjectiles() {
 			c.Scene.AddTemporary1(int(v.Z), 60, v.Yaw, int(v.X), -1, false, v, int(v.Y), c.CurrentLevel)
 		}
 	}
+	// Java: field1294 (Client.java:5501-5527 @2e62978) — 254 CYCLELOGIC1
+	// tail with a randomized junk payload, length backpatched via psize1.
+	CycleLogic1++
+	if CycleLogic1 > 1174 {
+		CycleLogic1 = 0
+		c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC1) // Java: pIsaac(51) Client.java:5505
+		c.Out.P1(0)
+		var7 := c.Out.Pos
+		if int(rand.Float64()*2.0) == 0 {
+			c.Out.P2(11499)
+		}
+		c.Out.P2(10548)
+		if int(rand.Float64()*2.0) == 0 {
+			c.Out.P1(139)
+		}
+		if int(rand.Float64()*2.0) == 0 {
+			c.Out.P1(94)
+		}
+		c.Out.P2(51693)
+		c.Out.P1(16)
+		c.Out.P2(15036)
+		if int(rand.Float64()*2.0) == 0 {
+			c.Out.P1(65)
+		}
+		c.Out.P1(int(rand.Float64() * 256.0))
+		c.Out.P2(22990)
+		c.Out.PSize1(c.Out.Pos - var7)
+	}
 }
 
 func (c *Client) RefreshFunc() {
@@ -6915,6 +6976,30 @@ func (c *Client) InteractWithLoc(arg0, arg1, arg2, arg3 int) bool {
 	}
 	var8 := var7 & 0x1F
 	var9 := (var7 >> 6) & 0x3
+	// Java: field1285 (Client.java:6266-6288 @2e62978) — 254 CYCLELOGIC2
+	// with a randomized junk payload, length backpatched via psize1.
+	CycleLogic2++
+	if CycleLogic2 > 1086 {
+		CycleLogic2 = 0
+		c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC2) // Java: pIsaac(225) Client.java:6270
+		c.Out.P1(0)
+		var10 := c.Out.Pos
+		if int(rand.Float64()*2.0) == 0 {
+			c.Out.P2(16791)
+		}
+		c.Out.P1(254)
+		c.Out.P2(int(rand.Float64() * 65536.0))
+		c.Out.P2(16128)
+		c.Out.P2(52610)
+		c.Out.P2(int(rand.Float64() * 65536.0))
+		c.Out.P2(55420)
+		if int(rand.Float64()*2.0) == 0 {
+			c.Out.P2(35025)
+		}
+		c.Out.P2(46628)
+		c.Out.P1(int(rand.Float64() * 256.0))
+		c.Out.PSize1(c.Out.Pos - var10)
+	}
 	if var8 == 10 || var8 == 11 || var8 == 22 {
 		var10 := loctype.Get(var6)
 		var11 := 0
@@ -8229,11 +8314,13 @@ func (c *Client) UpdateGame() {
 			c.MouseClickButton = 0
 		}
 	}
-	CycleLogic3++
-	if CycleLogic3 > 127 {
-		CycleLogic3 = 0
-		c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC3) // Java: pIsaac(181) Client.java:3070
-		c.Out.P3(4991788)
+	// Java: field1596 (Client.java:2923-2928 @2e62978) — 254 CYCLELOGIC7,
+	// NEW counter at the same updateGame anchor where 245.2 kept its
+	// CYCLELOGIC3 (which moved to createMinimap).
+	CycleLogic7++
+	if CycleLogic7 > 62 {
+		CycleLogic7 = 0
+		c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC7) // Java: pIsaac(182) Client.java:2927
 	}
 	if world.ClickTileX != -1 {
 		var12 := world.ClickTileX
@@ -8331,12 +8418,8 @@ func (c *Client) UpdateGame() {
 	if c.MinimapZoom > 10 {
 		c.MinimapZoomModifier = -1
 	}
-	CycleLogic4++
-	if CycleLogic4 > 110 {
-		CycleLogic4 = 0
-		c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC4) // Java: pIsaac(94) Client.java:3189
-		c.Out.P4(0)
-	}
+	// 245.2's CYCLELOGIC4 block here was removed in 254 (254 CYCLELOGIC4
+	// is the handleInputKey preamble — Client.java:4264-4271 @2e62978).
 	c.HeartbeatTimer++
 	if c.HeartbeatTimer > 50 {
 		c.Out.P1Isaac(CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(206)
@@ -9076,12 +9159,9 @@ func (c *Client) HandleTabInput() {
 		c.SelectedTab = 13
 		c.RedrawSideIcons = true
 	}
-	CycleLogic1++
-	if CycleLogic1 > 150 {
-		CycleLogic1 = 0
-		c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC1) // Java: pIsaac(136) Client.java:4291
-		c.Out.P1(43)
-	}
+	// 245.2's trailing CYCLELOGIC1 block here was removed in 254
+	// (handleTabInput delta also noted by WS6; 254 CYCLELOGIC1 lives in
+	// addProjectiles — Client.java:5501-5527 @2e62978).
 }
 
 func (c *Client) HandleSocialMenuOption(arg0 *iftype.IfType) bool {
@@ -10113,31 +10193,9 @@ func (c *Client) UpdatePlayers() {
 			c.UpdateClientPlayer(var4)
 		}
 	}
-	CycleLogic6++
-	if CycleLogic6 <= 1406 {
-		return
-	}
-	CycleLogic6 = 0
-	c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_CYCLELOGIC6) // Java: pIsaac(112) Client.java:4849
-	c.Out.P1(0)
-	var3 = c.Out.Pos
-	c.Out.P1(162)
-	c.Out.P1(22)
-	if int(rand.Float64()*2.0) == 0 {
-		c.Out.P1(84)
-	}
-	c.Out.P2(31824)
-	c.Out.P2(13490)
-	if int(rand.Float64()*2.0) == 0 {
-		c.Out.P1(123)
-	}
-	if int(rand.Float64()*2.0) == 0 {
-		c.Out.P1(134)
-	}
-	c.Out.P1(100)
-	c.Out.P1(94)
-	c.Out.P2(35521)
-	c.Out.PSize1(c.Out.Pos - var3)
+	// 245.2's trailing CYCLELOGIC6 block here was removed in 254 (254
+	// CYCLELOGIC6 lives in addPlayers' map-flag check — Client.java:
+	// 5401-5410 @2e62978).
 }
 
 func (c *Client) DrawTileHint() {
