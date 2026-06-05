@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
 )
 
@@ -96,14 +95,18 @@ func NewClientEntity() *ClientEntity {
 	}
 }
 
-// Hit records a hitsplat in the first free of the four damage slots; each
-// slot lives for 70 cycles. Java: ClientEntity.hit (ClientEntity.java:264-272).
-func (e *ClientEntity) Hit(arg0 int, arg2 int) {
-	for var4 := range 4 {
-		if e.DamageCycle[var4] <= clientextras.LoopCycle {
-			e.Damage[var4] = arg2
-			e.DamageType[var4] = arg0
-			e.DamageCycle[var4] = clientextras.LoopCycle + 70
+// AddHitmark records a hitsplat in the first free of the four damage slots;
+// each slot lives for 70 cycles. Java: ClientEntity.addHitmark
+// (ClientEntity.java:266-275 @32f3062; was `hit` in 254). 274's real change:
+// the current cycle arrives as a parameter (callers pass loopCycle) instead
+// of the method reading the Client global — which also frees this package
+// from the clientextras import. Java args: arg0=cycle, arg2=value, arg3=type.
+func (e *ClientEntity) AddHitmark(cycle int, value int, damageType int) {
+	for var5 := range 4 {
+		if e.DamageCycle[var5] <= cycle {
+			e.Damage[var5] = value
+			e.DamageType[var5] = damageType
+			e.DamageCycle[var5] = cycle + 70
 			return
 		}
 	}

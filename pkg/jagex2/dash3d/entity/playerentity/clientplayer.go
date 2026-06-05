@@ -26,13 +26,17 @@ func init() {
 type ClientPlayer struct {
 	entity.ClientEntity
 
-	Name               string
-	Visible            bool
-	Gender             int
-	HeadIcons          int
-	Appearances        []int
-	Colors             []int
-	CombatLevel        int
+	Name        string
+	Visible     bool
+	Gender      int
+	HeadIcons   int
+	Appearances []int
+	Colors      []int
+	CombatLevel int
+	// NEW in 274: total skill level from the appearance blob; 0 selects the
+	// combat-level menu caption, nonzero the "(skill-N)" caption in
+	// addPlayerOptions. Java: skillLevel (ClientPlayer.java:44 @32f3062).
+	SkillLevel         int
 	AppearanceHashCode int64
 	// Java: ClientPlayer.java:44 `public long modelCacheKey = -1L` — key of
 	// the last complete composite, used as a fallback while parts reload.
@@ -126,6 +130,9 @@ func (e *ClientPlayer) SetAppearance(arg1 *io.Packet) {
 	}
 	e.Name = jstring.FormatName(jstring.FromBase37(arg1.G8()))
 	e.CombatLevel = arg1.G1()
+	// NEW in 274: the appearance blob grows 2 bytes (ClientPlayer.java:141
+	// @32f3062 — combatLevel g1, then skillLevel g2, then ready).
+	e.SkillLevel = arg1.G2()
 	e.Visible = true
 	e.AppearanceHashCode = 0
 	for i := range 12 {

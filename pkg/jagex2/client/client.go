@@ -1095,7 +1095,7 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 			// second simultaneous hitmark slot.
 			var10 := arg0.G1()
 			var11 := arg0.G1()
-			var6.Hit(var11, var10)
+			var6.AddHitmark(clientextras.LoopCycle, var10, var11) // Java: addHitmark(loopCycle, value, type) @32f3062
 			var6.CombatCycle = clientextras.LoopCycle + 300
 			var6.Health = arg0.G1()
 			var6.TotalHealth = arg0.G1()
@@ -1145,7 +1145,7 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 			// 4-slot hit queue and uses combatCycle = loopCycle + 300.
 			var10 := arg0.G1()
 			var11 := arg0.G1()
-			var6.Hit(var11, var10)
+			var6.AddHitmark(clientextras.LoopCycle, var10, var11) // Java: addHitmark(loopCycle, value, type) @32f3062
 			var6.CombatCycle = clientextras.LoopCycle + 300
 			var6.Health = arg0.G1()
 			var6.TotalHealth = arg0.G1()
@@ -5971,9 +5971,14 @@ func (c *Client) GetNpcPosNewVis(arg1 *io.Packet, arg2 int) {
 		if var7 > 15 {
 			var7 -= 32
 		}
-		var5.Teleport(false, c.LocalPlayer.PathTileX[0]+var6, c.LocalPlayer.PathTileZ[0]+var7)
+		// NEW in 274: a 1-bit jump flag precedes the teleport and feeds its
+		// jump arg (37 bits per NPC vs 254's 36). Java: var8 = gBit(1);
+		// teleport(routeX[0]+var6, var8 == 1, routeZ[0]+var7)
+		// (Client.java:1940-1941 @32f3062).
 		var8 := arg1.GBit(1)
-		if var8 == 1 {
+		var5.Teleport(var8 == 1, c.LocalPlayer.PathTileX[0]+var6, c.LocalPlayer.PathTileZ[0]+var7)
+		var9 := arg1.GBit(1)
+		if var9 == 1 {
 			c.EntityUpdateIDs[c.EntityUpdateCount] = var4
 			c.EntityUpdateCount++
 		}
@@ -6226,6 +6231,14 @@ func (c *Client) Load() {
 		c.OnDemand.Request(2, c.MidiSong)
 		for c.OnDemand.Remaining() > 0 {
 			c.OnDemandLoop()
+			// NEW in 274 (Client.java:5178-5181 @32f3062): bounded
+			// transport failure escapes to the load-error screen instead
+			// of waiting forever. Only this and the animations loop carry
+			// the guard; the models/maps loops stay bare, as in Java.
+			if c.OnDemand.FailCount > 3 {
+				c.ShowLoadError("ondemand")
+				return // Java shape; unreachable (ShowLoadError hangs)
+			}
 		}
 	}
 
@@ -6240,6 +6253,11 @@ func (c *Client) Load() {
 			c.DrawProgress("Loading animations - "+strconv.Itoa(progress*100/animCount)+"%", 65)
 		}
 		c.OnDemandLoop()
+		// NEW in 274 (Client.java:5199-5202 @32f3062).
+		if c.OnDemand.FailCount > 3 {
+			c.ShowLoadError("ondemand")
+			return // Java shape; unreachable (ShowLoadError hangs)
+		}
 	}
 
 	c.DrawProgress("Requesting models", 70)
@@ -7225,6 +7243,21 @@ func (c *Client) GetJagChecksums() {
 			// (Client.java:11266 @32f3062).
 			c.JaggrabEnabled = !c.JaggrabEnabled
 		}
+	}
+}
+
+// ShowLoadError prints the failing subsystem and halts the loading goroutine
+// forever, leaving the last progress frame on screen. Java: showLoadError
+// (Client.java:10412-10427 @32f3062, NEW in 274) — Java also navigates the
+// browser to loaderror_<name>.html via the new getAppletContext() shim
+// (Client.java:6620, delegating through signlink.mainapp); the Go client is
+// standalone, so the redirect is logged instead. Java's trailing
+// while(true) sleep never returns; neither does this.
+func (c *Client) ShowLoadError(arg0 string) {
+	fmt.Println(arg0) // Java: System.out.println(arg0)
+	log.Printf("client: load error %q — halting loader (Java navigates to loaderror_%s.html)", arg0, arg0)
+	for {
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -10547,7 +10580,9 @@ func (c *Client) TcpIn() (ok bool) {
 	// client goroutine.
 	defer func() {
 		if r := recover(); r != nil {
-			// Java: client.java:10374-10382 (catch (Exception) var25).
+			// Java: catch (Exception) (Client.java:8712-8721 @32f3062).
+			// 274 drops 254's leading printStackTrace() — which this port
+			// never carried — so the Go shape is now exact.
 			var3 := fmt.Sprintf("T2 - %d,%d,%d - %d,%d,%d - ",
 				c.PacketType, c.LastPacketType1, c.LastPacketType2, c.PacketSize,
 				c.SceneBaseTileX+c.LocalPlayer.PathTileX[0],
@@ -11778,7 +11813,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		// 4-slot hit queue and uses combatCycle = loopCycle + 300.
 		var10 := arg3.G1()
 		var11 := arg3.G1()
-		arg4.Hit(var11, var10)
+		arg4.AddHitmark(clientextras.LoopCycle, var10, var11) // Java: addHitmark(loopCycle, value, type) @32f3062
 		arg4.CombatCycle = clientextras.LoopCycle + 300
 		arg4.Health = arg3.G1()
 		arg4.TotalHealth = arg3.G1()
@@ -11875,7 +11910,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		// simultaneous hitmark slot.
 		var10 := arg3.G1()
 		var11 := arg3.G1()
-		arg4.Hit(var11, var10)
+		arg4.AddHitmark(clientextras.LoopCycle, var10, var11) // Java: addHitmark(loopCycle, value, type) @32f3062
 		arg4.CombatCycle = clientextras.LoopCycle + 300
 		arg4.Health = arg3.G1()
 		arg4.TotalHealth = arg3.G1()

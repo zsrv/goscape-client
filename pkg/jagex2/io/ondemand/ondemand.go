@@ -6,6 +6,10 @@
 // socket transport (the modernized===false branch of read(), the socket body
 // of send(), the ClientStream, partial-part reassembly, and the heartbeat) is
 // intentionally not ported (WS1); the data instead arrives via /ondemand.zip.
+// 274's socket-reopen backoff change (5000→4000 ms, OnDemand.java:696
+// @32f3062) lives entirely inside that non-ported socket body — no Go
+// counterpart. 274's failCount accounting IS mapped onto the zip transport
+// (see FailCount).
 package ondemand
 
 import (
@@ -158,6 +162,16 @@ type OnDemand struct {
 
 	// Java: vb.D
 	message string
+
+	// FailCount counts consecutive failed transport attempts; Client.load's
+	// first two on-demand wait loops bail to showLoadError("ondemand") when
+	// it exceeds 3. Java: failCount (OnDemand.java:105 @32f3062, NEW in
+	// 274) — set to -10000 after a successful socket send write
+	// (OnDemand.java:721) and incremented in send()'s IOException catch
+	// (:731). The socket transport is not ported (data arrives via
+	// /ondemand.zip), so the Go mapping hangs the same accounting on the
+	// zip fetch: ++ per failed Get, -10000 on success (see downloadZip).
+	FailCount int
 
 	// ---- injected seams (no client/* imports) ------------------------------
 	dl    Downloader
@@ -561,7 +575,10 @@ func (od *OnDemand) Run() {
 
 // handleQueue drains incoming requests, satisfying them from the local cache
 // when possible (→ completed) or routing them to the missing list otherwise.
-// Client-TS: handleQueue().
+// Client-TS: handleQueue(). 274 drops 254's dead dummy-arg guard
+// (handleQueue(int) `if (arg0 != 2) return` → handleQueue(),
+// OnDemand.java:464 @32f3062) — this port never carried it, so the Go
+// shape is already exact.
 func (od *OnDemand) handleQueue() {
 	for n := od.queue.RemoveHead(); n != nil; n = od.queue.RemoveHead() {
 		od.active = true
@@ -751,8 +768,14 @@ func (od *OnDemand) downloadZip() {
 
 	data, err := od.dl.Get("/ondemand.zip")
 	if err != nil {
+		// Java: failCount++ in send()'s IOException catch (OnDemand.java:731
+		// @32f3062) — the modernized-transport analogue of a failed send.
+		od.FailCount++
 		return
 	}
+	// Java: failCount = -10000 after a successful send write
+	// (OnDemand.java:721 @32f3062).
+	od.FailCount = -10000
 
 	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
