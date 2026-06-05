@@ -13,8 +13,8 @@ var (
 )
 
 type IdkType struct {
-	Type    int
-	Models  []int
+	Part    int   // Java 274: part (IdkType.java:18 @32f3062; was type at 254)
+	Model   []int // Java 274: model (IdkType.java:21 @32f3062; was models at 254)
 	RecolS  []int
 	RecolD  []int
 	Heads   []int
@@ -23,7 +23,7 @@ type IdkType struct {
 
 func NewIdkType() *IdkType {
 	return &IdkType{
-		Type:    -1,
+		Part:    -1,
 		RecolS:  make([]int, 6),
 		RecolD:  make([]int, 6),
 		Heads:   []int{-1, -1, -1, -1, -1},
@@ -31,7 +31,7 @@ func NewIdkType() *IdkType {
 	}
 }
 
-func Unpack(arg0 *io.JagFile) {
+func Init(arg0 *io.JagFile) {
 	var2 := io.NewPacket(arg0.Read("idk.dat", nil))
 	Count = var2.G2()
 	if Instances == nil {
@@ -52,12 +52,12 @@ func (idk *IdkType) Decode(arg1 *io.Packet) {
 		case 0:
 			return
 		case 1:
-			idk.Type = arg1.G1()
+			idk.Part = arg1.G1()
 		case 2:
 			var4 := arg1.G1()
-			idk.Models = make([]int, var4)
+			idk.Model = make([]int, var4)
 			for i := range var4 {
-				idk.Models[i] = arg1.G2()
+				idk.Model[i] = arg1.G2()
 			}
 		case 3:
 			idk.Disable = true
@@ -79,12 +79,12 @@ func (idk *IdkType) Decode(arg1 *io.Packet) {
 // are loaded, like Java). Note the non-short-circuit accumulation: every
 // part is requested even after the first miss, exactly as in Java.
 func (idk *IdkType) CheckModel() bool {
-	if idk.Models == nil {
+	if idk.Model == nil {
 		return true
 	}
 	ready := true
-	for i := range len(idk.Models) {
-		if !model.RequestDownload(idk.Models[i]) {
+	for i := range len(idk.Model) {
+		if !model.RequestDownload(idk.Model[i]) {
 			ready = false
 		}
 	}
@@ -92,12 +92,12 @@ func (idk *IdkType) CheckModel() bool {
 }
 
 func (idk *IdkType) GetModel() *model.Model {
-	if idk.Models == nil {
+	if idk.Model == nil {
 		return nil
 	}
-	var1 := make([]*model.Model, len(idk.Models))
-	for i := range len(idk.Models) {
-		var1[i] = model.Load(idk.Models[i])
+	var1 := make([]*model.Model, len(idk.Model))
+	for i := range len(idk.Model) {
+		var1[i] = model.Load(idk.Model[i])
 	}
 	var var3 *model.Model
 	if len(var1) == 1 {

@@ -87,8 +87,8 @@ func (e *ClientProj) Update(arg1 int) {
 		return
 	}
 	e.SeqCycle += arg1
-	for e.SeqCycle > e.SpotAnim.Seq.GetDuration(e.SeqFrame) {
-		e.SeqCycle -= e.SpotAnim.Seq.GetDuration(e.SeqFrame) + 1
+	for e.SeqCycle > e.SpotAnim.Seq.GetDelay(e.SeqFrame) {
+		e.SeqCycle -= e.SpotAnim.Seq.GetDelay(e.SeqFrame) + 1
 		e.SeqFrame++
 		if e.SeqFrame >= e.SpotAnim.Seq.NumFrames {
 			e.SeqFrame = 0

@@ -32,12 +32,13 @@ type SeqType struct {
 	DuplicateBehavior int
 }
 
-// GetDuration returns the duration (in client cycles) of animation frame
+// GetDelay returns the duration (in client cycles) of animation frame
 // `frame`, lazily resolving a zero wire delay from the frame's AnimFrame
 // (caching into Delay[]) and falling back to 1. The AnimFrame may not be
 // loaded yet (frames arrive over OnDemand after seq.dat decodes), so the nil
-// guard is load-bearing. Java: SeqType.getFrameDuration (SeqType.java:77-93).
-func (t *SeqType) GetDuration(frame int) int {
+// guard is load-bearing. Java 274: getDelay (SeqType.java:75 @32f3062; was
+// getDuration at 254, getFrameDuration at 245.2).
+func (t *SeqType) GetDelay(frame int) int {
 	duration := t.Delay[frame]
 	if duration == 0 {
 		transform := animframe.Get(t.Frames[frame])
@@ -67,7 +68,7 @@ func NewSeqType() *SeqType {
 	}
 }
 
-func Unpack(arg0 *io.JagFile) {
+func Init(arg0 *io.JagFile) {
 	var2 := io.NewPacket(arg0.Read("seq.dat", nil))
 	Count = var2.G2()
 	if List == nil {

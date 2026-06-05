@@ -84,7 +84,7 @@ func NewLocType() *LocType {
 	}
 }
 
-func Unpack(arg0 *io.JagFile) {
+func Init(arg0 *io.JagFile) {
 	Dat = io.NewPacket(arg0.Read("loc.dat", nil))
 	var1 := io.NewPacket(arg0.Read("loc.idx", nil))
 	Count = var1.G2()
@@ -108,7 +108,9 @@ func Unload() {
 	Dat = nil
 }
 
-func Get(arg0 int) *LocType {
+// List fetches (decoding on miss) the definition for loc id arg0.
+// Java 274: list (LocType.java:167 @32f3062; was get at 254).
+func List(arg0 int) *LocType {
 	for i := range 10 {
 		if Cache[i].Index == arg0 {
 			return Cache[i]

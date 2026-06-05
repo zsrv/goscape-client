@@ -36,10 +36,10 @@ func (e *MapSpotAnim) Update(arg0 int) {
 	for {
 		for ok := true; ok; ok = e.SeqFrame >= 0 && e.SeqFrame < e.Type.Seq.NumFrames {
 			for ok2 := true; ok2; ok2 = e.SeqFrame < e.Type.Seq.NumFrames {
-				if e.SeqCycle <= e.Type.Seq.GetDuration(e.SeqFrame) {
+				if e.SeqCycle <= e.Type.Seq.GetDelay(e.SeqFrame) {
 					return
 				}
-				e.SeqCycle -= e.Type.Seq.GetDuration(e.SeqFrame) + 1
+				e.SeqCycle -= e.Type.Seq.GetDelay(e.SeqFrame) + 1
 				e.SeqFrame++
 			}
 		}

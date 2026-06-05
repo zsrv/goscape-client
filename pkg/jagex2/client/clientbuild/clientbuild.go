@@ -288,7 +288,7 @@ func (w *ClientBuild) AddLoc(collision *dash3d.CollisionMap, level, z, angle, sh
 	heightNW := w.LevelHeightMap[level][x][z+1]
 	y := (heightSW + heightSE + heightNE + heightNW) >> 2
 
-	loc := loctype.Get(locId)
+	loc := loctype.List(locId)
 
 	typeCode := x + (z << 7) + (locId << 14) + 0x40000000
 	if !loc.Active {
@@ -515,7 +515,7 @@ func (w *ClientBuild) AddLoc(collision *dash3d.CollisionMap, level, z, angle, sh
 
 				wallType := scene.GetWallBitSet(level, x, z)
 				if wallType > 0 {
-					wallWidth = loctype.Get((wallType >> 14) & 0x7FFF).WallWidth
+					wallWidth = loctype.List((wallType >> 14) & 0x7FFF).WallWidth
 				}
 
 				modelSrc := buildModel(4, 0)
@@ -1010,7 +1010,7 @@ func (w *ClientBuild) HSL24To16(arg0, arg1, arg2 int) int {
 //
 // Java: ClientBuild.changeLocAvailable (ClientBuild.java:1096-1105).
 func ChangeLocAvailable(id, shape int) bool {
-	loc := loctype.Get(id)
+	loc := loctype.List(id)
 	if shape == 11 {
 		shape = 10
 	}
@@ -1028,7 +1028,7 @@ func AddLoc(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [
 
 	y := (heightSW + heightSE + heightNE + heightNW) >> 2
 
-	locType := loctype.Get(arg8)
+	locType := loctype.List(arg8)
 
 	var18 := x + (z << 7) + (arg8 << 14) + 1073741824
 	if !locType.Active {
@@ -1123,7 +1123,7 @@ func AddLoc(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [
 			var24 = 16
 			var21 = scene.GetWallBitSet(arg7, x, z)
 			if var21 > 0 {
-				var24 = loctype.Get((var21 >> 14) & 0x7FFF).WallWidth
+				var24 = loctype.List((var21 >> 14) & 0x7FFF).WallWidth
 			}
 			modelSrc := buildModel(4, 0)
 			scene.SetWallDecoration(y, z, WALL_DECORATION_ROTATION_FORWARD_Z[angle]*var24, var18, angle*512, ROTATION_WALL_TYPE[angle], WALL_DECORATION_ROTATION_FORWARD_X[angle]*var24, x, modelSrc, var19, arg7)
@@ -1177,7 +1177,7 @@ outer:
 				stz := zOffset + z
 
 				if stx > 0 && stz > 0 && stx < 103 && stz < 103 {
-					loc := loctype.Get(locId)
+					loc := loctype.List(locId)
 					if shape != 22 || !LowMemory || loc.Active || loc.ForceDecor {
 						// Java: ready &= loc.checkModelAll() — non-short-circuit bitwise AND.
 						// CheckModelAll always invokes model.Request for every model (side effect).
@@ -1209,7 +1209,7 @@ func PrefetchLocations(buf *io.Packet, od *ondemand.OnDemand) {
 		}
 		locId += deltaId
 
-		loc := loctype.Get(locId)
+		loc := loctype.List(locId)
 		loc.PrefetchModelAll(od)
 
 		for {

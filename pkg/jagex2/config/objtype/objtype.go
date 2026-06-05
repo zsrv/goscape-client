@@ -77,7 +77,7 @@ func NewObjType() *ObjType {
 	}
 }
 
-func Unpack(arg0 *io.JagFile) {
+func Init(arg0 *io.JagFile) {
 	Dat = io.NewPacket(arg0.Read("obj.dat", nil))
 	var1 := io.NewPacket(arg0.Read("obj.idx", nil))
 	Count = var1.G2()
@@ -101,7 +101,9 @@ func Unload() {
 	Dat = nil
 }
 
-func Get(arg0 int) *ObjType {
+// List fetches (decoding on miss) the definition for obj id arg0.
+// Java 274: list (ObjType.java:183 @32f3062; was get at 254).
+func List(arg0 int) *ObjType {
 	for i := range 10 {
 		if Cache[i].Index == arg0 {
 			return Cache[i]
@@ -280,7 +282,7 @@ func (t *ObjType) Decode(arg1 *io.Packet) {
 }
 
 func (t *ObjType) ToCertificate() {
-	var2 := Get(t.CertTemplate)
+	var2 := List(t.CertTemplate)
 	t.Model = var2.Model
 	t.Zoom2D = var2.Zoom2D
 	t.Xan2D = var2.Xan2D
@@ -290,7 +292,7 @@ func (t *ObjType) ToCertificate() {
 	t.Yof2D = var2.Yof2D
 	t.RecolS = var2.RecolS
 	t.RecolD = var2.RecolD
-	var3 := Get(t.CertLink)
+	var3 := List(t.CertLink)
 	t.Name = var3.Name
 	t.Members = var3.Members
 	t.Cost = var3.Cost
@@ -324,7 +326,7 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 			}
 		}
 		if var2 != -1 {
-			return Get(var2).GetInterfaceModel(1)
+			return List(var2).GetInterfaceModel(1)
 		}
 	}
 	var4 := ModelCache.Find(int64(t.Index))
@@ -373,7 +375,7 @@ func GetSprite(id int, outlineRgb int, count int) *pix32.Pix32 {
 			return var3
 		}
 	}
-	var4 := Get(id)
+	var4 := List(id)
 	if var4.CountObj == nil {
 		count = -1
 	}
@@ -385,7 +387,7 @@ func GetSprite(id int, outlineRgb int, count int) *pix32.Pix32 {
 			}
 		}
 		if var5 != -1 {
-			var4 = Get(var5)
+			var4 = List(var5)
 		}
 	}
 	// Java: ObjType.getIcon fetches and null-checks the model BEFORE creating
@@ -644,7 +646,7 @@ func (t *ObjType) GetInvModel(arg0 int) *model.Model {
 			}
 		}
 		if var2 != -1 {
-			return Get(var2).GetInvModel(1)
+			return List(var2).GetInvModel(1)
 		}
 	}
 	var4 := model.Load(t.Model)

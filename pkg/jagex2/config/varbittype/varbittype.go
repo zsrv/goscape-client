@@ -29,7 +29,7 @@ func NewVarbitType() *VarbitType {
 	return &VarbitType{}
 }
 
-func Unpack(arg1 *io.JagFile) {
+func Init(arg1 *io.JagFile) {
 	var2 := io.NewPacket(arg1.Read("varbit.dat", nil))
 	Count = var2.G2()
 	if List == nil {

@@ -20,5 +20,5 @@ func NewClientObj() *ClientObj {
 // is GetInterfaceModel (its rev-225 name). Makes ClientObj satisfy the
 // ModelSource interface (wired into the scene in WS3 3c/3d).
 func (e *ClientObj) GetTempModel() *model.Model {
-	return objtype.Get(e.Index).GetInterfaceModel(e.Count)
+	return objtype.List(e.Index).GetInterfaceModel(e.Count)
 }

@@ -55,7 +55,7 @@ func NewClientLocAnim(heightmapNW, heightmapNE, heightmapSW, shape, angle int, r
 	// Java: seq.loops (rev-225 name: ReplayOff). Java numFrames = Go NumFrames.
 	if randomFrame && e.Seq.ReplayOff != -1 {
 		e.SeqFrame = int(rand.Float64() * float64(e.Seq.NumFrames))
-		e.SeqCycle -= int(rand.Float64() * float64(e.Seq.GetDuration(e.SeqFrame)))
+		e.SeqCycle -= int(rand.Float64() * float64(e.Seq.GetDelay(e.SeqFrame)))
 	}
 	return e
 }
@@ -70,8 +70,8 @@ func (e *ClientLocAnim) GetTempModel() *model.Model {
 			delta = 100
 		}
 
-		for delta > e.Seq.GetDuration(e.SeqFrame) {
-			delta -= e.Seq.GetDuration(e.SeqFrame)
+		for delta > e.Seq.GetDelay(e.SeqFrame) {
+			delta -= e.Seq.GetDelay(e.SeqFrame)
 			e.SeqFrame++
 
 			if e.SeqFrame < e.Seq.NumFrames {
@@ -94,5 +94,5 @@ func (e *ClientLocAnim) GetTempModel() *model.Model {
 		transformId = e.Seq.Frames[e.SeqFrame]
 	}
 
-	return loctype.Get(e.Index).GetModel(e.Shape, e.Angle, e.HeightmapSW, e.HeightmapSE, e.HeightmapNE, e.HeightmapNW, transformId)
+	return loctype.List(e.Index).GetModel(e.Shape, e.Angle, e.HeightmapSW, e.HeightmapSE, e.HeightmapNE, e.HeightmapNW, transformId)
 }

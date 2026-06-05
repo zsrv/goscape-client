@@ -34,7 +34,7 @@ func NewFloType() *FloType {
 	}
 }
 
-func Unpack(arg0 *io.JagFile) {
+func Init(arg0 *io.JagFile) {
 	var2 := io.NewPacket(arg0.Read("flo.dat", nil))
 	Count = var2.G2()
 	if List == nil {

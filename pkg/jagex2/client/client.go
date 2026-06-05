@@ -1152,7 +1152,7 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 			var6.TotalHealth = arg0.G1()
 		}
 		if var7&0x20 == 32 {
-			var6.Type = npctype.Get(arg0.G2())
+			var6.Type = npctype.List(arg0.G2())
 			// Java: Client.java:8450-8451 @2e62978 — NEW in 254: the transform
 			// branch now also re-copies size and turnspeed from the new type.
 			var6.Size = int(var6.Type.Size)
@@ -1410,7 +1410,7 @@ func (c *Client) ZonePacket(arg1 *io.Packet, arg2 int) {
 						var19 = c.Players[var14]
 					}
 					if var19 != nil {
-						var26 := loctype.Get(var11)
+						var26 := loctype.List(var11)
 						var22 := c.LevelHeightMap[c.CurrentLevel][var5][var6]
 						var23 := c.LevelHeightMap[c.CurrentLevel][var5+1][var6]
 						var24 := c.LevelHeightMap[c.CurrentLevel][var5+1][var6+1]
@@ -1849,7 +1849,7 @@ func (c *Client) HandleComponentInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 							c.HoveredSlot = var23
 							c.HoveredSlotParentID = var12.Id
 							if var12.InvSlotObjId[var23] > 0 {
-								var18 := objtype.Get(var12.InvSlotObjId[var23] - 1)
+								var18 := objtype.List(var12.InvSlotObjId[var23] - 1)
 								if c.ObjSelected == 1 && var12.Interactable {
 									if var12.Id != c.ObjSelectedInterface || var23 != c.ObjSelectedSlot {
 										c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @lre@" + var18.Name
@@ -3148,7 +3148,7 @@ func (c *Client) CreateMinimap(arg0 int) {
 			var12 := c.Scene.GetGroundDecorationBitSet(c.CurrentLevel, i, j)
 			if var12 != 0 {
 				var12 = (var12 >> 14) & 0x7FFF
-				var13 := loctype.Get(var12).MapFunction
+				var13 := loctype.List(var12).MapFunction
 				if var13 >= 0 {
 					var14 := i
 					var15 := j
@@ -3209,7 +3209,7 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 		var12 := c.ImageMinimap.Pixels
 		var13 = arg3*4 + 24624 + (103-arg5)*512*4
 		var14 = (var7 >> 14) & 0x7FFF
-		var15 := loctype.Get(var14)
+		var15 := loctype.List(var14)
 		if var15.MapScene == -1 {
 			if var10 == 0 || var10 == 2 {
 				switch var9 {
@@ -3286,7 +3286,7 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 		var9 = (var8 >> 6) & 0x3
 		var10 = var8 & 0x1F
 		var11 = (var7 >> 14) & 0x7FFF
-		var22 := loctype.Get(var11)
+		var22 := loctype.List(var11)
 		var26 := 0
 		if var22.MapScene != -1 {
 			var24 := c.ImageMapscene[var22.MapScene]
@@ -3320,7 +3320,7 @@ func (c *Client) DrawMinimapLoc(arg1, arg2, arg3, arg4, arg5 int) {
 		return
 	}
 	var8 = (var7 >> 14) & 0x7FFF
-	var20 := loctype.Get(var8)
+	var20 := loctype.List(var8)
 	if var20.MapScene == -1 {
 		return
 	}
@@ -3551,7 +3551,7 @@ func (c *Client) ValidateCharacterDesign() {
 			if c.DesignGenderMale {
 				x = 0
 			}
-			if !idktype.Instances[j].Disable && idktype.Instances[j].Type == i+x {
+			if !idktype.Instances[j].Disable && idktype.Instances[j].Part == i+x {
 				c.DesignIdentikits[i] = j
 				break
 			}
@@ -4091,7 +4091,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 					for j := range var14.Height {
 						for k := range var14.Width {
 							if var14.InvSlotObjId[var16] > 0 {
-								var19 := objtype.Get(var14.InvSlotObjId[var16] - 1)
+								var19 := objtype.List(var14.InvSlotObjId[var16] - 1)
 								var20 := var19.Name
 								if var19.Stackable || var14.InvSlotObjCount[var16] != 1 {
 									var20 = var20 + " x" + FormatObjCountTagged(var14.InvSlotObjCount[var16])
@@ -4326,7 +4326,7 @@ func (c *Client) UpdateForceMovement(arg0 *entity.ClientEntity) {
 
 func (c *Client) StartForceMovement(arg0 *entity.ClientEntity, arg1 int) {
 	c.PacketSize += arg1
-	if arg0.ForceMoveStartCycle == clientextras.LoopCycle || arg0.PrimarySeqID == -1 || arg0.PrimarySeqDelay != 0 || arg0.PrimarySeqCycle+1 > seqtype.List[arg0.PrimarySeqID].GetDuration(arg0.PrimarySeqFrame) {
+	if arg0.ForceMoveStartCycle == clientextras.LoopCycle || arg0.PrimarySeqID == -1 || arg0.PrimarySeqDelay != 0 || arg0.PrimarySeqCycle+1 > seqtype.List[arg0.PrimarySeqID].GetDelay(arg0.PrimarySeqFrame) {
 		var3 := arg0.ForceMoveStartCycle - arg0.ForceMoveEndCycle
 		var4 := clientextras.LoopCycle - arg0.ForceMoveEndCycle
 		var5 := arg0.ForceMoveStartSceneTileX*128 + arg0.Size*64
@@ -4548,7 +4548,7 @@ func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 	if arg1.SecondarySeqID != -1 {
 		var3 = seqtype.List[arg1.SecondarySeqID]
 		arg1.SecondarySeqCycle++
-		if arg1.SecondarySeqFrame < var3.NumFrames && arg1.SecondarySeqCycle > var3.GetDuration(arg1.SecondarySeqFrame) {
+		if arg1.SecondarySeqFrame < var3.NumFrames && arg1.SecondarySeqCycle > var3.GetDelay(arg1.SecondarySeqFrame) {
 			arg1.SecondarySeqCycle = 0
 			arg1.SecondarySeqFrame++
 		}
@@ -4563,8 +4563,8 @@ func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 		}
 		var3 = spottype.List[arg1.SpotanimID].Seq
 		arg1.SpotanimCycle++
-		for arg1.SpotanimFrame < var3.NumFrames && arg1.SpotanimCycle > var3.GetDuration(arg1.SpotanimFrame) {
-			arg1.SpotanimCycle -= var3.GetDuration(arg1.SpotanimFrame)
+		for arg1.SpotanimFrame < var3.NumFrames && arg1.SpotanimCycle > var3.GetDelay(arg1.SpotanimFrame) {
+			arg1.SpotanimCycle -= var3.GetDelay(arg1.SpotanimFrame)
 			arg1.SpotanimFrame++
 		}
 		if arg1.SpotanimFrame >= var3.NumFrames && (arg1.SpotanimFrame < 0 || arg1.SpotanimFrame >= var3.NumFrames) {
@@ -4584,8 +4584,8 @@ func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 	if arg1.PrimarySeqID != -1 && arg1.PrimarySeqDelay == 0 {
 		var3 = seqtype.List[arg1.PrimarySeqID]
 		arg1.PrimarySeqCycle++
-		for arg1.PrimarySeqFrame < var3.NumFrames && arg1.PrimarySeqCycle > var3.GetDuration(arg1.PrimarySeqFrame) {
-			arg1.PrimarySeqCycle -= var3.GetDuration(arg1.PrimarySeqFrame)
+		for arg1.PrimarySeqFrame < var3.NumFrames && arg1.PrimarySeqCycle > var3.GetDelay(arg1.PrimarySeqFrame) {
+			arg1.PrimarySeqCycle -= var3.GetDelay(arg1.PrimarySeqFrame)
 			arg1.PrimarySeqFrame++
 		}
 		if arg1.PrimarySeqFrame >= var3.NumFrames {
@@ -5070,7 +5070,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	}
 	if var5 == 1381 {
 		var15 := (var6 >> 14) & 0x7FFF
-		var16 := loctype.Get(var15)
+		var16 := loctype.List(var15)
 		if var16.Desc == nil {
 			var9 = "It's a " + var16.Name + "."
 		} else {
@@ -5129,7 +5129,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.ObjSelectedSlot = var3
 		c.ObjSelectedInterface = var4
 		c.ObjInterface = var6
-		c.ObjSelectedName = objtype.Get(var6).Name
+		c.ObjSelectedName = objtype.List(var6).Name
 		c.SpellSelected = 0
 		c.RedrawSidebar = true
 		return
@@ -5142,7 +5142,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	var var17 *objtype.ObjType
 	var18 := ""
 	if var5 == 1328 {
-		var17 = objtype.Get(var6)
+		var17 = objtype.List(var6)
 		// Java: var19 = IfType.list[var4]; var19 != null &&
 		// var19.linkObjCount[var3] >= 100000 (Client.java:8765-8768 @2e62978)
 		// — 254 reads the stack count from the inventory component's slot
@@ -5438,7 +5438,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.InteractWithLoc(CLIENTPROT_OPLOC3, var3, var4, var6) // Java: interactWithLoc(..., 98) Client.java:9187
 	}
 	if var5 == 1152 {
-		var17 = objtype.Get(var6)
+		var17 = objtype.List(var6)
 		if var17.Desc == nil {
 			var18 = "It's a " + var17.Name + "."
 		} else {
@@ -5970,7 +5970,7 @@ func (c *Client) GetNpcPosNewVis(arg1 *io.Packet, arg2 int) {
 		c.NPCIDs[c.NPCCount] = var4
 		c.NPCCount++
 		var5.Cycle = clientextras.LoopCycle
-		var5.Type = npctype.Get(arg1.GBit(11))
+		var5.Type = npctype.List(arg1.GBit(11))
 		var5.Size = int(var5.Type.Size)
 		// Java: var5.turnspeed = var5.type.turnspeed (Client.java:8364
 		// @2e62978) — NEW in 254.
@@ -6074,7 +6074,7 @@ func (c *Client) HandleInterfaceAction(arg1 *iftype.IfType) bool {
 				if !c.DesignGenderMale {
 					tmp = 7
 				}
-				if !idktype.Instances[var6].Disable && idktype.Instances[var6].Type == var4+tmp {
+				if !idktype.Instances[var6].Disable && idktype.Instances[var6].Part == var4+tmp {
 					c.DesignIdentikits[var4] = var6
 					c.UpdateDesignModel = true
 					break
@@ -6539,15 +6539,15 @@ func (c *Client) Load() {
 	pix3d.InitPool(20)
 
 	c.DrawProgress("Unpacking config", 86)
-	seqtype.Unpack(jagConfig)
-	loctype.Unpack(jagConfig)
-	flotype.Unpack(jagConfig)
-	objtype.Unpack(jagConfig)
-	npctype.Unpack(jagConfig)
-	idktype.Unpack(jagConfig)
-	spottype.Unpack(jagConfig)
-	varptype.Unpack(jagConfig)
-	varbittype.Unpack(jagConfig) // Java: VarBitType.unpack(var9) (Client.java:1800 @2e62978) — NEW in 254
+	seqtype.Init(jagConfig)
+	loctype.Init(jagConfig)
+	flotype.Init(jagConfig)
+	objtype.Init(jagConfig)
+	npctype.Init(jagConfig)
+	idktype.Init(jagConfig)
+	spottype.Init(jagConfig)
+	varptype.Init(jagConfig)
+	varbittype.Init(jagConfig) // Java: VarBitType.unpack(var9) (Client.java:1800 @2e62978) — NEW in 254
 	objtype.MembersWorld = MembersWorld
 	if !LowMemory {
 		c.DrawProgress("Unpacking sounds", 90)
@@ -7028,7 +7028,7 @@ func (c *Client) InteractWithLoc(arg0, arg1, arg2, arg3 int) bool {
 		c.Out.PSize1(c.Out.Pos - var10)
 	}
 	if var8 == 10 || var8 == 11 || var8 == 22 {
-		var10 := loctype.Get(var6)
+		var10 := loctype.List(var6)
 		var11 := 0
 		var12 := 0
 		if var9 == 0 || var9 == 2 {
@@ -7815,7 +7815,7 @@ func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
 		var var14 *loctype.LocType
 		if arg3 == 0 {
 			c.Scene.RemoveWall(arg1, arg7, arg2)
-			var14 = loctype.Get(var15)
+			var14 = loctype.List(var15)
 			if var14.BlockWalk {
 				c.LevelCollisionMap[arg7].DelWall(var14.BlockRange, var17, arg1, arg2, var16)
 			}
@@ -7825,7 +7825,7 @@ func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
 		}
 		if arg3 == 2 {
 			c.Scene.RemoveLoc2(arg1, arg2, arg7)
-			var14 = loctype.Get(var15)
+			var14 = loctype.List(var15)
 			if arg1+var14.Width > 103 || arg2+var14.Width > 103 || arg1+var14.Length > 103 || arg2+var14.Length > 103 {
 				return
 			}
@@ -7835,7 +7835,7 @@ func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
 		}
 		if arg3 == 3 {
 			c.Scene.RemoveGroundDecoration(arg7, arg1, arg2)
-			var14 = loctype.Get(var15)
+			var14 = loctype.List(var15)
 			if var14.BlockWalk && var14.Active {
 				c.LevelCollisionMap[arg7].RemoveBlocked(arg2, arg1)
 			}
@@ -8917,8 +8917,8 @@ func (c *Client) UpdateInterfaceAnimation(arg0, arg1 int) bool {
 			if var9 != -1 {
 				var10 := seqtype.List[var9]
 				var7.SeqCycle += arg1
-				for var7.SeqCycle > var10.GetDuration(var7.SeqFrame) {
-					var7.SeqCycle -= var10.GetDuration(var7.SeqFrame) + 1
+				for var7.SeqCycle > var10.GetDelay(var7.SeqFrame) {
+					var7.SeqCycle -= var10.GetDelay(var7.SeqFrame) + 1
 					var7.SeqFrame++
 					if var7.SeqFrame >= var10.NumFrames {
 						var7.SeqFrame -= var10.ReplayOff
@@ -9535,7 +9535,7 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 	var var5Link *datastruct.Linkable[*entity.ClientObj]
 	for var6 := var3.Head(); var6 != nil; var6 = var3.Next() {
 		v := var6.Value
-		var7 := objtype.Get(v.Index)
+		var7 := objtype.List(v.Index)
 		var8 := var7.Cost
 		if var7.Stackable {
 			var8 *= v.Count + 1
@@ -9564,14 +9564,14 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 	}
 	var var11 *model.Model
 	if var15 != -1 {
-		var11 = objtype.Get(var15).GetInterfaceModel(var9)
+		var11 = objtype.List(var15).GetInterfaceModel(var9)
 	}
 	var var12 *model.Model
 	if var8 != -1 {
-		var12 = objtype.Get(var8).GetInterfaceModel(var10)
+		var12 = objtype.List(var8).GetInterfaceModel(var10)
 	}
 	var13 := arg0 + (arg1 << 7) + 1610612736
-	var14 := objtype.Get(var5.Index)
+	var14 := objtype.List(var5.Index)
 	c.Scene.AddObjStack(entity.ModelSourceOf(var14.GetInterfaceModel(var5.Count)), entity.ModelSourceOf(var11), c.GetHeightMapY(c.CurrentLevel, arg0*128+64, arg1*128+64), c.CurrentLevel, var13, arg1, arg0, entity.ModelSourceOf(var12))
 }
 
@@ -9919,7 +9919,7 @@ func (c *Client) GetIfVar(arg0 int, arg2 *iftype.IfType) (result int) {
 			var12 := var4[var6]
 			var6++
 			// 254 adds the members gate (Client.java:9812 @2e62978).
-			if var12 >= 0 && var12 < objtype.Count && (!objtype.Get(var12).Members || MembersWorld) {
+			if var12 >= 0 && var12 < objtype.Count && (!objtype.List(var12).Members || MembersWorld) {
 				for var13 := range len(var11.InvSlotObjId) {
 					if var11.InvSlotObjId[var13] == var12+1 {
 						var9 += var11.InvSlotObjCount[var13]
@@ -9958,7 +9958,7 @@ func (c *Client) GetIfVar(arg0 int, arg2 *iftype.IfType) (result int) {
 			// 254 adds the members gate. Faithful Java quirk: unlike op 4 it
 			// range/members-checks var16 (= raw id + 1), not the raw id
 			// (Client.java:9839 @2e62978).
-			if var16 >= 0 && var16 < objtype.Count && (!objtype.Get(var16).Members || MembersWorld) {
+			if var16 >= 0 && var16 < objtype.Count && (!objtype.List(var16).Members || MembersWorld) {
 				for var17 := range len(var15.InvSlotObjId) {
 					if var15.InvSlotObjId[var17] == var16 {
 						var9 = 999999999
@@ -10230,7 +10230,7 @@ func (c *Client) HandleViewportOptions() {
 			var2 = var4
 			//var10 := 0
 			if var7 == 2 && c.Scene.GetInfo(c.CurrentLevel, var5, var6, var4) >= 0 {
-				var9 := loctype.Get(var8)
+				var9 := loctype.List(var8)
 				if c.ObjSelected == 1 {
 					c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @cya@" + var9.Name
 					c.MenuAction[c.MenuSize] = 810
@@ -10313,7 +10313,7 @@ func (c *Client) HandleViewportOptions() {
 				if var15 != nil {
 					for var17 := var15.Tail(); var17 != nil; var17 = var15.Prev() {
 						v := var17.Value
-						var18 := objtype.Get(v.Index)
+						var18 := objtype.List(v.Index)
 						if c.ObjSelected == 1 {
 							c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @lre@" + var18.Name
 							c.MenuAction[c.MenuSize] = 111
@@ -11498,7 +11498,7 @@ func (c *Client) TcpIn() (ok bool) {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
 		var5 := c.In.G2()
-		var31 := objtype.Get(var4)
+		var31 := objtype.List(var4)
 		iftype.List[var26].ModelType = 4
 		iftype.List[var26].Model = var4
 		iftype.List[var26].Xan = var31.Xan2D

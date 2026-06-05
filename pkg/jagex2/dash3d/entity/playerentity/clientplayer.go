@@ -88,7 +88,7 @@ func (e *ClientPlayer) SetAppearance(arg1 *io.Packet) {
 			// sentinel 65535 switches to NPC transmog; extra g2 NPC id, then
 			// the remaining 11 slots are skipped (break).
 			if i == 0 && e.Appearances[0] == 65535 {
-				e.Transmog = npctype.Get(arg1.G2())
+				e.Transmog = npctype.List(arg1.G2())
 				break
 			}
 		}
@@ -299,7 +299,7 @@ func (e *ClientPlayer) GetTempModel2() *model.Model {
 			if var12 >= 256 && var12 < 512 && !idktype.Instances[var12-256].CheckModel() {
 				needsModel = true
 			}
-			if var12 >= 512 && !objtype.Get(var12-512).CheckWearModel(e.Gender) {
+			if var12 >= 512 && !objtype.List(var12-512).CheckWearModel(e.Gender) {
 				needsModel = true
 			}
 		}
@@ -332,7 +332,7 @@ func (e *ClientPlayer) GetTempModel2() *model.Model {
 				}
 			}
 			if var12 >= 512 {
-				var13 := objtype.Get(var12 - 512)
+				var13 := objtype.List(var12 - 512)
 				var14 := var13.GetWearModelNoCheck(e.Gender)
 				if var14 != nil {
 					var9[var10] = var14
@@ -391,7 +391,7 @@ func (e *ClientPlayer) GetHeadModel() *model.Model {
 		if var5 >= 256 && var5 < 512 && !idktype.Instances[var5-256].CheckHead() {
 			needsModel = true
 		}
-		if var5 >= 512 && !objtype.Get(var5-512).CheckHeadModel(e.Gender) {
+		if var5 >= 512 && !objtype.List(var5-512).CheckHeadModel(e.Gender) {
 			needsModel = true
 		}
 	}
@@ -410,7 +410,7 @@ func (e *ClientPlayer) GetHeadModel() *model.Model {
 			}
 		}
 		if var5 >= 512 {
-			var6 := objtype.Get(var5 - 512).GetHeadModelNoCheck(e.Gender)
+			var6 := objtype.List(var5 - 512).GetHeadModelNoCheck(e.Gender)
 			if var6 != nil {
 				var2[var3] = var6
 				var3++

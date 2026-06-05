@@ -79,7 +79,7 @@ func NewNpcType() *NpcType {
 	}
 }
 
-func Unpack(arg0 *io.JagFile) {
+func Init(arg0 *io.JagFile) {
 	Dat = io.NewPacket(arg0.Read("npc.dat", nil))
 	var1 := io.NewPacket(arg0.Read("npc.idx", nil))
 	Count = var1.G2()
@@ -102,7 +102,9 @@ func Unload() {
 	Dat = nil
 }
 
-func Get(arg0 int) *NpcType {
+// List fetches (decoding on miss) the definition for npc id arg0.
+// Java 274: list (NpcType.java:135 @32f3062; was get at 254).
+func List(arg0 int) *NpcType {
 	for i := range 20 {
 		if Cache[i].Index == int64(arg0) {
 			return Cache[i]

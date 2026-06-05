@@ -396,13 +396,13 @@ func (c *IfType) LoadModel(arg0 int, arg1 int, localPlayer *playerentity.ClientP
 		var3 = model.Load(arg1)
 	}
 	if arg0 == 2 {
-		var3 = npctype.Get(arg1).GetHead()
+		var3 = npctype.List(arg1).GetHead()
 	}
 	if arg0 == 3 {
 		var3 = localPlayer.GetHeadModel()
 	}
 	if arg0 == 4 {
-		var3 = objtype.Get(arg1).GetInvModel(50) // Java: IfType.loadModel uses ObjType.getInvModel (not getInterfaceModel) — IfType.java:472 @176a85f
+		var3 = objtype.List(arg1).GetInvModel(50) // Java: IfType.loadModel uses ObjType.getInvModel (not getInterfaceModel) — IfType.java:472 @176a85f
 	}
 	if arg0 == 5 {
 		var3 = nil
