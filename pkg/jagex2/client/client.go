@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientbuild"
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/inputtracking"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/flotype"
@@ -31,7 +32,6 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/varptype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
-	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/clientbuild"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity/playerentity"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"

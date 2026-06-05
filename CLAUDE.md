@@ -46,10 +46,10 @@ The `main` goroutine flow (from `main.go`):
 |---|---|
 | `client/` | Top-level `Client` struct and `GameShell`; owns the main game loop, network I/O, and rendering orchestration |
 | `client/clientextras/` | Variables split out of `client` to avoid circular imports |
+| `client/clientbuild/` | Scene/tile building; converts cache data into a renderable scene (Java 254 `ClientBuild`; was `World` in ≤245.2) (moved dash3d→client in 274, mirroring Java) |
 | `client/inputtracking/` | Mouse/keyboard input state |
 | `config/{iftype,flotype,loctype,npctype,objtype,seqtype,spottype,varbittype,varptype,idktype}` | Game config/definition types loaded from cache files (`iftype` was `component` in ≤245.2; Java 254 `IfType`; spotanimtype → spottype in 274) |
 | `dash3d/` | Global scene variables for 3D rendering |
-| `dash3d/clientbuild/` | Scene/tile building; converts cache data into a renderable scene (Java 254 `ClientBuild`; was `World` in ≤245.2) |
 | `dash3d/world/` | The scene graph (tiles, entities, occlusion) (Java 254 `World`; was `World3D` in ≤245.2 — **name-reuse trap**, see `RENAME-MAP.md`) |
 | `dash3d/entity/` | Entity types (244 names): `ClientEntity`, `ClientNpc`, `ClientPlayer`, `ClientLocAnim`, `ClientObj`, `ClientProj`, `MapSpotAnim`, `LocChange`, `ModelSource` (interface). `LocChange` is the rev-244 merge of the old `LocChange` + `LocMergeEntity` (see `locchange.go`) |
 | `dash3d/typ/` | Per-tile scene types (244 names): `Square` (tile aggregate), `Sprite` (loc), `Ground` (overlay mesh), `QuickGround` (underlay), `Wall`, `Decor`, `GroundDecor`, `GroundObject` |
