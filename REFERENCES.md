@@ -140,6 +140,42 @@ via `git show 2e62978:…`**, never the working tree.)
 > regressed locals/params to `argN`, Go keeps existing descriptive names
 > (annotated `// Java: argN`); adopt 254 local names where equal-or-better.
 
+## rev-274 — Go branch `rev-274`
+
+| Repo | Role | URL | Branch | Pinned commit |
+|---|---|---|---|---|
+| Client-Java | **primary** — authoritative translation source; every Go change maps to a Java function | https://github.com/LostCityRS/Client-Java | `274` | `32f30626156783de9f142306eb73a2243909dacf` |
+| Client-TS | secondary cross-check for ambiguous Java→Go translations | https://github.com/LostCityRS/Client-TS | `274` | `b67894260fb06ae6162ed3a8adab506abcd7faa9` |
+| Engine-TS | engine reference (TypeScript) + smoke-test server | https://github.com/LostCityRS/Engine-TS | `274` | `4c0d036f940c8c7e11b0ed714dcf40c88f9de200` |
+| Content | game content reference | https://github.com/LostCityRS/Content | `274` | `85d62c8bdb9005cc02a784a31337c7df052d6469` |
+
+(Commits captured 2026-06-05. Go branch `rev-274` is cut from `rev-254` @
+`a94d3fc`. All four local repos sit on `274-GOSCAPE` working branches —
+verified `274 ≡ 274-GOSCAPE` (0/0 ahead-behind) at capture time, but
+**always read references via `git show 32f3062:…`**, never the working
+tree. Client-Java `274` has been quiet since 2026-03-20.)
+
+> **Lineage note — fresh deob, disjoint history (third occurrence).** `274`
+> shares no git history with `254` ("Regenerated deob" in its log); the raw
+> tree diff is ~20.2k(+)/20.4k(−) lines across 83 files, dominated by churn.
+> Same `jagex2/` layout; path-level candidates (obf-key verification in
+> `RENAME-MAP-274.md` on `rev-274`): renames `Wave→JagFX`,
+> `VertexNormal→PointNormal`, `Stats→Skill`, `SpotAnimType→SpotType`,
+> `VarBitType→VarbitType`, `DoublyLinkable→Linkable2`,
+> `DoublyLinkList→LinkList2`, package `wordenc→wordfilter`; moves
+> `ClientBuild` `dash3d→client` and `Protocol` `client→io` (**a revert of
+> 254's move** — deltas are not monotonic). New: `sound/Filter.java` (synth
+> IIR filter). Removed: `client/InputTracking.java` (0 refs in 274
+> `Client.java`). `Client.java` shrank 350,364→323,443 bytes across the
+> 20-revision gap; full wire-opcode renumbering expected. See
+> `PORT-DESIGN-274.md` on `rev-274`.
+>
+> **Naming policy (user decision 2026-06-05): hybrid, same as 254.** Go
+> adopts 274 class/file-level names via an up-front mechanical rename pass;
+> where 274 keeps `argN` locals (~886 in `Client.java`, unchanged from
+> 254), Go keeps existing descriptive names (annotated `// Java: argN`);
+> adopt 274 local names where equal-or-better.
+
 ## Future revisions
 
 When porting revision *N*:
