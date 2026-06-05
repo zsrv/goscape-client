@@ -1588,14 +1588,17 @@ func (c *Client) GetTopLevelCutscene() int {
 
 func (c *Client) DrawScene() {
 	c.SceneCycle++
-	// Java: 244 drawScene splits NPC submission into an always-on-top pass
-	// before players and a normal pass after (Client.java:5841-5844); the 225
-	// PacketSize+= deob padding and the int parameter were dropped with it.
-	c.PushNPCs(true)
-	c.PushPlayers()
-	c.PushNPCs(false)
-	c.PushProjectiles()
-	c.PushSpotanims()
+	// Java: 254 gameDrawMain submission order (Client.java:5325-5330 @2e62978)
+	// — addPlayers is split local(true)/others(false) and the local player now
+	// goes in FIRST, before the always-on-top NPC pass; 244's order was
+	// pushNpcs(true), pushPlayers, pushNpcs(false). This changes the z-order
+	// of always-on-top entities relative to players.
+	c.AddPlayers(true)
+	c.AddNpcs(true)
+	c.AddPlayers(false)
+	c.AddNpcs(false)
+	c.AddProjectiles()
+	c.AddMapAnim()
 	var2 := 0
 	var3 := 0
 	var4 := 0
@@ -2099,11 +2102,17 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 	c.PacketSize += arg1
 }
 
-func (c *Client) PushPlayers() {
+// AddPlayers submits visible players for the pass being drawn: the local
+// player alone (arg0 true) or everyone else (arg0 false). Java:
+// addPlayers(boolean) (Client.java:5400-5451 @2e62978) — 254 split 244's
+// single pushPlayers walk into two passes; gameDrawMain calls it twice,
+// before each addNpcs pass.
+func (c *Client) AddPlayers(arg0 bool) {
 	if c.LocalPlayer.X>>7 == c.FlagSceneTileX && c.LocalPlayer.Z>>7 == c.FlagSceneTileZ {
 		c.FlagSceneTileX = 0
 		// Java: field1587 (Client.java:5403-5410 @2e62978) — 254 CYCLELOGIC6
-		// fires from the map-flag-reached check.
+		// fires from the map-flag-reached check; the check sits in the method
+		// head, so it runs on BOTH passes (twice per frame), like Java.
 		CycleLogic6++
 		if CycleLogic6 > 122 {
 			CycleLogic6 = 0
@@ -2111,41 +2120,45 @@ func (c *Client) PushPlayers() {
 			c.Out.P1(62)
 		}
 	}
-	for i := -1; i < c.PlayerCount; i++ {
-		var var3 *playerentity.ClientPlayer
-		var4 := 0
-		if i == -1 {
-			var3 = c.LocalPlayer
-			var4 = c.LOCAL_PLAYER_INDEX << 14
+	var3 := c.PlayerCount
+	if arg0 {
+		var3 = 1
+	}
+	for var4 := range var3 {
+		var var5 *playerentity.ClientPlayer
+		var6 := 0
+		if arg0 {
+			var5 = c.LocalPlayer
+			var6 = c.LOCAL_PLAYER_INDEX << 14
 		} else {
-			var3 = c.Players[c.PlayerIDs[i]]
-			var4 = c.PlayerIDs[i] << 14
+			var5 = c.Players[c.PlayerIDs[var4]]
+			var6 = c.PlayerIDs[var4] << 14
 		}
-		if var3 != nil && var3.IsVisible() {
-			var3.LowMemory = false
-			if (LowMemory && c.PlayerCount > 50 || c.PlayerCount > 200) && i != -1 && var3.SecondarySeqID == var3.SeqStandID {
-				var3.LowMemory = true
+		if var5 != nil && var5.IsVisible() {
+			var5.LowMemory = false
+			if (LowMemory && c.PlayerCount > 50 || c.PlayerCount > 200) && !arg0 && var5.SecondarySeqID == var5.SeqStandID {
+				var5.LowMemory = true
 			}
-			var5 := var3.X >> 7
-			var6 := var3.Z >> 7
-			if var5 >= 0 && var5 < 104 && var6 >= 0 && var6 < 104 {
-				if var3.LocModel == nil || clientextras.LoopCycle < var3.LocStartCycle || clientextras.LoopCycle >= var3.LocStopCycle {
-					if (var3.X&0x7F) == 64 && (var3.Z&0x7F) == 64 {
-						// Java: `&& i != -1` (Client.java:5983, new in 244) —
-						// the local player is never skipped; needed because
-						// pushNpcs(true) now runs BEFORE pushPlayers and an
-						// always-on-top NPC may have marked this tile.
-						if c.TileLastOccupiedCycle[var5][var6] == c.SceneCycle && i != -1 {
+			var7 := var5.X >> 7
+			var8 := var5.Z >> 7
+			if var7 >= 0 && var7 < 104 && var8 >= 0 && var8 < 104 {
+				if var5.LocModel == nil || clientextras.LoopCycle < var5.LocStartCycle || clientextras.LoopCycle >= var5.LocStopCycle {
+					if (var5.X&0x7F) == 64 && (var5.Z&0x7F) == 64 {
+						// Java: 254 dropped 244's `&& i != -1` local-player
+						// exemption (Client.java:5434-5437) — addPlayers(true)
+						// is now gameDrawMain's first submission, so the local
+						// player claims its tile before any always-on-top NPC.
+						if c.TileLastOccupiedCycle[var7][var8] == c.SceneCycle {
 							continue
 						}
-						c.TileLastOccupiedCycle[var5][var6] = c.SceneCycle
+						c.TileLastOccupiedCycle[var7][var8] = c.SceneCycle
 					}
-					var3.Y = c.GetHeightMapY(c.CurrentLevel, var3.X, var3.Z)
-					c.Scene.AddTemporary1(var3.Z, 60, var3.Yaw, var3.X, var4, var3.SeqStretches, var3, var3.Y, c.CurrentLevel)
+					var5.Y = c.GetHeightMapY(c.CurrentLevel, var5.X, var5.Z)
+					c.Scene.AddTemporary1(var5.Z, 60, var5.Yaw, var5.X, var6, var5.SeqStretches, var5, var5.Y, c.CurrentLevel)
 				} else {
-					var3.LowMemory = false
-					var3.Y = c.GetHeightMapY(c.CurrentLevel, var3.X, var3.Z)
-					c.Scene.AddTemporary2(var3.MaxTileX, var3.Z, var3.Y, var4, var3.Yaw, var3.MinTileZ, var3.MinTileX, var3, c.CurrentLevel, var3.MaxTileZ, var3.X)
+					var5.LowMemory = false
+					var5.Y = c.GetHeightMapY(c.CurrentLevel, var5.X, var5.Z)
+					c.Scene.AddTemporary2(var5.MaxTileX, var5.Z, var5.Y, var6, var5.Yaw, var5.MinTileZ, var5.MinTileX, var5, c.CurrentLevel, var5.MaxTileZ, var5.X)
 				}
 			}
 		}
@@ -3553,10 +3566,10 @@ func (c *Client) SaveMidi(fade bool, src []byte) {
 	signlink.SetMidiTrack(src)
 }
 
-// PushNPCs submits visible NPCs whose type's alwaysontop flag matches the
-// pass being drawn. Java: pushNpcs(boolean) (Client.java:6002-6028, new in
-// 244 — drawScene calls it twice, around pushPlayers).
-func (c *Client) PushNPCs(alwaysOnTop bool) {
+// AddNpcs submits visible NPCs whose type's alwaysontop flag matches the
+// pass being drawn. Java: addNpcs(boolean) (Client.java:5453-5472 @2e62978;
+// gameDrawMain calls it twice, after each addPlayers pass).
+func (c *Client) AddNpcs(alwaysOnTop bool) {
 	for i := range c.NPCCount {
 		var3 := c.NPCs[c.NPCIDs[i]]
 		var4 := (c.NPCIDs[i] << 14) + 536870912
@@ -6810,7 +6823,8 @@ func (c *Client) UpdateOrbitCamera(arg0 int) {
 	}
 }
 
-func (c *Client) PushProjectiles() {
+// Java: addProjectiles (Client.java:5474-5529 @2e62978; was pushProjectiles).
+func (c *Client) AddProjectiles() {
 	for var2 := c.Projectiles.Head(); var2 != nil; var2 = c.Projectiles.Next() {
 		v := var2.Value
 		if v.Level != c.CurrentLevel || clientextras.LoopCycle > v.LastCycle {
@@ -8465,7 +8479,8 @@ func (c *Client) DrawTooltip() {
 	c.FontBold12.DrawStringTooltip(clientextras.LoopCycle/1000, true, 15, 0xFFFFFF, var2, 4)
 }
 
-func (c *Client) PushSpotanims() {
+// Java: addMapAnim (Client.java:5531+ @2e62978; was pushSpotanims).
+func (c *Client) AddMapAnim() {
 	for var2 := c.Spotanims.Head(); var2 != nil; var2 = c.Spotanims.Next() {
 		v := var2.Value
 		if v.Level != c.CurrentLevel || v.SeqComplete {
