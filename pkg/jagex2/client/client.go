@@ -3542,6 +3542,14 @@ func (c *Client) SaveMidi(fade bool, src []byte) {
 	} else {
 		signlink.SetMidiFade(0)
 	}
+	// Java: signlink.midisave silently drops payloads over 2,000,000 bytes
+	// (signlink.java:281-284 @2e62978) — after midifade is already
+	// published, matching Java's caller ordering (audit signlink-02). The
+	// busy-slot (savereq) half of the guard is intentionally not reproduced
+	// by the in-memory seam.
+	if len(src) > 2000000 {
+		return
+	}
 	signlink.SetMidiTrack(src)
 }
 
@@ -5889,6 +5897,13 @@ func (c *Client) UpdateInterfaceContent(arg1 *iftype.IfType) {
 }
 
 func (c *Client) SaveWave(arg0 []byte, arg1 int) bool {
+	// Java: signlink.wavesave rejects payloads over 2,000,000 bytes
+	// (signlink.java:255-257 @2e62978); the busy-slot (savereq) retry path
+	// is intentionally not reproduced by the in-memory audio seam
+	// (audit signlink-02).
+	if arg1 > 2000000 {
+		return false
+	}
 	if arg0 == nil {
 		return true
 	}

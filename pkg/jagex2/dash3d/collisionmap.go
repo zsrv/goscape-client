@@ -8,10 +8,13 @@ type CollisionMap struct {
 	Flags   [][]int
 }
 
-func NewCollisionMap(x, z int) *CollisionMap {
+// Java: CollisionMap(int,int) (CollisionMap.java:23-28) — the SECOND param is
+// sizeX and the FIRST is sizeZ; both live callers pass square 104x104 so the
+// transposition was masked (audit dash3d-collision-01).
+func NewCollisionMap(arg1, arg2 int) *CollisionMap {
 	var m CollisionMap
-	m.SizeX = x
-	m.SizeZ = z
+	m.SizeX = arg2
+	m.SizeZ = arg1
 	m.Flags = make([][]int, m.SizeX)
 	for i := range m.Flags {
 		m.Flags[i] = make([]int, m.SizeZ)

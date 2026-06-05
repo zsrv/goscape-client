@@ -1233,12 +1233,15 @@ func FirstFragmentID(chars []rune) int {
 	value := 0
 	for i := range len(chars) {
 		c := chars[len(chars)-i-1]
+		// Java: WordFilter.java:1053-1071 — the accumulator is a 32-bit int
+		// that wraps; only reachable via length-3 fragments today, but
+		// lengths 4-6 would overflow (audit wordfilter-B-01).
 		if c >= 'a' && c <= 'z' {
-			value = value*38 + int(c) - 'a' + 1
+			value = int(int32(value*38 + int(c) - 'a' + 1))
 		} else if c == '\'' {
-			value = value*38 + 27
+			value = int(int32(value*38 + 27))
 		} else if c >= '0' && c <= '9' {
-			value = value*38 + int(c) - '0' + 28
+			value = int(int32(value*38 + int(c) - '0' + 28))
 		} else if c != 0 {
 			return 0
 		}

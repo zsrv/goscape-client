@@ -326,7 +326,7 @@ func Decompress(s *bzip2state.BZip2State) {
 					for {
 						uc = GetBit(s)
 						if uc == 0 {
-							s.Len[t][i] = byte(curr)
+							s.Len[t][i] = int8(curr) // Java: (byte) curr — signed (audit io-bzip2-02)
 							break
 						}
 
@@ -342,8 +342,10 @@ func Decompress(s *bzip2state.BZip2State) {
 
 			// Create the Huffman decoding tables
 			for t := range nGroups {
-				minLen := byte(32)
-				maxLen := byte(0)
+				// Java: byte minLen = 32, maxLen = 0 — SIGNED comparisons
+				// (audit io-bzip2-02)
+				minLen := int8(32)
+				maxLen := int8(0)
 				for i := range alphaSize {
 					maxLen = max(s.Len[t][i], maxLen)
 
@@ -617,7 +619,7 @@ func MakeMaps(s *bzip2state.BZip2State) {
 	}
 }
 
-func CreateDecodeTables(limit []int, base []int, perm []int, length []byte, minLen, maxLen, alphaSize int) {
+func CreateDecodeTables(limit []int, base []int, perm []int, length []int8, minLen, maxLen, alphaSize int) {
 	pp := 0
 
 	for i := minLen; i <= maxLen; i++ {
@@ -634,7 +636,10 @@ func CreateDecodeTables(limit []int, base []int, perm []int, length []byte, minL
 	}
 
 	for i := range alphaSize {
-		base[length[i]+1]++
+		// Java: base[length[i] + 1]++ — byte sign-extends to int BEFORE the
+		// +1; a negative index throws in Java and panics here, faithfully
+		// (audit io-bzip2-02).
+		base[int(length[i])+1]++
 	}
 
 	for i := 1; i < bzip2state.BZ_MAX_CODE_LEN; i++ {

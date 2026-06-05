@@ -46,7 +46,7 @@ type BZip2State struct {
 	MTFBase         []int
 	Selector        []byte
 	SelectorMTF     []byte
-	Len             [][]byte
+	Len             [][]int8 // Java: byte[][] len — signed; sign-extension matters in createDecodeTables (audit io-bzip2-02)
 	Limit           [][]int
 	Base            [][]int
 	Perm            [][]int
@@ -70,9 +70,9 @@ func NewBZip2State() *BZip2State {
 	s.MTFBase = make([]int, 16)
 	s.Selector = make([]byte, 18002)
 	s.SelectorMTF = make([]byte, 18002)
-	s.Len = make([][]byte, 6)
+	s.Len = make([][]int8, 6)
 	for i := range s.Len {
-		s.Len[i] = make([]byte, 258)
+		s.Len[i] = make([]int8, 258)
 	}
 	s.Limit = make([][]int, 6)
 	for i := range s.Limit {

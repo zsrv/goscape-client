@@ -413,7 +413,9 @@ func (c *IfType) LoadModel(arg0 int, arg1 int, localPlayer *playerentity.ClientP
 func CacheModel(m *model.Model, id int, typ int) {
 	ModelCache.Clear()
 	if m != nil && typ != 4 {
-		ModelCache.Put((int64(typ)<<16)+int64(id), m)
+		// Java: (long)((arg3 << 16) + arg1) — the add runs in 32-bit int and
+		// wraps before widening, like LoadModel's key (audit config-B-04).
+		ModelCache.Put(int64(int32((typ<<16)+id)), m)
 	}
 }
 
