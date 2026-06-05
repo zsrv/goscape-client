@@ -1784,7 +1784,7 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 				}
 				if !var13 {
 					c.MenuOption[c.MenuSize] = var12.Option
-					c.MenuAction[c.MenuSize] = 951
+					c.MenuAction[c.MenuSize] = 231
 					c.MenuParamC[c.MenuSize] = var12.Id
 					c.MenuSize++
 				}
@@ -1795,31 +1795,31 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 					var22 = var22[0:strings.Index(var22, " ")]
 				}
 				c.MenuOption[c.MenuSize] = var22 + " @gre@" + var12.Action
-				c.MenuAction[c.MenuSize] = 930
+				c.MenuAction[c.MenuSize] = 274
 				c.MenuParamC[c.MenuSize] = var12.Id
 				c.MenuSize++
 			}
 			if var12.ButtonType == 3 && arg1 >= var20 && arg0 >= var21 && arg1 < var20+var12.Width && arg0 < var21+var12.Height {
 				c.MenuOption[c.MenuSize] = "Close"
-				c.MenuAction[c.MenuSize] = 947
+				c.MenuAction[c.MenuSize] = 737
 				c.MenuParamC[c.MenuSize] = var12.Id
 				c.MenuSize++
 			}
 			if var12.ButtonType == 4 && arg1 >= var20 && arg0 >= var21 && arg1 < var20+var12.Width && arg0 < var21+var12.Height {
 				c.MenuOption[c.MenuSize] = var12.Option
-				c.MenuAction[c.MenuSize] = 465
+				c.MenuAction[c.MenuSize] = 435
 				c.MenuParamC[c.MenuSize] = var12.Id
 				c.MenuSize++
 			}
 			if var12.ButtonType == 5 && arg1 >= var20 && arg0 >= var21 && arg1 < var20+var12.Width && arg0 < var21+var12.Height {
 				c.MenuOption[c.MenuSize] = var12.Option
-				c.MenuAction[c.MenuSize] = 960
+				c.MenuAction[c.MenuSize] = 225
 				c.MenuParamC[c.MenuSize] = var12.Id
 				c.MenuSize++
 			}
 			if var12.ButtonType == 6 && !c.PressedContinueOption && arg1 >= var20 && arg0 >= var21 && arg1 < var20+var12.Width && arg0 < var21+var12.Height {
 				c.MenuOption[c.MenuSize] = var12.Option
-				c.MenuAction[c.MenuSize] = 44
+				c.MenuAction[c.MenuSize] = 997
 				c.MenuParamC[c.MenuSize] = var12.Id
 				c.MenuSize++
 			}
@@ -1841,7 +1841,7 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 								if c.ObjSelected == 1 && var12.Interactable {
 									if var12.Id != c.ObjSelectedInterface || var23 != c.ObjSelectedSlot {
 										c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @lre@" + var18.Name
-										c.MenuAction[c.MenuSize] = 881
+										c.MenuAction[c.MenuSize] = 398
 										c.MenuParamA[c.MenuSize] = var18.Index
 										c.MenuParamB[c.MenuSize] = var23
 										c.MenuParamC[c.MenuSize] = var12.Id
@@ -1853,10 +1853,10 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 											if var18.IOp != nil && var18.IOp[l] != "" {
 												c.MenuOption[c.MenuSize] = var18.IOp[l] + " @lre@" + var18.Name
 												if l == 3 {
-													c.MenuAction[c.MenuSize] = 478
+													c.MenuAction[c.MenuSize] = 681
 												}
 												if l == 4 {
-													c.MenuAction[c.MenuSize] = 347
+													c.MenuAction[c.MenuSize] = 100
 												}
 												c.MenuParamA[c.MenuSize] = var18.Index
 												c.MenuParamB[c.MenuSize] = var23
@@ -1864,7 +1864,7 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 												c.MenuSize++
 											} else if l == 4 {
 												c.MenuOption[c.MenuSize] = "Drop @lre@" + var18.Name
-												c.MenuAction[c.MenuSize] = 347
+												c.MenuAction[c.MenuSize] = 100
 												c.MenuParamA[c.MenuSize] = var18.Index
 												c.MenuParamB[c.MenuSize] = var23
 												c.MenuParamC[c.MenuSize] = var12.Id
@@ -1874,7 +1874,7 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 									}
 									if var12.Usable {
 										c.MenuOption[c.MenuSize] = "Use @lre@" + var18.Name
-										c.MenuAction[c.MenuSize] = 188
+										c.MenuAction[c.MenuSize] = 102
 										c.MenuParamA[c.MenuSize] = var18.Index
 										c.MenuParamB[c.MenuSize] = var23
 										c.MenuParamC[c.MenuSize] = var12.Id
@@ -1885,13 +1885,13 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 											if var18.IOp[l] != "" {
 												c.MenuOption[c.MenuSize] = var18.IOp[l] + " @lre@" + var18.Name
 												if l == 0 {
-													c.MenuAction[c.MenuSize] = 405
+													c.MenuAction[c.MenuSize] = 694
 												}
 												if l == 1 {
-													c.MenuAction[c.MenuSize] = 38
+													c.MenuAction[c.MenuSize] = 962
 												}
 												if l == 2 {
-													c.MenuAction[c.MenuSize] = 422
+													c.MenuAction[c.MenuSize] = 795
 												}
 												c.MenuParamA[c.MenuSize] = var18.Index
 												c.MenuParamB[c.MenuSize] = var23
@@ -1905,19 +1905,19 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 											if var12.IOps[l] != "" {
 												c.MenuOption[c.MenuSize] = var12.IOps[l] + " @lre@" + var18.Name
 												if l == 0 {
-													c.MenuAction[c.MenuSize] = 602
+													c.MenuAction[c.MenuSize] = 582
 												}
 												if l == 1 {
-													c.MenuAction[c.MenuSize] = 596
+													c.MenuAction[c.MenuSize] = 113
 												}
 												if l == 2 {
-													c.MenuAction[c.MenuSize] = 22
+													c.MenuAction[c.MenuSize] = 555
 												}
 												if l == 3 {
-													c.MenuAction[c.MenuSize] = 892
+													c.MenuAction[c.MenuSize] = 331
 												}
 												if l == 4 {
-													c.MenuAction[c.MenuSize] = 415
+													c.MenuAction[c.MenuSize] = 354
 												}
 												c.MenuParamA[c.MenuSize] = var18.Index
 												c.MenuParamB[c.MenuSize] = var23
@@ -1927,13 +1927,13 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 										}
 									}
 									c.MenuOption[c.MenuSize] = "Examine @lre@" + var18.Name + examineIDSuffix(var18.Index)
-									c.MenuAction[c.MenuSize] = 1773
+									c.MenuAction[c.MenuSize] = 1328
 									c.MenuParamA[c.MenuSize] = var18.Index
 									c.MenuParamC[c.MenuSize] = var12.InvSlotObjCount[var23]
 									c.MenuSize++
 								} else if c.ActiveSpellFlags&0x10 == 16 {
 									c.MenuOption[c.MenuSize] = c.SpellCaption + " @lre@" + var18.Name
-									c.MenuAction[c.MenuSize] = 391
+									c.MenuAction[c.MenuSize] = 563
 									c.MenuParamA[c.MenuSize] = var18.Index
 									c.MenuParamB[c.MenuSize] = var23
 									c.MenuParamC[c.MenuSize] = var12.Id
@@ -2022,14 +2022,14 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 				if arg0 > var7-14 && arg0 <= var7 && var10 != c.LocalPlayer.Name {
 					if c.StaffModLevel >= 1 {
 						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + var10
-						c.MenuAction[c.MenuSize] = 34
+						c.MenuAction[c.MenuSize] = 524
 						c.MenuSize++
 					}
 					c.MenuOption[c.MenuSize] = "Add ignore @whi@" + var10
-					c.MenuAction[c.MenuSize] = 436
+					c.MenuAction[c.MenuSize] = 47
 					c.MenuSize++
 					c.MenuOption[c.MenuSize] = "Add friend @whi@" + var10
-					c.MenuAction[c.MenuSize] = 406
+					c.MenuAction[c.MenuSize] = 605
 					c.MenuSize++
 				}
 				var4++
@@ -2038,14 +2038,14 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 				if arg0 > var7-14 && arg0 <= var7 {
 					if c.StaffModLevel >= 1 {
 						c.MenuOption[c.MenuSize] = "Report abuse @whi@" + var10
-						c.MenuAction[c.MenuSize] = 34
+						c.MenuAction[c.MenuSize] = 524
 						c.MenuSize++
 					}
 					c.MenuOption[c.MenuSize] = "Add ignore @whi@" + var10
-					c.MenuAction[c.MenuSize] = 436
+					c.MenuAction[c.MenuSize] = 47
 					c.MenuSize++
 					c.MenuOption[c.MenuSize] = "Add friend @whi@" + var10
-					c.MenuAction[c.MenuSize] = 406
+					c.MenuAction[c.MenuSize] = 605
 					c.MenuSize++
 				}
 				var4++
@@ -2053,7 +2053,7 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 			if var6 == 4 && (c.TradeChatSetting == 0 || c.TradeChatSetting == 1 && c.IsFriend(var10)) {
 				if arg0 > var7-14 && arg0 <= var7 {
 					c.MenuOption[c.MenuSize] = "Accept trade @whi@" + var10
-					c.MenuAction[c.MenuSize] = 903
+					c.MenuAction[c.MenuSize] = 507
 					c.MenuSize++
 				}
 				var4++
@@ -2064,7 +2064,7 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 			if var6 == 8 && (c.TradeChatSetting == 0 || c.TradeChatSetting == 1 && c.IsFriend(var10)) {
 				if arg0 > var7-14 && arg0 <= var7 {
 					c.MenuOption[c.MenuSize] = "Accept duel @whi@" + var10
-					c.MenuAction[c.MenuSize] = 363
+					c.MenuAction[c.MenuSize] = 957
 					c.MenuSize++
 				}
 				var4++
@@ -2165,7 +2165,7 @@ func (c *Client) AddNPCOptions(arg0 *npctype.NpcType, arg2, arg3, arg4 int) {
 	}
 	if c.ObjSelected == 1 {
 		c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @yel@" + var6
-		c.MenuAction[c.MenuSize] = 900
+		c.MenuAction[c.MenuSize] = 829
 		c.MenuParamA[c.MenuSize] = arg4
 		c.MenuParamB[c.MenuSize] = arg3
 		c.MenuParamC[c.MenuSize] = arg2
@@ -2176,19 +2176,19 @@ func (c *Client) AddNPCOptions(arg0 *npctype.NpcType, arg2, arg3, arg4 int) {
 				if arg0.Op[i] != "" && !strings.EqualFold(arg0.Op[i], "attack") {
 					c.MenuOption[c.MenuSize] = arg0.Op[i] + " @yel@" + var6
 					if i == 0 {
-						c.MenuAction[c.MenuSize] = 728
+						c.MenuAction[c.MenuSize] = 242
 					}
 					if i == 1 {
-						c.MenuAction[c.MenuSize] = 542
+						c.MenuAction[c.MenuSize] = 209
 					}
 					if i == 2 {
-						c.MenuAction[c.MenuSize] = 6
+						c.MenuAction[c.MenuSize] = 309
 					}
 					if i == 3 {
-						c.MenuAction[c.MenuSize] = 963
+						c.MenuAction[c.MenuSize] = 852
 					}
 					if i == 4 {
-						c.MenuAction[c.MenuSize] = 245
+						c.MenuAction[c.MenuSize] = 793
 					}
 					c.MenuParamA[c.MenuSize] = arg4
 					c.MenuParamB[c.MenuSize] = arg3
@@ -2206,19 +2206,19 @@ func (c *Client) AddNPCOptions(arg0 *npctype.NpcType, arg2, arg3, arg4 int) {
 					}
 					c.MenuOption[c.MenuSize] = arg0.Op[i] + " @yel@" + var6
 					if i == 0 {
-						c.MenuAction[c.MenuSize] = var8 + 728
+						c.MenuAction[c.MenuSize] = var8 + 242
 					}
 					if i == 1 {
-						c.MenuAction[c.MenuSize] = var8 + 542
+						c.MenuAction[c.MenuSize] = var8 + 209
 					}
 					if i == 2 {
-						c.MenuAction[c.MenuSize] = var8 + 6
+						c.MenuAction[c.MenuSize] = var8 + 309
 					}
 					if i == 3 {
-						c.MenuAction[c.MenuSize] = var8 + 963
+						c.MenuAction[c.MenuSize] = var8 + 852
 					}
 					if i == 4 {
-						c.MenuAction[c.MenuSize] = var8 + 245
+						c.MenuAction[c.MenuSize] = var8 + 793
 					}
 					c.MenuParamA[c.MenuSize] = arg4
 					c.MenuParamB[c.MenuSize] = arg3
@@ -2228,14 +2228,14 @@ func (c *Client) AddNPCOptions(arg0 *npctype.NpcType, arg2, arg3, arg4 int) {
 			}
 		}
 		c.MenuOption[c.MenuSize] = "Examine @yel@" + var6 + examineIDSuffix(int(arg0.Index))
-		c.MenuAction[c.MenuSize] = 1607
+		c.MenuAction[c.MenuSize] = 1714
 		c.MenuParamA[c.MenuSize] = arg4
 		c.MenuParamB[c.MenuSize] = arg3
 		c.MenuParamC[c.MenuSize] = arg2
 		c.MenuSize++
 	} else if c.ActiveSpellFlags&0x2 == 2 {
 		c.MenuOption[c.MenuSize] = c.SpellCaption + " @yel@" + var6
-		c.MenuAction[c.MenuSize] = 265
+		c.MenuAction[c.MenuSize] = 240
 		c.MenuParamA[c.MenuSize] = arg4
 		c.MenuParamB[c.MenuSize] = arg3
 		c.MenuParamC[c.MenuSize] = arg2
@@ -4866,7 +4866,7 @@ func (c *Client) IsAddFriendOption(arg1 int) bool {
 	if var3 >= 2000 {
 		var3 -= 2000
 	}
-	return var3 == 406
+	return var3 == 605
 }
 
 func (c *Client) UseMenuOption(arg1 int) {
@@ -4889,9 +4889,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	var9 := ""
 	var11 := 0
 	// Java: Client.java:8872-8911 @2e62978 — chat-driven trade/duel by name.
-	// Go keeps 245.2 ids 903/363 until WS7 renumbers the chat pushers
-	// (254: 507/957); the 254 oplogic innards land here with WS5.
-	if var5 == 903 || var5 == 363 {
+	if var5 == 507 || var5 == 957 {
 		var7 = c.MenuOption[arg1]
 		var8 = strings.Index(var7, "@whi@")
 		if var8 != -1 {
@@ -4902,7 +4900,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 				var12 := c.Players[c.PlayerIDs[i]]
 				if var12 != nil && var12.Name != "" && strings.EqualFold(var12.Name, var9) {
 					c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var12.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var12.PathTileZ[0], 0, 0, 0)
-					if var5 == 903 { // Java: var5 == 507 (254)
+					if var5 == 507 {
 						OpLogic5 += var6
 						if OpLogic5 >= 66 {
 							c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC5) // Java: pIsaac(233) Client.java:8887
@@ -4910,7 +4908,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 						}
 						c.Out.P1Isaac(CLIENTPROT_OPPLAYER4) // Java: pIsaac(72) Client.java:8891
 					}
-					if var5 == 363 { // Java: var5 == 957 (254)
+					if var5 == 957 {
 						OpLogic4++
 						if OpLogic4 >= 52 {
 							c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC4) // Java: pIsaac(121) Client.java:8897
@@ -4928,13 +4926,13 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 		}
 	}
-	if var5 == 450 && c.InteractWithLoc(CLIENTPROT_OPLOCU, var3, var4, var6) { // Java: interactWithLoc(147,...)
+	if var5 == 810 && c.InteractWithLoc(CLIENTPROT_OPLOCU, var3, var4, var6) { // Java: interactWithLoc(147,...)
 		c.Out.P2(c.ObjInterface)
 		c.Out.P2(c.ObjSelectedSlot)
 		c.Out.P2(c.ObjSelectedInterface)
 	}
-	if var5 == 405 || var5 == 38 || var5 == 422 || var5 == 478 || var5 == 347 {
-		if var5 == 478 {
+	if var5 == 694 || var5 == 962 || var5 == 795 || var5 == 681 || var5 == 100 {
+		if var5 == 681 {
 			// Java: oplogic9 (Client.java:8605-8611 @2e62978) — 254 moves
 			// OPLOGIC9 here (unconditional increment; 245.2 had a &3-gated
 			// oplogic5 at this block).
@@ -4945,18 +4943,18 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 			c.Out.P1Isaac(CLIENTPROT_OPHELD4) // Java: pIsaac(163) Client.java:8613
 		}
-		if var5 == 347 {
+		if var5 == 100 {
 			c.Out.P1Isaac(CLIENTPROT_OPHELD5) // Java: pIsaac(9) Client.java:9404
 		}
-		if var5 == 422 {
+		if var5 == 795 {
 			c.Out.P1Isaac(CLIENTPROT_OPHELD3) // Java: pIsaac(115) Client.java:9419
 		}
-		if var5 == 405 {
+		if var5 == 694 {
 			// 245.2's oplogic3 here was removed in 254 (254 OPLOGIC3 lives
 			// in the OPOBJ5 block — Client.java:8833-8838 @2e62978).
 			c.Out.P1Isaac(CLIENTPROT_OPHELD1) // Java: pIsaac(243) Client.java:8621
 		}
-		if var5 == 38 {
+		if var5 == 962 {
 			c.Out.P1Isaac(CLIENTPROT_OPHELD2) // Java: pIsaac(193) Client.java:9400
 		}
 		c.Out.P2(var6)
@@ -4974,7 +4972,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	var var13 *entity.ClientNpc
-	if var5 == 728 || var5 == 542 || var5 == 6 || var5 == 963 || var5 == 245 {
+	if var5 == 242 || var5 == 209 || var5 == 309 || var5 == 852 || var5 == 793 {
 		var13 = c.NPCs[var6]
 		if var13 != nil {
 			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var13.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var13.PathTileZ[0], 0, 0, 0)
@@ -4982,21 +4980,21 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
 			c.CrossCycle = 0
-			if var5 == 542 {
+			if var5 == 209 {
 				c.Out.P1Isaac(CLIENTPROT_OPNPC2) // Java: pIsaac(252) Client.java:9231
 			}
-			if var5 == 6 {
+			if var5 == 309 {
 				// 245.2's oplogic2 here was removed in 254 (254 OPLOGIC2
 				// lives in the OPLOC3 block — Client.java:9179-9186).
 				c.Out.P1Isaac(CLIENTPROT_OPNPC3) // Java: pIsaac(69) Client.java:8724
 			}
-			if var5 == 963 {
+			if var5 == 852 {
 				c.Out.P1Isaac(CLIENTPROT_OPNPC4) // Java: pIsaac(107) Client.java:9227
 			}
-			if var5 == 728 {
+			if var5 == 242 {
 				c.Out.P1Isaac(CLIENTPROT_OPNPC1) // Java: pIsaac(180) Client.java:9223
 			}
-			if var5 == 245 {
+			if var5 == 793 {
 				// 245.2's oplogic4 here was removed in 254 (254 OPLOGIC4
 				// lives at the OPPLAYER1 sites — Client.java:9066-9072).
 				c.Out.P1Isaac(CLIENTPROT_OPNPC5) // Java: pIsaac(118) Client.java:8736
@@ -5005,7 +5003,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	var14 := false
-	if var5 == 217 {
+	if var5 == 111 {
 		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 2, 0, var4, 0, 0, 0)
 		if !var14 {
 			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var3, c.LocalPlayer.PathTileZ[0], 2, 1, var4, 0, 0, 0)
@@ -5022,7 +5020,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.Out.P2(c.ObjSelectedSlot)
 		c.Out.P2(c.ObjSelectedInterface)
 	}
-	if var5 == 1175 {
+	if var5 == 1381 {
 		var15 := (var6 >> 14) & 0x7FFF
 		var16 := loctype.Get(var15)
 		if var16.Desc == nil {
@@ -5032,10 +5030,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 		c.AddMessage(0, var9, "")
 	}
-	if var5 == 285 {
+	if var5 == 625 {
 		c.InteractWithLoc(CLIENTPROT_OPLOC1, var3, var4, var6) // Java: interactWithLoc(1,...)
 	}
-	if var5 == 881 {
+	if var5 == 398 {
 		c.Out.P1Isaac(CLIENTPROT_OPHELDU) // Java: pIsaac(126) Client.java:9150
 		c.Out.P2(var6)
 		c.Out.P2(var3)
@@ -5054,7 +5052,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.SelectedArea = 3
 		}
 	}
-	if var5 == 391 {
+	if var5 == 563 {
 		c.Out.P1Isaac(CLIENTPROT_OPHELDT) // Java: pIsaac(188) Client.java:9720
 		c.Out.P2(var6)
 		c.Out.P2(var3)
@@ -5071,14 +5069,14 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.SelectedArea = 3
 		}
 	}
-	if var5 == 660 {
+	if var5 == 718 {
 		if c.MenuVisible {
 			c.Scene.Click(var4-4, var3-4) // Java: scene.click(c - 4, b - 4) (Client.java:10190)
 		} else {
 			c.Scene.Click(c.MouseClickY-4, c.MouseClickX-4) // Java: Client.java:10192
 		}
 	}
-	if var5 == 188 {
+	if var5 == 102 {
 		c.ObjSelected = 1
 		c.ObjSelectedSlot = var3
 		c.ObjSelectedInterface = var4
@@ -5088,17 +5086,22 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.RedrawSidebar = true
 		return
 	}
-	if var5 == 44 && !c.PressedContinueOption {
+	if var5 == 997 && !c.PressedContinueOption {
 		c.Out.P1Isaac(CLIENTPROT_RESUME_PAUSEBUTTON) // Java: pIsaac(239) Client.java:9482
 		c.Out.P2(var4)
 		c.PressedContinueOption = true
 	}
 	var var17 *objtype.ObjType
 	var18 := ""
-	if var5 == 1773 {
+	if var5 == 1328 {
 		var17 = objtype.Get(var6)
-		if var4 >= 100000 {
-			var18 = strconv.Itoa(var4) + " x " + var17.Name
+		// Java: var19 = IfType.list[var4]; var19 != null &&
+		// var19.linkObjCount[var3] >= 100000 (Client.java:8765-8768 @2e62978)
+		// — 254 reads the stack count from the inventory component's slot
+		// (with a nil guard) instead of the raw menu param var4.
+		var19If := iftype.Instances[var4]
+		if var19If != nil && var19If.InvSlotObjCount[var3] >= 100000 {
+			var18 = strconv.Itoa(var19If.InvSlotObjCount[var3]) + " x " + var17.Name
 		} else if var17.Desc == nil {
 			var18 = "It's a " + var17.Name + "."
 		} else {
@@ -5106,7 +5109,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 		c.AddMessage(0, var18, "")
 	}
-	if var5 == 900 {
+	if var5 == 829 {
 		var13 = c.NPCs[var6]
 		if var13 != nil {
 			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var13.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var13.PathTileZ[0], 0, 0, 0)
@@ -5162,7 +5165,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.Out.P2(var6)
 		}
 	}
-	if var5 == 265 {
+	if var5 == 240 {
 		var13 = c.NPCs[var6]
 		if var13 != nil {
 			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var13.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var13.PathTileZ[0], 0, 0, 0)
@@ -5176,7 +5179,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	var20 := int64(0)
-	if var5 == 679 {
+	if var5 == 902 {
 		var7 = c.MenuOption[arg1]
 		var8 = strings.Index(var7, "@whi@")
 		if var8 != -1 {
@@ -5199,10 +5202,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 		}
 	}
-	if var5 == 55 && c.InteractWithLoc(CLIENTPROT_OPLOCT, var3, var4, var6) { // Java: interactWithLoc(208,...)
+	if var5 == 899 && c.InteractWithLoc(CLIENTPROT_OPLOCT, var3, var4, var6) { // Java: interactWithLoc(208,...)
 		c.Out.P2(c.ActiveSpellID)
 	}
-	if var5 == 224 || var5 == 993 || var5 == 99 || var5 == 746 || var5 == 877 {
+	if var5 == 139 || var5 == 778 || var5 == 617 || var5 == 224 || var5 == 662 {
 		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 2, 0, var4, 0, 0, 0)
 		if !var14 {
 			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var3, c.LocalPlayer.PathTileZ[0], 2, 1, var4, 0, 0, 0)
@@ -5211,7 +5214,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.CrossY = c.MouseClickY
 		c.CrossMode = 2
 		c.CrossCycle = 0
-		if var5 == 224 {
+		if var5 == 139 {
 			// Java: oplogic7 (Client.java:8846-8855 @2e62978) — NEW 254
 			// position (&3-gated on menuParamB).
 			if var3&0x3 == 0 {
@@ -5223,7 +5226,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 			c.Out.P1Isaac(CLIENTPROT_OPOBJ1) // Java: pIsaac(141) Client.java:8856
 		}
-		if var5 == 746 {
+		if var5 == 224 {
 			// Java: oplogic8 (Client.java:8858-8864 @2e62978) — NEW 254
 			// position (was at the player-attack block in 245.2).
 			OpLogic8 += var4
@@ -5233,7 +5236,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 			c.Out.P1Isaac(CLIENTPROT_OPOBJ4) // Java: pIsaac(47) Client.java:8866
 		}
-		if var5 == 877 {
+		if var5 == 662 {
 			// Java: oplogic3 (Client.java:8832-8838 @2e62978) — NEW 254
 			// position (was at the OPHELD1 block in 245.2).
 			OpLogic3 += c.SceneBaseTileZ
@@ -5243,17 +5246,17 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 			c.Out.P1Isaac(CLIENTPROT_OPOBJ5) // Java: pIsaac(97) Client.java:8840
 		}
-		if var5 == 99 {
+		if var5 == 617 {
 			c.Out.P1Isaac(CLIENTPROT_OPOBJ3) // Java: pIsaac(55) Client.java:9650
 		}
-		if var5 == 993 {
+		if var5 == 778 {
 			c.Out.P1Isaac(CLIENTPROT_OPOBJ2) // Java: pIsaac(238) Client.java:9654
 		}
 		c.Out.P2(var3 + c.SceneBaseTileX)
 		c.Out.P2(var4 + c.SceneBaseTileZ)
 		c.Out.P2(var6)
 	}
-	if var5 == 1607 {
+	if var5 == 1714 {
 		var13 = c.NPCs[var6]
 		if var13 != nil {
 			if var13.Type.Desc == nil {
@@ -5264,7 +5267,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.AddMessage(0, var18, "")
 		}
 	}
-	if var5 == 504 {
+	if var5 == 721 {
 		// Java: oplogic1 (Client.java:8705-8710 @2e62978) — NEW 254 position.
 		OpLogic1 += var4
 		if OpLogic1 >= 139 {
@@ -5274,7 +5277,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.InteractWithLoc(CLIENTPROT_OPLOC2, var3, var4, var6) // Java: interactWithLoc(..., 213) Client.java:8712
 	}
 	var var22 *iftype.IfType
-	if var5 == 930 {
+	if var5 == 274 {
 		var22 = iftype.Instances[var4]
 		c.SpellSelected = 1
 		c.ActiveSpellID = var4
@@ -5297,7 +5300,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 		return
 	}
-	if var5 == 951 {
+	if var5 == 231 {
 		var22 = iftype.Instances[var4]
 		var23 := true
 		if var22.ClientCode > 0 {
@@ -5308,16 +5311,16 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.Out.P2(var4)
 		}
 	}
-	if var5 == 602 || var5 == 596 || var5 == 22 || var5 == 892 || var5 == 415 {
-		if var5 == 22 {
+	if var5 == 582 || var5 == 113 || var5 == 555 || var5 == 331 || var5 == 354 {
+		if var5 == 555 {
 			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON3) // Java: pIsaac(48) Client.java:9333
 		}
-		if var5 == 415 {
+		if var5 == 354 {
 			// 245.2's oplogic7 here was removed in 254 (254 OPLOGIC7 lives
 			// in the OPOBJ1 block — Client.java:8846-8854).
 			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON5) // Java: pIsaac(62) Client.java:8980
 		}
-		if var5 == 602 {
+		if var5 == 582 {
 			// Java: oplogic6 (Client.java:8958-8966 @2e62978) — NEW 254
 			// position (&3-gated on menuParamA; was at the OPLOC5 block).
 			if var6&0x3 == 0 {
@@ -5329,12 +5332,12 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON1) // Java: pIsaac(181) Client.java:8968
 		}
-		if var5 == 892 {
+		if var5 == 331 {
 			// 245.2's oplogic9 here was removed in 254 (254 OPLOGIC9 lives
 			// in the OPHELD4 block — Client.java:8605-8611).
 			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON4) // Java: pIsaac(160) Client.java:8956
 		}
-		if var5 == 596 {
+		if var5 == 113 {
 			c.Out.P1Isaac(CLIENTPROT_INV_BUTTON2) // Java: pIsaac(58) Client.java:9365
 		}
 		c.Out.P2(var6)
@@ -5351,12 +5354,12 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.SelectedArea = 3
 		}
 	}
-	if var5 == 581 {
+	if var5 == 357 {
 		// 245.2's oplogic1 here was removed in 254 (254 OPLOGIC1 lives in
 		// the OPLOC2 block — Client.java:8705-8710).
 		c.InteractWithLoc(CLIENTPROT_OPLOC4, var3, var4, var6) // Java: interactWithLoc(..., 87) Client.java:8801
 	}
-	if var5 == 965 {
+	if var5 == 370 {
 		var14 = c.TryMove(c.LocalPlayer.PathTileX[0], 0, false, var3, c.LocalPlayer.PathTileZ[0], 2, 0, var4, 0, 0, 0)
 		if !var14 {
 			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var3, c.LocalPlayer.PathTileZ[0], 2, 1, var4, 0, 0, 0)
@@ -5371,12 +5374,12 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.Out.P2(var6)
 		c.Out.P2(c.ActiveSpellID)
 	}
-	if var5 == 1501 {
+	if var5 == 1071 {
 		// 245.2's oplogic6 here was removed in 254 (254 OPLOGIC6 lives in
 		// the INV_BUTTON1 block — Client.java:8959-8966).
 		c.InteractWithLoc(CLIENTPROT_OPLOC5, var3, var4, var6) // Java: interactWithLoc(..., 147) Client.java:9128
 	}
-	if var5 == 364 {
+	if var5 == 743 {
 		// Java: oplogic2 (Client.java:9180-9185 @2e62978) — NEW 254 position
 		// (was at the OPNPC3 block in 245.2).
 		OpLogic2++
@@ -5386,7 +5389,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 		c.InteractWithLoc(CLIENTPROT_OPLOC3, var3, var4, var6) // Java: interactWithLoc(..., 98) Client.java:9187
 	}
-	if var5 == 1102 {
+	if var5 == 1152 {
 		var17 = objtype.Get(var6)
 		if var17.Desc == nil {
 			var18 = "It's a " + var17.Name + "."
@@ -5395,7 +5398,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 		c.AddMessage(0, var18, "")
 	}
-	if var5 == 960 {
+	if var5 == 225 {
 		c.Out.P1Isaac(CLIENTPROT_IF_BUTTON) // Java: pIsaac(177)
 		c.Out.P2(var4)
 		var22 = iftype.Instances[var4]
@@ -5408,7 +5411,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 		}
 	}
-	if var5 == 34 {
+	if var5 == 524 {
 		var7 = c.MenuOption[arg1]
 		var8 = strings.Index(var7, "@whi@")
 		if var8 != -1 {
@@ -5424,7 +5427,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 		}
 	}
-	if var5 == 947 {
+	if var5 == 737 {
 		c.CloseInterfaces()
 	}
 	if var5 == 275 { // Java: 254 id (was 367); pushed by addPlayerOptions
@@ -5442,7 +5445,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.Out.P2(c.ObjSelectedInterface)
 		}
 	}
-	if var5 == 465 {
+	if var5 == 435 {
 		c.Out.P1Isaac(CLIENTPROT_IF_BUTTON) // Java: pIsaac(177)
 		c.Out.P2(var4)
 		var22 = iftype.Instances[var4]
@@ -5453,21 +5456,21 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.RedrawSidebar = true
 		}
 	}
-	if var5 == 406 || var5 == 436 || var5 == 557 || var5 == 556 {
+	if var5 == 605 || var5 == 47 || var5 == 513 || var5 == 884 {
 		var7 = c.MenuOption[arg1]
 		var8 = strings.Index(var7, "@whi@")
 		if var8 != -1 {
 			var20 = jstring.ToBase37(strings.TrimSpace(var7[var8+5:]))
-			if var5 == 406 {
+			if var5 == 605 {
 				c.AddFriend(var20)
 			}
-			if var5 == 436 {
+			if var5 == 47 {
 				c.AddIgnore(var20)
 			}
-			if var5 == 557 {
+			if var5 == 513 {
 				c.RemoveFriend(var20)
 			}
-			if var5 == 556 {
+			if var5 == 884 {
 				c.RemoveIgnore(var20)
 			}
 		}
@@ -5593,14 +5596,14 @@ func (c *Client) HandlePrivateChatInput(arg2 int) {
 					if c.MouseX < width+4 {
 						if c.StaffModLevel >= 1 {
 							c.MenuOption[c.MenuSize] = "Report abuse @whi@" + var10
-							c.MenuAction[c.MenuSize] = 2034
+							c.MenuAction[c.MenuSize] = 2524
 							c.MenuSize++
 						}
 						c.MenuOption[c.MenuSize] = "Add ignore @whi@" + var10
-						c.MenuAction[c.MenuSize] = 2436
+						c.MenuAction[c.MenuSize] = 2047
 						c.MenuSize++
 						c.MenuOption[c.MenuSize] = "Add friend @whi@" + var10
-						c.MenuAction[c.MenuSize] = 2406
+						c.MenuAction[c.MenuSize] = 2605
 						c.MenuSize++
 					}
 				}
@@ -6582,7 +6585,7 @@ func (c *Client) HandleInput() {
 		return
 	}
 	c.MenuOption[0] = "Cancel"
-	c.MenuAction[0] = 1252
+	c.MenuAction[0] = 1106
 	c.MenuSize = 1
 	c.HandlePrivateChatInput(c.MouseY)
 	c.LastHoveredInterfaceID = 0
@@ -7970,9 +7973,8 @@ func (c *Client) AddPlayerOptions(arg1 int, arg2 int, arg3 *playerentity.ClientP
 		}
 	}
 	for i := range c.MenuSize {
-		// Java: menuAction[var9] == 718 (Client.java:9353 @2e62978) — Go keeps
-		// 660 until WS7 renumbers the walk-here pusher (pairwise set).
-		if c.MenuAction[i] == 660 {
+		// Java: menuAction[var9] == 718 (Client.java:9353 @2e62978)
+		if c.MenuAction[i] == 718 {
 			c.MenuOption[i] = "Walk here @whi@" + var6
 			break
 		}
@@ -8883,7 +8885,7 @@ func (c *Client) HandleMouseInput() {
 	if !c.MenuVisible {
 		if var2 == 1 && c.MenuSize > 0 {
 			var3 = c.MenuAction[c.MenuSize-1]
-			if var3 == 602 || var3 == 596 || var3 == 22 || var3 == 892 || var3 == 415 || var3 == 405 || var3 == 38 || var3 == 422 || var3 == 478 || var3 == 347 || var3 == 188 {
+			if var3 == 582 || var3 == 113 || var3 == 555 || var3 == 331 || var3 == 354 || var3 == 694 || var3 == 962 || var3 == 795 || var3 == 681 || var3 == 100 || var3 == 102 || var3 == 1328 {
 				var4 = c.MenuParamB[c.MenuSize-1]
 				var5 = c.MenuParamC[c.MenuSize-1]
 				var6 := iftype.Instances[var5]
@@ -9181,15 +9183,15 @@ func (c *Client) HandleSocialMenuOption(arg0 *iftype.IfType) bool {
 			var3--
 		}
 		c.MenuOption[c.MenuSize] = "Remove @whi@" + c.FriendName[var3]
-		c.MenuAction[c.MenuSize] = 557
+		c.MenuAction[c.MenuSize] = 513
 		c.MenuSize++
 		c.MenuOption[c.MenuSize] = "Message @whi@" + c.FriendName[var3]
-		c.MenuAction[c.MenuSize] = 679
+		c.MenuAction[c.MenuSize] = 902
 		c.MenuSize++
 		return true
 	} else if var3 >= 401 && var3 <= 500 {
 		c.MenuOption[c.MenuSize] = "Remove @whi@" + arg0.Text
-		c.MenuAction[c.MenuSize] = 556
+		c.MenuAction[c.MenuSize] = 884
 		c.MenuSize++
 		return true
 	} else {
@@ -10028,7 +10030,7 @@ func (c *Client) RemoveIgnore(arg1 int64) {
 func (c *Client) HandleViewportOptions() {
 	if c.ObjSelected == 0 && c.SpellSelected == 0 {
 		c.MenuOption[c.MenuSize] = "Walk here"
-		c.MenuAction[c.MenuSize] = 660
+		c.MenuAction[c.MenuSize] = 718
 		c.MenuParamB[c.MenuSize] = c.MouseX
 		c.MenuParamC[c.MenuSize] = c.MouseY
 		c.MenuSize++
@@ -10047,7 +10049,7 @@ func (c *Client) HandleViewportOptions() {
 				var9 := loctype.Get(var8)
 				if c.ObjSelected == 1 {
 					c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @cya@" + var9.Name
-					c.MenuAction[c.MenuSize] = 450
+					c.MenuAction[c.MenuSize] = 810
 					c.MenuParamA[c.MenuSize] = var4
 					c.MenuParamB[c.MenuSize] = var5
 					c.MenuParamC[c.MenuSize] = var6
@@ -10059,15 +10061,15 @@ func (c *Client) HandleViewportOptions() {
 								c.MenuOption[c.MenuSize] = var9.Op[j] + " @cya@" + var9.Name
 								switch j {
 								case 0:
-									c.MenuAction[c.MenuSize] = 285
+									c.MenuAction[c.MenuSize] = 625
 								case 1:
-									c.MenuAction[c.MenuSize] = 504
+									c.MenuAction[c.MenuSize] = 721
 								case 2:
-									c.MenuAction[c.MenuSize] = 364
+									c.MenuAction[c.MenuSize] = 743
 								case 3:
-									c.MenuAction[c.MenuSize] = 581
+									c.MenuAction[c.MenuSize] = 357
 								case 4:
-									c.MenuAction[c.MenuSize] = 1501
+									c.MenuAction[c.MenuSize] = 1071
 								}
 								c.MenuParamA[c.MenuSize] = var4
 								c.MenuParamB[c.MenuSize] = var5
@@ -10077,14 +10079,14 @@ func (c *Client) HandleViewportOptions() {
 						}
 					}
 					c.MenuOption[c.MenuSize] = "Examine @cya@" + var9.Name + examineIDSuffix(var9.Index)
-					c.MenuAction[c.MenuSize] = 1175
+					c.MenuAction[c.MenuSize] = 1381
 					c.MenuParamA[c.MenuSize] = var4
 					c.MenuParamB[c.MenuSize] = var5
 					c.MenuParamC[c.MenuSize] = var6
 					c.MenuSize++
 				} else if c.ActiveSpellFlags&0x4 == 4 {
 					c.MenuOption[c.MenuSize] = c.SpellCaption + " @cya@" + var9.Name
-					c.MenuAction[c.MenuSize] = 55
+					c.MenuAction[c.MenuSize] = 899
 					c.MenuParamA[c.MenuSize] = var4
 					c.MenuParamB[c.MenuSize] = var5
 					c.MenuParamC[c.MenuSize] = var6
@@ -10130,7 +10132,7 @@ func (c *Client) HandleViewportOptions() {
 						var18 := objtype.Get(v.Index)
 						if c.ObjSelected == 1 {
 							c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @lre@" + var18.Name
-							c.MenuAction[c.MenuSize] = 217
+							c.MenuAction[c.MenuSize] = 111
 							c.MenuParamA[c.MenuSize] = v.Index
 							c.MenuParamB[c.MenuSize] = var5
 							c.MenuParamC[c.MenuSize] = var6
@@ -10141,15 +10143,15 @@ func (c *Client) HandleViewportOptions() {
 									c.MenuOption[c.MenuSize] = var18.Op[j] + " @lre@" + var18.Name
 									switch j {
 									case 0:
-										c.MenuAction[c.MenuSize] = 224
+										c.MenuAction[c.MenuSize] = 139
 									case 1:
-										c.MenuAction[c.MenuSize] = 993
+										c.MenuAction[c.MenuSize] = 778
 									case 2:
-										c.MenuAction[c.MenuSize] = 99
+										c.MenuAction[c.MenuSize] = 617
 									case 3:
-										c.MenuAction[c.MenuSize] = 746
+										c.MenuAction[c.MenuSize] = 224
 									case 4:
-										c.MenuAction[c.MenuSize] = 877
+										c.MenuAction[c.MenuSize] = 662
 									}
 									c.MenuParamA[c.MenuSize] = v.Index
 									c.MenuParamB[c.MenuSize] = var5
@@ -10157,7 +10159,7 @@ func (c *Client) HandleViewportOptions() {
 									c.MenuSize++
 								} else if j == 2 {
 									c.MenuOption[c.MenuSize] = "Take @lre@" + var18.Name
-									c.MenuAction[c.MenuSize] = 99
+									c.MenuAction[c.MenuSize] = 617
 									c.MenuParamA[c.MenuSize] = v.Index
 									c.MenuParamB[c.MenuSize] = var5
 									c.MenuParamC[c.MenuSize] = var6
@@ -10165,14 +10167,14 @@ func (c *Client) HandleViewportOptions() {
 								}
 							}
 							c.MenuOption[c.MenuSize] = "Examine @lre@" + var18.Name + examineIDSuffix(var18.Index)
-							c.MenuAction[c.MenuSize] = 1102
+							c.MenuAction[c.MenuSize] = 1152
 							c.MenuParamA[c.MenuSize] = v.Index
 							c.MenuParamB[c.MenuSize] = var5
 							c.MenuParamC[c.MenuSize] = var6
 							c.MenuSize++
 						} else if c.ActiveSpellFlags&0x1 == 1 {
 							c.MenuOption[c.MenuSize] = c.SpellCaption + " @lre@" + var18.Name
-							c.MenuAction[c.MenuSize] = 965
+							c.MenuAction[c.MenuSize] = 370
 							c.MenuParamA[c.MenuSize] = v.Index
 							c.MenuParamB[c.MenuSize] = var5
 							c.MenuParamC[c.MenuSize] = var6
