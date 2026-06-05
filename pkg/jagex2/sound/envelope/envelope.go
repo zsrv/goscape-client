@@ -20,13 +20,18 @@ func NewEnvelope() *Envelope {
 	return new(Envelope)
 }
 
-// Unpack
-func (e *Envelope) Read(buf *io.Packet) {
+// Java: load (Envelope.java:43-48 @32f3062); was unpack in ≤254.
+func (e *Envelope) Load(buf *io.Packet) {
 	e.Form = buf.G1()
 	e.Start = buf.G4()
 	e.End = buf.G4()
+	e.LoadPoints(buf)
+}
 
-	// load points
+// LoadPoints reads the shape point list. NEW split in 274 (pure extraction
+// from load, no logic change) so Filter.load can re-read the filterRange
+// points mid-stream. Java: loadPoints (Envelope.java:50-59 @32f3062).
+func (e *Envelope) LoadPoints(buf *io.Packet) {
 	e.Length = buf.G1()
 	e.ShapeDelta = make([]int, e.Length)
 	e.ShapePeak = make([]int, e.Length)

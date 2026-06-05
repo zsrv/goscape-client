@@ -6,6 +6,7 @@ import (
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/envelope"
+	"github.com/zsrv/goscape-client/pkg/jagex2/sound/filter"
 )
 
 // Theme C invariant (audit sound-java #24): Java declares these buffers and the
@@ -47,6 +48,8 @@ type Tone struct {
 	HarmonicDelay     []int
 	ReverbDelay       int
 	ReverbVolume      int
+	Filter            *filter.Filter     // Java: filter — NEW in 274
+	FilterRange       *envelope.Envelope // Java: filterRange — NEW in 274
 	Length            int
 	Start             int
 }
@@ -189,6 +192,77 @@ func (t *Tone) Generate(samples, length int) []int {
 		}
 	}
 
+	// NEW in 274 (Tone.java:194-255 @32f3062): per-tone IIR filter pass.
+	// The feedforward taps read ahead by numFeedforward samples, so the pass
+	// runs in three windows: a warm-up while the output history is shorter
+	// than the feedback order, 128-sample chunks with the coefficients
+	// re-interpolated from filterRange between chunks, and a tail where the
+	// forward taps would run past the buffer. Java casts each product to
+	// (long) and the >>16 result back to (int); Go keeps 64-bit int per the
+	// Theme C note at the top of this file.
+	if t.Filter.Pairs[0] > 0 || t.Filter.Pairs[1] > 0 {
+		t.FilterRange.Reset()
+		scale := t.FilterRange.Evaluate(samples + 1)                          // Java: var30
+		numFeedforward := t.Filter.CalculateCoeffs(0, float32(scale)/65536.0) // Java: var31
+		numFeedback := t.Filter.CalculateCoeffs(1, float32(scale)/65536.0)    // Java: var32
+		if samples >= numFeedforward+numFeedback {
+			sample := 0          // Java: var33
+			limit := numFeedback // Java: var34
+			if numFeedback > samples-numFeedforward {
+				limit = samples - numFeedforward
+			}
+			for sample < limit {
+				filtered := int((int64(Buffer[sample+numFeedforward]) * int64(filter.ReduceCoeffInt)) >> 16) // Java: var35
+				for i := 0; i < numFeedforward; i++ {                                                        // Java: var36
+					filtered += int((int64(Buffer[sample+numFeedforward-i-1]) * int64(filter.CoeffInt[0][i])) >> 16)
+				}
+				for i := 0; i < sample; i++ { // Java: var37
+					filtered -= int((int64(Buffer[sample-i-1]) * int64(filter.CoeffInt[1][i])) >> 16)
+				}
+				Buffer[sample] = filtered
+				scale = t.FilterRange.Evaluate(samples + 1)
+				sample++
+			}
+			chunkSize := 128        // Java: var38
+			chunkLimit := chunkSize // Java: var39
+			for {
+				if chunkLimit > samples-numFeedforward {
+					chunkLimit = samples - numFeedforward
+				}
+				for sample < chunkLimit {
+					filtered := int((int64(Buffer[sample+numFeedforward]) * int64(filter.ReduceCoeffInt)) >> 16) // Java: var40
+					for i := 0; i < numFeedforward; i++ {                                                        // Java: var41
+						filtered += int((int64(Buffer[sample+numFeedforward-i-1]) * int64(filter.CoeffInt[0][i])) >> 16)
+					}
+					for i := 0; i < numFeedback; i++ { // Java: var42
+						filtered -= int((int64(Buffer[sample-i-1]) * int64(filter.CoeffInt[1][i])) >> 16)
+					}
+					Buffer[sample] = filtered
+					scale = t.FilterRange.Evaluate(samples + 1)
+					sample++
+				}
+				if sample >= samples-numFeedforward {
+					for sample < samples {
+						filtered := 0                                                         // Java: var43
+						for i := sample + numFeedforward - samples; i < numFeedforward; i++ { // Java: var44
+							filtered += int((int64(Buffer[sample+numFeedforward-i-1]) * int64(filter.CoeffInt[0][i])) >> 16)
+						}
+						for i := 0; i < numFeedback; i++ { // Java: var45
+							filtered -= int((int64(Buffer[sample-i-1]) * int64(filter.CoeffInt[1][i])) >> 16)
+						}
+						Buffer[sample] = filtered
+						t.FilterRange.Evaluate(samples + 1)
+						sample++
+					}
+					break
+				}
+				numFeedforward = t.Filter.CalculateCoeffs(0, float32(scale)/65536.0)
+				numFeedback = t.Filter.CalculateCoeffs(1, float32(scale)/65536.0)
+				chunkLimit += chunkSize
+			}
+		}
+	}
+
 	for sample := range samples {
 		Buffer[sample] = max(Buffer[sample], -32768)
 
@@ -217,22 +291,25 @@ func (t *Tone) Generate2(amplitude, phase, form int) int {
 	}
 }
 
-// Unpack
-func (t *Tone) Read(buf *io.Packet) {
+// Java: load (Tone.java:287-332 @32f3062); was unpack in ≤254. The smart
+// reads keep Go's 254-era names — 274 swapped the gsmart/gsmarts NAME roles
+// in Packet (274 gsmart=unsigned ≡ Go GSmartS, 274 gsmarts=signed ≡ Go
+// GSmart); semantics at every site below are unchanged.
+func (t *Tone) Load(buf *io.Packet) {
 	t.FrequencyBase = envelope.NewEnvelope()
-	t.FrequencyBase.Read(buf)
+	t.FrequencyBase.Load(buf)
 
 	t.AmplitudeBase = envelope.NewEnvelope()
-	t.AmplitudeBase.Read(buf)
+	t.AmplitudeBase.Load(buf)
 
 	hasFrequencyMod := buf.G1()
 	if hasFrequencyMod != 0 {
 		buf.Pos--
 
 		t.FrequencyModRate = envelope.NewEnvelope()
-		t.FrequencyModRate.Read(buf)
+		t.FrequencyModRate.Load(buf)
 		t.FrequencyModRange = envelope.NewEnvelope()
-		t.FrequencyModRange.Read(buf)
+		t.FrequencyModRange.Load(buf)
 	}
 
 	hasAmplitudeMod := buf.G1()
@@ -240,9 +317,9 @@ func (t *Tone) Read(buf *io.Packet) {
 		buf.Pos--
 
 		t.AmplitudeModRate = envelope.NewEnvelope()
-		t.AmplitudeModRate.Read(buf)
+		t.AmplitudeModRate.Load(buf)
 		t.AmplitudeModRange = envelope.NewEnvelope()
-		t.AmplitudeModRange.Read(buf)
+		t.AmplitudeModRange.Load(buf)
 	}
 
 	hasReleaseAttack := buf.G1()
@@ -250,9 +327,9 @@ func (t *Tone) Read(buf *io.Packet) {
 		buf.Pos--
 
 		t.Release = envelope.NewEnvelope()
-		t.Release.Read(buf)
+		t.Release.Load(buf)
 		t.Attack = envelope.NewEnvelope()
-		t.Attack.Read(buf)
+		t.Attack.Load(buf)
 	}
 
 	for i := range 10 {
@@ -270,4 +347,10 @@ func (t *Tone) Read(buf *io.Packet) {
 	t.ReverbVolume = buf.GSmartS()
 	t.Length = buf.G2()
 	t.Start = buf.G2()
+
+	// NEW in 274 (Tone.java:329-331 @32f3062): every tone carries a filter;
+	// Filter.load reads the filterRange points only when the filter migrates.
+	t.Filter = filter.NewFilter()
+	t.FilterRange = envelope.NewEnvelope()
+	t.Filter.Load(buf, t.FilterRange)
 }

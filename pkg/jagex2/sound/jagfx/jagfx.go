@@ -6,8 +6,11 @@ import (
 )
 
 var (
+	// Java: synth (JagFX.java:10 @32f3062) — was tracks in ≤254; Go keeps
+	// the descriptive 254-era name.
 	Tracks []*JagFX = make([]*JagFX, 1000)
-	// Java: delay (Wave.java:13 @176a85f) — 245.2 renames 244's delays.
+	// Java: delays (JagFX.java:13 @32f3062) — 274 reverts 245.2/254's delay
+	// back to 244's delays; Go keeps the singular.
 	Delay      []int = make([]int, 1000)
 	WaveBytes  []byte
 	WaveBuffer *io.Packet
@@ -25,10 +28,10 @@ func NewJagFX() *JagFX {
 	}
 }
 
-// Java: unpack (Wave.java:31-48 @176a85f) — 245.2 moves the static
-// waveBytes/waveBuffer initializers in here (lazy); the Go port already
-// allocated them here.
-func Unpack(buf *io.Packet) {
+// Java: init (JagFX.java:31-45 @32f3062) — was unpack in ≤254; 245.2 moved
+// the static waveBytes/waveBuffer initializers in here (lazy), where the Go
+// port already allocated them.
+func Init(buf *io.Packet) {
 	WaveBytes = make([]byte, 441_000)
 	WaveBuffer = io.NewPacket(WaveBytes)
 
@@ -40,13 +43,15 @@ func Unpack(buf *io.Packet) {
 			return
 		}
 		Tracks[id] = NewJagFX()
-		Tracks[id].Read(buf)
-		Delay[id] = Tracks[id].Trim()
+		Tracks[id].Load(buf)
+		Delay[id] = Tracks[id].OptimiseStart()
 	}
 }
 
-// Java: generate (Wave.java:52-59 @176a85f) — 245.2 swaps the params to
-// (id, loops); 244 was (loopCount, id).
+// Java: generate (JagFX.java:47-54 @32f3062) — 274 transposes the param
+// roles back to (id, loops); 254 was (loops, id), which the Go port never
+// adopted (it kept 245.2's (id, loops) as a documented deviation), so Go now
+// matches 274 as-is.
 func Generate(id, loops int) *io.Packet {
 	if Tracks[id] == nil {
 		return nil
@@ -55,13 +60,14 @@ func Generate(id, loops int) *io.Packet {
 	return sound.GetWave(loops)
 }
 
-func (w *JagFX) Read(buf *io.Packet) {
+// Java: load (JagFX.java:60-72 @32f3062); was read in ≤254.
+func (w *JagFX) Load(buf *io.Packet) {
 	for tn := range 10 {
 		hasTone := buf.G1()
 		if hasTone != 0 {
 			buf.Pos--
 			w.Tones[tn] = tone.NewTone()
-			w.Tones[tn].Read(buf)
+			w.Tones[tn].Load(buf)
 		}
 	}
 
@@ -69,7 +75,8 @@ func (w *JagFX) Read(buf *io.Packet) {
 	w.LoopEnd = buf.G2()
 }
 
-func (w *JagFX) Trim() int {
+// Java: optimiseStart (JagFX.java:74-98 @32f3062); was trim in ≤254.
+func (w *JagFX) OptimiseStart() int {
 	start := 9999999
 	for tn := range 10 {
 		if w.Tones[tn] != nil && w.Tones[tn].Start/20 < start {
@@ -99,8 +106,9 @@ func (w *JagFX) Trim() int {
 	return start
 }
 
+// Java: getWave (JagFX.java:100-119 @32f3062).
 func (w *JagFX) GetWave(loopCount int) *io.Packet {
-	length := w.Generate(loopCount)
+	length := w.MakeSound(loopCount)
 	WaveBuffer.Pos = 0
 	WaveBuffer.P4(0x52494646)   // "RIFF" ChunkID
 	WaveBuffer.IP4(length + 36) // ChunkSize
@@ -119,7 +127,9 @@ func (w *JagFX) GetWave(loopCount int) *io.Packet {
 	return WaveBuffer
 }
 
-func (w *JagFX) Generate(loopCount int) int {
+// Java: makeSound (JagFX.java:121-169 @32f3062); was generate in ≤254
+// (overload-collided with the static; 274's fresh deob splits the names).
+func (w *JagFX) MakeSound(loopCount int) int {
 	duration := 0
 	for tn := range 10 {
 		if w.Tones[tn] != nil && w.Tones[tn].Length+w.Tones[tn].Start > duration {

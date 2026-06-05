@@ -658,6 +658,7 @@ func NewClient() *Client {
 		Projectiles:               datastruct.NewLinkList[*entity.ClientProj](),
 		MenuOption:                make([]string, 500),
 		MidiActive:                true,
+		MidiFading:                true, // Java: midiFading = true (Client.java:547 @32f3062) — NEW in 274, was false ≤254
 		DesignGenderMale:          true,
 		FlameLineOffset:           make([]int, 256),
 		CompassMaskLineOffsets:    make([]int, 33),
@@ -3611,9 +3612,11 @@ func (c *Client) AddNpcs(alwaysOnTop bool) {
 // SetMidiVolume publishes the music volume (245.2 centibel scale:
 // 0/-400/-800/-1200; the audio seam converts back to its internal linear
 // domain — see audio.centibelToVol128) and, when music is active, tells the
-// consumer to re-read it. 245.2 swaps the param order (int,boolean)→
-// (boolean,int).
-// Java: setMidiVolume(boolean active, int volume) (Client.java:1445-1450 @176a85f).
+// consumer to re-read it. Param order flip-flopped across revs: 245.2
+// (boolean,int) → 254 (int,boolean) → 274 (boolean,int) again. Go kept
+// 245.2's order through the 254 port as a documented deviation, so it now
+// matches 274 as-is.
+// Java: setMidiVolume(boolean active, int volume) (Client.java:7712-7717 @32f3062).
 func (c *Client) SetMidiVolume(active bool, volume int) {
 	signlink.SetMidiVol(volume)
 	if active {
@@ -4198,12 +4201,13 @@ func (c *Client) UpdateVarp(arg1 int) {
 		case 4:
 			c.MidiActive = false
 		}
-		// Java: Client.java:10744-10752 @176a85f — gated by !lowMem, and
+		// Java: Client.java:3052-3062 @32f3062 — gated by !lowMem, and
 		// reactivation re-requests the song by id over OnDemand archive 2.
+		// 274 flips midiFading false→true here (re-enabled music fades in).
 		if c.MidiActive != var6 && !LowMemory {
 			if c.MidiActive {
 				c.MidiSong = c.NextMidiSong
-				c.MidiFading = false
+				c.MidiFading = true
 				c.OnDemand.Request(2, c.MidiSong)
 			} else {
 				c.StopMidi()
@@ -6246,8 +6250,13 @@ func (c *Client) Load() {
 	// OnDemandLoop(), so a bare loop is correct and faithful.
 
 	if !LowMemory {
+		// Java: Client.java:5165-5171 @32f3062 — 274 flips midiFading
+		// false→true (the boot song fades in) and NEW: parses applet param
+		// "music" into midiSong (parseInt(null) throws → caught → stays 0).
+		// GetParameter is intentionally not ported (Go client takes config
+		// from CLI args), which is exactly Java's no-param default of 0.
 		c.MidiSong = 0
-		c.MidiFading = false
+		c.MidiFading = true
 		c.OnDemand.Request(2, c.MidiSong)
 		for c.OnDemand.Remaining() > 0 {
 			c.OnDemandLoop()
@@ -6553,7 +6562,7 @@ func (c *Client) Load() {
 		c.DrawProgress("Unpacking sounds", 90)
 		var20 := jagSounds.Read("sounds.dat", nil)
 		var21 := io.NewPacket(var20)
-		jagfx.Unpack(var21)
+		jagfx.Init(var21) // Java: JagFX.init (274; was unpack ≤254)
 	}
 	c.DrawProgress("Unpacking interfaces", 95)
 	var48 := []*pixfont.PixFont{c.FontPlain11, c.FontPlain12, c.FontBold12, c.FontQuill8}
@@ -8369,12 +8378,14 @@ func (c *Client) GameLoop() {
 		if c.NextMusicDelay < 0 {
 			c.NextMusicDelay = 0
 		}
-		// Java: Client.java:3628-3631 — resume the deferred background song
-		// by id over OnDemand archive 2 (the 225 SetMidi name/CRC mechanism
-		// has no 244 source and its fields are never populated here).
+		// Java: Client.java:2003-2008 @32f3062 — resume the deferred
+		// background song by id over OnDemand archive 2 (the 225 SetMidi
+		// name/CRC mechanism has no 244 source and its fields are never
+		// populated here). 274 flips midiFading false→true (the resumed
+		// song fades in).
 		if c.NextMusicDelay == 0 && c.MidiActive && !LowMemory {
 			c.MidiSong = c.NextMidiSong
-			c.MidiFading = false
+			c.MidiFading = true
 			c.OnDemand.Request(2, c.MidiSong)
 		}
 	}
