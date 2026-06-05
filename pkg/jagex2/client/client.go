@@ -7347,8 +7347,12 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		} else {
 			c.Login.P1(16)
 		}
-		c.Login.P1(c.Out.Pos + 36 + 1 + 1)
-		c.Login.P1(254) // client version; Java: Client.java:2430 @2e62978
+		c.Login.P1(c.Out.Pos + 36 + 1 + 1 + 2)
+		// 274 handshake: the version (274) no longer fits a byte, so a
+		// p1(255) sentinel is followed by the real version as p2.
+		// Java: Client.java:3585-3587 @32f3062.
+		c.Login.P1(255)
+		c.Login.P2(274)
 		if LowMemory {
 			c.Login.P1(1)
 		} else {
@@ -7497,9 +7501,10 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		OpLogic7 = 0
 		OpLogic8 = 0
 		OpLogic9 = 0
-		// Java: deob/client.java:6915 — `field1382 = 0`. Intentionally
-		// not ported: field1382 is a deobfuscator artifact (assigned
-		// once, never read). Project policy excludes pure deob state.
+		// 254's tenth slot (`field1382`/oplogic10, assigned once, never
+		// read) was never ported as a deob artifact; 274 deletes the field
+		// tree-wide — the reset is oplogic1..9 only (Client.java:3691-3699
+		// @32f3062), so the Go shape is now exact.
 		c.PrepareGameScreen()
 		return
 	}
@@ -7606,7 +7611,8 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		}
 		for ; var20 >= 0; var20-- {
 			c.LoginMessage0 = "You have only just left another world"
-			c.LoginMessage1 = "Your profile will be transfered in: " + strconv.Itoa(var20) + " seconds"
+			// Java 274 fixes the "transfered" typo (Client.java:3763 @32f3062).
+			c.LoginMessage1 = "Your profile will be transferred in: " + strconv.Itoa(var20) + " seconds"
 			// Out-of-band repaint, same mechanism as the "Connecting to
 			// server..." draw above.
 			c.present(func() { c.TitleScreenDraw(true) })

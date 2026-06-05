@@ -103,10 +103,12 @@ var (
 
 // ClientVersion is the game revision this client speaks. 245.2 made the
 // Java field final (it was a plain static at 244), so it ports as a const.
-// The main banner prints it; the login handshake byte stays a literal,
-// matching Java (Client.java:2430 @2e62978).
-// Java: clientversion = 254 (signlink.java:45 @2e62978).
-const ClientVersion = 254
+// The main banner prints it; the login handshake bytes stay literals,
+// matching Java (p1(255)+p2(274), Client.java:3586-3587 @32f3062).
+// Java 274's clientversion (signlink.java @32f3062) is a dead uninitialized
+// field — the deob constant-folded the literal into every use site. Go keeps
+// the named constant as an intentional deviation.
+const ClientVersion = 274
 
 type SignLink struct {
 }
