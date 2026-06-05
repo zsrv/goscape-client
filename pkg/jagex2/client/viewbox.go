@@ -3,10 +3,11 @@ package client
 // Decision (PORTING.md §4.1): ViewBox is NOT being literally ported.
 //
 // Java 245.2 ViewBox (ViewBox.java @176a85f) extends javax.swing.JFrame
-// (244: java.awt.Frame) and exists only to:
-//   1. Create the top-level OS window, non-resizable, titled
-//      "RS2 user client - release #" + signlink.clientversion
-//      (ViewBox.java:17; 244 titled it "Jagex").
+// (244/274: java.awt.Frame) and exists only to:
+//   1. Create the top-level OS window, non-resizable, titled "Jagex"
+//      (ViewBox.java:15 @32f3062 — 274 returns to 244's literal title;
+//      245.2/254 titled it "RS2 user client - release #" +
+//      signlink.clientversion).
 //   2. Add the GameShell as the BorderLayout CENTER child and pack()
 //      (ViewBox.java:20-24), so the content area is exactly the shell's
 //      preferred size. 245.2 deleted 244's AWT insets machinery upstream:
@@ -20,7 +21,7 @@ package client
 // Every one of those responsibilities is already handled by the `platform`
 // windowing seam (native: GLFW + go-gl; browser: syscall/js + WebGL): the OS
 // window is created with the correct title and fixed size during boot
-// (cmd/client/main.go passes the 245.2 title to platform.Main), and both
+// (cmd/client/main.go passes the 274 "Jagex" title to platform.Main), and both
 // backends' coordinate systems were always content-area-relative (GLFW
 // cursor callbacks report content-area coords; the browser backend uses
 // offsetX/offsetY) — so 245.2's AWT→Swing rework converges the Java shape
@@ -76,7 +77,8 @@ type ViewBox struct {
 // window via java.awt.Frame; the Go side already does that work in
 // gameshell.go (Client.InitApplication creates the app.Window directly).
 //
-// Java signature: ViewBox(int screenHeight, GameShell shell, int screenWidth).
+// Java signature: ViewBox(GameShell shell, int width, int height) @32f3062
+// (254 ordered it (boolean, int, GameShell, int) — compensated reorder).
 func NewViewBox(arg0 int, arg2 *GameShell, arg3 int) *ViewBox {
 	var v ViewBox
 	v.Shell = arg2

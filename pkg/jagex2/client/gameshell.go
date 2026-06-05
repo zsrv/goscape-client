@@ -47,15 +47,14 @@ func (c *Client) PollKey() int {
 	return var2
 }
 
-// DrawProgressGameShell renders the boot-time loading bar used before
-// c.JagTitle has been downloaded (i.e. when Client.DrawProgress falls
+// MessageBoxGameShell renders the boot-time loading bar used before
+// c.Title has been downloaded (i.e. when Client.MessageBox falls
 // through to here because no title archive yet). Java:
-// GameShell.drawProgress(String, int) at GameShell.java:529-560.
-// 245.2 (GameShell.java:587 @176a85f) restores the (String message,
-// int percent) parameter order that 244's deob had flipped to
-// (int, String) — this port kept message-first throughout, so it
-// already matches; the 245.2 body also writes the black fill X as
-// `w/2 - 150 + percent*3`, the operand order the FillRect below uses.
+// GameShell.messageBox(String, int) at GameShell.java:553-584 @32f3062
+// (274 renames 254's drawProgress; body unchanged — its sHei/sWid
+// fields are the trap-#4 INVERTED names where sHei holds the width
+// value and sWid the height; Go keeps ScreenWidth/ScreenHeight in
+// their true roles).
 //
 // Java painted directly to the AWT base component's Graphics; the Go
 // port paints into a shared overlay PixMap (via ensureOverlay) using
@@ -63,7 +62,7 @@ func (c *Client) PollKey() int {
 // message text, then composites via OverlayPixMap.Draw. The Helvetica
 // BOLD 13 in the Java source is substituted with bootfont's monospace
 // 7x13 — pixfont's RuneScape font isn't available at this phase.
-func (c *Client) DrawProgressGameShell(message string, percent int) {
+func (c *Client) MessageBoxGameShell(message string, percent int) {
 	c.ensureOverlay()
 	c.OverlayPixMap.Bind()
 
@@ -452,7 +451,7 @@ func charFor(e platform.KeyPress) int {
 // initScreenSize sets the client's screen dimensions from the active platform
 // backend's window size. The host-shell refactor's RunShell replaces the old
 // InitApplication, which formerly set ScreenWidth/Height; this restores that
-// step. Must run before the first DrawProgress: ensureOverlay sizes the overlay
+// step. Must run before the first MessageBox: ensureOverlay sizes the overlay
 // PixMap from these, and a zero size yields an empty pixel buffer that crashes
 // the native gl.Ptr upload (panic: reflect: slice index out of range).
 func (c *Client) initScreenSize() {
@@ -461,7 +460,7 @@ func (c *Client) initScreenSize() {
 
 func (c *Client) RunShell() {
 	c.initScreenSize()
-	c.DrawProgress("Loading...", 0)
+	c.MessageBox("Loading...", 0)
 	c.Load()
 
 	var3 := 0

@@ -1,7 +1,7 @@
-// Package bootfont renders text during the boot phase before c.JagTitle
+// Package bootfont renders text during the boot phase before c.Title
 // (and thus the RuneScape pixel fonts in pixfont) has been loaded. It
 // wraps golang.org/x/image/font/basicfont.Face7x13, a monospace 7x13
-// font shipped in x/image. Used exclusively by DrawProgressGameShell.
+// font shipped in x/image. Used exclusively by MessageBoxGameShell.
 //
 // Unlike pixfont — which writes through pix2d's package globals set by
 // a prior Bind() call — bootfont.DrawString takes an explicit *PixMap

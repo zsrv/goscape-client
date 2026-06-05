@@ -10,7 +10,7 @@ import (
 // javaRandom is a faithful java.util.Random 48-bit LCG (setSeed/nextInt
 // subset). The anti-macro tooltip jitter must reproduce the Java client's
 // exact sequence for a given seed, and Go's math/rand is an unrelated
-// generator. Java: java.util.Random (PixFont.java:34 `rand`).
+// generator. Java: java.util.Random (PixFont.java:31 `rand` @32f3062).
 type javaRandom struct {
 	seed int64
 }
@@ -27,27 +27,20 @@ func (r *javaRandom) NextInt() int {
 	return int(int32(r.seed >> 16))
 }
 
-// CHAR_LOOKUP maps a Latin-1 codepoint (0..255) to a glyph table index.
-// Index 94 is the "no glyph" sentinel; index 74 is the catch-all/default
-// (the space glyph in the alphabet below). Mirrors Java PixFont.CHAR_LOOKUP
-// (PixFont.java:39, init at :381-390).
-//
-// Java's `arg1.charAt(i)` walks UTF-16 code units, so a char like '£'
-// (U+00A3) is one lookup against this table. The Go port previously
-// byte-indexed CHAR_LOOKUP[s[i]], which only works when `s` is invalid UTF-8
-// (one byte per char, our previous wire-decoded shape). After GStr now
-// returns valid UTF-8, callers must iterate runes — see GlyphIndex below.
-var CHAR_LOOKUP []int = make([]int, 256)
-
-// GlyphIndex returns CHAR_LOOKUP[r] for code points in 0..255, and the
-// catch-all sentinel (74, same as any other unmapped char in Java) for
-// code points outside Latin-1. Use this everywhere a Java caller wrote
-// `CHAR_LOOKUP[arg1.charAt(i)]`.
-func GlyphIndex(r rune) int {
+// charIndex maps a rune to the 0..255 per-char table index. Java 274 indexes
+// the [256] tables directly with the UTF-16 code unit (e.g. PixFont.java:115
+// @32f3062, `charAdvance[arg1.charAt(var4)]`) and would AIOOBE on any char
+// >= 256; game strings are Latin-1 (wire bytes -> UTF-8 transcode), so that
+// never fires in practice. The Go port walks runes and clamps out-of-Latin-1
+// code points to ' ' (the skip sentinel, advancing by the space width)
+// instead of panicking — the same defensive deviation the <=254 port made
+// via its GlyphIndex helper (274 deleted CHAR_LOOKUP and the 0..93 glyph
+// indirection it served; per-char arrays are now keyed by raw char code).
+func charIndex(r rune) int {
 	if r >= 0 && r < 256 {
-		return CHAR_LOOKUP[r]
+		return int(r)
 	}
-	return 74
+	return ' '
 }
 
 type PixFont struct {
@@ -61,104 +54,103 @@ type PixFont struct {
 	CharOffsetX    []int
 	CharOffsetY    []int
 	CharAdvance    []int
-	DrawWidth      []int
-	Random         javaRandom
-	// Java: PixFont.strikeout (PixFont.java:37) — set by the @str@ tag while
-	// drawing; drawStringTag emits a dark-red strikethrough when it ends true.
+	Rand           javaRandom
+	// Java: PixFont.strikeout (PixFont.java:34 @32f3062) — set by the @str@
+	// tag while drawing; drawStringTag emits a dark-red strikethrough when it
+	// ends true.
 	Strikeout bool
-	Height    int
+	Height    int // Java: height (274 renames 254's height2d)
 }
 
-func init() {
-	var0 := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"£$%^&*()-_=+[{]};:'@#~,<.>/?\\| ")
-	for i := range 256 {
-		//var2 := strings.IndexByte(var0, byte(i))
-		//var2 := strings.IndexRune(var0, rune(i))
-		var2 := -1
-		for r := range var0 {
-			if var0[r] == rune(i) {
-				var2 = r
-				break
-			}
-		}
-		if var2 == -1 {
-			var2 = 74
-		}
-		CHAR_LOOKUP[i] = var2
-	}
-}
-
-func NewPixFont(arg0 *io.JagFile, arg1 string) *PixFont {
+// NewPixFont loads the named font archive entry. Java 274 ctor
+// PixFont(JagFile, boolean wide, String name, byte) (PixFont.java:39-93
+// @32f3062) — the trailing byte is an unread obfuscation dummy, dropped here.
+// 254's (String, JagFile) order and its 94-glyph table are gone: 274 reads
+// 256 glyph entries and indexes them directly by char code. arg1 ("wide")
+// selects the space advance: 'I' (73) when true (q8), else 'i' (105).
+func NewPixFont(arg0 *io.JagFile, arg1 bool, arg2 string) *PixFont {
 	p := &PixFont{
-		CharMask:       make([][]int8, 94),
-		CharMaskWidth:  make([]int, 94),
-		CharMaskHeight: make([]int, 94),
-		CharOffsetX:    make([]int, 94),
-		CharOffsetY:    make([]int, 94),
-		CharAdvance:    make([]int, 95),
-		DrawWidth:      make([]int, 256),
+		CharMask:       make([][]int8, 256),
+		CharMaskWidth:  make([]int, 256),
+		CharMaskHeight: make([]int, 256),
+		CharOffsetX:    make([]int, 256),
+		CharOffsetY:    make([]int, 256),
+		CharAdvance:    make([]int, 256),
 	}
 
-	var4 := io.NewPacket(arg0.Read(arg1+".dat", nil))
-	var5 := io.NewPacket(arg0.Read("index.dat", nil))
+	var5 := io.NewPacket(arg0.Read(arg2+".dat", nil))
+	var6 := io.NewPacket(arg0.Read("index.dat", nil))
 
-	var5.Pos = var4.G2() + 4 // skip height and width
+	// Java: var6.data = var5.g2() + 4 (PixFont.java:42 @32f3062) — 274's
+	// `data` is the CURSOR (254 `pos`); Go keeps Pos=cursor / Data=buffer
+	// (trap: Packet data<->pos name swap, see io.Packet).
+	var6.Pos = var5.G2() + 4 // skip height and width
 
 	// skip palette
-	var6 := var5.G1()
-	if var6 > 0 {
-		var5.Pos += (var6 - 1) * 3
+	var7 := var6.G1()
+	if var7 > 0 {
+		var6.Pos += (var7 - 1) * 3
 	}
 
-	var8 := 0
-	for i := range 94 {
-		p.CharOffsetX[i] = int(var5.G1())
-		p.CharOffsetY[i] = int(var5.G1())
-		p.CharMaskWidth[i] = int(var5.G2())
-		var8 = p.CharMaskWidth[i]
-		p.CharMaskHeight[i] = int(var5.G2())
-		var9 := p.CharMaskHeight[i]
-		var10 := var5.G1() // pixel order
-		var11 := var8 * var9
-		p.CharMask[i] = make([]int8, var11)
-		if var10 == 0 {
-			for j := range var11 {
-				p.CharMask[i][j] = var4.G1B()
+	// Java: 274 reads 256 glyph entries (PixFont.java:47, `var8 < 256`);
+	// 254 read 94.
+	for i := range 256 {
+		p.CharOffsetX[i] = int(var6.G1())
+		p.CharOffsetY[i] = int(var6.G1())
+		p.CharMaskWidth[i] = int(var6.G2())
+		var9 := p.CharMaskWidth[i]
+		p.CharMaskHeight[i] = int(var6.G2())
+		var10 := p.CharMaskHeight[i]
+		var11 := var6.G1() // pixel order
+		var12 := var9 * var10
+		p.CharMask[i] = make([]int8, var12)
+		if var11 == 0 {
+			for j := range var12 {
+				p.CharMask[i][j] = var5.G1B()
 			}
-		} else if var10 == 1 {
-			for j := range var8 {
-				for k := range var9 {
-					p.CharMask[i][j+k*var8] = var4.G1B()
+		} else if var11 == 1 {
+			for j := range var9 {
+				for k := range var10 {
+					p.CharMask[i][j+k*var9] = var5.G1B()
 				}
 			}
 		}
-		p.Height = max(var9, p.Height)
-		p.CharOffsetX[i] = 1
-		p.CharAdvance[i] = var8 + 2
-		// Java: var12 += this.charMask[var7][...] (PixFont.java:78,87) where
-		// charMask is byte[][] (signed) — each mask byte sign-extends into the
-		// sum. CharMask is now []int8 (see field decl), so int(...) below
-		// sign-extends to match; a high-bit-set mask byte contributes a
-		// negative value, flipping CharAdvance/CharOffsetX exactly as in Java.
-		var12 := 0
-		for j := var9 / 7; j < var9; j++ {
-			var12 += int(p.CharMask[i][j*var8])
+		// Java: PixFont.java:66-68 @32f3062 — NEW in 274: only glyphs with
+		// index < 128 contribute to the font height (254 let all 94 in).
+		if var10 > p.Height && i < 128 {
+			p.Height = var10
 		}
-		if var12 <= var9/7 {
+		p.CharOffsetX[i] = 1
+		p.CharAdvance[i] = var9 + 2
+		// Java: var16 += charMask[var8][...] (PixFont.java:73,82 @32f3062)
+		// where charMask is byte[][] (signed) — each mask byte sign-extends
+		// into the sum. CharMask is []int8 (see field decl), so int(...)
+		// below sign-extends to match; a high-bit-set mask byte contributes
+		// a negative value, flipping CharAdvance/CharOffsetX exactly as in
+		// Java.
+		var16 := 0
+		for j := var10 / 7; j < var10; j++ {
+			var16 += int(p.CharMask[i][j*var9])
+		}
+		if var16 <= var10/7 {
 			p.CharAdvance[i]--
 			p.CharOffsetX[i] = 0
 		}
-		var12 = 0
-		for j := var9 / 7; j < var9; j++ {
-			var12 += int(p.CharMask[i][var8-1+j*var8])
+		var18 := 0
+		for j := var10 / 7; j < var10; j++ {
+			var18 += int(p.CharMask[i][var9-1+j*var9])
 		}
-		if var12 <= var9/7 {
+		if var18 <= var10/7 {
 			p.CharAdvance[i]--
 		}
 	}
-	p.CharAdvance[94] = p.CharAdvance[8]
-	for i := range 256 {
-		p.DrawWidth[i] = p.CharAdvance[CHAR_LOOKUP[i]]
+	// Java: PixFont.java:88-92 @32f3062 — space is ASCII 32 now (254 used
+	// glyph slot 94); its advance copies from 'I' (73) when wide, else 'i'
+	// (105). 254's drawWidth[256] precompute table is gone entirely.
+	if arg1 {
+		p.CharAdvance[32] = p.CharAdvance[73]
+	} else {
+		p.CharAdvance[32] = p.CharAdvance[105]
 	}
 	return p
 }
@@ -172,9 +164,11 @@ func (p *PixFont) DrawStringTaggableCenter(arg0 int, arg1 int, arg2 bool, arg3 i
 }
 
 // StringWidth returns the rendered pixel width of arg1. Java walks code
-// units via `arg1.charAt(var4)` (PixFont.java:115-122), so we walk runes
-// here — byte-indexing a Go (UTF-8) string would mis-handle '£' and any
-// other Latin-1 char produced by GStr after the wire→UTF-8 transcode.
+// units via `arg1.charAt(var4)` and sums `charAdvance[char]` directly
+// (PixFont.java:106-120 @32f3062 stringWid — 254's drawWidth/CHAR_LOOKUP
+// indirection is gone); we walk runes here — byte-indexing a Go (UTF-8)
+// string would mis-handle '£' and any other Latin-1 char produced by GStr
+// after the wire->UTF-8 transcode.
 func (p *PixFont) StringWidth(arg1 string) int {
 	if arg1 == "" {
 		return 0
@@ -188,137 +182,135 @@ func (p *PixFont) StringWidth(arg1 string) int {
 		if runes[i] == '@' && i+4 < len(runes) && runes[i+4] == '@' {
 			i += 4
 		} else {
-			// DrawWidth is 256 wide, keyed by Latin-1 codepoint. Map any
-			// out-of-range rune to a safe fallback (same fallback CHAR_LOOKUP
-			// uses for unmapped chars — codepoint 0, which lands on glyph 74,
-			// the catch-all space-ish width).
-			r := runes[i]
-			if r < 0 || r >= 256 {
-				r = 0
-			}
-			var3 += p.DrawWidth[r]
+			var3 += p.CharAdvance[charIndex(runes[i])]
 		}
 	}
 	return var3
 }
 
 // DrawString renders arg4 at (arg0, arg1) in arg3. Java walks code units via
-// `arg4.charAt(var6)` (PixFont.java:131); the Go port walks runes for the
-// same reason as StringWidth.
+// `arg1.charAt(var7)` (PixFont.java:128 @32f3062); the Go port walks runes
+// for the same reason as StringWidth. 274 indexes the per-char arrays
+// directly by char and skips ' ' (254 mapped through CHAR_LOOKUP with glyph
+// 94 as the skip sentinel).
 func (p *PixFont) DrawString(arg0 int, arg1 int, arg3 int, arg4 string) {
 	if arg4 == "" {
 		return
 	}
-	var8 := arg1 - p.Height
+	var6 := arg1 - p.Height
 	for _, r := range arg4 {
-		var7 := GlyphIndex(r)
-		if var7 != 94 {
-			p.DrawChar(p.CharMask[var7], arg0+p.CharOffsetX[var7], var8+p.CharOffsetY[var7], p.CharMaskWidth[var7], p.CharMaskHeight[var7], arg3)
+		var8 := charIndex(r)
+		if var8 != ' ' {
+			p.DrawChar(p.CharMask[var8], arg0+p.CharOffsetX[var8], var6+p.CharOffsetY[var8], p.CharMaskWidth[var8], p.CharMaskHeight[var8], arg3)
 		}
-		arg0 += p.CharAdvance[var7]
+		arg0 += p.CharAdvance[var8]
 	}
 }
 
 // DrawCenteredWave renders arg5 with a sinusoidal vertical offset. The
-// `var7` index in Java (PixFont.java:148) is the char-position into the
-// string; in Go we iterate rune-by-rune and use the rune ordinal so the
-// wave phase matches Java even when the input contains multi-byte chars.
+// `var9` index in Java (PixFont.java:146 @32f3062 centreStringWave) is the
+// char-position into the string; in Go we iterate rune-by-rune and use the
+// rune ordinal so the wave phase matches Java even when the input contains
+// multi-byte chars.
 func (p *PixFont) DrawCenteredWave(arg0 int, arg2 int, arg3 int, arg4 int, arg5 string) {
 	if arg5 == "" {
 		return
 	}
 	arg2 -= p.StringWidth(arg5) / 2
-	var9 := arg3 - p.Height
+	var8 := arg3 - p.Height
 	i := 0
 	for _, r := range arg5 {
-		var8 := GlyphIndex(r)
-		if var8 != 94 {
-			p.DrawChar(p.CharMask[var8], arg2+p.CharOffsetX[var8], var9+p.CharOffsetY[var8]+int(math.Sin(float64(i)/2.0+float64(arg0)/5.0)*5.0), p.CharMaskWidth[var8], p.CharMaskHeight[var8], arg4)
+		var10 := charIndex(r)
+		if var10 != ' ' {
+			p.DrawChar(p.CharMask[var10], arg2+p.CharOffsetX[var10], var8+p.CharOffsetY[var10]+int(math.Sin(float64(i)/2.0+float64(arg0)/5.0)*5.0), p.CharMaskWidth[var10], p.CharMaskHeight[var10], arg4)
 		}
-		arg2 += p.CharAdvance[var8]
+		arg2 += p.CharAdvance[var10]
 		i++
 	}
 }
 
 // DrawStringTaggable renders arg3, interpreting `@xxx@` 3-char tag sequences
-// as color escapes (PixFont.java:158-178). Java walks code units; the Go port
-// walks runes via a []rune so the i+4 lookahead matches Java exactly when
-// the string contains non-ASCII chars like '£'.
+// as color escapes (PixFont.java:153-186 @32f3062 drawStringTag). Java walks
+// code units; the Go port walks runes via a []rune so the i+4 lookahead
+// matches Java exactly when the string contains non-ASCII chars like '£'.
 func (p *PixFont) DrawStringTaggable(arg0 int, arg2 int, arg3 string, arg4 bool, arg5 int) {
-	p.Strikeout = false // Java: PixFont.java:174 — reset before the null check
+	p.Strikeout = false // Java: PixFont.java:154 @32f3062 — reset before the null check
 	var7 := arg0        // Java: var7 = start x for the strikethrough width
 	if arg3 == "" {
 		return
 	}
 	runes := []rune(arg3)
-	var9 := arg2 - p.Height
+	var8 := arg2 - p.Height
 	// C-style loop required: `i += 4` below must skip a `@xxx@` tag.
 	for i := 0; i < len(runes); i++ {
 		if runes[i] == '@' && i+4 < len(runes) && runes[i+4] == '@' {
 			// Java: unknown tags return -1 and leave the colour unchanged.
-			var10 := p.EvaluateTag(string(runes[i+1 : i+4]))
+			var10 := p.UpdateState(string(runes[i+1 : i+4]))
 			if var10 != -1 {
 				arg5 = var10
 			}
 			i += 4
 		} else {
-			var8 := GlyphIndex(runes[i])
-			if var8 != 94 {
+			var11 := charIndex(runes[i])
+			if var11 != ' ' {
 				if arg4 {
-					p.DrawChar(p.CharMask[var8], arg0+p.CharOffsetX[var8]+1, var9+p.CharOffsetY[var8]+1, p.CharMaskWidth[var8], p.CharMaskHeight[var8], 0)
+					p.DrawChar(p.CharMask[var11], arg0+p.CharOffsetX[var11]+1, var8+p.CharOffsetY[var11]+1, p.CharMaskWidth[var11], p.CharMaskHeight[var11], 0)
 				}
-				p.DrawChar(p.CharMask[var8], arg0+p.CharOffsetX[var8], var9+p.CharOffsetY[var8], p.CharMaskWidth[var8], p.CharMaskHeight[var8], arg5)
+				p.DrawChar(p.CharMask[var11], arg0+p.CharOffsetX[var11], var8+p.CharOffsetY[var11], p.CharMaskWidth[var11], p.CharMaskHeight[var11], arg5)
 			}
-			arg0 += p.CharAdvance[var8]
+			arg0 += p.CharAdvance[var11]
 		}
 	}
-	// Java: PixFont.java:199-201 — dark-red strikethrough across the rendered
-	// text when an @str@ tag was seen.
+	// Java: PixFont.java:178-180 @32f3062 — dark-red strikethrough across the
+	// rendered text when an @str@ tag was seen.
 	if p.Strikeout {
-		pix2d.HLine(8388608, int(float64(p.Height)*0.7)+var9, arg0-var7, var7)
+		pix2d.HLine(8388608, int(float64(p.Height)*0.7)+var8, arg0-var7, var7)
 	}
 }
 
 // DrawStringTooltip renders arg5 with jitter for tooltip popups, supporting
-// `@xxx@` color tags (PixFont.java:181-206). Walks runes; see
-// DrawStringTaggable for the rationale.
+// `@xxx@` color tags (PixFont.java:184-212 @32f3062 drawStringAntiMacro).
+// Walks runes; see DrawStringTaggable for the rationale.
 func (p *PixFont) DrawStringTooltip(arg0 int, arg1 bool, arg3 int, arg4 int, arg5 string, arg6 int) {
 	if arg5 == "" {
 		return
 	}
-	// Java: this.rand.setSeed((long) arg1) — java.util.Random LCG, ported
-	// exactly so the per-call alpha and per-char jitter match the Java client.
-	p.Random.SetSeed(int64(arg0))
-	var8 := (p.Random.NextInt() & 0x1F) + 192
-	var11 := arg3 - p.Height
+	// Java: rand.setSeed((long) arg5) — java.util.Random LCG, ported exactly
+	// so the per-call alpha and per-char jitter match the Java client.
+	p.Rand.SetSeed(int64(arg0))
+	var8 := (p.Rand.NextInt() & 0x1F) + 192
+	var9 := arg3 - p.Height
 	runes := []rune(arg5)
 	// C-style loop required: `i += 4` below must skip a `@xxx@` tag.
 	for i := 0; i < len(runes); i++ {
 		if runes[i] == '@' && i+4 < len(runes) && runes[i+4] == '@' {
 			// Java: unknown tags return -1 and leave the colour unchanged.
-			var12 := p.EvaluateTag(string(runes[i+1 : i+4]))
-			if var12 != -1 {
-				arg4 = var12
+			var11 := p.UpdateState(string(runes[i+1 : i+4]))
+			if var11 != -1 {
+				arg4 = var11
 			}
 			i += 4
 		} else {
-			var10 := GlyphIndex(runes[i])
-			if var10 != 94 {
+			var12 := charIndex(runes[i])
+			if var12 != ' ' {
 				if arg1 {
-					p.DrawCharAlpha(p.CharMask[var10], arg6+p.CharOffsetX[var10]+1, p.CharMaskHeight[var10], 0, var11+p.CharOffsetY[var10]+1, 192, p.CharMaskWidth[var10])
+					p.DrawCharAlpha(p.CharMask[var12], arg6+p.CharOffsetX[var12]+1, p.CharMaskHeight[var12], 0, var9+p.CharOffsetY[var12]+1, 192, p.CharMaskWidth[var12])
 				}
-				p.DrawCharAlpha(p.CharMask[var10], arg6+p.CharOffsetX[var10], p.CharMaskHeight[var10], arg4, var11+p.CharOffsetY[var10], var8, p.CharMaskWidth[var10])
+				p.DrawCharAlpha(p.CharMask[var12], arg6+p.CharOffsetX[var12], p.CharMaskHeight[var12], arg4, var9+p.CharOffsetY[var12], var8, p.CharMaskWidth[var12])
 			}
-			arg6 += p.CharAdvance[var10]
-			if p.Random.NextInt()&0x3 == 0 {
+			arg6 += p.CharAdvance[var12]
+			if p.Rand.NextInt()&0x3 == 0 {
 				arg6++
 			}
 		}
 	}
 }
 
-func (p *PixFont) EvaluateTag(arg1 string) int {
-	switch arg1 {
+// UpdateState resolves a 3-char `@xxx@` tag body to its RGB colour.
+// Java: updateState (PixFont.java:215-256 @32f3062; 254 named it
+// evaluateTag — rename only, body unchanged).
+func (p *PixFont) UpdateState(arg0 string) int {
+	switch arg0 {
 	case "red":
 		return 0xFF0000
 	case "gre":
@@ -354,10 +346,10 @@ func (p *PixFont) EvaluateTag(arg1 string) int {
 	case "gr3":
 		return 4259584
 	default:
-		// Java: PixFont.java:272-276 — "str" sets the strikeout side effect;
-		// every unrecognized tag (including "str") yields the -1 sentinel so
-		// callers keep the current colour.
-		if arg1 == "str" {
+		// Java: PixFont.java:251-254 @32f3062 — "str" sets the strikeout
+		// side effect; every unrecognized tag (including "str") yields the
+		// -1 sentinel so callers keep the current colour.
+		if arg0 == "str" {
 			p.Strikeout = true
 		}
 		return -1
@@ -485,18 +477,18 @@ func (p *PixFont) DrawCharAlpha(arg0 []int8, arg2, arg3, arg4, arg5, arg6, arg7 
 }
 
 func (p *PixFont) DrawMaskAlpha(arg0 int, arg1 int, arg2 int, arg3 []int, arg4 []int8, arg5 int, arg6 int, arg7 int, arg8 int, arg10 int) {
-	// Java: PixFont.java:424 — 32-bit blend sum; arithmetic >>8 sign-extends the
-	// top byte when bit 31 is set (audit pixfont-01)
-	var17 := int(int32((((arg10&0xFF00FF)*arg5)&0xFF00FF00)+(((arg10&0xFF00)*arg5)&0xFF0000))) >> 8
-	var15 := 256 - arg5
+	// Java: PixFont.java:371 @32f3062 — 32-bit blend sum; arithmetic >>8
+	// sign-extends the top byte when bit 31 is set (audit pixfont-01)
+	var12 := int(int32((((arg10&0xFF00FF)*arg5)&0xFF00FF00)+(((arg10&0xFF00)*arg5)&0xFF0000))) >> 8
+	var13 := 256 - arg5
 	for i := -arg0; i < 0; i++ {
 		for j := -arg2; j < 0; j++ {
 			if arg4[arg6] == 0 {
 				arg1++
 			} else {
-				var14 := arg3[arg1]
-				// Java: PixFont.java:437 — same 32-bit blend; final store wraps too
-				arg3[arg1] = int(int32((int(int32((((var14&0xFF00FF)*var15)&0xFF00FF00)+(((var14&0xFF00)*var15)&0xFF0000))) >> 8) + var17))
+				var16 := arg3[arg1]
+				// Java: PixFont.java:379 @32f3062 — same 32-bit blend; final store wraps too
+				arg3[arg1] = int(int32((int(int32((((var16&0xFF00FF)*var13)&0xFF00FF00)+(((var16&0xFF00)*var13)&0xFF0000))) >> 8) + var12))
 				arg1++
 			}
 			arg6++

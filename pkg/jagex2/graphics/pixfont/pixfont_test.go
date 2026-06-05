@@ -1,37 +1,27 @@
 package pixfont
 
 import (
-	"math/rand"
 	"testing"
 )
 
-// TestStringWidthLatin1 exercises the rune-iteration fix in StringWidth: a
-// string containing '£' (UTF-8 0xC2 0xA3) must hit the '£' glyph slot once,
-// not "two unrelated bytes". With a synthetic DrawWidth table where each
-// table index returns its own ordinal, we can verify the per-character width
-// sum matches the rune-by-rune expectation rather than the byte-by-byte one.
+// TestStringWidthLatin1 exercises the rune-iteration behavior of StringWidth:
+// a string containing '£' (UTF-8 0xC2 0xA3) must hit the '£' advance slot
+// once, not "two unrelated bytes". With a synthetic CharAdvance table where
+// each index returns its own ordinal, the per-character width sum must match
+// the rune-by-rune expectation rather than the byte-by-byte one.
 //
-// The bug this guards against: byte-indexing `str[i]` against CHAR_LOOKUP
-// would see UTF-8 continuation bytes (0xC2, 0xA3) instead of the codepoint
-// 0xA3, producing two distinct lookups summed together — and would also
-// PANIC if the underlying CHAR_LOOKUP/DrawWidth arrays were not sized 256.
+// The bug this guards against: byte-indexing `str[i]` would see UTF-8
+// continuation bytes (0xC2, 0xA3) instead of the codepoint 0xA3, producing
+// two distinct lookups summed together. (274 indexes CharAdvance directly by
+// char code — the 254-era CHAR_LOOKUP/DrawWidth indirection is gone.)
 func TestStringWidthLatin1(t *testing.T) {
-	// Save and restore the package-level CHAR_LOOKUP so we can install a
-	// deterministic table for the test.
-	saved := make([]int, 256)
-	copy(saved, CHAR_LOOKUP)
-	t.Cleanup(func() { copy(CHAR_LOOKUP, saved) })
-	for i := range CHAR_LOOKUP {
-		CHAR_LOOKUP[i] = i // identity, just so it stays in range
-	}
-
 	p := &PixFont{
-		DrawWidth: make([]int, 256),
+		CharAdvance: make([]int, 256),
 	}
 	// Every codepoint claims width = codepoint value. So a string's total
 	// width equals the sum of its codepoints.
-	for i := range p.DrawWidth {
-		p.DrawWidth[i] = i
+	for i := range p.CharAdvance {
+		p.CharAdvance[i] = i
 	}
 
 	cases := []struct {
@@ -42,10 +32,15 @@ func TestStringWidthLatin1(t *testing.T) {
 		{"empty", "", 0},
 		{"ascii", "ab", int('a') + int('b')},
 		// "£" is codepoint 0xA3 (163). Byte-indexing UTF-8 would give
-		// DrawWidth[0xC2] + DrawWidth[0xA3] = 0xC2 + 0xA3 = 0x165 instead
-		// of the correct 0xA3.
+		// CharAdvance[0xC2] + CharAdvance[0xA3] = 0xC2 + 0xA3 = 0x165
+		// instead of the correct 0xA3.
 		{"pound-only", "£", 0xA3},
+		// Space still contributes its advance in stringWid (only the draw
+		// methods use ' ' as a plot-skip sentinel; the advance always adds).
 		{"mixed", "5gp £", int('5') + int('g') + int('p') + int(' ') + 0xA3},
+		// Out-of-Latin-1 runes clamp to ' ' (charIndex guard) — Java 274
+		// would AIOOBE here; the Go port substitutes the space advance.
+		{"out-of-latin1", "€", int(' ')},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -57,21 +52,13 @@ func TestStringWidthLatin1(t *testing.T) {
 	}
 }
 
-// TestStringWidthTagSkip confirms the `@xxx@` tag skip still works after the
-// rune conversion — five runes ('@' + 3 tag chars + '@') must be consumed
-// without contributing width, regardless of whether the tag interior is
-// ASCII.
+// TestStringWidthTagSkip confirms the `@xxx@` tag skip works with the rune
+// conversion — five runes ('@' + 3 tag chars + '@') must be consumed without
+// contributing width, regardless of whether the tag interior is ASCII.
 func TestStringWidthTagSkip(t *testing.T) {
-	saved := make([]int, 256)
-	copy(saved, CHAR_LOOKUP)
-	t.Cleanup(func() { copy(CHAR_LOOKUP, saved) })
-	for i := range CHAR_LOOKUP {
-		CHAR_LOOKUP[i] = i
-	}
-
-	p := &PixFont{DrawWidth: make([]int, 256)}
-	for i := range p.DrawWidth {
-		p.DrawWidth[i] = 1 // every char contributes 1
+	p := &PixFont{CharAdvance: make([]int, 256)}
+	for i := range p.CharAdvance {
+		p.CharAdvance[i] = 1 // every char contributes 1
 	}
 
 	// "@red@ab" → tag (5 runes, contributes 0) + "ab" (2 runes, contributes 2).
@@ -84,18 +71,26 @@ func TestStringWidthTagSkip(t *testing.T) {
 	}
 }
 
-func TestRandReseedMatchesFreshSource(t *testing.T) {
-	// The DrawStringTooltip optimization reseeds a reused *rand.Rand instead of
-	// allocating a new source each call. This pins the stdlib guarantee that
-	// makes that behavior-preserving: Seed(seed) yields the same stream as
-	// New(NewSource(seed)).
-	const seed = int64(0x5eed)
-	fresh := rand.New(rand.NewSource(seed))
-	reused := rand.New(rand.NewSource(1))
-	reused.Seed(seed)
-	for i := 0; i < 10; i++ {
-		if a, b := fresh.Int(), reused.Int(); a != b {
-			t.Fatalf("draw %d: fresh=%d reused=%d (reseed diverges from fresh source)", i, a, b)
+// TestJavaRandomMatchesJavaUtilRandom pins the javaRandom LCG against
+// java.util.Random's documented stream: nextInt() values for setSeed(0) and
+// setSeed(42). The DrawStringTooltip jitter (Java drawStringAntiMacro,
+// PixFont.java:184-212 @32f3062) depends on reproducing these sequences
+// exactly.
+func TestJavaRandomMatchesJavaUtilRandom(t *testing.T) {
+	cases := []struct {
+		seed int64
+		want []int
+	}{
+		{0, []int{-1155484576, -723955400, 1033096058, -1690734402, -1557280266}},
+		{42, []int{-1170105035, 234785527, -1360544799, 205897768, 1325939940}},
+	}
+	var r javaRandom
+	for _, tc := range cases {
+		r.SetSeed(tc.seed)
+		for i, want := range tc.want {
+			if got := r.NextInt(); got != want {
+				t.Fatalf("seed %d draw %d: NextInt() = %d, want %d", tc.seed, i, got, want)
+			}
 		}
 	}
 }

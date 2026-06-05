@@ -182,9 +182,9 @@ type Client struct {
 	KeyQueueReadPos  int
 	KeyQueueWritePos int
 
-	// flameMu guards concurrent access to ImageTitle0/1 pixel buffers between
+	// flameMu guards concurrent access to TitleLeft/TitleRight pixel buffers between
 	// the RenderFlames goroutine (writer) and the render loop (reader, via
-	// TitleScreenDraw, DrawGame, DrawProgress). Replaces the former global
+	// TitleScreenDraw, DrawGame, MessageBox). Replaces the former global
 	// pixmap.OpsMu for this narrow writer↔reader hand-off.
 	flameMu sync.Mutex
 	// END GameShell
@@ -498,8 +498,8 @@ type Client struct {
 	LocalPlayer            *playerentity.ClientPlayer
 	GenderButtonImage0     *pix32.Pix32
 	GenderButtonImage1     *pix32.Pix32
-	ImageFlamesLeft        *pix32.Pix32
-	ImageFlamesRight       *pix32.Pix32
+	FlameLeft              *pix32.Pix32
+	FlameRight             *pix32.Pix32
 	ImageMapedge           *pix32.Pix32
 	ImageMapmarker0        *pix32.Pix32
 	ImageMapmarker1        *pix32.Pix32
@@ -527,12 +527,12 @@ type Client struct {
 	ImageRedstone2hv       *pix8.Pix8
 	ImageScrollbar0        *pix8.Pix8
 	ImageScrollbar1        *pix8.Pix8
-	ImageTitleBox          *pix8.Pix8
-	ImageTitleButton       *pix8.Pix8
-	FontPlain11            *pixfont.PixFont
-	FontPlain12            *pixfont.PixFont
-	FontBold12             *pixfont.PixFont
-	FontQuill8             *pixfont.PixFont
+	Titlebox               *pix8.Pix8
+	Titlebutton            *pix8.Pix8
+	P11                    *pixfont.PixFont
+	P12                    *pixfont.PixFont
+	B12                    *pixfont.PixFont
+	Q8                     *pixfont.PixFont
 	AreaBackbase1          *pixmap.PixMap
 	AreaBackbase2          *pixmap.PixMap
 	AreaBackhmid1          *pixmap.PixMap
@@ -548,8 +548,8 @@ type Client struct {
 	ImageTitle2            *pixmap.PixMap
 	ImageTitle3            *pixmap.PixMap
 	ImageTitle4            *pixmap.PixMap
-	ImageTitle0            *pixmap.PixMap
-	ImageTitle1            *pixmap.PixMap
+	TitleLeft              *pixmap.PixMap
+	TitleRight             *pixmap.PixMap
 	ImageTitle5            *pixmap.PixMap
 	ImageTitle6            *pixmap.PixMap
 	ImageTitle7            *pixmap.PixMap
@@ -558,7 +558,7 @@ type Client struct {
 	AreaMapback            *pixmap.PixMap
 	AreaViewport           *pixmap.PixMap
 	AreaChatback           *pixmap.PixMap
-	JagTitle               *io.JagFile
+	Title                  *io.JagFile
 	// OnDemand is the rev-244 model/anim/map on-demand loader, created from the
 	// versionlist archive at boot. Java: client.onDemand (OnDemand).
 	OnDemand *ondemand.OnDemand
@@ -595,7 +595,7 @@ type Client struct {
 	SceneMapIndex        []int
 	FlameBuffer3         []int
 	FlameBuffer2         []int
-	ImageRunes           []*pix8.Pix8
+	Runes                []*pix8.Pix8
 	SceneMapLocData      [][]byte
 	SceneMapLandFile     []int      // Java: sceneMapLandFile[]; allocated/filled by WS2 opcode 165 (REBUILD_NORMAL, Client.java:7744) — nil until then
 	SceneMapLocFile      []int      // Java: sceneMapLocFile[];  allocated/filled by WS2 opcode 165 (Client.java:7745) — nil until then
@@ -822,8 +822,8 @@ func (c *Client) Draw2DEntityElements() {
 			if pe.Chat != "" && (i >= c.PlayerCount || c.PublicChatSetting == 0 || c.PublicChatSetting == 3 || c.PublicChatSetting == 1 && c.IsFriend(var3.(*playerentity.ClientPlayer).Name)) {
 				c.ProjectFromGround1(pe.Height, pe)
 				if c.ProjectX > -1 && c.ChatCount < c.MAX_CHATS {
-					c.ChatWidth[c.ChatCount] = c.FontBold12.StringWidth(pe.Chat) / 2
-					c.ChatHeight[c.ChatCount] = c.FontBold12.Height
+					c.ChatWidth[c.ChatCount] = c.B12.StringWidth(pe.Chat) / 2
+					c.ChatHeight[c.ChatCount] = c.B12.Height
 					c.ChatX[c.ChatCount] = c.ProjectX
 					c.ChatY[c.ChatCount] = c.ProjectY
 					c.ChatColors[c.ChatCount] = pe.ChatColor
@@ -869,8 +869,8 @@ func (c *Client) Draw2DEntityElements() {
 						c.ProjectY -= 10
 					}
 					c.ImageHitmarks[pe.DamageType[var16]].PlotSprite(c.ProjectY-12, c.ProjectX-12)
-					c.FontPlain11.CentreString(c.ProjectY+4, 0, strconv.Itoa(pe.Damage[var16]), c.ProjectX)
-					c.FontPlain11.CentreString(c.ProjectY+3, 0xFFFFFF, strconv.Itoa(pe.Damage[var16]), c.ProjectX-1)
+					c.P11.CentreString(c.ProjectY+4, 0, strconv.Itoa(pe.Damage[var16]), c.ProjectX)
+					c.P11.CentreString(c.ProjectY+3, 0xFFFFFF, strconv.Itoa(pe.Damage[var16]), c.ProjectX-1)
 				}
 			}
 		}
@@ -952,24 +952,24 @@ func (c *Client) Draw2DEntityElements() {
 				}
 			}
 			if c.ChatStyles[i] == 0 {
-				c.FontBold12.CentreString(c.ProjectY+1, 0, var15, c.ProjectX)
-				c.FontBold12.CentreString(c.ProjectY, var10, var15, c.ProjectX)
+				c.B12.CentreString(c.ProjectY+1, 0, var15, c.ProjectX)
+				c.B12.CentreString(c.ProjectY, var10, var15, c.ProjectX)
 			}
 			if c.ChatStyles[i] == 1 {
-				c.FontBold12.DrawCenteredWave(c.SceneCycle, c.ProjectX, c.ProjectY+1, 0, var15)
-				c.FontBold12.DrawCenteredWave(c.SceneCycle, c.ProjectX, c.ProjectY, var10, var15)
+				c.B12.DrawCenteredWave(c.SceneCycle, c.ProjectX, c.ProjectY+1, 0, var15)
+				c.B12.DrawCenteredWave(c.SceneCycle, c.ProjectX, c.ProjectY, var10, var15)
 			}
 			if c.ChatStyles[i] == 2 {
-				var11 = c.FontBold12.StringWidth(var15)
+				var11 = c.B12.StringWidth(var15)
 				var12 := (150 - c.ChatTimers[i]) * (var11 + 100) / 150
 				pix2d.SetClipping(334, 0, c.ProjectX+50, c.ProjectX-50)
-				c.FontBold12.DrawString(c.ProjectX+50-var12, c.ProjectY+1, 0, var15)
-				c.FontBold12.DrawString(c.ProjectX+50-var12, c.ProjectY, var10, var15)
+				c.B12.DrawString(c.ProjectX+50-var12, c.ProjectY+1, 0, var15)
+				c.B12.DrawString(c.ProjectX+50-var12, c.ProjectY, var10, var15)
 				pix2d.ResetClipping()
 			}
 		} else {
-			c.FontBold12.CentreString(c.ProjectY+1, 0, var15, c.ProjectX)
-			c.FontBold12.CentreString(c.ProjectY, 0xFFFF00, var15, c.ProjectX)
+			c.B12.CentreString(c.ProjectY+1, 0, var15, c.ProjectX)
+			c.B12.CentreString(c.ProjectY, 0xFFFF00, var15, c.ProjectX)
 		}
 	}
 }
@@ -1021,7 +1021,7 @@ func (c *Client) DrawPrivateMessages() {
 	if c.SplitPrivateChat == 0 {
 		return
 	}
-	var2 := c.FontPlain12
+	var2 := c.P12
 	var3 := 0
 	if c.SystemUpdateTimer != 0 {
 		var3 = 1
@@ -1666,14 +1666,14 @@ func SetLowMem() {
 
 func (c *Client) DrawFlames() {
 	// DrawFlames runs from the RenderFlames goroutine, independent of
-	// c.Draw. It updates the ImageTitle0 / ImageTitle1 pixel buffers
+	// c.Draw. It updates the TitleLeft / TitleRight pixel buffers
 	// with the next animation step. The GPU upload of those buffers
-	// happens in TitleScreenDraw / DrawGame / DrawProgress each frame.
+	// happens in TitleScreenDraw / DrawGame / MessageBox each frame.
 	//
 	// Hold flameMu while writing the pixel buffers so the render loop
-	// readers (TitleScreenDraw, DrawGame, DrawProgress) don't race with
+	// readers (TitleScreenDraw, DrawGame, MessageBox) don't race with
 	// these writes. The lock is tight-scoped to just this function;
-	// each reader wraps only the consecutive ImageTitle0/1 .Draw calls.
+	// each reader wraps only the consecutive TitleLeft/TitleRight .Draw calls.
 	c.flameMu.Lock()
 	defer c.flameMu.Unlock()
 
@@ -1704,7 +1704,7 @@ func (c *Client) DrawFlames() {
 		}
 	}
 	for i := range 33920 {
-		c.ImageTitle0.Data[i] = c.ImageFlamesLeft.Pixels[i]
+		c.TitleLeft.Data[i] = c.FlameLeft.Pixels[i]
 	}
 	var4 := 0
 	var5 := 1152
@@ -1728,18 +1728,18 @@ func (c *Client) DrawFlames() {
 				var11 = var10
 				var12 = 256 - var10
 				var10 = c.FlameGradient[var10]
-				var13 = c.ImageTitle0.Data[var5]
-				c.ImageTitle0.Data[var5] = (((((var10 & 0xFF00FF) * var11) + ((var13 & 0xFF00FF) * var12)) & 0xFF00FF00) + ((((var10 & 0xFF00) * var11) + ((var13 & 0xFF00) * var12)) & 0xFF0000)) >> 8
+				var13 = c.TitleLeft.Data[var5]
+				c.TitleLeft.Data[var5] = (((((var10 & 0xFF00FF) * var11) + ((var13 & 0xFF00FF) * var12)) & 0xFF00FF00) + ((((var10 & 0xFF00) * var11) + ((var13 & 0xFF00) * var12)) & 0xFF0000)) >> 8
 				var5++
 			}
 		}
 		var5 += var8
 	}
-	// Right-side flame buffer update (left-side ImageTitle0.Data was
+	// Right-side flame buffer update (left-side TitleLeft.Data was
 	// updated above). GPU upload of both happens in TitleScreenDraw /
 	// DrawGame each frame, not here.
 	for i := range 33920 {
-		c.ImageTitle1.Data[i] = c.ImageFlamesRight.Pixels[i]
+		c.TitleRight.Data[i] = c.FlameRight.Pixels[i]
 	}
 	var4 = 0
 	var5 = 1176
@@ -1756,8 +1756,8 @@ func (c *Client) DrawFlames() {
 				var13 = var12
 				var14 := 256 - var12
 				var12 = c.FlameGradient[var12]
-				var15 := c.ImageTitle1.Data[var5]
-				c.ImageTitle1.Data[var5] = (((((var12 & 0xFF00FF) * var13) + ((var15 & 0xFF00FF) * var14)) & 0xFF00FF00) + ((((var12 & 0xFF00) * var13) + ((var15 & 0xFF00) * var14)) & 0xFF0000)) >> 8
+				var15 := c.TitleRight.Data[var5]
+				c.TitleRight.Data[var5] = (((((var12 & 0xFF00FF) * var13) + ((var15 & 0xFF00FF) * var14)) & 0xFF00FF00) + ((((var12 & 0xFF00) * var13) + ((var15 & 0xFF00) * var14)) & 0xFF0000)) >> 8
 				var5++
 			}
 		}
@@ -2511,7 +2511,7 @@ func (c *Client) Draw() {
 	if c.InGame {
 		c.DrawGame()
 	} else {
-		c.TitleScreenDraw(false)
+		c.TitleScreenDraw()
 	}
 	c.DragCycles = 0
 }
@@ -2651,10 +2651,10 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 		data = nil
 		for i := retry; i > 0; i-- {
 			if loops >= 3 {
-				c.DrawProgress("Game updated - please reload page", progress)
+				c.MessageBox("Game updated - please reload page", progress)
 				i = 10
 			} else {
-				c.DrawProgress(errorMessage+" - Retrying in "+strconv.Itoa(i), progress)
+				c.MessageBox(errorMessage+" - Retrying in "+strconv.Itoa(i), progress)
 			}
 			time.Sleep(1 * time.Second)
 		}
@@ -2669,7 +2669,7 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 	}
 
 	for data == nil {
-		c.DrawProgress("Requesting "+displayName, progress)
+		c.MessageBox("Requesting "+displayName, progress)
 		lastDownloaded := 0
 
 		reader, err := c.OpenURL(name + strconv.Itoa(crc))
@@ -2721,7 +2721,7 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 
 			downloaded := pos * 100 / packedSize
 			if downloaded != lastDownloaded {
-				c.DrawProgress("Loading "+displayName+" - "+strconv.Itoa(downloaded)+"%", progress)
+				c.MessageBox("Loading "+displayName+" - "+strconv.Itoa(downloaded)+"%", progress)
 			}
 			lastDownloaded = downloaded
 		}
@@ -2757,11 +2757,11 @@ func (c *Client) UnloadTitle() {
 	// imageTitlebutton / imageRunes / flameGradient* / flameBuffer* /
 	// imageFlamesLeft / imageFlamesRight here as a memory save. Go
 	// keeps all of them alive: keeping ImageTitle2 alive ensures
-	// LoadTitle's early-return (the `if c.ImageTitle2 != nil` guard)
-	// fires on the Logout → title transition, preventing LoadTitle from
-	// re-running LoadTitleImages → DrawProgress from mid-render. The
+	// PrepareTitle's early-return (the `if c.ImageTitle2 != nil` guard)
+	// fires on the Logout → title transition, preventing PrepareTitle from
+	// re-running LoadTitleImages → MessageBox from mid-render. The
 	// keepalive preserves the original invariant and avoids that
-	// LoadTitle-mid-render path. Combined memory cost with the kept
+	// PrepareTitle-mid-render path. Combined memory cost with the kept
 	// ImageTitleN PixMaps is well under 2 MB — negligible.
 }
 
@@ -2873,7 +2873,7 @@ func (c *Client) UpdateFlames() {
 	if c.FlameCycle0 > len(c.FlameBuffer0) {
 		c.FlameCycle0 -= len(c.FlameBuffer0)
 		var6 = int(rand.Float64() * 12.0)
-		c.UpdateFlameBuffer(c.ImageRunes[var6])
+		c.GenerateFlameCoolingMap(c.Runes[var6])
 	}
 	var8 := 0
 	for i := 1; i < var2-1; i++ {
@@ -3384,20 +3384,27 @@ func (c *Client) GetNpcPos(arg0 *io.Packet, psize int) {
 // Java source: deob/client.java:3611-3618.
 
 func (c *Client) LoadTitleImages() {
-	c.ImageTitleBox = pix8.NewPix8(c.JagTitle, "titlebox", 0)
-	c.ImageTitleButton = pix8.NewPix8(c.JagTitle, "titlebutton", 0)
-	c.ImageRunes = make([]*pix8.Pix8, 12)
+	c.Titlebox = pix8.NewPix8(c.Title, "titlebox", 0)
+	c.Titlebutton = pix8.NewPix8(c.Title, "titlebutton", 0)
+	c.Runes = make([]*pix8.Pix8, 12)
+	// Java: NEW in 274 — an "fl_icon" applet param selects an alternate rune
+	// set: when Integer.parseInt(getParameter("fl_icon")) is nonzero, the
+	// loop loads sprite index (i & 3) + 12 instead of i
+	// (Client.java:6835-6852 @32f3062). GetParameter is intentionally not
+	// ported (Go client takes config from CLI args; same precedent as the
+	// "music" param in Load) — Java's no-param path (parseInt(null) throws →
+	// caught → 0) is exactly this plain loop.
 	for i := range 12 {
-		c.ImageRunes[i] = pix8.NewPix8(c.JagTitle, "runes", i)
+		c.Runes[i] = pix8.NewPix8(c.Title, "runes", i)
 	}
-	c.ImageFlamesLeft = pix32.NewPix321(128, 265)
-	c.ImageFlamesRight = pix32.NewPix321(128, 265)
+	c.FlameLeft = pix32.NewPix321(128, 265)
+	c.FlameRight = pix32.NewPix321(128, 265)
 
 	for i := range 33920 {
-		c.ImageFlamesLeft.Pixels[i] = c.ImageTitle0.Data[i]
+		c.FlameLeft.Pixels[i] = c.TitleLeft.Data[i]
 	}
 	for i := range 33920 {
-		c.ImageFlamesRight.Pixels[i] = c.ImageTitle1.Data[i]
+		c.FlameRight.Pixels[i] = c.TitleRight.Data[i]
 	}
 
 	c.FlameGradient0 = make([]int, 256)
@@ -3445,11 +3452,11 @@ func (c *Client) LoadTitleImages() {
 	c.FlameGradient = make([]int, 256)
 	c.FlameBuffer0 = make([]int, 32768)
 	c.FlameBuffer1 = make([]int, 32768)
-	c.UpdateFlameBuffer(nil)
+	c.GenerateFlameCoolingMap(nil)
 	c.FlameBuffer3 = make([]int, 32768)
 	c.FlameBuffer2 = make([]int, 32768)
 
-	c.DrawProgress("Connecting to fileserver", 10)
+	c.MessageBox("Connecting to fileserver", 10)
 	if !c.FlameActive {
 		c.FlamesThread = true
 		c.FlameActive = true
@@ -3624,13 +3631,14 @@ func (c *Client) SetMidiVolume(active bool, volume int) {
 	}
 }
 
-// TitleScreenDraw renders the title/login screen. arg0 mirrors Java 254's new
-// boolean (Client.java:5011 @2e62978): true while a login attempt is redrawing
-// the screen out-of-band, which hides the Login/Cancel buttons.
-func (c *Client) TitleScreenDraw(arg0 bool) {
-	c.LoadTitle()
+// TitleScreenDraw renders the title/login screen. Java: titleScreenDraw()
+// (Client.java:3919-3991 @32f3062) — 274 drops 254's boolean (which hid the
+// Login/Cancel buttons while a login attempt redrew out-of-band); the
+// loginscreen==2 buttons are now always drawn.
+func (c *Client) TitleScreenDraw() {
+	c.PrepareTitle()
 	c.ImageTitle4.Bind()
-	c.ImageTitleBox.PlotSprite(0, 0)
+	c.Titlebox.PlotSprite(0, 0)
 	var2 := 360
 	var3 := 200
 	var4 := 0
@@ -3639,66 +3647,66 @@ func (c *Client) TitleScreenDraw(arg0 bool) {
 	if c.TitleScreenState == 0 {
 		var4 = var3/2 - 20
 		// Java: Client.java:5484-5485 (new in 244) — fileserver status line.
-		c.FontPlain11.DrawStringTaggableCenter(var2/2, 0x75a9a9, true, var3/2+80, c.OnDemand.Message())
-		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4, "Welcome to RuneScape")
+		c.P11.DrawStringTaggableCenter(var2/2, 0x75a9a9, true, var3/2+80, c.OnDemand.Message())
+		c.B12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4, "Welcome to RuneScape")
 		_ = var4 + 30
 		var5 = var2/2 - 80
 		var6 = var3/2 + 20
-		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
-		c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "New user")
+		c.Titlebutton.PlotSprite(var6-20, var5-73)
+		// Java: "New User" — 274 capitalises the U (Client.java:3934 @32f3062).
+		c.B12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "New User")
 		var8 := var2/2 + 80
-		c.ImageTitleButton.PlotSprite(var6-20, var8-73)
-		c.FontBold12.DrawStringTaggableCenter(var8, 0xFFFFFF, true, var6+5, "Existing User")
+		c.Titlebutton.PlotSprite(var6-20, var8-73)
+		c.B12.DrawStringTaggableCenter(var8, 0xFFFFFF, true, var6+5, "Existing User")
 	}
 	if c.TitleScreenState == 2 {
 		var4 = var3/2 - 40
 		if len(c.LoginMessage0) > 0 {
-			c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4-15, c.LoginMessage0)
-			c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4, c.LoginMessage1)
+			c.B12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4-15, c.LoginMessage0)
+			c.B12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4, c.LoginMessage1)
 			var4 += 30
 		} else {
-			c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4-7, c.LoginMessage1)
+			c.B12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var4-7, c.LoginMessage1)
 			var4 += 30
 		}
 		tmp := ""
 		if c.TitleLoginField == 0 && clientextras.LoopCycle%40 < 20 {
 			tmp = "@yel@|"
 		}
-		c.FontBold12.DrawStringTaggable(var2/2-90, var4, "Username: "+c.Username+tmp, true, 0xFFFFFF)
+		c.B12.DrawStringTaggable(var2/2-90, var4, "Username: "+c.Username+tmp, true, 0xFFFFFF)
 		var4 += 15
 		tmp2 := ""
 		if c.TitleLoginField == 1 && clientextras.LoopCycle%40 < 20 {
 			tmp2 = "@yel@|"
 		}
-		c.FontBold12.DrawStringTaggable(var2/2-88, var4, "Password: "+jstring.ToAsterisks(c.Password)+tmp2, true, 0xFFFFFF)
+		c.B12.DrawStringTaggable(var2/2-88, var4, "Password: "+jstring.ToAsterisks(c.Password)+tmp2, true, 0xFFFFFF)
 		var4 += 15 //nolint:ineffassign // Java: faithful dead final layout increment (var4 not read after)
-		// Java: if (!arg0) — 254 hides the Login/Cancel buttons during an
-		// in-flight login attempt (Client.java:5045-5053 @2e62978).
-		if !arg0 {
-			var5 = var2/2 - 80
-			var6 = var3/2 + 50
-			c.ImageTitleButton.PlotSprite(var6-20, var5-73)
-			c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Login")
-			var5 = var2/2 + 80
-			c.ImageTitleButton.PlotSprite(var6-20, var5-73)
-			c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Cancel")
-		}
+		// Java: 254's `if (!arg0)` guard (hide Login/Cancel during an
+		// in-flight login attempt) is gone in 274 — the buttons are always
+		// drawn (Client.java:3954-3960 @32f3062).
+		var5 = var2/2 - 80
+		var6 = var3/2 + 50
+		c.Titlebutton.PlotSprite(var6-20, var5-73)
+		c.B12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Login")
+		var5 = var2/2 + 80
+		c.Titlebutton.PlotSprite(var6-20, var5-73)
+		c.B12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Cancel")
 	}
 	if c.TitleScreenState == 3 {
-		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var3/2-60, "Create a free account")
+		c.B12.DrawStringTaggableCenter(var2/2, 0xFFFF00, true, var3/2-60, "Create a free account")
 		var4 = var3/2 - 35
-		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "To create a new account you need to")
+		c.B12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "To create a new account you need to")
 		var4 += 15
-		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "go back to the main RuneScape webpage")
+		c.B12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "go back to the main RuneScape webpage")
 		var4 += 15
-		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "and choose the red 'create account'")
+		c.B12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "and choose the red 'create account'")
 		var4 += 15
-		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "button at the top right of that page.")
+		c.B12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "button at the top right of that page.")
 		var4 += 15 //nolint:ineffassign // Java: faithful dead final layout increment (var4 not read after)
 		var5 = var2 / 2
 		var6 = var3/2 + 50
-		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
-		c.FontBold12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Cancel")
+		c.Titlebutton.PlotSprite(var6-20, var5-73)
+		c.B12.DrawStringTaggableCenter(var5, 0xFFFFFF, true, var6+5, "Cancel")
 	}
 	c.ImageTitle4.Draw(202, 171)
 	// The back buffer used to retain pixels across frames (Java/AWT), so the
@@ -3708,10 +3716,10 @@ func (c *Client) TitleScreenDraw(arg0 bool) {
 	// flame tiles 0 and 1 are uploaded here too (DrawFlames now only updates
 	// their pixel buffers; this entry point owns the GPU upload).
 	c.RedrawFrame = false
-	// flameMu: ImageTitle0/1 buffers are written by the RenderFlames goroutine.
+	// flameMu: TitleLeft/TitleRight buffers are written by the RenderFlames goroutine.
 	c.flameMu.Lock()
-	c.ImageTitle0.Draw(0, 0)
-	c.ImageTitle1.Draw(637, 0)
+	c.TitleLeft.Draw(0, 0)
+	c.TitleRight.Draw(637, 0)
 	c.flameMu.Unlock()
 	c.ImageTitle2.Draw(128, 0)
 	c.ImageTitle3.Draw(202, 371)
@@ -3728,16 +3736,16 @@ func (c *Client) PrepareGameScreen() {
 	c.UnloadTitle()
 	// Java: deob/client.java:3897-3902 nils imageTitle0..8 here for memory.
 	// Go keeps all nine alive because:
-	//   1. ImageTitle0/1 are uploaded every frame in DrawGame (the top-
+	//   1. TitleLeft/TitleRight are uploaded every frame in DrawGame (the top-
 	//      corner flame regions) via PixMap.Draw → platform.Active.Blit;
 	//      pre-Gio (Java/AWT) the retained back buffer preserved them
 	//      between frames, but the current platform model re-blits each frame.
-	//   2. ImageTitle2..8 stay alive so c.TitleScreenDraw → c.LoadTitle's
+	//   2. ImageTitle2..8 stay alive so c.TitleScreenDraw → c.PrepareTitle's
 	//      early-return (the `if c.ImageTitle2 != nil` guard) fires on the
-	//      Logout transition. Otherwise LoadTitle would re-run LoadTitleImages
-	//      → DrawProgress from mid-render, re-initialising title assets
+	//      Logout transition. Otherwise PrepareTitle would re-run LoadTitleImages
+	//      → MessageBox from mid-render, re-initialising title assets
 	//      while the render is in progress. The keepalive preserves the
-	//      original invariant and avoids that LoadTitle-mid-render path.
+	//      original invariant and avoids that PrepareTitle-mid-render path.
 	// Combined memory cost ~1.7 MB — negligible.
 	// Java: prepareGame PixMap dims (Client.java:2907-2920) — the classic
 	// 765x503 chrome (the 225 port used the 789-wide variants).
@@ -3935,8 +3943,8 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 									}
 									if var23.OWi == 33 || var14.InvSlotObjCount[var27] != 1 {
 										var24 := var14.InvSlotObjCount[var27]
-										c.FontPlain11.DrawString(var18+1+var33, var32+10+var21, 0, FormatObjCount(var24))
-										c.FontPlain11.DrawString(var18+var33, var32+9+var21, 0xFFFF00, FormatObjCount(var24))
+										c.P11.DrawString(var18+1+var33, var32+10+var21, 0, FormatObjCount(var24))
+										c.P11.DrawString(var18+var33, var32+9+var21, 0xFFFF00, FormatObjCount(var24))
 									}
 								}
 							}
@@ -4613,21 +4621,21 @@ func (c *Client) DrawGame() {
 	// Always upload the static frame-chrome tiles. Pre-Gio (Java/AWT)
 	// these were gated by c.RedrawFrame because AWT retained the back
 	// buffer; PixMap.Draw → platform.Active.Blit re-blits each frame.
-	// Flame tiles (ImageTitle0/1) too — DrawFlames now only updates
+	// Flame tiles (TitleLeft/TitleRight) too — DrawFlames now only updates
 	// their pixel buffers, this entry point uploads. The pixmaps stay
 	// alive past PrepareGameScreen so the top-left/top-right corners
 	// render the last flame-animation frame (matching Java's retained-
-	// back-buffer visual). Nil-guarded for the Logout → LoadTitle
+	// back-buffer visual). Nil-guarded for the Logout → PrepareTitle
 	// transition window where the buffers are briefly nil before
 	// being re-allocated.
 	//
-	// flameMu: ImageTitle0/1 buffers are written by the RenderFlames goroutine.
+	// flameMu: TitleLeft/TitleRight buffers are written by the RenderFlames goroutine.
 	c.flameMu.Lock()
-	if c.ImageTitle0 != nil {
-		c.ImageTitle0.Draw(0, 0)
+	if c.TitleLeft != nil {
+		c.TitleLeft.Draw(0, 0)
 	}
-	if c.ImageTitle1 != nil {
-		c.ImageTitle1.Draw(637, 0)
+	if c.TitleRight != nil {
+		c.TitleRight.Draw(637, 0)
 	}
 	c.flameMu.Unlock()
 	c.AreaBackleft1.Draw(0, 4)
@@ -4824,36 +4832,36 @@ func (c *Client) DrawGame() {
 		c.RedrawPrivacySettings = false
 		c.AreaBackbase1.Bind()
 		c.ImageBackbase1.PlotSprite(0, 0)
-		c.FontPlain12.DrawStringTaggableCenter(55, 0xFFFFFF, true, 28, "Public chat")
+		c.P12.DrawStringTaggableCenter(55, 0xFFFFFF, true, 28, "Public chat")
 		switch c.PublicChatSetting {
 		case 0:
-			c.FontPlain12.DrawStringTaggableCenter(55, 0xFF00, true, 41, "On")
+			c.P12.DrawStringTaggableCenter(55, 0xFF00, true, 41, "On")
 		case 1:
-			c.FontPlain12.DrawStringTaggableCenter(55, 0xFFFF00, true, 41, "Friends")
+			c.P12.DrawStringTaggableCenter(55, 0xFFFF00, true, 41, "Friends")
 		case 2:
-			c.FontPlain12.DrawStringTaggableCenter(55, 0xFF0000, true, 41, "Off")
+			c.P12.DrawStringTaggableCenter(55, 0xFF0000, true, 41, "Off")
 		case 3:
-			c.FontPlain12.DrawStringTaggableCenter(55, 0xFFFF, true, 41, "Hide")
+			c.P12.DrawStringTaggableCenter(55, 0xFFFF, true, 41, "Hide")
 		}
-		c.FontPlain12.DrawStringTaggableCenter(184, 0xFFFFFF, true, 28, "Private chat")
+		c.P12.DrawStringTaggableCenter(184, 0xFFFFFF, true, 28, "Private chat")
 		switch c.PrivateChatSetting {
 		case 0:
-			c.FontPlain12.DrawStringTaggableCenter(184, 0xFF00, true, 41, "On")
+			c.P12.DrawStringTaggableCenter(184, 0xFF00, true, 41, "On")
 		case 1:
-			c.FontPlain12.DrawStringTaggableCenter(184, 0xFFFF00, true, 41, "Friends")
+			c.P12.DrawStringTaggableCenter(184, 0xFFFF00, true, 41, "Friends")
 		case 2:
-			c.FontPlain12.DrawStringTaggableCenter(184, 0xFF0000, true, 41, "Off")
+			c.P12.DrawStringTaggableCenter(184, 0xFF0000, true, 41, "Off")
 		}
-		c.FontPlain12.DrawStringTaggableCenter(324, 0xFFFFFF, true, 28, "Trade/duel")
+		c.P12.DrawStringTaggableCenter(324, 0xFFFFFF, true, 28, "Trade/duel")
 		switch c.TradeChatSetting {
 		case 0:
-			c.FontPlain12.DrawStringTaggableCenter(324, 0xFF00, true, 41, "On")
+			c.P12.DrawStringTaggableCenter(324, 0xFF00, true, 41, "On")
 		case 1:
-			c.FontPlain12.DrawStringTaggableCenter(324, 0xFFFF00, true, 41, "Friends")
+			c.P12.DrawStringTaggableCenter(324, 0xFFFF00, true, 41, "Friends")
 		case 2:
-			c.FontPlain12.DrawStringTaggableCenter(324, 0xFF0000, true, 41, "Off")
+			c.P12.DrawStringTaggableCenter(324, 0xFF0000, true, 41, "Off")
 		}
-		c.FontPlain12.DrawStringTaggableCenter(458, 0xFFFFFF, true, 33, "Report abuse")
+		c.P12.DrawStringTaggableCenter(458, 0xFFFFFF, true, 33, "Report abuse")
 		c.AreaViewport.Bind()
 	}
 	// Always upload the PrivacySettings pixmap. Pixel content edits
@@ -4864,7 +4872,7 @@ func (c *Client) DrawGame() {
 
 // blitIf blits p with its top-left at (x, y) when p is allocated. Out-of-band
 // repaints can run in transition windows where a few area pixmaps are briefly
-// nil (e.g. Logout → LoadTitle), so guard rather than panic.
+// nil (e.g. Logout → PrepareTitle), so guard rather than panic.
 func (c *Client) blitIf(p *pixmap.PixMap, x, y int) {
 	if p != nil {
 		p.Draw(x, y)
@@ -4880,8 +4888,8 @@ func (c *Client) blitIf(p *pixmap.PixMap, x, y int) {
 // screen; PixMap.Draw re-uploads only the pixmaps whose pixels changed.
 func (c *Client) blitRetainedScreen() {
 	c.flameMu.Lock()
-	c.blitIf(c.ImageTitle0, 0, 0)
-	c.blitIf(c.ImageTitle1, 637, 0)
+	c.blitIf(c.TitleLeft, 0, 0)
+	c.blitIf(c.TitleRight, 637, 0)
 	c.flameMu.Unlock()
 	c.blitIf(c.AreaBackleft1, 0, 4)
 	c.blitIf(c.AreaBackleft2, 0, 357)
@@ -5591,7 +5599,7 @@ func (c *Client) DrawMenu() {
 	pix2d.FillRect(var3, var2, var6, var4, var5)
 	pix2d.FillRect(var3+1, var2+1, 0, var4-2, 16)
 	pix2d.DrawRect(var2+1, 0, var5-19, var3+18, var4-2)
-	c.FontBold12.DrawString(var2+3, var3+14, var6, "Choose Option")
+	c.B12.DrawString(var2+3, var3+14, var6, "Choose Option")
 	var7 := c.MouseX
 	var8 := c.MouseY
 	switch c.MenuArea {
@@ -5611,7 +5619,7 @@ func (c *Client) DrawMenu() {
 		if var7 > var2 && var7 < var2+var4 && var8 > var10-13 && var8 < var10+3 {
 			var11 = 0xFFFF00
 		}
-		c.FontBold12.DrawStringTaggable(var2+3, var10, c.MenuOption[i], true, var11)
+		c.B12.DrawStringTaggable(var2+3, var10, c.MenuOption[i], true, var11)
 	}
 }
 
@@ -5642,7 +5650,7 @@ func (c *Client) HandlePrivateChatInput(arg2 int) {
 				// x<516 bound; the right-click region becomes the message's
 				// rendered width (capped at 450).
 				if c.MouseX > 4 && arg2-4 > var7-10 && arg2-4 <= var7+3 {
-					width := c.FontPlain12.StringWidth("From:  "+var10+c.MessageText[i]) + 25 // Java: width (Client.java:3765 @176a85f)
+					width := c.P12.StringWidth("From:  "+var10+c.MessageText[i]) + 25 // Java: width (Client.java:3765 @176a85f)
 					if width > 450 {
 						width = 450
 					}
@@ -6148,6 +6156,9 @@ func (c *Client) HandleInterfaceAction(arg1 *iftype.IfType) bool {
 }
 
 func (c *Client) Load() {
+	// Java: NEW in 274 — maininit opens with a messageBox before anything
+	// else (Client.java:5089 @32f3062).
+	c.MessageBox("Starting up", 20)
 	if signlink.SunJava {
 		c.MinDel = 5
 	}
@@ -6193,11 +6204,15 @@ func (c *Client) Load() {
 	// with a rewritten body (call site: Client.java:5137 @32f3062).
 	c.GetJagChecksums()
 
-	c.JagTitle = c.GetJagFile("title screen", c.JagChecksum[1], "title", 25)
-	c.FontPlain11 = pixfont.NewPixFont(c.JagTitle, "p11")
-	c.FontPlain12 = pixfont.NewPixFont(c.JagTitle, "p12")
-	c.FontBold12 = pixfont.NewPixFont(c.JagTitle, "b12")
-	c.FontQuill8 = pixfont.NewPixFont(c.JagTitle, "q8")
+	c.Title = c.GetJagFile("title screen", c.JagChecksum[1], "title", 25)
+	// Java: Client.java:5139-5142 @32f3062 — 274 renames the font archive
+	// entries p11/p12/b12/q8 → *_full and the ctor gains the "wide" bool
+	// (true only for q8, selecting the 'I' space advance; see NewPixFont).
+	// The Java trailing (byte) 0 is an unread obfuscation dummy, not ported.
+	c.P11 = pixfont.NewPixFont(c.Title, false, "p11_full")
+	c.P12 = pixfont.NewPixFont(c.Title, false, "p12_full")
+	c.B12 = pixfont.NewPixFont(c.Title, false, "b12_full")
+	c.Q8 = pixfont.NewPixFont(c.Title, true, "q8_full")
 
 	c.LoadTitleBackground()
 	c.LoadTitleImages()
@@ -6234,7 +6249,7 @@ func (c *Client) Load() {
 
 	jagVersionList := c.GetJagFile("update list", c.JagChecksum[5], "versionlist", 60)
 
-	c.DrawProgress("Connecting to update server", 60)
+	c.MessageBox("Connecting to update server", 60)
 	// Java: rev-244 replaces the 225 bulk model/anim archives with an on-demand
 	// versionlist + per-id blobs. The OnDemand is created here and the model/anim
 	// index tables are sized from it; the actual blobs are faulted in at runtime
@@ -6271,7 +6286,7 @@ func (c *Client) Load() {
 		}
 	}
 
-	c.DrawProgress("Requesting animations", 65)
+	c.MessageBox("Requesting animations", 65)
 	animCount := c.OnDemand.GetFileCount(1)
 	for i := range animCount {
 		c.OnDemand.Request(1, i)
@@ -6279,7 +6294,7 @@ func (c *Client) Load() {
 	for c.OnDemand.Remaining() > 0 {
 		progress := animCount - c.OnDemand.Remaining()
 		if progress > 0 {
-			c.DrawProgress("Loading animations - "+strconv.Itoa(progress*100/animCount)+"%", 65)
+			c.MessageBox("Loading animations - "+strconv.Itoa(progress*100/animCount)+"%", 65)
 		}
 		c.OnDemandLoop()
 		// NEW in 274 (Client.java:5199-5202 @32f3062).
@@ -6289,7 +6304,7 @@ func (c *Client) Load() {
 		}
 	}
 
-	c.DrawProgress("Requesting models", 70)
+	c.MessageBox("Requesting models", 70)
 	modelCount := c.OnDemand.GetFileCount(0)
 	for i := range modelCount {
 		if c.OnDemand.GetModelFlags(i)&0x1 != 0 {
@@ -6300,7 +6315,7 @@ func (c *Client) Load() {
 	for c.OnDemand.Remaining() > 0 {
 		progress := modelPrefetch - c.OnDemand.Remaining()
 		if progress > 0 {
-			c.DrawProgress("Loading models - "+strconv.Itoa(progress*100/modelPrefetch)+"%", 70)
+			c.MessageBox("Loading models - "+strconv.Itoa(progress*100/modelPrefetch)+"%", 70)
 		}
 		c.OnDemandLoop()
 	}
@@ -6309,7 +6324,7 @@ func (c *Client) Load() {
 	// Java: Client.load (Client.java:1662-1690), gated if (fileStreams[0] != null).
 	// Client-TS: load (Client.ts:677-704).
 	if c.OnDemand.HasCache() {
-		c.DrawProgress("Requesting maps", 75)
+		c.MessageBox("Requesting maps", 75)
 		// tutorial-island + Lumbridge spawn regions
 		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 47, 0))
 		c.OnDemand.Request(3, c.OnDemand.GetMapFile(48, 47, 1))
@@ -6327,7 +6342,7 @@ func (c *Client) Load() {
 		for c.OnDemand.Remaining() > 0 {
 			progress := mapPrefetch - c.OnDemand.Remaining()
 			if progress > 0 {
-				c.DrawProgress("Loading maps - "+strconv.Itoa(progress*100/mapPrefetch)+"%", 75)
+				c.MessageBox("Loading maps - "+strconv.Itoa(progress*100/mapPrefetch)+"%", 75)
 			}
 			c.OnDemandLoop()
 		}
@@ -6374,7 +6389,7 @@ func (c *Client) Load() {
 		}
 	}
 
-	c.DrawProgress("Unpacking media", 80)
+	c.MessageBox("Unpacking media", 80)
 
 	c.ImageInvback = pix8.NewPix8(jagMedia, "invback", 0)
 	c.ImageChatback = pix8.NewPix8(jagMedia, "chatback", 0)
@@ -6542,12 +6557,12 @@ func (c *Client) Load() {
 		}
 	}
 
-	c.DrawProgress("Unpacking textures", 83)
+	c.MessageBox("Unpacking textures", 83)
 	pix3d.UnpackTextures(jagTextures)
 	pix3d.InitColourTable(0.8)
 	pix3d.InitPool(20)
 
-	c.DrawProgress("Unpacking config", 86)
+	c.MessageBox("Unpacking config", 86)
 	seqtype.Init(jagConfig)
 	loctype.Init(jagConfig)
 	flotype.Init(jagConfig)
@@ -6559,17 +6574,17 @@ func (c *Client) Load() {
 	varbittype.Init(jagConfig) // Java: VarBitType.unpack(var9) (Client.java:1800 @2e62978) — NEW in 254
 	objtype.MembersWorld = MembersWorld
 	if !LowMemory {
-		c.DrawProgress("Unpacking sounds", 90)
+		c.MessageBox("Unpacking sounds", 90)
 		var20 := jagSounds.Read("sounds.dat", nil)
 		var21 := io.NewPacket(var20)
 		jagfx.Init(var21) // Java: JagFX.init (274; was unpack ≤254)
 	}
-	c.DrawProgress("Unpacking interfaces", 95)
-	var48 := []*pixfont.PixFont{c.FontPlain11, c.FontPlain12, c.FontBold12, c.FontQuill8}
+	c.MessageBox("Unpacking interfaces", 95)
+	var48 := []*pixfont.PixFont{c.P11, c.P12, c.B12, c.Q8}
 	// Java 274: IfType.init(data, media, fonts) (@32f3062) — param order
 	// changed from 254's unpack(media, fonts, data).
 	iftype.Init(jagInterface, jagMedia, var48)
-	c.DrawProgress("Preparing game engine", 100)
+	c.MessageBox("Preparing game engine", 100)
 	// Java: Client.java:1917-1933 — compass mask. 244 narrows the scan width
 	// to x < 34 (225 scanned 35 columns).
 	for i := range 33 {
@@ -6767,9 +6782,9 @@ func (c *Client) OtherOverlays() {
 	var3 := var2 / 60
 	var2 %= 60
 	if var2 < 10 {
-		c.FontPlain12.DrawString(4, 329, 0xFFFF00, "System update in: "+strconv.Itoa(var3)+":0"+strconv.Itoa(var2))
+		c.P12.DrawString(4, 329, 0xFFFF00, "System update in: "+strconv.Itoa(var3)+":0"+strconv.Itoa(var2))
 	} else {
-		c.FontPlain12.DrawString(4, 329, 0xFFFF00, "System update in: "+strconv.Itoa(var3)+":"+strconv.Itoa(var2))
+		c.P12.DrawString(4, 329, 0xFFFF00, "System update in: "+strconv.Itoa(var3)+":"+strconv.Itoa(var2))
 	}
 }
 
@@ -7067,9 +7082,9 @@ func (c *Client) InteractWithLoc(arg0, arg1, arg2, arg3 int) bool {
 }
 
 func (c *Client) ShowContextMenu() {
-	var2 := c.FontBold12.StringWidth("Choose Option")
+	var2 := c.B12.StringWidth("Choose Option")
 	for i := range c.MenuSize {
-		var4 := c.FontBold12.StringWidth(c.MenuOption[i])
+		var4 := c.B12.StringWidth(c.MenuOption[i])
 		if var4 > var2 {
 			var2 = var4
 		}
@@ -7204,7 +7219,7 @@ func (c *Client) GetJagChecksums() {
 	c.JagChecksum[8] = 0
 	for c.JagChecksum[8] == 0 {
 		problem := "Unknown problem" // Java: var4
-		c.DrawProgress("Connecting to web server", 20)
+		c.MessageBox("Connecting to web server", 20)
 
 		// Java wraps the attempt in try/catch; the Go error paths set
 		// problem + JagChecksum[8]=0 and fall through to the shared retry
@@ -7262,10 +7277,10 @@ func (c *Client) GetJagChecksums() {
 			// showing the reload banner forever (deliberate hang).
 			for i := retry; i > 0; i-- {
 				if failures >= 10 {
-					c.DrawProgress("Game updated - please reload page", 10)
+					c.MessageBox("Game updated - please reload page", 10)
 					i = 10
 				} else {
-					c.DrawProgress(problem+" - Will retry in "+strconv.Itoa(i)+" secs.", 10)
+					c.MessageBox(problem+" - Will retry in "+strconv.Itoa(i)+" secs.", 10)
 				}
 				time.Sleep(1 * time.Second)
 			}
@@ -7307,7 +7322,7 @@ func (d onDemandDownloader) Get(path string) ([]byte, error) {
 	return io2.ReadAll(r)
 }
 
-func (c *Client) LoadTitle() {
+func (c *Client) PrepareTitle() {
 	// Nil the in-game pixmaps unconditionally — Java does this inside
 	// the loadTitle body (deob/client.java:6661-6668) and relies on
 	// imageTitle2 being nil on Logout transitions to enter. The Go
@@ -7320,7 +7335,7 @@ func (c *Client) LoadTitle() {
 	// early-returns when AreaChatback is non-nil, skipping the
 	// re-allocation). These assignments are no-ops on boot (already
 	// nil) and during continuous title-screen rendering (already nil
-	// from a prior LoadTitle).
+	// from a prior PrepareTitle).
 	c.AreaChatback = nil
 	c.AreaMapback = nil
 	c.AreaSidebar = nil
@@ -7331,8 +7346,8 @@ func (c *Client) LoadTitle() {
 
 	if c.ImageTitle2 != nil {
 		// Already loaded path. Two cases:
-		//   1. Boot, before LoadTitleImages has run — first LoadTitle
-		//      allocated ImageTitle0..8 but the flame buffers
+		//   1. Boot, before LoadTitleImages has run — first PrepareTitle
+		//      allocated TitleLeft/TitleRight + ImageTitle2..8 but the flame buffers
 		//      (FlameBuffer3 etc.) aren't ready yet. Don't start the
 		//      flame goroutine; LoadTitleImages will do it once the
 		//      buffers exist.
@@ -7351,9 +7366,9 @@ func (c *Client) LoadTitle() {
 		}
 		return
 	}
-	c.ImageTitle0 = pixmap.NewPixMap(128, 265)
+	c.TitleLeft = pixmap.NewPixMap(128, 265)
 	pix2d.Cls()
-	c.ImageTitle1 = pixmap.NewPixMap(128, 265)
+	c.TitleRight = pixmap.NewPixMap(128, 265)
 	pix2d.Cls()
 	c.ImageTitle2 = pixmap.NewPixMap(509, 171)
 	pix2d.Cls()
@@ -7369,7 +7384,7 @@ func (c *Client) LoadTitle() {
 	pix2d.Cls()
 	c.ImageTitle8 = pixmap.NewPixMap(75, 94)
 	pix2d.Cls()
-	if c.JagTitle != nil {
+	if c.Title != nil {
 		c.LoadTitleBackground()
 		c.LoadTitleImages()
 	}
@@ -7448,7 +7463,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		// Out-of-band repaint: show "Connecting to server..." before blocking
 		// on the socket dial. Runs on the game goroutine, not the main loop
 		// iteration, so we present explicitly.
-		c.present(func() { c.TitleScreenDraw(true) }) // Java: titleScreenDraw(true) (Client.java:2395 @2e62978)
+		c.present(func() { c.TitleScreenDraw() }) // Java: titleScreenDraw() (Client.java:3551 @32f3062)
 	}
 	// Java: openSocket(portOffset + 43594) (deob/client.java:6786). The port
 	// offset is not ported; instead the full game-server port comes from the
@@ -7778,7 +7793,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 			c.LoginMessage1 = "Your profile will be transferred in: " + strconv.Itoa(var20) + " seconds"
 			// Out-of-band repaint, same mechanism as the "Connecting to
 			// server..." draw above.
-			c.present(func() { c.TitleScreenDraw(true) })
+			c.present(func() { c.TitleScreenDraw() }) // Java: Client.java:3764 @32f3062
 			time.Sleep(1000 * time.Millisecond)
 		}
 		c.LoginFunc(arg0, arg1, arg2)
@@ -8061,8 +8076,8 @@ func (c *Client) Unload() {
 	c.FriendName = nil
 	c.FriendName37 = nil
 	c.FriendWorld = nil
-	c.ImageTitle0 = nil
-	c.ImageTitle1 = nil
+	c.TitleLeft = nil
+	c.TitleRight = nil
 	c.ImageTitle2 = nil
 	c.ImageTitle3 = nil
 	c.ImageTitle4 = nil
@@ -8636,7 +8651,7 @@ func (c *Client) DrawTooltip() {
 	if c.MenuSize > 2 {
 		var2 = var2 + "@whi@ / " + strconv.Itoa(c.MenuSize-2) + " more options"
 	}
-	c.FontBold12.DrawStringTooltip(clientextras.LoopCycle/1000, true, 15, 0xFFFFFF, var2, 4)
+	c.B12.DrawStringTooltip(clientextras.LoopCycle/1000, true, 15, 0xFFFFFF, var2, 4)
 }
 
 // Java: addMapAnim (Client.java:5531+ @2e62978; was pushSpotanims).
@@ -9468,10 +9483,10 @@ func (c *Client) TryReconnect() {
 		return
 	}
 	c.AreaViewport.Bind()
-	c.FontPlain12.CentreString(144, 0, "Connection lost", 257)
-	c.FontPlain12.CentreString(143, 0xFFFFFF, "Connection lost", 256)
-	c.FontPlain12.CentreString(159, 0, "Please wait - attempting to reestablish", 257)
-	c.FontPlain12.CentreString(158, 0xFFFFFF, "Please wait - attempting to reestablish", 256)
+	c.P12.CentreString(144, 0, "Connection lost", 257)
+	c.P12.CentreString(143, 0xFFFFFF, "Connection lost", 256)
+	c.P12.CentreString(159, 0, "Please wait - attempting to reestablish", 257)
+	c.P12.CentreString(158, 0xFFFFFF, "Please wait - attempting to reestablish", 256)
 	c.presentLoadingMessage()
 	c.MinimapState = 0 // Java: Client.java:6158 @32f3062 — NEW in 274
 	c.FlagSceneTileX = 0
@@ -9488,7 +9503,7 @@ func (c *Client) TryReconnect() {
 	}
 }
 
-func (c *Client) UpdateFlameBuffer(image *pix8.Pix8) {
+func (c *Client) GenerateFlameCoolingMap(image *pix8.Pix8) {
 	height := 256
 
 	for i := range len(c.FlameBuffer0) {
@@ -9594,8 +9609,8 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 func (c *Client) UpdateSceneState() {
 	if LowMemory && c.SceneState == 2 && clientbuild.LevelBuilt != c.CurrentLevel {
 		c.AreaViewport.Bind()
-		c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
-		c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
+		c.P12.CentreString(151, 0, "Loading - please wait.", 257)
+		c.P12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
 		c.presentLoadingMessage()
 		c.SceneState = 1
 		c.SceneLoadStartTime = time.Now().UnixMilli()
@@ -10058,7 +10073,7 @@ func (c *Client) GetIfVar(arg0 int, arg2 *iftype.IfType) (result int) {
 // the errorfont package (the "Go" bold typeface), then composites via
 // OverlayPixMap.Draw. errorfont substitutes for Java's Helvetica BOLD 16/20
 // and is always available even when the error fires before the cache fonts
-// load (the cause of the nil-FontBold12 SIGSEGV when a host was specified).
+// load (the cause of the nil-B12 SIGSEGV when a host was specified).
 // The branch ordering, frame-rate
 // throttle, and FlameActive=false side effects mirror Java exactly so
 // the rest of the client stays in sync. The early return on
@@ -10081,7 +10096,7 @@ func (c *Client) DrawError() {
 	// being loaded. The errorfont package (the embedded "Go" bold typeface) is
 	// the Go analogue — always available and a close match for Java's Helvetica
 	// BOLD — so route the error text through it (writing straight to the
-	// overlay) instead of the cache-loaded FontBold12, which is nil on these
+	// overlay) instead of the cache-loaded B12, which is nil on these
 	// early-error paths. Baseline-y semantics match AWT drawString.
 	drawText := func(x, y, color int, s string) {
 		errorfont.DrawString(c.OverlayPixMap, x, y, color, s)
@@ -10090,7 +10105,7 @@ func (c *Client) DrawError() {
 	if c.ErrorLoading {
 		c.FlameActive = false
 		// Java: Font Helvetica BOLD 16, yellow header; BOLD 12 white body.
-		// Go: FontBold12 throughout — same divergence as elsewhere.
+		// Go: B12 throughout — same divergence as elsewhere.
 		drawText(30, 35, 0xFFFF00,
 			"Sorry, an error has occured whilst loading RuneScape")
 		drawText(30, 85, 0xFFFFFF,
@@ -10108,7 +10123,7 @@ func (c *Client) DrawError() {
 	}
 	if c.ErrorHost {
 		c.FlameActive = false
-		// Java: Font Helvetica BOLD 20, white. Go: FontBold12.
+		// Java: Font Helvetica BOLD 20, white. Go: B12.
 		drawText(50, 50, 0xFFFFFF, "Error - unable to load game!")
 		drawText(50, 100, 0xFFFFFF, "To play RuneScape make sure you play from")
 		drawText(50, 150, 0xFFFFFF, "http://www.runescape.com")
@@ -10130,13 +10145,13 @@ func (c *Client) DrawError() {
 }
 
 func (c *Client) LoadTitleBackground() {
-	src := c.JagTitle.Read("title.dat", nil)
+	src := c.Title.Read("title.dat", nil)
 	background := pix32.NewPix322(src)
 
-	c.ImageTitle0.Bind()
+	c.TitleLeft.Bind()
 	background.QuickPlotSprite(0, 0)
 
-	c.ImageTitle1.Bind()
+	c.TitleRight.Bind()
 	background.QuickPlotSprite(-637, 0)
 
 	c.ImageTitle2.Bind()
@@ -10172,10 +10187,10 @@ func (c *Client) LoadTitleBackground() {
 		}
 	}
 
-	c.ImageTitle0.Bind()
+	c.TitleLeft.Bind()
 	background.QuickPlotSprite(382, 0)
 
-	c.ImageTitle1.Bind()
+	c.TitleRight.Bind()
 	background.QuickPlotSprite(-255, 0)
 
 	c.ImageTitle2.Bind()
@@ -10199,7 +10214,7 @@ func (c *Client) LoadTitleBackground() {
 	c.ImageTitle8.Bind()
 	background.QuickPlotSprite(-180, -171)
 
-	logo := pix32.NewPix323(c.JagTitle, "logo", 0)
+	logo := pix32.NewPix323(c.Title, "logo", 0)
 	c.ImageTitle2.Bind()
 	logo.PlotSprite(18, 382-logo.Wi/2-128) // Java: hard 382 (= 765/2), Client.java:5391
 }
@@ -10475,18 +10490,18 @@ func (c *Client) DrawChatback() {
 	pix3d.LineOffset = c.AreaChatbackOffsets
 	c.ImageChatback.PlotSprite(0, 0)
 	if c.ShowSocialInput {
-		c.FontBold12.CentreString(40, 0, c.SocialMessage, 239)
-		c.FontBold12.CentreString(60, 128, c.SocialInput+"*", 239)
+		c.B12.CentreString(40, 0, c.SocialMessage, 239)
+		c.B12.CentreString(60, 128, c.SocialInput+"*", 239)
 	} else if c.ChatbackInputOpen {
-		c.FontBold12.CentreString(40, 0, "Enter amount:", 239)
-		c.FontBold12.CentreString(60, 128, c.ChatbackInput+"*", 239)
+		c.B12.CentreString(40, 0, "Enter amount:", 239)
+		c.B12.CentreString(60, 128, c.ChatbackInput+"*", 239)
 	} else if c.ModalMessage != "" {
-		c.FontBold12.CentreString(40, 0, c.ModalMessage, 239)
-		c.FontBold12.CentreString(60, 128, "Click to continue", 239)
+		c.B12.CentreString(40, 0, c.ModalMessage, 239)
+		c.B12.CentreString(60, 128, "Click to continue", 239)
 	} else if c.ChatLayerID != -1 {
 		c.DrawInterface(0, 0, iftype.List[c.ChatLayerID], 0)
 	} else if c.TutLayerID == -1 {
-		var2 := c.FontPlain12
+		var2 := c.P12
 		var3 := 0
 		pix2d.SetClipping(77, 0, 463, 0)
 		// Java: drawChat message loop (Client.java:11834-11890, 244 form) —
@@ -10924,8 +10939,8 @@ func (c *Client) TcpIn() (ok bool) {
 		c.SceneState = 1
 		c.SceneLoadStartTime = time.Now().UnixMilli()
 		c.AreaViewport.Bind()
-		c.FontPlain12.CentreString(151, 0, "Loading - please wait.", 257)
-		c.FontPlain12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
+		c.P12.CentreString(151, 0, "Loading - please wait.", 257)
+		c.P12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
 		c.presentLoadingMessage()
 		regions := 0
 		for x := (c.SceneCenterZoneX - 6) / 8; x <= (c.SceneCenterZoneX+6)/8; x++ {
@@ -11938,13 +11953,13 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 	}
 }
 
-func (c *Client) DrawProgress(message string, percent int) {
+func (c *Client) MessageBox(message string, percent int) {
 	c.LastProgressPercent = percent // Java: Client.java:2168-2169
 	c.LastProgressMessage = message
-	c.LoadTitle()
+	c.PrepareTitle()
 
-	if c.JagTitle == nil {
-		c.DrawProgressGameShell(message, percent)
+	if c.Title == nil {
+		c.MessageBoxGameShell(message, percent)
 		return
 	}
 
@@ -11958,19 +11973,19 @@ func (c *Client) DrawProgress(message string, percent int) {
 		y := 200
 
 		offsetY := 20
-		c.FontBold12.CentreString(y/2-26-offsetY, 0xFFFFFF, "RuneScape is loading - please wait...", x/2)
+		c.B12.CentreString(y/2-26-offsetY, 0xFFFFFF, "RuneScape is loading - please wait...", x/2)
 
 		midY := y/2 - 18 - offsetY
 		pix2d.DrawRect(x/2-152, 0x8C1111, 34, midY, 304)
 		pix2d.DrawRect(x/2-151, 0, 32, midY+1, 302)
 		pix2d.FillRect(midY+2, x/2-150, 0x8C1111, percent*3, 30)
 		pix2d.FillRect(midY+2, x/2-150+percent*3, 0, 300-percent*3, 30)
-		c.FontBold12.CentreString(y/2+5-offsetY, 0xFFFFFF, message, x/2)
+		c.B12.CentreString(y/2+5-offsetY, 0xFFFFFF, message, x/2)
 
 		c.ImageTitle4.Draw(202, 171)
 		// Always upload the static title tiles + flame tiles.
 		//
-		// ImageTitle0 / ImageTitle1 are dual-purpose: they hold the
+		// TitleLeft / TitleRight are dual-purpose: they hold the
 		// static title flame imagery when flames are inactive, and are
 		// overwritten by DrawFlames with animated pixels when active.
 		// Either way the buffer content is correct, so upload
@@ -11979,10 +11994,10 @@ func (c *Client) DrawProgress(message string, percent int) {
 		// post-refactor) and produced white rectangles at (0,0) /
 		// (637,0) during boot when FlameActive is true.
 		c.RedrawFrame = false
-		// flameMu: ImageTitle0/1 buffers are written by the RenderFlames goroutine.
+		// flameMu: TitleLeft/TitleRight buffers are written by the RenderFlames goroutine.
 		c.flameMu.Lock()
-		c.ImageTitle0.Draw(0, 0)
-		c.ImageTitle1.Draw(637, 0)
+		c.TitleLeft.Draw(0, 0)
+		c.TitleRight.Draw(637, 0)
 		c.flameMu.Unlock()
 		c.ImageTitle2.Draw(128, 0)
 		c.ImageTitle3.Draw(202, 371)
@@ -11994,7 +12009,7 @@ func (c *Client) DrawProgress(message string, percent int) {
 }
 
 // ensureOverlay lazily allocates the fullscreen overlay PixMap used by
-// DrawError and DrawProgressGameShell. Lazy because ScreenWidth/Height
+// DrawError and MessageBoxGameShell. Lazy because ScreenWidth/Height
 // are set before RunShell runs (by the platform backend / caller), after
 // NewClient returns; the overlay is allocated lazily on first use because
 // NewClient runs before a backend or texture exists. If the screen size

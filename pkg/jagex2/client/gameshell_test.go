@@ -10,7 +10,7 @@ import (
 
 // Regression: the host-shell refactor (036edcb) removed InitApplication, which
 // used to set ScreenWidth/Height from the window size. RunShell must
-// re-establish them from the active backend BEFORE the first DrawProgress, or
+// re-establish them from the active backend BEFORE the first MessageBox, or
 // ensureOverlay allocates a 0x0 PixMap whose empty pixel slice crashes the
 // native gl.Ptr (panic: reflect: slice index out of range). This test does NOT
 // hand-set the dimensions — it exercises the production init path.
@@ -29,7 +29,7 @@ func TestInitScreenSize_PopulatesNonEmptyOverlayFromBackend(t *testing.T) {
 
 	// With dims set, the overlay must allocate non-empty (the crash precondition).
 	c.Refresh = true
-	c.DrawProgressGameShell("Loading...", 0)
+	c.MessageBoxGameShell("Loading...", 0)
 	if c.OverlayPixMap == nil || len(c.OverlayPixMap.Data) == 0 {
 		t.Fatalf("overlay empty after boot init; native gl.Ptr would panic")
 	}
@@ -39,7 +39,7 @@ func TestInitScreenSize_PopulatesNonEmptyOverlayFromBackend(t *testing.T) {
 	}
 }
 
-func TestDrawProgressGameShell_ClearsRefreshAndPopulatesOverlay(t *testing.T) {
+func TestMessageBoxGameShell_ClearsRefreshAndPopulatesOverlay(t *testing.T) {
 	t.Cleanup(pix2d.Reset)
 	defer platformtest.Install()()
 
@@ -48,13 +48,13 @@ func TestDrawProgressGameShell_ClearsRefreshAndPopulatesOverlay(t *testing.T) {
 	c.ScreenHeight = 532
 	c.Refresh = true
 
-	c.DrawProgressGameShell("Connecting to fileserver", 25)
+	c.MessageBoxGameShell("Connecting to fileserver", 25)
 
 	if c.Refresh {
-		t.Errorf("Refresh = true after DrawProgressGameShell; want false")
+		t.Errorf("Refresh = true after MessageBoxGameShell; want false")
 	}
 	if c.OverlayPixMap == nil {
-		t.Fatalf("OverlayPixMap nil after DrawProgressGameShell")
+		t.Fatalf("OverlayPixMap nil after MessageBoxGameShell")
 	}
 	if c.OverlayPixMap.Width != 789 || c.OverlayPixMap.Height != 532 {
 		t.Errorf("OverlayPixMap size = (%d,%d); want (789,532)",
