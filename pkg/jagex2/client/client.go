@@ -536,7 +536,11 @@ type Client struct {
 	JagTitle               *io.JagFile
 	// OnDemand is the rev-244 model/anim/map on-demand loader, created from the
 	// versionlist archive at boot. Java: client.onDemand (OnDemand).
-	OnDemand                   *ondemand.OnDemand
+	OnDemand *ondemand.OnDemand
+	// Java: public MouseTracking mouseTracking (Client.java:1204 @2e62978) —
+	// NEW in 254; sampler started at the load() tail, drained by WS5
+	// gameLoop telemetry.
+	MouseTracking              *MouseTracking
 	Stream                     *clientstream.ClientStream
 	ModalMessage               string
 	ObjSelectedName            string
@@ -6441,6 +6445,11 @@ func (c *Client) Load() {
 	}
 	world.Init(var50, 800, 512, 334, 500)
 	wordfilter.Unpack(jagWordEnc)
+	// Java: Client.java:1859-1860 @2e62978 — NEW in 254: start the 50ms
+	// mouse sampler (consumed by WS5 gameLoop telemetry).
+	// startThread(mouseTracking, 10) → plain goroutine (priority not ported).
+	c.MouseTracking = NewMouseTracking(c)
+	go c.MouseTracking.Run()
 }
 
 func (c *Client) HandleInput() {
@@ -7574,9 +7583,13 @@ func (c *Client) Unload() {
 	}
 	c.Stream = nil
 	c.StopMidi()
-	// Java: mouseTracking.active=false / mouseTracking=null (Client.java:
-	// 2015-2018) — MouseTracking is an intentionally unported deob artifact.
-	c.OnDemand.Stop() // Java: Client.java:2020-2021
+	// Java: Client.java:1907-1910 @2e62978 — stop the mouse sampler. (The
+	// 245.2 port skipped MouseTracking as a deob artifact; 254 made it live.)
+	if c.MouseTracking != nil {
+		c.MouseTracking.Active.Store(false)
+	}
+	c.MouseTracking = nil
+	c.OnDemand.Stop() // Java: Client.java:1911-1912 @2e62978
 	c.OnDemand = nil
 	c.Out = nil
 	c.Login = nil
