@@ -35,7 +35,7 @@ func TestLinkList2SizeHeadNextPop(t *testing.T) {
 	}
 
 	// Pop removes the head node; Size should shrink to 2.
-	popped := l.Pop()
+	popped := l.PopFront()
 	if popped != a {
 		t.Fatalf("Pop: got value %d, want %d", popped.Value, a.Value)
 	}

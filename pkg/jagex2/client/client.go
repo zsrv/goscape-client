@@ -1306,7 +1306,7 @@ func (c *Client) ZonePacket(arg1 *io.Packet, arg2 int) {
 				if c.LevelObjStacks[c.CurrentLevel][var5][var6] == nil {
 					c.LevelObjStacks[c.CurrentLevel][var5][var6] = datastruct.NewLinkList[*entity.ClientObj]()
 				}
-				c.LevelObjStacks[c.CurrentLevel][var5][var6].AddTail(datastruct.NewLinkable(var32))
+				c.LevelObjStacks[c.CurrentLevel][var5][var6].Push(datastruct.NewLinkable(var32))
 				c.SortObjStacks(var5, var6)
 			}
 		} else if arg2 == SERVERPROT_OBJ_DEL {
@@ -1354,7 +1354,7 @@ func (c *Client) ZonePacket(arg1 *io.Packet, arg2 int) {
 					var8 = var8*128 + 64
 					var43 := entity.NewClientProj(var36, var15, var6, var14+clientextras.LoopCycle, c.CurrentLevel, var9, var37+clientextras.LoopCycle, var16, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var11, var10, var5)
 					var43.UpdateVelocity(c.GetHeightMapY(c.CurrentLevel, var7, var8)-var36, var8, var7, var37+clientextras.LoopCycle)
-					c.Projectiles.AddTail(datastruct.NewLinkable(var43))
+					c.Projectiles.Push(datastruct.NewLinkable(var43))
 				}
 			} else if arg2 == SERVERPROT_MAP_ANIM {
 				var4 = arg1.G1()
@@ -1367,7 +1367,7 @@ func (c *Client) ZonePacket(arg1 *io.Packet, arg2 int) {
 					var5 = var5*128 + 64
 					var6 = var6*128 + 64
 					var34 := entity.NewMapSpotAnim(var5, var7, var6, var9, c.GetHeightMapY(c.CurrentLevel, var5, var6)-var8, c.CurrentLevel, clientextras.LoopCycle)
-					c.Spotanims.AddTail(datastruct.NewLinkable(var34))
+					c.Spotanims.Push(datastruct.NewLinkable(var34))
 				}
 			} else if arg2 == SERVERPROT_OBJ_REVEAL {
 				var4 = arg1.G1()
@@ -1383,7 +1383,7 @@ func (c *Client) ZonePacket(arg1 *io.Packet, arg2 int) {
 					if c.LevelObjStacks[c.CurrentLevel][var5][var6] == nil {
 						c.LevelObjStacks[c.CurrentLevel][var5][var6] = datastruct.NewLinkList[*entity.ClientObj]()
 					}
-					c.LevelObjStacks[c.CurrentLevel][var5][var6].AddTail(datastruct.NewLinkable(var33))
+					c.LevelObjStacks[c.CurrentLevel][var5][var6].Push(datastruct.NewLinkable(var33))
 					c.SortObjStacks(var5, var6)
 				}
 			} else {
@@ -7869,7 +7869,7 @@ func (c *Client) AppendLoc(x, shape, endTime, typ, angle, layer, z, currentLevel
 		loc.X = x
 		loc.Z = z
 		c.StoreLoc(loc)
-		c.LocChanges.AddTail(datastruct.NewLinkable(loc))
+		c.LocChanges.Push(datastruct.NewLinkable(loc))
 	}
 
 	loc.NewType = typ
@@ -9542,7 +9542,7 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 			var5Link = var6
 		}
 	}
-	var3.AddHead(var5Link)
+	var3.PushFront(var5Link)
 	var15 := -1
 	var8 := -1
 	var9 := 0

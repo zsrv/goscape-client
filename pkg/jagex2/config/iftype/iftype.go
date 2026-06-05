@@ -384,7 +384,7 @@ func (c *IfType) LoadModel(arg0 int, arg1 int, localPlayer *playerentity.ClientP
 	// Java: (long) ((arg0 << 16) + arg1) — 245.2 does int arithmetic and widens
 	// AFTER the add (244 widened type before the shift); int32 wrap preserves
 	// Java int overflow. Equivalent for valid ids.
-	var3 := ModelCache.Get(int64(int32((arg0 << 16) + arg1)))
+	var3 := ModelCache.Find(int64(int32((arg0 << 16) + arg1)))
 	if var3 != nil {
 		return var3
 	}
@@ -421,7 +421,7 @@ func CacheModel(m *model.Model, id int, typ int) {
 
 func GetImage(arg0 *io.JagFile, arg1 int, arg2 string) (result *pix32.Pix32) {
 	var4 := (jstring.HashCode(arg2) << 8) + int64(arg1)
-	var6 := ImageCache.Get(var4)
+	var6 := ImageCache.Find(var4)
 	if var6 != nil {
 		return var6
 	}

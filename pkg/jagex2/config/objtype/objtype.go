@@ -327,7 +327,7 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 			return Get(var2).GetInterfaceModel(1)
 		}
 	}
-	var4 := ModelCache.Get(int64(t.Index))
+	var4 := ModelCache.Find(int64(t.Index))
 	if var4 != nil {
 		return var4
 	}
@@ -359,7 +359,7 @@ func GetSprite(outlineRgb int, count int, id int) *pix32.Pix32 {
 	// Java: the icon cache is only consulted (and later populated) for the
 	// plain outlineRgb==0 variant (ObjType.java:475-486, 602-604).
 	if outlineRgb == 0 {
-		var3 := SpriteCache.Get(int64(id))
+		var3 := SpriteCache.Find(int64(id))
 		if var3 != nil && var3.OHi != count && var3.OHi != -1 {
 			// Java: var3.unlink() — Linkable2's unlink() removes the node
 			// from both the hashtable bucket and the history list. The Go port

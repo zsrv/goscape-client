@@ -1196,7 +1196,7 @@ func (w *World) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 }
 
 func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
-	DrawTileQueue.AddTail(next.DrawQueueNode)
+	DrawTileQueue.Push(next.DrawQueueNode)
 
 	for {
 		var tile *typ.Square
@@ -1222,7 +1222,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 											// Linkable wraps the Square, so the nil check belongs on
 											// the *Linkable — `.Value` on a nil Linkable would panic
 											// before the existing tile-nil check below could fire.
-											linkable := DrawTileQueue.RemoveHead()
+											linkable := DrawTileQueue.PopFront()
 											if linkable == nil {
 												return
 											}
@@ -1449,28 +1449,28 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 											if tileX < EyeTileX && spans&0x4 != 0 {
 												adjacent := tiles[tileX+1][tileZ]
 												if adjacent != nil && adjacent.Update {
-													DrawTileQueue.AddTail(adjacent.DrawQueueNode)
+													DrawTileQueue.Push(adjacent.DrawQueueNode)
 												}
 											}
 
 											if tileZ < EyeTileZ && spans&0x2 != 0 {
 												adjacent := tiles[tileX][tileZ+1]
 												if adjacent != nil && adjacent.Update {
-													DrawTileQueue.AddTail(adjacent.DrawQueueNode)
+													DrawTileQueue.Push(adjacent.DrawQueueNode)
 												}
 											}
 
 											if tileX > EyeTileX && spans&0x1 != 0 {
 												adjacent := tiles[tileX-1][tileZ]
 												if adjacent != nil && adjacent.Update {
-													DrawTileQueue.AddTail(adjacent.DrawQueueNode)
+													DrawTileQueue.Push(adjacent.DrawQueueNode)
 												}
 											}
 
 											if tileZ > EyeTileZ && spans&0x8 != 0 {
 												adjacent := tiles[tileX][tileZ-1]
 												if adjacent != nil && adjacent.Update {
-													DrawTileQueue.AddTail(adjacent.DrawQueueNode)
+													DrawTileQueue.Push(adjacent.DrawQueueNode)
 												}
 											}
 										}
@@ -1610,9 +1610,9 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 												occupied := tiles[x][z]
 
 												if occupied.CheckLocSpans != 0 {
-													DrawTileQueue.AddTail(occupied.DrawQueueNode)
+													DrawTileQueue.Push(occupied.DrawQueueNode)
 												} else if (x != tileX || z != tileZ) && occupied.Update {
-													DrawTileQueue.AddTail(occupied.DrawQueueNode)
+													DrawTileQueue.Push(occupied.DrawQueueNode)
 												}
 											}
 										}
@@ -1735,35 +1735,35 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 		if level < w.MaxLevel-1 {
 			above := w.LevelTiles[level+1][tileX][tileZ]
 			if above != nil && above.Update {
-				DrawTileQueue.AddTail(above.DrawQueueNode)
+				DrawTileQueue.Push(above.DrawQueueNode)
 			}
 		}
 
 		if tileX < EyeTileX {
 			adjacent := tiles[tileX+1][tileZ]
 			if adjacent != nil && adjacent.Update {
-				DrawTileQueue.AddTail(adjacent.DrawQueueNode)
+				DrawTileQueue.Push(adjacent.DrawQueueNode)
 			}
 		}
 
 		if tileZ < EyeTileZ {
 			adjacent := tiles[tileX][tileZ+1]
 			if adjacent != nil && adjacent.Update {
-				DrawTileQueue.AddTail(adjacent.DrawQueueNode)
+				DrawTileQueue.Push(adjacent.DrawQueueNode)
 			}
 		}
 
 		if tileX > EyeTileX {
 			adjacent := tiles[tileX-1][tileZ]
 			if adjacent != nil && adjacent.Update {
-				DrawTileQueue.AddTail(adjacent.DrawQueueNode)
+				DrawTileQueue.Push(adjacent.DrawQueueNode)
 			}
 		}
 
 		if tileZ > EyeTileZ {
 			adjacent := tiles[tileX][tileZ-1]
 			if adjacent != nil && adjacent.Update {
-				DrawTileQueue.AddTail(adjacent.DrawQueueNode)
+				DrawTileQueue.Push(adjacent.DrawQueueNode)
 			}
 		}
 	}

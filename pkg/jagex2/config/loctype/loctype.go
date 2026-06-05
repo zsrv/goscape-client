@@ -346,7 +346,7 @@ func (loc *LocType) BuildModel(arg0, arg2, arg3 int) *model.Model {
 			return nil
 		}
 		var7 = int64((loc.Index<<6)+arg3) + int64((arg2+1)<<32)
-		var9 := ModelCacheDynamic.Get(var7)
+		var9 := ModelCacheDynamic.Find(var7)
 		if var9 != nil {
 			return var9
 		}
@@ -360,7 +360,7 @@ func (loc *LocType) BuildModel(arg0, arg2, arg3 int) *model.Model {
 			if var10 {
 				var13 += 65536
 			}
-			var5 = ModelCacheStatic.Get(int64(var13))
+			var5 = ModelCacheStatic.Find(int64(var13))
 			if var5 == nil {
 				var5 = model.Load(var13 & 0xFFFF)
 				if var5 == nil {
@@ -390,7 +390,7 @@ func (loc *LocType) BuildModel(arg0, arg2, arg3 int) *model.Model {
 			return nil
 		}
 		var7 = int64((loc.Index<<6)+(var14<<3)+arg3) + int64((arg2+1)<<32)
-		var16 := ModelCacheDynamic.Get(var7)
+		var16 := ModelCacheDynamic.Find(var7)
 		if var16 != nil {
 			return var16
 		}
@@ -399,7 +399,7 @@ func (loc *LocType) BuildModel(arg0, arg2, arg3 int) *model.Model {
 		if var18 {
 			var17 += 65536
 		}
-		var5 = ModelCacheStatic.Get(int64(var17))
+		var5 = ModelCacheStatic.Find(int64(var17))
 		if var5 == nil {
 			var5 = model.Load(var17 & 0xFFFF)
 			if var5 == nil {

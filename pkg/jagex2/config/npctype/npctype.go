@@ -207,7 +207,7 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 // arg2 the walkmerge label set.
 // Java: getTempModel (NpcType.java:240-285 @2e62978; was getModel at 245.2).
 func (t *NpcType) GetTempModel(target *model.Model, arg0 int, arg1 int, arg2 []int) *model.Model {
-	var5 := ModelCache.Get(t.Index)
+	var5 := ModelCache.Find(t.Index)
 	if var5 == nil {
 		// Java: NpcType.getModel precheck — loop calls Model.request on every
 		// model (non-short-circuit); ready=true means "something missing".

@@ -23,13 +23,13 @@ func TestGroundDrawQueueNodeIdentity(t *testing.T) {
 	}
 
 	q := datastruct.NewLinkList[*Square]()
-	q.AddTail(a.DrawQueueNode)
-	q.AddTail(b.DrawQueueNode)
-	q.AddTail(a.DrawQueueNode) // re-add A: must MOVE to tail, not duplicate
+	q.Push(a.DrawQueueNode)
+	q.Push(b.DrawQueueNode)
+	q.Push(a.DrawQueueNode) // re-add A: must MOVE to tail, not duplicate
 
 	var order []*Square
 	for {
-		n := q.RemoveHead()
+		n := q.PopFront()
 		if n == nil {
 			break
 		}

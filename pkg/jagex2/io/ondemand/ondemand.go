@@ -35,7 +35,7 @@ import (
 // In Go we hold one *datastruct.Linkable2[*OnDemandRequest] whose
 // embedded *Linkable[*OnDemandRequest] provides the second link pair:
 //   - r.node        → LinkList2 slot (next2/prev2 via Uncache/Push/Pop)
-//   - r.node.Linkable → LinkList slot     (next/prev  via Unlink/AddHead/…)
+//   - r.node.Linkable → LinkList slot     (next/prev  via Unlink/PushFront/…)
 type OnDemandRequest struct {
 	// Java: nb.i
 	Archive int
@@ -53,7 +53,7 @@ type OnDemandRequest struct {
 	//   - r.node             → LinkList2 slot (requests; next2/prev2 via
 	//                          Push/Pop/Uncache)
 	//   - r.node.Linkable    → LinkList slot (queue/missing/pending/completed/
-	//                          prefetches; next/prev via AddTail/RemoveHead/Unlink)
+	//                          prefetches; next/prev via Push/PopFront/Unlink)
 	node *datastruct.Linkable2[*OnDemandRequest]
 }
 
@@ -415,7 +415,7 @@ func (od *OnDemand) Request(archive, file int) {
 	r.File = file
 	r.Urgent = true
 
-	od.queue.AddTail(r.node.Linkable)
+	od.queue.Push(r.node.Linkable)
 	od.requests.Push(r.node)
 }
 
@@ -441,7 +441,7 @@ func (od *OnDemand) Message() string {
 // gzip-decodes the whole buffer (GZIPInputStream stops at the gzip trailer and
 // ignores the extra 2 bytes), which yields the same payload.
 func (od *OnDemand) Cycle() *OnDemandRequest {
-	n := od.completed.RemoveHead()
+	n := od.completed.PopFront()
 	if n == nil {
 		return nil
 	}
@@ -519,7 +519,7 @@ func (od *OnDemand) Prefetch(archive, file int) {
 	r.File = file
 	r.Urgent = false
 
-	od.prefetches.AddTail(r.node.Linkable)
+	od.prefetches.Push(r.node.Linkable)
 }
 
 // PrefetchMaps queues prefetch priorities for every map land/loc file.
@@ -580,7 +580,7 @@ func (od *OnDemand) Run() {
 // OnDemand.java:464 @32f3062) — this port never carried it, so the Go
 // shape is already exact.
 func (od *OnDemand) handleQueue() {
-	for n := od.queue.RemoveHead(); n != nil; n = od.queue.RemoveHead() {
+	for n := od.queue.PopFront(); n != nil; n = od.queue.PopFront() {
 		od.active = true
 		r := n.Value
 
@@ -594,10 +594,10 @@ func (od *OnDemand) handleQueue() {
 		}
 
 		if data == nil {
-			od.missing.AddTail(r.node.Linkable)
+			od.missing.Push(r.node.Linkable)
 		} else {
 			r.Data = data
-			od.completed.AddTail(r.node.Linkable)
+			od.completed.Push(r.node.Linkable)
 		}
 	}
 }
@@ -618,7 +618,7 @@ func (od *OnDemand) handlePending() {
 	}
 
 	for od.importantCount < 10 {
-		n := od.missing.RemoveHead()
+		n := od.missing.PopFront()
 		if n == nil {
 			break
 		}
@@ -629,7 +629,7 @@ func (od *OnDemand) handlePending() {
 		}
 
 		od.priorities[r.Archive][r.File] = 0
-		od.pending.AddTail(r.node.Linkable)
+		od.pending.Push(r.node.Linkable)
 		od.importantCount++
 		od.send(r)
 		od.active = true
@@ -646,11 +646,11 @@ func (od *OnDemand) handleExtras() {
 			return
 		}
 
-		for n := od.prefetches.RemoveHead(); n != nil; n = od.prefetches.RemoveHead() {
+		for n := od.prefetches.PopFront(); n != nil; n = od.prefetches.PopFront() {
 			extra := n.Value
 			if od.priorities[extra.Archive][extra.File] != 0 {
 				od.priorities[extra.Archive][extra.File] = 0
-				od.pending.AddTail(extra.node.Linkable)
+				od.pending.Push(extra.node.Linkable)
 				od.send(extra)
 				od.active = true
 
@@ -679,7 +679,7 @@ func (od *OnDemand) handleExtras() {
 					r.Archive = archive
 					r.File = i
 					r.Urgent = false
-					od.pending.AddTail(r.node.Linkable)
+					od.pending.Push(r.node.Linkable)
 					od.send(r)
 					od.active = true
 
@@ -740,7 +740,7 @@ func (od *OnDemand) read() {
 	}
 
 	if od.current.Urgent {
-		od.completed.AddTail(od.current.node.Linkable)
+		od.completed.Push(od.current.node.Linkable)
 	} else {
 		od.current.node.Unlink()
 	}

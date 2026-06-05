@@ -95,7 +95,7 @@ func (t *SpotType) Decode(arg1 *io.Packet) {
 // Java: getTempModel (SpotAnimType.java:103-121 @2e62978; SpotType.java @32f3062; was getModel at
 // 245.2).
 func (t *SpotType) GetTempModel() *model.Model {
-	var1 := ModelCache.Get(int64(t.Index))
+	var1 := ModelCache.Find(int64(t.Index))
 	if var1 != nil {
 		return var1
 	}

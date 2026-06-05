@@ -240,7 +240,7 @@ func TestCycle_GunzipTrailer(t *testing.T) {
 	// Place the request in both lists the way the real pipeline would: it is in
 	// requests (LinkList2) and completed (LinkList).
 	od.requests.Push(r.node)
-	od.completed.AddTail(r.node.Linkable)
+	od.completed.Push(r.node.Linkable)
 
 	got := od.Cycle()
 	if got == nil {
@@ -342,13 +342,13 @@ func TestRead_Archive3PromotedTo93(t *testing.T) {
 	r.File = mapFile
 	r.Urgent = false
 	od.requests.Push(r.node)
-	od.pending.AddTail(r.node.Linkable)
+	od.pending.Push(r.node.Linkable)
 
 	// read() services the head of pending; it calls downloadZip() internally.
 	od.read()
 
 	// The request must have landed on completed with the promoted fields.
-	n := od.completed.RemoveHead()
+	n := od.completed.PopFront()
 	if n == nil {
 		t.Fatal("completed list is empty after read(); expected the promoted request")
 	}
@@ -361,8 +361,8 @@ func TestRead_Archive3PromotedTo93(t *testing.T) {
 	}
 
 	// Cycle() decodes the gzip+trailer payload.
-	od.requests.Push(got.node)              // re-link so Cycle's Uncache works
-	od.completed.AddTail(got.node.Linkable) // put it back for Cycle
+	od.requests.Push(got.node)           // re-link so Cycle's Uncache works
+	od.completed.Push(got.node.Linkable) // put it back for Cycle
 	result := od.Cycle()
 	if result == nil {
 		t.Fatal("Cycle() returned nil")

@@ -71,9 +71,10 @@ func NewHashTable(bucketCount int32) *HashTable {
 	return t
 }
 
-// Get returns the Linkable whose Key matches arg0, or nil if no such node
-// exists. Java: public Linkable get(long arg0).
-func (t *HashTable) Get(arg0 int64) *Linkable {
+// Find returns the Linkable whose Key matches arg0, or nil if no such node
+// exists. Java: public Linkable find(long arg0) (HashTable.java @32f3062;
+// was get at 254).
+func (t *HashTable) Find(arg0 int64) *Linkable {
 	// Java: this.buckets[(int) (arg0 & (long) (this.bucketCount - 1))]
 	// Go's bitwise-AND precedence matches Java here (both bind tighter than
 	// the implicit conversion); we parenthesize defensively per CLAUDE.md.

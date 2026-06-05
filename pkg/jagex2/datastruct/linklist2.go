@@ -24,7 +24,9 @@ func (l *LinkList2[T]) Push(node *Linkable2[T]) {
 	node.next2.prev2 = node
 }
 
-func (l *LinkList2[T]) Pop() *Linkable2[T] {
+// PopFront removes and returns the head node, or nil when empty.
+// Java: popFront (LinkList2.java @32f3062; was pop at 254's DoublyLinkList).
+func (l *LinkList2[T]) PopFront() *Linkable2[T] {
 	node := l.head.next2
 	if node == l.head {
 		return nil

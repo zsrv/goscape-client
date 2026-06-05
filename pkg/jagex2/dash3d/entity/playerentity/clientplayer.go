@@ -281,7 +281,7 @@ func (e *ClientPlayer) GetTempModel2() *model.Model {
 	} else if e.SecondarySeqID >= 0 {
 		var4 = seqtype.List[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
 	}
-	var15 := ModelCache.Get(var2)
+	var15 := ModelCache.Find(var2)
 	if var15 == nil {
 		// Java: ClientPlayer.java:287-317 — 244 lazy-model barrier: request
 		// every appearance part; while any is still loading, fall back to the
@@ -305,7 +305,7 @@ func (e *ClientPlayer) GetTempModel2() *model.Model {
 		}
 		if needsModel {
 			if e.ModelCacheKey != -1 {
-				var15 = ModelCache.Get(e.ModelCacheKey)
+				var15 = ModelCache.Find(e.ModelCacheKey)
 			}
 			if var15 == nil {
 				return nil

@@ -9,7 +9,7 @@ func TestPutGetRoundTrip(t *testing.T) {
 	n := &Linkable{}
 	tbl.Put(42, n)
 
-	got := tbl.Get(42)
+	got := tbl.Find(42)
 	if got != n {
 		t.Fatalf("Get(42) = %p, want %p", got, n)
 	}
@@ -22,13 +22,13 @@ func TestPutGetRoundTrip(t *testing.T) {
 // never been put.
 func TestGetMissReturnsNil(t *testing.T) {
 	tbl := NewHashTable(16)
-	if got := tbl.Get(1234); got != nil {
+	if got := tbl.Find(1234); got != nil {
 		t.Fatalf("Get(1234) on empty table = %v, want nil", got)
 	}
 	// Populate one bucket and confirm the miss in the same bucket is still
 	// nil (i.e. the linear search terminates correctly at the sentinel).
 	tbl.Put(0, &Linkable{})
-	if got := tbl.Get(16); got != nil { // 16 & 15 == 0, same bucket as 0
+	if got := tbl.Find(16); got != nil { // 16 & 15 == 0, same bucket as 0
 		t.Fatalf("Get(16) = %v, want nil (collision miss)", got)
 	}
 }
@@ -41,7 +41,7 @@ func TestRemoveViaUnlink(t *testing.T) {
 	n := &Linkable{}
 	tbl.Put(7, n)
 	n.Unlink()
-	if got := tbl.Get(7); got != nil {
+	if got := tbl.Find(7); got != nil {
 		t.Fatalf("Get(7) after Unlink = %v, want nil", got)
 	}
 }
@@ -54,10 +54,10 @@ func TestPutRebucketsNode(t *testing.T) {
 	n := &Linkable{}
 	tbl.Put(1, n)
 	tbl.Put(2, n)
-	if got := tbl.Get(1); got != nil {
+	if got := tbl.Find(1); got != nil {
 		t.Fatalf("Get(1) after re-put at 2 = %v, want nil", got)
 	}
-	if got := tbl.Get(2); got != n {
+	if got := tbl.Find(2); got != n {
 		t.Fatalf("Get(2) after re-put = %p, want %p", got, n)
 	}
 	if n.Key != 2 {
@@ -76,13 +76,13 @@ func TestCollisionChain(t *testing.T) {
 	tbl.Put(5, b)
 	tbl.Put(9, c)
 
-	if got := tbl.Get(1); got != a {
+	if got := tbl.Find(1); got != a {
 		t.Errorf("Get(1) = %p, want %p", got, a)
 	}
-	if got := tbl.Get(5); got != b {
+	if got := tbl.Find(5); got != b {
 		t.Errorf("Get(5) = %p, want %p", got, b)
 	}
-	if got := tbl.Get(9); got != c {
+	if got := tbl.Find(9); got != c {
 		t.Errorf("Get(9) = %p, want %p", got, c)
 	}
 
@@ -98,13 +98,13 @@ func TestCollisionChain(t *testing.T) {
 
 	// Unlink the middle node and verify the chain stays intact.
 	b.Unlink()
-	if got := tbl.Get(5); got != nil {
+	if got := tbl.Find(5); got != nil {
 		t.Errorf("Get(5) after b.Unlink = %v, want nil", got)
 	}
-	if got := tbl.Get(1); got != a {
+	if got := tbl.Find(1); got != a {
 		t.Errorf("Get(1) after b.Unlink = %p, want %p", got, a)
 	}
-	if got := tbl.Get(9); got != c {
+	if got := tbl.Find(9); got != c {
 		t.Errorf("Get(9) after b.Unlink = %p, want %p", got, c)
 	}
 }
@@ -144,7 +144,7 @@ func TestNegativeKeyBucketing(t *testing.T) {
 	tbl := NewHashTable(16)
 	n := &Linkable{}
 	tbl.Put(-1, n)
-	if got := tbl.Get(-1); got != n {
+	if got := tbl.Find(-1); got != n {
 		t.Fatalf("Get(-1) = %p, want %p", got, n)
 	}
 }

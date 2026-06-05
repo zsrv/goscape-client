@@ -14,7 +14,10 @@ func NewLinkList[T any]() *LinkList[T] {
 	}
 }
 
-func (l *LinkList[T]) AddTail(v *Linkable[T]) {
+// Push appends v at the tail (the most-recent slot). Java: push
+// (LinkList.java @32f3062; same name at 254 — the Go AddTail name was a
+// port-era deviation, aligned during the 274 rename pass).
+func (l *LinkList[T]) Push(v *Linkable[T]) {
 	if v.prev != nil {
 		v.Unlink()
 	}
@@ -24,7 +27,9 @@ func (l *LinkList[T]) AddTail(v *Linkable[T]) {
 	v.next.prev = v
 }
 
-func (l *LinkList[T]) AddHead(v *Linkable[T]) {
+// PushFront inserts v at the head. Java: pushFront (LinkList.java @32f3062;
+// was addHead at 254).
+func (l *LinkList[T]) PushFront(v *Linkable[T]) {
 	if v.prev != nil {
 		v.Unlink()
 	}
@@ -34,7 +39,9 @@ func (l *LinkList[T]) AddHead(v *Linkable[T]) {
 	v.next.prev = v
 }
 
-func (l *LinkList[T]) RemoveHead() *Linkable[T] {
+// PopFront removes and returns the head node, or nil when empty.
+// Java: popFront (LinkList.java @32f3062; was pop at 254).
+func (l *LinkList[T]) PopFront() *Linkable[T] {
 	n := l.sentinel.next
 	if n == l.sentinel {
 		return nil
@@ -84,6 +91,12 @@ func (l *LinkList[T]) Prev() *Linkable[T] {
 }
 
 func (l *LinkList[T]) Clear() {
+	// Java 274: early-return when already empty (LinkList.java:101-103
+	// @32f3062) — functionally a no-op (the loop below exits immediately on
+	// an empty list) but ported faithfully.
+	if l.sentinel.next == l.sentinel {
+		return
+	}
 	for {
 		n := l.sentinel.next
 		if n == l.sentinel {

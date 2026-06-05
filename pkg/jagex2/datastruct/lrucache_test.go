@@ -13,7 +13,7 @@ func TestLruCachePutGet(t *testing.T) {
 		key  int64
 		want int
 	}{{1, 100}, {2, 200}, {3, 300}} {
-		if got := c.Get(tc.key); got != tc.want {
+		if got := c.Find(tc.key); got != tc.want {
 			t.Errorf("Get(%d)=%d, want %d", tc.key, got, tc.want)
 		}
 	}
@@ -32,20 +32,20 @@ func TestLruCacheGetMovesToFront(t *testing.T) {
 	// Touch key 1 — it should become MRU. Insertion order was 1,2,3, so
 	// without the touch the next eviction victim would be 1; with the touch
 	// it should be 2.
-	if got := c.Get(1); got != 100 {
+	if got := c.Find(1); got != 100 {
 		t.Fatalf("Get(1)=%d, want 100", got)
 	}
 
 	c.Put(4, 400)
 
 	// 2 should have been evicted, not 1.
-	if got := c.Get(2); got != 0 {
+	if got := c.Find(2); got != 0 {
 		t.Errorf("Get(2)=%d after eviction, want zero", got)
 	}
-	if got := c.Get(1); got != 100 {
+	if got := c.Find(1); got != 100 {
 		t.Errorf("Get(1)=%d, want 100 (should still be present)", got)
 	}
-	if got := c.Get(4); got != 400 {
+	if got := c.Find(4); got != 400 {
 		t.Errorf("Get(4)=%d, want 400", got)
 	}
 }
@@ -65,7 +65,7 @@ func TestLruCachePutEvictsAndCleansMap(t *testing.T) {
 	if _, ok := c.HashTable[1]; ok {
 		t.Error("evicted key 1 still present in HashTable")
 	}
-	if got := c.Get(1); got != 0 {
+	if got := c.Find(1); got != 0 {
 		t.Errorf("Get(1)=%d after eviction, want zero", got)
 	}
 }
@@ -88,10 +88,10 @@ func TestLruCacheDelete(t *testing.T) {
 
 	// Put a new entry — should not evict anything, since Delete freed a slot.
 	c.Put(3, 300)
-	if got := c.Get(2); got != 200 {
+	if got := c.Find(2); got != 200 {
 		t.Errorf("Get(2)=%d after Delete(1)+Put(3), want 200 (no eviction expected)", got)
 	}
-	if got := c.Get(3); got != 300 {
+	if got := c.Find(3); got != 300 {
 		t.Errorf("Get(3)=%d, want 300", got)
 	}
 }
@@ -116,7 +116,7 @@ func TestLruCacheRepeatedGetSameKey(t *testing.T) {
 	c.Put(2, 200)
 
 	for range 1000 {
-		_ = c.Get(1)
+		_ = c.Find(1)
 	}
 
 	// HashTable must still have exactly 2 entries.

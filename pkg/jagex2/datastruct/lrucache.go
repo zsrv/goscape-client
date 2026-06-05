@@ -2,7 +2,7 @@ package datastruct
 
 // LruCache ports jagex2.datastruct.LruCache. Capacity entries are held in a
 // map (Java: HashTable); the order of last-access is tracked in a doubly-
-// linked History list. On Get, the cached node is moved to the front; on
+// linked History list. On Find, the cached node is moved to the front; on
 // Put when full, the head of History is evicted and removed from the map.
 //
 // Java stores Linkable2 subclass instances directly; the same node is
@@ -12,8 +12,9 @@ package datastruct
 type LruCache[T any] struct {
 	Capacity  int32
 	Available int32
-	// Java: notFound/found (LruCache.java) — hit/miss telemetry written by
-	// get(); no reader exists at this rev (audit datastruct-05).
+	// Java: notFound/found (LruCache.java @2e62978; 274 deobs them to
+	// field348/field349 @32f3062) — hit/miss telemetry written by
+	// find(); no reader exists at this rev (audit datastruct-05).
 	NotFound  int32
 	Found     int32
 	HashTable map[int64]*Linkable2[T]
@@ -29,7 +30,9 @@ func NewLruCache[T any](size int32) *LruCache[T] {
 	}
 }
 
-func (l *LruCache[T]) Get(key int64) T {
+// Find looks up key, bumping the node to most-recently-used on a hit.
+// Java: find (LruCache.java:38 @32f3062; was get at 254).
+func (l *LruCache[T]) Find(key int64) T {
 	node, ok := l.HashTable[key]
 	if !ok {
 		l.NotFound++
@@ -43,20 +46,25 @@ func (l *LruCache[T]) Get(key int64) T {
 	return node.Linkable.Value //nolint:staticcheck // QF1008: explicit embedded-field selector mirrors Java field access
 }
 
-// Put inserts v under key. CONSTRAINT (datastruct.md #29): callers must Get
+// Put inserts v under key. Java 254 declared put(value, key); 274 swapped to
+// put(key, value) with every caller adjusted in lockstep (LruCache.java:51
+// @32f3062) — Go used (key, value) from the start, so the 274 order needed
+// no change here.
+//
+// CONSTRAINT (datastruct.md #29): callers must Find
 // first and only Put on a miss — Put does not guard against a duplicate key.
 // A duplicate-key Put would orphan the previous node in History and
 // double-decrement Available. Java's HashTable.put unlinked the prior bucket
 // node first; the Go map redesign drops that structural protection. All current
 // callers (objtype/loctype/npctype/spottype/component/playerentity) follow
-// the Get-then-Put-if-miss pattern, so this is latent, not a live bug.
+// the Find-then-Put-if-miss pattern, so this is latent, not a live bug.
 // Re-confirmed by the 2026-06-04 audit (datastruct-07): Java's true duplicate-
 // key behavior (both nodes coexist in bucket+history; the OLDER one wins get)
 // is unreproducible on a Go map without restoring bucket chains — the caller
 // constraint stands.
 func (l *LruCache[T]) Put(key int64, v T) {
 	if l.Available == 0 {
-		evicted := l.History.Pop()
+		evicted := l.History.PopFront()
 		// Java: var5.unlink() — also removes the node from the HashTable
 		// bucket because it lives in both lists simultaneously. Go's map
 		// has no such linkage, so we delete by the Key we stamped on Put.
@@ -77,7 +85,7 @@ func (l *LruCache[T]) Put(key int64, v T) {
 // calls node.unlink() (Linkable.unlink, Java LruCache caller path). unlink()
 // touches ONLY the bucket-list pointers: it removes the node from the HashTable
 // bucket but leaves it in the History list and does NOT change `available`. The
-// node lingers as an orphan in history until a later Pop evicts it, so each
+// node lingers as an orphan in history until a later PopFront evicts it, so each
 // delete-then-re-put permanently consumes one slot until eviction reclaims it —
 // Java's effective live capacity shrinks between evictions (a leak-then-reclaim
 // bug). Go instead removes from the map, Uncaches the node out of history, and
@@ -97,7 +105,7 @@ func (l *LruCache[T]) Delete(key int64) {
 
 func (l *LruCache[T]) Clear() {
 	for {
-		node := l.History.Pop()
+		node := l.History.PopFront()
 		if node == nil {
 			break
 		}
