@@ -14,9 +14,13 @@ import (
 )
 
 var (
-	LowMemory                            bool = true
-	TilesRemaining                       int
-	TopLevel                             int
+	LowMemory      bool = true
+	TilesRemaining int
+	// MaxLevel is the static draw ceiling. Java: static maxLevel @32f3062
+	// (254 topLevel) — NAME-REUSE TRAP: 274 reuses the name maxLevel for
+	// THIS static while the 254 instance field maxLevel became
+	// maxTileLevel (Go MaxTileLevel below).
+	MaxLevel                             int
 	Cycle                                int
 	MinDrawTileX                         int
 	MaxDrawTileX                         int
@@ -84,14 +88,24 @@ func init() {
 }
 
 type World struct {
-	MaxLevel                 int
-	MaxTileX                 int
-	MaxTileZ                 int
-	LevelHeightMaps          [][][]int
-	LevelTiles               [][][]*typ.Square
-	Minlevel                 int
-	TemporaryLocCount        int
-	TemporaryLocs            []*typ.Sprite
+	MaxTileLevel int // Java: maxTileLevel @32f3062 (254 maxLevel; that name now belongs to the static — see var MaxLevel)
+	MaxTileX     int
+	MaxTileZ     int
+	// LevelHeightMaps keeps its descriptive Go name. Java: groundh
+	// (int[][][]) @32f3062 (254 groundHeight) — NAME-REUSE TRAP: 254's
+	// groundh was the Square grid, which 274 renamed to squares
+	// (Go LevelTiles below).
+	LevelHeightMaps [][][]int
+	// LevelTiles keeps its descriptive Go name. Java: squares
+	// (Square[][][]) @32f3062 (254 groundh — that name moved to the
+	// heightmap above).
+	LevelTiles [][][]*typ.Square
+	Minlevel   int
+	// Java: dynamicCount / dynamicSprites @32f3062 (254 changedLocCount /
+	// changedLocs); Go keeps its descriptive names.
+	TemporaryLocCount int
+	TemporaryLocs     []*typ.Sprite
+	// Java: occlusionCycle @32f3062 (254 mapo); Go keeps its descriptive name.
 	LevelTileOcclusionCycles [][][]int
 	MergeIndexA              []int
 	MergeIndexB              []int
@@ -100,7 +114,7 @@ type World struct {
 	MINIMAP_OVERLAY_ROTATION [][]int
 }
 
-func NewWorld(LevelHeightMaps [][][]int, maxTileZ, maxLevel, maxTileX int) *World {
+func NewWorld(LevelHeightMaps [][][]int, maxTileZ, maxTileLevel, maxTileX int) *World {
 	var w World
 	w.TemporaryLocs = make([]*typ.Sprite, 5000)
 	w.MergeIndexA = make([]int, 10000)
@@ -108,17 +122,17 @@ func NewWorld(LevelHeightMaps [][][]int, maxTileZ, maxLevel, maxTileX int) *Worl
 	w.MINIMAP_OVERLAY_SHAPE = [][]int{make([]int, 16), {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1}, {1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1}, {0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0}, {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1}, {1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1}}
 	w.MINIMAP_OVERLAY_ROTATION = [][]int{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, {12, 8, 4, 0, 13, 9, 5, 1, 14, 10, 6, 2, 15, 11, 7, 3}, {15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}, {3, 7, 11, 15, 2, 6, 10, 14, 1, 5, 9, 13, 0, 4, 8, 12}}
 
-	w.MaxLevel = maxLevel
+	w.MaxTileLevel = maxTileLevel
 	w.MaxTileX = maxTileX
 	w.MaxTileZ = maxTileZ
-	w.LevelTiles = make([][][]*typ.Square, maxLevel)
+	w.LevelTiles = make([][][]*typ.Square, maxTileLevel)
 	for i := range w.LevelTiles {
 		w.LevelTiles[i] = make([][]*typ.Square, maxTileX)
 		for j := range w.LevelTiles[i] {
 			w.LevelTiles[i][j] = make([]*typ.Square, maxTileZ)
 		}
 	}
-	w.LevelTileOcclusionCycles = make([][][]int, maxLevel)
+	w.LevelTileOcclusionCycles = make([][][]int, maxTileLevel)
 	for i := range w.LevelTileOcclusionCycles {
 		w.LevelTileOcclusionCycles[i] = make([][]int, maxTileX+1)
 		for j := range w.LevelTileOcclusionCycles[i] {
@@ -140,7 +154,7 @@ func Unload() {
 }
 
 func (w *World) Reset() {
-	for i := range w.MaxLevel {
+	for i := range w.MaxTileLevel {
 		for j := range w.MaxTileX {
 			for k := range w.MaxTileZ {
 				w.LevelTiles[i][j][k] = nil
@@ -673,7 +687,7 @@ func (w *World) BuildModels(arg0, arg1, arg2, lightAttenuation, arg4 int) {
 	lightMagnitude := int(math.Sqrt(float64(arg2*arg2 + arg0*arg0 + arg4*arg4)))
 	attenuation := (lightAttenuation * lightMagnitude) >> 8
 
-	for level := range w.MaxLevel {
+	for level := range w.MaxTileLevel {
 		for tileX := range w.MaxTileX {
 			for tileZ := range w.MaxTileZ {
 				tile := w.LevelTiles[level][tileX][tileZ]
@@ -765,7 +779,7 @@ func (w *World) MergeLocNormals(arg0, arg1, arg2, arg3 int, arg5 *model.Model, a
 	var11 := arg6 - 1
 	var12 := arg6 + arg2
 	for i := arg3; i <= arg3+1; i++ {
-		if i != w.MaxLevel {
+		if i != w.MaxTileLevel {
 			for j := var9; j <= var10; j++ {
 				if j >= 0 && j < w.MaxTileX {
 					for k := var11; k <= var12; k++ {
@@ -1066,7 +1080,7 @@ func (w *World) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 	EyeZ = arg5
 	EyeTileX = arg1 / 128
 	EyeTileZ = arg5 / 128
-	TopLevel = arg2
+	MaxLevel = arg2
 	MinDrawTileX = EyeTileX - 25
 	MinDrawTileX = max(MinDrawTileX, 0)
 	MinDrawTileZ = EyeTileZ - 25
@@ -1077,7 +1091,7 @@ func (w *World) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 	MaxDrawTileZ = min(MaxDrawTileZ, w.MaxTileZ)
 	w.UpdateActiveOccluders()
 	TilesRemaining = 0
-	for i := w.Minlevel; i < w.MaxLevel; i++ {
+	for i := w.Minlevel; i < w.MaxTileLevel; i++ {
 		var9 := w.LevelTiles[i]
 		for j := MinDrawTileX; j < MaxDrawTileX; j++ {
 			for k := MinDrawTileZ; k < MaxDrawTileZ; k++ {
@@ -1101,7 +1115,7 @@ func (w *World) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 			}
 		}
 	}
-	for i := w.Minlevel; i < w.MaxLevel; i++ {
+	for i := w.Minlevel; i < w.MaxTileLevel; i++ {
 		var20 := w.LevelTiles[i]
 		for j := -25; j <= 0; j++ {
 			var22 := EyeTileX + j
@@ -1147,7 +1161,7 @@ func (w *World) Draw(arg0, arg1, arg2, arg3, arg4, arg5 int) {
 			}
 		}
 	}
-	for i := w.Minlevel; i < w.MaxLevel; i++ {
+	for i := w.Minlevel; i < w.MaxTileLevel; i++ {
 		var21 := w.LevelTiles[i]
 		for j := -25; j <= 0; j++ {
 			var13 := EyeTileX + j
@@ -1281,10 +1295,10 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 											var9 = tile.Bridge
 											if var9.Underlay == nil {
 												if var9.Overlay != nil && !w.TileVisible(0, tileX, tileZ) {
-													w.DrawTileOverlay(SinEyeYaw, tileZ, var9.Overlay, tileX, CosEyePitch, SinEyePitch, CosEyeYaw)
+													w.RenderGround(SinEyeYaw, tileZ, var9.Overlay, 7, tileX, CosEyePitch, SinEyePitch, CosEyeYaw)
 												}
 											} else if !w.TileVisible(0, tileX, tileZ) {
-												w.DrawTileUnderlay(var9.Underlay, 0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, tileX, tileZ)
+												w.RenderQuickGround(var9.Underlay, 0, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, tileX, tileZ)
 											}
 											var10 := var9.Wall
 											if var10 != nil {
@@ -1306,11 +1320,11 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 										if tile.Underlay == nil {
 											if tile.Overlay != nil && !w.TileVisible(originalLevel, tileX, tileZ) {
 												tileDrawn = true
-												w.DrawTileOverlay(SinEyeYaw, tileZ, tile.Overlay, tileX, CosEyePitch, SinEyePitch, CosEyeYaw)
+												w.RenderGround(SinEyeYaw, tileZ, tile.Overlay, 7, tileX, CosEyePitch, SinEyePitch, CosEyeYaw)
 											}
 										} else if !w.TileVisible(originalLevel, tileX, tileZ) {
 											tileDrawn = true
-											w.DrawTileUnderlay(tile.Underlay, originalLevel, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, tileX, tileZ)
+											w.RenderQuickGround(tile.Underlay, originalLevel, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, tileX, tileZ)
 										}
 
 										direction := 0
@@ -1732,7 +1746,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 			}
 		}
 
-		if level < w.MaxLevel-1 {
+		if level < w.MaxTileLevel-1 {
 			above := w.LevelTiles[level+1][tileX][tileZ]
 			if above != nil && above.Update {
 				DrawTileQueue.Push(above.DrawQueueNode)
@@ -1769,7 +1783,11 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 	}
 }
 
-func (w *World) DrawTileUnderlay(arg0 *typ.QuickGround, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int) {
+// RenderQuickGround renders one tile's underlay quad.
+//
+// Java: World.renderQuickGround (World.java:1629 @32f3062; same name at 254 —
+// the old Go name DrawTileUnderlay was pre-254 legacy).
+func (w *World) RenderQuickGround(arg0 *typ.QuickGround, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int) {
 	var9 := (arg6 << 7) - EyeX
 	var10 := var9
 	var11 := (arg7 << 7) - EyeZ
@@ -1872,7 +1890,14 @@ func (w *World) DrawTileUnderlay(arg0 *typ.QuickGround, arg1, arg2, arg3, arg4, 
 	}
 }
 
-func (w *World) DrawTileOverlay(arg0 int, arg1 int, arg2 *typ.Ground, arg3, arg4, arg5, arg6 int) {
+// RenderGround renders one tile's overlay mesh. NEW in 274: a mode param
+// (literal 7 at both call sites, World.java:1254,1274 @32f3062) with an
+// early return between the vertex and face loops when mode != 7 — ported
+// faithfully even though the guard never fires in practice.
+//
+// Java: World.renderGround (World.java:1726 @32f3062; same name at 254 —
+// the old Go name DrawTileOverlay was pre-254 legacy).
+func (w *World) RenderGround(arg0 int, arg1 int, arg2 *typ.Ground, mode int, arg3, arg4, arg5, arg6 int) {
 	var9 := len(arg2.VertexX)
 	for i := range var9 {
 		var11 := arg2.VertexX[i] - EyeX
@@ -1892,6 +1917,11 @@ func (w *World) DrawTileOverlay(arg0 int, arg1 int, arg2 *typ.Ground, arg3, arg4
 		}
 		typ.TmpScreenX[i] = pix3d.CenterW3D + (var14<<9)/var24
 		typ.TmpScreenY[i] = pix3d.CenterH3D + (var25<<9)/var24
+	}
+	// Java: `if (arg4 != 7) return;` (World.java:1747-1749 @32f3062) — NEW
+	// in 274, between the vertex and face loops.
+	if mode != 7 {
+		return
 	}
 	pix3d.Trans = 0
 	var9 = len(arg2.TriangleVertexA)
@@ -1962,8 +1992,8 @@ func (w *World) PointInsideTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, ar
 }
 
 func (w *World) UpdateActiveOccluders() {
-	var2 := LevelOccluderCount[TopLevel]
-	var3 := LevelOccluders[TopLevel]
+	var2 := LevelOccluderCount[MaxLevel]
+	var3 := LevelOccluders[MaxLevel]
 	ActiveOccluderCount = 0
 	for i := range var2 {
 		var5 := var3[i]

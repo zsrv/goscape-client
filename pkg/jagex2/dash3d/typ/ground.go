@@ -27,8 +27,12 @@ type Ground struct {
 	Flat               bool
 	Shape              int
 	Rotation           int
-	BackgroundRGB      int
-	ForegroundRGB      int
+	// Minimap colours; Go keeps role-based names. NAME-REUSE TRAP @32f3062:
+	// 274 FLIPPED the over/under labels vs 254 — BackgroundRGB ≡ 254
+	// underlayColour ≡ 274 minimapOverlay, ForegroundRGB ≡ 254
+	// overlayColour ≡ 274 minimapUnderlay (numeric roles unchanged).
+	BackgroundRGB int
+	ForegroundRGB int
 }
 
 func NewGround(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg17, arg18, arg19 int) *Ground {
