@@ -118,7 +118,7 @@ func ReadDomain(buf *io.Packet, domains [][]rune) {
 func FilterCharacters(in []rune) {
 	pos := 0
 	for i := range len(in) {
-		if AllowCharacter(in[i]) {
+		if IsCharAllowed(in[i]) {
 			in[pos] = in[i]
 		} else {
 			in[pos] = ' '
@@ -134,7 +134,7 @@ func FilterCharacters(in []rune) {
 	}
 }
 
-func AllowCharacter(c rune) bool {
+func IsCharAllowed(c rune) bool {
 	return c >= ' ' && c <= 127 || c == ' ' || c == '\n' || c == '\t' || c == 163 || c == 8364
 }
 
