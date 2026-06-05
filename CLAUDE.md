@@ -66,7 +66,7 @@ The `main` goroutine flow (from `main.go`):
 | `datastruct/` | Generic `LruCache[T]`, doubly-linked list (Java 274 `Linkable2`/`LinkList2`), `JString` |
 | `io/` | `Packet` (binary reader/writer), `JagFile` (JAG archive), ISAAC CSPRNG, `bzip2` decompressor (protocol constants back in `io/` since rev-274, per Java 274 `io/Protocol` — 274 reverted 254's move) |
 | `sound/jagfx/` | PCM wave audio (Java 274 JagFX; was Wave in ≤254) |
-| `sound/envelope/` & `tone/` | MIDI-style sound envelope/tone synthesis |
+| `sound/envelope/`, `tone/` & `filter/` | MIDI-style sound envelope/tone synthesis (`filter/` = per-tone IIR filter, NEW in Java 274) |
 | `wordfilter/wordfilter/` & `wordpack/` | Chat word filter and word packing (was wordenc/ in ≤254; Java 274 jagex2/wordfilter) |
 | `../sign/signlink/` (i.e. `pkg/sign/signlink/`) | Filesystem/network bridge originally for the signed Java applet; handles cache directory, HTTP downloads, DNS, and audio requests (moved to top-level `sign/` in rev-245.2 per Java `sign.signlink`) |
 
