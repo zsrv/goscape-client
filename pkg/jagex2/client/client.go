@@ -1929,7 +1929,8 @@ func (c *Client) HandleComponentInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 									c.MenuOption[c.MenuSize] = "Examine @lre@" + var18.Name + examineIDSuffix(var18.Index)
 									c.MenuAction[c.MenuSize] = 1328
 									c.MenuParamA[c.MenuSize] = var18.Index
-									c.MenuParamC[c.MenuSize] = var12.InvSlotObjCount[var23]
+									c.MenuParamB[c.MenuSize] = var23
+									c.MenuParamC[c.MenuSize] = var12.Id
 									c.MenuSize++
 								} else if c.ActiveSpellFlags&0x10 == 16 {
 									c.MenuOption[c.MenuSize] = c.SpellCaption + " @lre@" + var18.Name
@@ -10978,11 +10979,15 @@ func (c *Client) TcpIn() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 69 — component anim (Client.java:7152)
+	// Java: opcode 95 — component anim (Client.java:7007-7019)
 	if c.PacketType == SERVERPROT_IF_SETANIM {
 		var26 := c.In.G2()
-		var4 := c.In.G2()
+		var4 := c.In.G2B()
 		iftype.List[var26].Anim = var4
+		if var4 == -1 {
+			iftype.List[var26].SeqFrame = 0
+			iftype.List[var26].SeqCycle = 0
+		}
 		c.PacketType = -1
 		return true
 	}
