@@ -107,9 +107,13 @@ func (c *IfType) SwapObj(src, dst int) {
 	c.InvSlotObjCount[src], c.InvSlotObjCount[dst] = c.InvSlotObjCount[dst], c.InvSlotObjCount[src]
 }
 
-func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
+// Init unpacks all interface definitions. Java 274 renames unpack->init and
+// reorders the params to (data archive, image/media archive, fonts)
+// (IfType.java:210 @32f3062) — a real reorder, not compensated churn: 254's
+// unpack took (media, fonts, data) (IfType.java:210 @2e62978).
+func Init(arg0 *io.JagFile, arg1 *io.JagFile, arg2 []*pixfont.PixFont) {
 	ImageCache = datastruct.NewLruCache[*pix32.Pix32](50000)
-	var4 := io.NewPacket(arg3.Read("data", nil))
+	var4 := io.NewPacket(arg0.Read("data", nil))
 	var5 := -1
 	var6 := var4.G2()
 	List = make([]*IfType, var6)
@@ -212,13 +216,13 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 						com.InvSlotOffsetX[i] = var4.G2B()
 						com.InvSlotOffsetY[i] = var4.G2B()
 						var17 := var4.GStr()
-						if arg0 != nil && len(var17) > 0 {
+						if arg1 != nil && len(var17) > 0 {
 							var14 := strings.LastIndex(var17, ",")
 							v, err := strconv.Atoi(var17[var14+1:])
 							if err != nil {
 								panic(err)
 							}
-							com.InvSlotSprite[i] = GetImage(arg0, v, var17[0:var14])
+							com.InvSlotSprite[i] = GetImage(arg1, v, var17[0:var14])
 						}
 					}
 				}
@@ -240,8 +244,8 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 			if com.Type == 4 || com.Type == 1 {
 				com.Center = var4.G1() == 1
 				var11 = var4.G1()
-				if arg1 != nil {
-					com.Font = arg1[var11]
+				if arg2 != nil {
+					com.Font = arg2[var11]
 				}
 				com.Shadowed = var4.G1() == 1
 			}
@@ -261,22 +265,22 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 			}
 			if com.Type == 5 {
 				var16 := var4.GStr()
-				if arg0 != nil && len(var16) > 0 {
+				if arg1 != nil && len(var16) > 0 {
 					var12 = strings.LastIndex(var16, ",")
 					v, err := strconv.Atoi(var16[var12+1:])
 					if err != nil {
 						panic(err)
 					}
-					com.Graphic = GetImage(arg0, v, var16[0:var12])
+					com.Graphic = GetImage(arg1, v, var16[0:var12])
 				}
 				var16 = var4.GStr()
-				if arg0 != nil && len(var16) > 0 {
+				if arg1 != nil && len(var16) > 0 {
 					var12 = strings.LastIndex(var16, ",")
 					v, err := strconv.Atoi(var16[var12+1:])
 					if err != nil {
 						panic(err)
 					}
-					com.ActiveGraphic = GetImage(arg0, v, var16[0:var12])
+					com.ActiveGraphic = GetImage(arg1, v, var16[0:var12])
 				}
 			}
 			if com.Type == 6 {
@@ -311,8 +315,8 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 				com.InvSlotObjCount = make([]int, com.Width*com.Height)
 				com.Center = var4.G1() == 1
 				var11 = var4.G1()
-				if arg1 != nil {
-					com.Font = arg1[var11]
+				if arg2 != nil {
+					com.Font = arg2[var11]
 				}
 				com.Shadowed = var4.G1() == 1
 				com.Colour = var4.G4()

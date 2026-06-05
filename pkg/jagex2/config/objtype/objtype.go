@@ -351,11 +351,13 @@ func (t *ObjType) GetInterfaceModel(arg0 int) *model.Model {
 }
 
 // GetSprite renders (or fetches from SpriteCache) the 32x32 inventory icon for
-// obj `id` at stack `count`. outlineRgb selects the 244 variant: 0 = plain
+// obj `id` at stack `count`. outlineRgb selects the variant: 0 = plain
 // (cacheable, dark shadow pass), >0 = selection outline painted in that
 // colour (1.04x zoom), -1 = cert-link sub-icon (1.5x zoom, no outline/shadow).
-// Java: ObjType.getIcon(outlineRgb, count, id) (ObjType.java:474-622).
-func GetSprite(outlineRgb int, count int, id int) *pix32.Pix32 {
+// Java 274 moves id to the first param: getSprite(id, outlineRgb, count)
+// (ObjType.java:208 @32f3062) — a real reorder, not compensated churn: 254's
+// getSprite took (outlineRgb, count, id) (ObjType.java:442 @2e62978).
+func GetSprite(id int, outlineRgb int, count int) *pix32.Pix32 {
 	// Java: the icon cache is only consulted (and later populated) for the
 	// plain outlineRgb==0 variant (ObjType.java:475-486, 602-604).
 	if outlineRgb == 0 {
@@ -399,7 +401,8 @@ func GetSprite(outlineRgb int, count int, id int) *pix32.Pix32 {
 	// variant applies the 1.5x zoom.
 	var linkedIcon *pix32.Pix32
 	if var4.CertTemplate != -1 {
-		linkedIcon = GetSprite(-1, 10, var4.CertLink)
+		// Java 274: getSprite(var5.certlink, -1, 10) (ObjType.java:240 @32f3062).
+		linkedIcon = GetSprite(var4.CertLink, -1, 10)
 		if linkedIcon == nil {
 			return nil
 		}

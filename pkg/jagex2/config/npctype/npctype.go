@@ -202,10 +202,13 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 }
 
 // GetTempModel builds the animated NPC model into target (the caller-owned
-// reusable Model — Go deviation replacing Java's Model.empty static; see
-// ResetFromModel6). arg0 is the primary frame, arg1 the secondary frame,
-// arg2 the walkmerge label set.
-// Java: getTempModel (NpcType.java:240-285 @2e62978; was getModel at 245.2).
+// reusable Model — Go deviation replacing Java's Model.empty static, named
+// Model.tempModel at 274; see ResetFromModel6). arg0 is the primary frame,
+// arg1 the secondary frame, arg2 the walkmerge label set.
+// Java 274 moves the mask array last: getTempModel(primaryFrame,
+// secondaryFrame, walkmerge[]) (NpcType.java:230 @32f3062) — the order this
+// Go port already used; 254 declared (primaryFrame, walkmerge[],
+// secondaryFrame) (NpcType.java:228 @2e62978; was getModel at 245.2).
 func (t *NpcType) GetTempModel(target *model.Model, arg0 int, arg1 int, arg2 []int) *model.Model {
 	var5 := ModelCache.Find(t.Index)
 	if var5 == nil {
@@ -239,9 +242,10 @@ func (t *NpcType) GetTempModel(target *model.Model, arg0 int, arg1 int, arg2 []i
 		var5.CalculateNormals(t.Ambient+64, t.Contrast+850, -30, -50, -30, true)
 		ModelCache.Put(t.Index, var5)
 	}
-	// Java: var11.set(AnimFrame.shareAlpha(arg1) & AnimFrame.shareAlpha(arg3),
-	// var5) (NpcType.java:267 @2e62978) — was !animHasAlpha at 245.2 (WS3).
-	// shareAlpha has no side effects, so Go && is equivalent to Java's &.
+	// Java: var10.set(var4, AnimFrame.animateTransparencies(arg0) &
+	// animateTransparencies(arg1)) (NpcType.java:262 @32f3062; shareAlpha
+	// @2e62978, !animHasAlpha at 245.2). No side effects, so Go && is
+	// equivalent to Java's &.
 	target.ResetFromModel6(var5, animframe.ShareAlpha(arg0) && animframe.ShareAlpha(arg1))
 	var4 := target
 	if arg0 != -1 && arg1 != -1 {

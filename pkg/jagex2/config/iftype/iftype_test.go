@@ -30,12 +30,12 @@ func buildDataArchive(payload []byte) *io.JagFile {
 }
 
 // buildType6Component encodes a single IfType header for a type==6,
-// buttonType==1 component (buttonType 1 terminates Unpack's inner read loop),
+// buttonType==1 component (buttonType 1 terminates Init's inner read loop),
 // followed by the trailing option string. modelHi/modelLo are the two g1
 // values that produce the deferred model id ((modelHi-1)<<8)+modelLo.
 func buildType6Payload(id, modelHi, modelLo int) []byte {
 	p := io.NewPacket(make([]byte, 64))
-	// Unpack reads a leading g2 as the List array size before the loop.
+	// Init reads a leading g2 as the List array size before the loop.
 	p.P2(id + 1)
 	p.P2(id) // component id
 	p.P1(6)  // type
@@ -63,14 +63,14 @@ func buildType6Payload(id, modelHi, modelLo int) []byte {
 	return p.Data[:p.Pos]
 }
 
-func TestUnpackType6DeferredModel(t *testing.T) {
+func TestInitType6DeferredModel(t *testing.T) {
 	const id = 3
 	const modelHi = 2
 	const modelLo = 5
 	payload := buildType6Payload(id, modelHi, modelLo)
 	archive := buildDataArchive(payload)
 
-	Unpack(nil, nil, archive)
+	Init(archive, nil, nil)
 
 	if id >= len(List) || List[id] == nil {
 		t.Fatalf("component %d not decoded; List len=%d", id, len(List))

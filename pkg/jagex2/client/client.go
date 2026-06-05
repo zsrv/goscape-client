@@ -3883,7 +3883,9 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 								if c.ObjSelected == 1 && c.ObjSelectedSlot == var27 && c.ObjSelectedInterface == var14.Id {
 									outline = 16777215
 								}
-								var23 := objtype.GetSprite(outline, var14.InvSlotObjCount[var27], var22)
+								// Java 274: ObjType.getSprite(id, outlineRgb, count) — id
+								// moved first (ObjType.java:208 @32f3062).
+								var23 := objtype.GetSprite(var22, outline, var14.InvSlotObjCount[var27])
 								if var23 != nil {
 									if c.ObjDragArea != 0 && c.ObjDragSlot == var27 && c.ObjDragInterfaceID == var14.Id {
 										var33 = c.MouseX - c.ObjGrabX
@@ -6555,7 +6557,9 @@ func (c *Client) Load() {
 	}
 	c.DrawProgress("Unpacking interfaces", 95)
 	var48 := []*pixfont.PixFont{c.FontPlain11, c.FontPlain12, c.FontBold12, c.FontQuill8}
-	iftype.Unpack(jagMedia, var48, jagInterface)
+	// Java 274: IfType.init(data, media, fonts) (@32f3062) — param order
+	// changed from 254's unpack(media, fonts, data).
+	iftype.Init(jagInterface, jagMedia, var48)
 	c.DrawProgress("Preparing game engine", 100)
 	// Java: Client.java:1917-1933 — compass mask. 244 narrows the scan width
 	// to x < 34 (225 scanned 35 columns).
