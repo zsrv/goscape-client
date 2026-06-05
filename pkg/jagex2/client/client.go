@@ -1329,8 +1329,8 @@ func (c *Client) ZonePacket(arg1 *io.Packet, arg2 int) {
 				var8 = var6 + int(arg1.G1B())
 				var9 = arg1.G2B()
 				var10 = arg1.G2()
-				var11 = arg1.G1()
-				var36 = arg1.G1()
+				var11 = arg1.G1() * 4
+				var36 = arg1.G1() * 4
 				var37 = arg1.G2()
 				var14 = arg1.G2()
 				var15 = arg1.G1()
@@ -10915,9 +10915,12 @@ func (c *Client) TcpIn() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 115 — open overlay interface in viewport (Client.java:7982)
+	// Java: opcode 85 — open overlay interface in viewport (Client.java:7279-7288)
 	if c.PacketType == SERVERPROT_IF_OPENOVERLAY {
 		com := c.In.G2B()
+		if com >= 0 {
+			c.ResetInterfaceAnimation(com)
+		}
 		c.MainOverlayLayerID = com
 		c.PacketType = -1
 		return true

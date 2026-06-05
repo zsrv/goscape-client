@@ -882,7 +882,9 @@ func GouraudRaster(arg0 []int, arg1, arg4, arg5, arg6, arg7 int) {
 			arg1 += arg4
 			arg3 = (arg5 - arg4) >> 2
 			if arg3 > 0 {
-				var8 = ((arg7 - arg6) * DivTable[arg3]) >> 15
+				// Java: Pix3D.java:867 — 32-bit product wraps before the >>15
+				// (overflows on steep colour deltas over short spans; audit pix3d-B-01)
+				var8 = int(int32((arg7-arg6)*DivTable[arg3])) >> 15
 			} else {
 				var8 = 0
 			}
