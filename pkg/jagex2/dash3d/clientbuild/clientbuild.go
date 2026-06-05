@@ -18,7 +18,6 @@ import (
 var (
 	LowMemory                          bool = true
 	LevelBuilt                         int
-	FullBright                         bool
 	ROTATION_WALL_TYPE                 = []int{1, 2, 4, 8}
 	ROTATION_WALL_CORNER_TYPE          = []int{16, 32, 64, 128}
 	WALL_DECORATION_ROTATION_FORWARD_X = []int{1, 0, -1, 0}
@@ -46,7 +45,6 @@ var (
 func Reset() {
 	LowMemory = true
 	LevelBuilt = 0
-	FullBright = false
 }
 
 type ClientBuild struct {
@@ -563,19 +561,14 @@ func (w *ClientBuild) Build(arg0 *world.World, arg2 []*dash3d.CollisionMap) {
 			}
 		}
 	}
-	// Java: ClientBuild.java:589-607 — fullbright zeroes the per-build random tint
-	// drift instead of advancing it (audit world-1-01)
-	if FullBright {
-		RandomHueOffset = 0
-		RandomLightnessOffset = 0
-	} else {
-		RandomHueOffset += int(rand.Float64()*5.0) - 2
-		RandomHueOffset = max(RandomHueOffset, -8)
-		RandomHueOffset = min(RandomHueOffset, 8)
-		RandomLightnessOffset += int(rand.Float64()*5.0) - 2
-		RandomLightnessOffset = max(RandomLightnessOffset, -16)
-		RandomLightnessOffset = min(RandomLightnessOffset, 16)
-	}
+	// Java: ClientBuild.java:587-598 @2e62978 — 254 removed the fullbright static;
+	// the per-build random tint drift is unconditional.
+	RandomHueOffset += int(rand.Float64()*5.0) - 2
+	RandomHueOffset = max(RandomHueOffset, -8)
+	RandomHueOffset = min(RandomHueOffset, 8)
+	RandomLightnessOffset += int(rand.Float64()*5.0) - 2
+	RandomLightnessOffset = max(RandomLightnessOffset, -16)
+	RandomLightnessOffset = min(RandomLightnessOffset, 16)
 	var12 := 0
 	var13 := 0
 	var14 := 0
@@ -753,9 +746,10 @@ func (w *ClientBuild) Build(arg0 *world.World, arg2 []*dash3d.CollisionMap) {
 			}
 		}
 	}
-	if !FullBright {
-		arg0.BuildModels(-10, 64, -50, 768, -50)
-	}
+	// Java: ClientBuild.java:757 @2e62978 — shareLight unconditional in 254 (the
+	// Go arg order vs Java's (768, 64, -10, -50, -50) is a verified compensated
+	// pair — do not "fix").
+	arg0.BuildModels(-10, 64, -50, 768, -50)
 	for i := range w.MaxTileX {
 		for j := range w.MaxTileZ {
 			if w.LevelTileFlags[1][i][j]&0x2 == 2 {
@@ -763,9 +757,8 @@ func (w *ClientBuild) Build(arg0 *world.World, arg2 []*dash3d.CollisionMap) {
 			}
 		}
 	}
-	if FullBright {
-		return
-	}
+	// Java: ClientBuild.java:766+ @2e62978 — occluder pass unconditional in 254
+	// (fullbright early-return removed).
 	var7 = 1
 	var47 := 2
 	var48 := 4
