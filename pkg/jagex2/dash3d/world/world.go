@@ -685,9 +685,9 @@ func (w *World) BuildModels(arg0, arg1, arg2, lightAttenuation, arg4 int) {
 					// ClientLocAnim locs (instanceof Model).
 					var13 := tile.Wall
 					if var13 != nil {
-						if mA, ok := var13.ModelA.(*model.Model); ok && mA.VertexNormal != nil {
+						if mA, ok := var13.ModelA.(*model.Model); ok && mA.PointNormal != nil {
 							w.MergeLocNormals(tileX, 1, 1, level, mA, tileZ)
-							if mB, ok := var13.ModelB.(*model.Model); ok && mB.VertexNormal != nil {
+							if mB, ok := var13.ModelB.(*model.Model); ok && mB.PointNormal != nil {
 								w.MergeLocNormals(tileX, 1, 1, level, mB, tileZ)
 								w.MergeNormals(mA, mB, 0, 0, 0, false)
 								mB.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
@@ -699,7 +699,7 @@ func (w *World) BuildModels(arg0, arg1, arg2, lightAttenuation, arg4 int) {
 					for l := range tile.LocCount {
 						loc := tile.Locs[l]
 						if loc != nil {
-							if m, ok := loc.Model.(*model.Model); ok && m.VertexNormal != nil {
+							if m, ok := loc.Model.(*model.Model); ok && m.PointNormal != nil {
 								w.MergeLocNormals(tileX, loc.MaxSceneTileX-loc.MinSceneTileX+1, loc.MaxSceneTileZ-loc.MinSceneTileZ+1, level, m, tileZ)
 								m.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
 							}
@@ -708,7 +708,7 @@ func (w *World) BuildModels(arg0, arg1, arg2, lightAttenuation, arg4 int) {
 
 					decor := tile.GroundDecor
 					if decor != nil {
-						if m, ok := decor.Model.(*model.Model); ok && m.VertexNormal != nil {
+						if m, ok := decor.Model.(*model.Model); ok && m.PointNormal != nil {
 							w.MergeGroundDecorationNormals(level, tileZ, m, tileX)
 							m.ApplyLighting(arg1, attenuation, arg2, arg0, arg4)
 						}
@@ -726,7 +726,7 @@ func (w *World) MergeGroundDecorationNormals(arg1 int, arg2 int, arg3 *model.Mod
 	if arg4 < w.MaxTileX {
 		var6 := w.LevelTiles[arg1][arg4+1][arg2]
 		if var6 != nil && var6.GroundDecor != nil {
-			if m, ok := var6.GroundDecor.Model.(*model.Model); ok && m.VertexNormal != nil {
+			if m, ok := var6.GroundDecor.Model.(*model.Model); ok && m.PointNormal != nil {
 				w.MergeNormals(arg3, m, 128, 0, 0, true)
 			}
 		}
@@ -734,7 +734,7 @@ func (w *World) MergeGroundDecorationNormals(arg1 int, arg2 int, arg3 *model.Mod
 	if arg2 < w.MaxTileX {
 		var6 := w.LevelTiles[arg1][arg4][arg2+1]
 		if var6 != nil && var6.GroundDecor != nil {
-			if m, ok := var6.GroundDecor.Model.(*model.Model); ok && m.VertexNormal != nil {
+			if m, ok := var6.GroundDecor.Model.(*model.Model); ok && m.PointNormal != nil {
 				w.MergeNormals(arg3, m, 0, 0, 128, true)
 			}
 		}
@@ -742,7 +742,7 @@ func (w *World) MergeGroundDecorationNormals(arg1 int, arg2 int, arg3 *model.Mod
 	if arg4 < w.MaxTileX && arg2 < w.MaxTileZ {
 		var6 := w.LevelTiles[arg1][arg4+1][arg2+1]
 		if var6 != nil && var6.GroundDecor != nil {
-			if m, ok := var6.GroundDecor.Model.(*model.Model); ok && m.VertexNormal != nil {
+			if m, ok := var6.GroundDecor.Model.(*model.Model); ok && m.PointNormal != nil {
 				w.MergeNormals(arg3, m, 128, 0, 128, true)
 			}
 		}
@@ -752,7 +752,7 @@ func (w *World) MergeGroundDecorationNormals(arg1 int, arg2 int, arg3 *model.Mod
 	}
 	var6 := w.LevelTiles[arg1][arg4+1][arg2-1]
 	if var6 != nil && var6.GroundDecor != nil {
-		if m, ok := var6.GroundDecor.Model.(*model.Model); ok && m.VertexNormal != nil {
+		if m, ok := var6.GroundDecor.Model.(*model.Model); ok && m.PointNormal != nil {
 			w.MergeNormals(arg3, m, 128, 0, -128, true)
 		}
 	}
@@ -775,17 +775,17 @@ func (w *World) MergeLocNormals(arg0, arg1, arg2, arg3 int, arg5 *model.Model, a
 								var17 := (w.LevelHeightMaps[i][j][k]+w.LevelHeightMaps[i][j+1][k]+w.LevelHeightMaps[i][j][k+1]+w.LevelHeightMaps[i][j+1][k+1])/4 - (w.LevelHeightMaps[arg3][arg0][arg6]+w.LevelHeightMaps[arg3][arg0+1][arg6]+w.LevelHeightMaps[arg3][arg0][arg6+1]+w.LevelHeightMaps[arg3][arg0+1][arg6+1])/4
 								var18 := var16.Wall
 								if var18 != nil {
-									if m, ok := var18.ModelA.(*model.Model); ok && m.VertexNormal != nil {
+									if m, ok := var18.ModelA.(*model.Model); ok && m.PointNormal != nil {
 										w.MergeNormals(arg5, m, (j-arg0)*128+(1-arg1)*64, var17, (k-arg6)*128+(1-arg2)*64, var8)
 									}
-									if m, ok := var18.ModelB.(*model.Model); ok && m.VertexNormal != nil {
+									if m, ok := var18.ModelB.(*model.Model); ok && m.PointNormal != nil {
 										w.MergeNormals(arg5, m, (j-arg0)*128+(1-arg1)*64, var17, (k-arg6)*128+(1-arg2)*64, var8)
 									}
 								}
 								for l := range var16.LocCount {
 									var20 := var16.Locs[l]
 									if var20 != nil {
-										if m, ok := var20.Model.(*model.Model); ok && m.VertexNormal != nil {
+										if m, ok := var20.Model.(*model.Model); ok && m.PointNormal != nil {
 											var21 := var20.MaxSceneTileX - var20.MinSceneTileX + 1
 											var22 := var20.MaxSceneTileZ - var20.MinSceneTileZ + 1
 											w.MergeNormals(arg5, m, (var20.MinSceneTileX-arg0)*128+(var21-arg1)*64, var17, (var20.MinSceneTileZ-arg6)*128+(var22-arg2)*64, var8)
@@ -823,14 +823,14 @@ func (w *World) MergeNormals(modelA, modelB *model.Model, arg2, offsetY, arg4 in
 						for j := range vertexCountB {
 							var18 := modelB.VertexNormalOriginal[j]
 							if x == vertexX[j] && z == modelB.VertexZ[j] && y == modelB.VertexY[j] && var18.W != 0 {
-								modelA.VertexNormal[vertexA].X += var18.X
-								modelA.VertexNormal[vertexA].Y += var18.Y
-								modelA.VertexNormal[vertexA].Z += var18.Z
-								modelA.VertexNormal[vertexA].W += var18.W
-								modelB.VertexNormal[j].X += originalNormalA.X
-								modelB.VertexNormal[j].Y += originalNormalA.Y
-								modelB.VertexNormal[j].Z += originalNormalA.Z
-								modelB.VertexNormal[j].W += originalNormalA.W
+								modelA.PointNormal[vertexA].X += var18.X
+								modelA.PointNormal[vertexA].Y += var18.Y
+								modelA.PointNormal[vertexA].Z += var18.Z
+								modelA.PointNormal[vertexA].W += var18.W
+								modelB.PointNormal[j].X += originalNormalA.X
+								modelB.PointNormal[j].Y += originalNormalA.Y
+								modelB.PointNormal[j].Z += originalNormalA.Z
+								modelB.PointNormal[j].W += originalNormalA.W
 								merged++
 								w.MergeIndexA[vertexA] = w.TmpMergeIndex
 								w.MergeIndexB[j] = w.TmpMergeIndex

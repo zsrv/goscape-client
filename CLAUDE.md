@@ -56,7 +56,7 @@ The `main` goroutine flow (from `main.go`):
 | `dash3d/model/` | 3D model data and rasterization (moved from `graphics/` in rev-244) |
 | `dash3d/animbase/` & `animframe/` | Skeletal animation base/frame data (moved from `graphics/`) |
 | `dash3d/metadata/` | Model metadata (moved from `graphics/`) |
-| `dash3d/vertexnormal/` | Vertex normal smoothing (moved from `graphics/`) |
+| `dash3d/pointnormal/` | Vertex normal smoothing (Java 274 PointNormal) |
 | `graphics/pix2d/` | 2D pixel operations (line drawing, fill) |
 | `graphics/pix3d/` | 3D rasterizer (triangle fill, texture mapping, sin/cos tables) |
 | `graphics/pix8/` | 8-bit indexed-color pixel buffer |

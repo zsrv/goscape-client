@@ -3,7 +3,7 @@ package model
 import (
 	"testing"
 
-	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/vertexnormal"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/pointnormal"
 )
 
 // stubProvider is a no-op io.OnDemandProvider for tests: it records nothing and
@@ -178,12 +178,12 @@ func TestResetFromModel6ClearsStaleFields(t *testing.T) {
 	src := sampleBaseModel(4, 2)
 	var m Model
 	m.UseAABBMouseCheck = true
-	m.VertexNormal = make([]vertexnormal.VertexNormal, 4)
+	m.PointNormal = make([]pointnormal.PointNormal, 4)
 	m.MaxY = 555
 	m.ResetFromModel6(src, true)
-	if m.UseAABBMouseCheck || m.VertexNormal != nil || m.MaxY != 0 {
-		t.Errorf("stale fields not cleared: UseAABBMouseCheck=%v VertexNormal=%v MaxY=%d",
-			m.UseAABBMouseCheck, m.VertexNormal != nil, m.MaxY)
+	if m.UseAABBMouseCheck || m.PointNormal != nil || m.MaxY != 0 {
+		t.Errorf("stale fields not cleared: UseAABBMouseCheck=%v PointNormal=%v MaxY=%d",
+			m.UseAABBMouseCheck, m.PointNormal != nil, m.MaxY)
 	}
 }
 
@@ -203,9 +203,9 @@ func TestCalculateNormalsSingleFace(t *testing.T) {
 	m.CalculateNormals(64, 850, -30, -50, -30, false) // arg5=false: keep normals, build Original
 
 	for i := range 3 {
-		n := m.VertexNormal[i]
+		n := m.PointNormal[i]
 		if n.X != 0 || n.Y != -256 || n.Z != 0 || n.W != 1 {
-			t.Errorf("VertexNormal[%d] = %+v, want {0 -256 0 1}", i, n)
+			t.Errorf("PointNormal[%d] = %+v, want {0 -256 0 1}", i, n)
 		}
 		o := m.VertexNormalOriginal[i]
 		if o != n {

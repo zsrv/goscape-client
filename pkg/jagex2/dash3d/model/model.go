@@ -7,7 +7,7 @@ import (
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/metadata"
-	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/vertexnormal"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/pointnormal"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix3d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
@@ -143,8 +143,8 @@ type Model struct {
 	FaceAlpha            []int
 	FaceLabel            []int
 	FaceColour           []int
-	VertexNormal         []vertexnormal.VertexNormal
-	VertexNormalOriginal []vertexnormal.VertexNormal
+	PointNormal          []pointnormal.PointNormal
+	VertexNormalOriginal []pointnormal.PointNormal
 	MaxY                 int
 	MinY                 int
 	Radius               int
@@ -834,9 +834,9 @@ func NewModel5(arg0 *Model, arg2 bool, arg3 bool) *Model {
 				m.FaceInfo[i] = arg0.FaceInfo[i]
 			}
 		}
-		m.VertexNormal = make([]vertexnormal.VertexNormal, m.VertexCount)
+		m.PointNormal = make([]pointnormal.PointNormal, m.VertexCount)
 		for i := range m.VertexCount {
-			m.VertexNormal[i] = arg0.VertexNormal[i]
+			m.PointNormal[i] = arg0.PointNormal[i]
 		}
 		m.VertexNormalOriginal = arg0.VertexNormalOriginal
 	} else {
@@ -1329,8 +1329,8 @@ func (m *Model) CalculateNormals(arg0, arg1, arg2, arg3, arg4 int, arg5 bool) {
 		m.FaceColourB = make([]int, m.FaceCount)
 		m.FaceColourC = make([]int, m.FaceCount)
 	}
-	if m.VertexNormal == nil {
-		m.VertexNormal = make([]vertexnormal.VertexNormal, m.VertexCount)
+	if m.PointNormal == nil {
+		m.PointNormal = make([]pointnormal.PointNormal, m.VertexCount)
 	}
 	for i := range m.FaceCount {
 		var10 := m.FaceVertexA[i]
@@ -1358,18 +1358,18 @@ func (m *Model) CalculateNormals(arg0, arg1, arg2, arg3, arg4 int, arg5 bool) {
 		var20 = var20 * 256 / var22
 		var21 = var21 * 256 / var22
 		if m.FaceInfo == nil || m.FaceInfo[i]&0x1 == 0 {
-			m.VertexNormal[var10].X += var19
-			m.VertexNormal[var10].Y += var20
-			m.VertexNormal[var10].Z += var21
-			m.VertexNormal[var10].W++
-			m.VertexNormal[var11].X += var19
-			m.VertexNormal[var11].Y += var20
-			m.VertexNormal[var11].Z += var21
-			m.VertexNormal[var11].W++
-			m.VertexNormal[var12].X += var19
-			m.VertexNormal[var12].Y += var20
-			m.VertexNormal[var12].Z += var21
-			m.VertexNormal[var12].W++
+			m.PointNormal[var10].X += var19
+			m.PointNormal[var10].Y += var20
+			m.PointNormal[var10].Z += var21
+			m.PointNormal[var10].W++
+			m.PointNormal[var11].X += var19
+			m.PointNormal[var11].Y += var20
+			m.PointNormal[var11].Z += var21
+			m.PointNormal[var11].W++
+			m.PointNormal[var12].X += var19
+			m.PointNormal[var12].Y += var20
+			m.PointNormal[var12].Z += var21
+			m.PointNormal[var12].W++
 		} else {
 			var28 := arg0 + (arg2*var19+arg3*var20+arg4*var21)/(var8+var8/2)
 			m.FaceColourA[i] = MulColourLightness(m.FaceColour[i], var28, m.FaceInfo[i])
@@ -1378,9 +1378,9 @@ func (m *Model) CalculateNormals(arg0, arg1, arg2, arg3, arg4 int, arg5 bool) {
 	if arg5 {
 		m.ApplyLighting(arg0, var8, arg2, arg3, arg4)
 	} else {
-		m.VertexNormalOriginal = make([]vertexnormal.VertexNormal, m.VertexCount)
+		m.VertexNormalOriginal = make([]pointnormal.PointNormal, m.VertexCount)
 		for i := range m.VertexCount {
-			m.VertexNormalOriginal[i] = m.VertexNormal[i]
+			m.VertexNormalOriginal[i] = m.PointNormal[i]
 		}
 	}
 	if arg5 {
@@ -1397,30 +1397,30 @@ func (m *Model) ApplyLighting(arg0, arg1, arg2, arg3, arg4 int) {
 		var9 := m.FaceVertexC[i]
 		if m.FaceInfo == nil {
 			var12 := m.FaceColour[i]
-			var10 := m.VertexNormal[var7]
+			var10 := m.PointNormal[var7]
 			var11 := int(int32(arg0 + int(int32(arg2*var10.X+arg3*var10.Y+arg4*var10.Z))/int(int32(arg1*var10.W))))
 			m.FaceColourA[i] = MulColourLightness(var12, var11, 0)
-			var14 := m.VertexNormal[var8]
+			var14 := m.PointNormal[var8]
 			var16 := int(int32(arg0 + int(int32(arg2*var14.X+arg3*var14.Y+arg4*var14.Z))/int(int32(arg1*var14.W))))
 			m.FaceColourB[i] = MulColourLightness(var12, var16, 0)
-			var15 := m.VertexNormal[var9]
+			var15 := m.PointNormal[var9]
 			var17 := int(int32(arg0 + int(int32(arg2*var15.X+arg3*var15.Y+arg4*var15.Z))/int(int32(arg1*var15.W))))
 			m.FaceColourC[i] = MulColourLightness(var12, var17, 0)
 		} else if m.FaceInfo[i]&0x1 == 0 {
 			var12 := m.FaceColour[i]
 			var13 := m.FaceInfo[i]
-			var10 := m.VertexNormal[var7]
+			var10 := m.PointNormal[var7]
 			var11 := int(int32(arg0 + int(int32(arg2*var10.X+arg3*var10.Y+arg4*var10.Z))/int(int32(arg1*var10.W))))
 			m.FaceColourA[i] = MulColourLightness(var12, var11, var13)
-			var10 = m.VertexNormal[var8]
+			var10 = m.PointNormal[var8]
 			var11 = int(int32(arg0 + int(int32(arg2*var10.X+arg3*var10.Y+arg4*var10.Z))/int(int32(arg1*var10.W))))
 			m.FaceColourB[i] = MulColourLightness(var12, var11, var13)
-			var10 = m.VertexNormal[var9]
+			var10 = m.PointNormal[var9]
 			var11 = int(int32(arg0 + int(int32(arg2*var10.X+arg3*var10.Y+arg4*var10.Z))/int(int32(arg1*var10.W))))
 			m.FaceColourC[i] = MulColourLightness(var12, var11, var13)
 		}
 	}
-	m.VertexNormal = nil
+	m.PointNormal = nil
 	m.VertexNormalOriginal = nil
 	m.VertexLabel = nil
 	m.FaceLabel = nil

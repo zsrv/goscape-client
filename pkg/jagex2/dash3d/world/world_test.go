@@ -5,7 +5,7 @@ import (
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
-	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/vertexnormal"
+	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/pointnormal"
 )
 
 // TestOccludedMode5_UsesZDeltaForZProjection is a regression test for the
@@ -92,24 +92,24 @@ func TestMergeNormalsAccumulatesCoincident(t *testing.T) {
 		m.VertexX = []int{0}
 		m.VertexY = []int{0}
 		m.VertexZ = []int{0}
-		m.VertexNormal = []vertexnormal.VertexNormal{{X: 0, Y: 0, Z: 0, W: 0}}
-		m.VertexNormalOriginal = []vertexnormal.VertexNormal{{X: 0, Y: 0, Z: 0, W: 0}}
+		m.PointNormal = []pointnormal.PointNormal{{X: 0, Y: 0, Z: 0, W: 0}}
+		m.VertexNormalOriginal = []pointnormal.PointNormal{{X: 0, Y: 0, Z: 0, W: 0}}
 		return m
 	}
 	a := mkModel()
-	a.VertexNormal[0] = vertexnormal.VertexNormal{X: 10, Y: 0, Z: 0, W: 1}
-	a.VertexNormalOriginal[0] = vertexnormal.VertexNormal{X: 10, Y: 0, Z: 0, W: 1}
+	a.PointNormal[0] = pointnormal.PointNormal{X: 10, Y: 0, Z: 0, W: 1}
+	a.VertexNormalOriginal[0] = pointnormal.PointNormal{X: 10, Y: 0, Z: 0, W: 1}
 	b := mkModel()
-	b.VertexNormal[0] = vertexnormal.VertexNormal{X: 0, Y: 20, Z: 0, W: 1}
-	b.VertexNormalOriginal[0] = vertexnormal.VertexNormal{X: 0, Y: 20, Z: 0, W: 1}
+	b.PointNormal[0] = pointnormal.PointNormal{X: 0, Y: 20, Z: 0, W: 1}
+	b.VertexNormalOriginal[0] = pointnormal.PointNormal{X: 0, Y: 20, Z: 0, W: 1}
 
 	w := &World{MergeIndexA: make([]int, 1), MergeIndexB: make([]int, 1)}
 	w.MergeNormals(a, b, 0, 0, 0, false)
 
-	if got := a.VertexNormal[0]; got != (vertexnormal.VertexNormal{X: 10, Y: 20, Z: 0, W: 2}) {
-		t.Errorf("a.VertexNormal[0] = %+v, want {10 20 0 2}", got)
+	if got := a.PointNormal[0]; got != (pointnormal.PointNormal{X: 10, Y: 20, Z: 0, W: 2}) {
+		t.Errorf("a.PointNormal[0] = %+v, want {10 20 0 2}", got)
 	}
-	if got := b.VertexNormal[0]; got != (vertexnormal.VertexNormal{X: 10, Y: 20, Z: 0, W: 2}) {
-		t.Errorf("b.VertexNormal[0] = %+v, want {10 20 0 2}", got)
+	if got := b.PointNormal[0]; got != (pointnormal.PointNormal{X: 10, Y: 20, Z: 0, W: 2}) {
+		t.Errorf("b.PointNormal[0] = %+v, want {10 20 0 2}", got)
 	}
 }
