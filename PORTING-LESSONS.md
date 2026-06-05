@@ -94,7 +94,23 @@ it:
   enumeration, never by diff.
 - Compensated pairs (a ctor's parameter semantics swap + its call sites
   swapping to match) are net-neutral but wrong if half-ported — land both
-  halves in one commit.
+  halves in one commit. The pair can span *distant files*: a menu-action
+  renumbering is a producer↔consumer pair (the menu-entry *pusher* writes
+  `paramB`/`paramC` that the action *dispatcher* reads), and the rev-254
+  port landed one dispatcher-only — inventory Examine crashed until the
+  parity audit caught it. When one end of any protocol-like pair changes,
+  grep for the other end before committing. The Go port also carries
+  *standing* compensated argument-order pairs (`AddChat(int, text, sender)`
+  ≡ Java `addChat(sender, int, text)`; `ZonePacket(Packet, int)` ≡ Java
+  `zonePacket(int, Packet)`) — net-neutral, but they look like arg-scramble
+  bugs to an auditor, so keep them documented.
+- **Deltas are not monotonic — a revision can *revert* the prior revision's
+  change.** 245.2 made the `@cr1@`/`@cr2@` crown-tag strip mutually
+  exclusive (`else if`); 254 reverted it to two independent `if`s. The Go
+  port carried the faithful 245.2 shape *with comments citing 245.2's
+  `else if`*, which made it read as verified while being wrong for 254.
+  Treat undo-hunks as real delta, never as noise, and re-cite per-site
+  `// Java:` comments whenever the new revision moves the ground under them.
 
 Distill the real delta into a scope document first (the rev-245.2 method was
 a method-paired multi-agent comparison with adversarial verification of every
@@ -114,8 +130,8 @@ against the Java source before "fixing" anything a linter flags.
   byte-typed fields as `int8` so promotion matches Java.
 - **Type map:** `byte`→`int8`, `short`→`int16`, `int`→`int32`, `long`→`int64`,
   `char`→`uint16` (see the per-revision README translation table).
-- **int64-vs-int32 truncation is the dominant latent class — three audits in a
-  row** (225, 244, 245.2). Java `int` arithmetic wraps at 32 bits; Go locals
+- **int64-vs-int32 truncation is the dominant latent class — four audits in a
+  row** (225, 244, 245.2, 254). Java `int` arithmetic wraps at 32 bits; Go locals
   typed `int` don't. Wrap with `int(int32(expr))` at multiply/accumulate/shift
   sites that can exceed 2^31, or type a cluster of locals `int32` when wraps
   chain through accumulators (Go `int32` arithmetic wraps mod 2^32 exactly like
@@ -235,27 +251,34 @@ lessons is obsolete, but the invariants survived the rewrite:
 
 ### The full parity audit (one per revision port — a standard phase, not an extra)
 
-All three completed ports ended with an exhaustive line-by-line audit of the Go
+All four completed ports ended with an exhaustive line-by-line audit of the Go
 branch against the pinned Java reference (rev-225: `PARITY-AUDIT-2026-05-28.md`,
 rev-244: `PARITY-AUDIT-2026-06-03.md`, rev-245.2: `PARITY-AUDIT-2026-06-04.md`,
-each at its rev branch root), and every one found real bugs that had survived
-every gate **and** smoke testing — 14 bugs (225) vs 11 blockers + 62 bugs (244)
-vs 1 blocker + 6 bugs + 22 latent (245.2). The 4–5× jump at 244 is the
-divergent deob lineage (§2): rename churn multiplies the miss rate, so the
-dirtier the diff, the more the audit pays. The 245.2 numbers show the floor is
-NOT zero even for a clean same-lineage delta port whose base was audited the
-day before: its one blocker (a dropped bounds guard, panic reachable only via
-server-driven cutscene coords) could not have been caught by any smoke test —
-only full coverage finds the crash that needs unusual server input. Most 245.2
-bugs were in code the delta *touched or sat adjacent to* (stale rev-225
-constants, an if/else-if chain flattened during an earlier translation), i.e.
-full-coverage re-walks also catch what earlier audits missed.
+rev-254: `PARITY-AUDIT-2026-06-05.md`, each at its rev branch root), and every
+one found real bugs that had survived every gate **and** (where one had run)
+smoke testing — 14 bugs (225) vs 11 blockers + 62 bugs (244) vs 1 blocker +
+6 bugs + 22 latent (245.2) vs 2 blockers + 3 bugs + 13 latent (254). The 4–5×
+jump at 244 is the divergent deob lineage (§2): rename churn multiplies the
+miss rate, so the dirtier the diff, the more the audit pays. The 245.2 numbers
+show the floor is NOT zero even for a clean same-lineage delta port whose base
+was audited the day before: its one blocker (a dropped bounds guard, panic
+reachable only via server-driven cutscene coords) could not have been caught
+by any smoke test — only full coverage finds the crash that needs unusual
+server input. Most 245.2 bugs were in code the delta *touched or sat adjacent
+to* (stale rev-225 constants, an if/else-if chain flattened during an earlier
+translation), i.e. full-coverage re-walks also catch what earlier audits
+missed. 254's two blockers were both *delta-execution* slips rather than
+Java→Go semantics: a renumbering applied to the action dispatcher but not the
+menu-entry pusher (§2 compensated pairs), and an opcode payload read left
+unsigned (`g2`) where 254 changed it to signed (`g2b`) with a new `== -1`
+reset branch — the audit catches half-applied workstreams, not just
+translation gotchas.
 
 **When.** After the logic delta has fully landed; ideally after the first host
-smoke test passes (245.2 ran audit-then-smoke instead, with the single smoke
-run validating both the port and the fix pass — workable, but order fixes
-before smoke either way). The smoke test proves the happy path boots; the
-audit catches the mistranslations that don't crash the login path.
+smoke test passes (245.2 and 254 ran audit-then-smoke instead, with the single
+smoke run validating both the port and the fix pass — workable, but order
+fixes before smoke either way). The smoke test proves the happy path boots;
+the audit catches the mistranslations that don't crash the login path.
 
 **Method** (copy the structure of the prior audit docs):
 
@@ -301,6 +324,7 @@ caught a ledger item still marked "deferred" that had in fact already landed.
 
 **Scale honestly.** The 244 audit ran as a single multi-agent workflow
 (50 units / 683 Java methods walked / every finding adversarially verified);
-245.2's was 54 units / 674 methods / 89 agents with the same shape.
+245.2's was 54 units / 674 methods / 89 agents, and 254's was 50 units /
+805 methods / 72 agents, all the same shape.
 The *method* — full coverage, per-statement checks, skeptic pass, reverse
 coverage — is the requirement; the tooling that delivers it is not.
