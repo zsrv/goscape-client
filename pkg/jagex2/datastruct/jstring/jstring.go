@@ -6,7 +6,6 @@ import (
 )
 
 var (
-	Builder       []rune = make([]rune, 12)
 	BASE37_LOOKUP []rune = []rune{'_', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 )
 
@@ -41,24 +40,30 @@ func ToBase37(s string) int64 {
 }
 
 func FromBase37(username int64) string {
-	// Java: if (arg0 <= 0L || arg0 >= 6582952005840035281L) (JString.java:35) —
-	// the first clause rejects 0 too. Match it literally with <= 0 (0 is also
-	// caught by the %37==0 branch, so behavior was already identical).
+	// Java: if (arg0 <= 0L || arg0 >= 6582952005840035281L) (JString.java:33
+	// @2e62978) — the first clause rejects 0 too. Match it literally with
+	// <= 0 (0 is also caught by the %37==0 branch, so behavior was already
+	// identical).
 	if username <= 0 || username >= 6582952005840035281 {
 		return "invalid_name"
 	} else if username%37 == 0 {
 		return "invalid_name"
 	} else {
 		length := 0
+		// Java: char[] var4 = new char[12] (JString.java:39 @2e62978) — 254
+		// replaces ≤245.2's static 12-char builder with a per-call buffer;
+		// the package-level Builder global is deleted with it (also fixes a
+		// latent data race between goroutines formatting names concurrently).
+		builder := make([]rune, 12)
 
 		for username != 0 {
 			last := username
 			username /= 37
-			Builder[11-length] = BASE37_LOOKUP[last-username*37]
+			builder[11-length] = BASE37_LOOKUP[last-username*37]
 			length++
 		}
 
-		return string(Builder[12-length : 12-length+length])
+		return string(builder[12-length : 12-length+length])
 	}
 }
 
