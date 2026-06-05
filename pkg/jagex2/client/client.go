@@ -62,12 +62,15 @@ func RecoverPanic() {
 }
 
 var (
-	CycleLogic2     int
-	OpLogic3        int
-	CHARSET         string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"£$%^&*()-_=+[{]};:'@#~,<.>/?\\| "
-	LevelExperience []int  = make([]int, 99)
-	NodeID          int    = 10
-	MembersWorld    bool   = true
+	CycleLogic2 int
+	OpLogic3    int
+	CHARSET     string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"£$%^&*()-_=+[{]};:'@#~,<.>/?\\| "
+	// Java: static int[] BITMASK (Client.java:577 @2e62978) — NEW in 254;
+	// first (and only) reader is GetIfVar opcode 14's varbit extraction.
+	Bitmask         []int = make([]int, 32)
+	LevelExperience []int = make([]int, 99)
+	NodeID          int   = 10
+	MembersWorld    bool  = true
 	RSA_EXPONENT    *big.Int
 	RSA_MODULUS     *big.Int
 	// Java: static mouseTracked (Client.java:1225 @2e62978) — NEW in 254; set
@@ -102,6 +105,16 @@ func init() {
 		panic("bad rsa exponent")
 	}
 	RSA_EXPONENT = exponent
+
+	// Java: static block (Client.java:1279-1284 @2e62978) — BITMASK[i] = 2^(i+1)-1.
+	// At i=31 Java's 32-bit `var0 += var0` overflows to 0, so BITMASK[31] = -1
+	// (all 32 bits); Go's 64-bit int would yield 4294967295 instead, which
+	// diverges when masking negative varps — wrap through int32 to match.
+	bm := 2 // Java: var0
+	for i := range 32 {
+		Bitmask[i] = int(int32(bm - 1))
+		bm += bm
+	}
 
 	var0 := 0
 	for i := range 99 {
@@ -570,7 +583,7 @@ func NewClient() *Client {
 		IgnoreName37:               make([]int64, 100),
 		MessageIds:                 make([]int, 100),
 		Out:                        io.Alloc(1),
-		SkillLevel:                 make([]int, 50),
+		SkillLevel:                 make([]int, StatsCount), // Java: new int[Stats.COUNT] (Client.java:349 @2e62978; 245.2 was 50)
 		ChatInterface:              iftype.NewIfType(),
 		WaveLoops:                  make([]int, 50),
 		LocalPID:                   -1,
@@ -612,7 +625,7 @@ func NewClient() *Client {
 		ReportAbuseInterfaceID:    -1,
 		ActiveMapFunctionX:        make([]int, 1000),
 		ActiveMapFunctionZ:        make([]int, 1000),
-		SkillBaseLevel:            make([]int, 50),
+		SkillBaseLevel:            make([]int, StatsCount),          // Java: new int[Stats.COUNT] (Client.java:397 @2e62978; 245.2 was 50)
 		NPCs:                      make([]*entity.ClientNpc, 16384), // Java: new ClientNpc[16384] (Client.java:55 @2e62978; 254 doubled from 8192)
 		NPCIDs:                    make([]int, 16384),               // Java: new int[16384] (Client.java:61 @2e62978; 254 doubled from 8192)
 		MinimapZoomModifier:       1,
@@ -641,7 +654,7 @@ func NewClient() *Client {
 		LastWaveLoops:             -1,
 		TextureBuffer:             make([]byte, 16384),
 		VarCache:                  make([]int, 2000),
-		SkillExperience:           make([]int, 50),
+		SkillExperience:           make([]int, StatsCount), // Java: new int[Stats.COUNT] (Client.java:478 @2e62978; 245.2 was 50)
 		MinimapAngleModifier:      2,
 		MAX_CHATS:                 50,
 		LOC_SHAPE_TO_LAYER:        []int{0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3},
@@ -3870,7 +3883,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 						var35 = true
 					}
 					// Java: var36 — resolved colour (Go keeps the outer var16)
-					if c.ExecuteInterfaceScript(var14) {
+					if c.GetIfActive(var14) {
 						var16 = var14.ActiveColour
 						if var35 && var14.ActiveOverColour != 0 {
 							var16 = var14.ActiveOverColour
@@ -3925,19 +3938,19 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 																if var33 == -1 {
 																	break label260
 																}
-																var29 = var29[0:var33] + c.GetIntString(c.ExecuteClientscript1(var14, 4)) + var29[var33+2:]
+																var29 = var29[0:var33] + c.GetIntString(c.GetIfVar(4, var14)) + var29[var33+2:]
 															}
 														}
-														var29 = var29[0:var33] + c.GetIntString(c.ExecuteClientscript1(var14, 3)) + var29[var33+2:]
+														var29 = var29[0:var33] + c.GetIntString(c.GetIfVar(3, var14)) + var29[var33+2:]
 													}
 												}
-												var29 = var29[0:var33] + c.GetIntString(c.ExecuteClientscript1(var14, 2)) + var29[var33+2:]
+												var29 = var29[0:var33] + c.GetIntString(c.GetIfVar(2, var14)) + var29[var33+2:]
 											}
 										}
-										var29 = var29[0:var33] + c.GetIntString(c.ExecuteClientscript1(var14, 1)) + var29[var33+2:]
+										var29 = var29[0:var33] + c.GetIntString(c.GetIfVar(1, var14)) + var29[var33+2:]
 									}
 								}
-								var29 = var29[0:var33] + c.GetIntString(c.ExecuteClientscript1(var14, 0)) + var29[var33+2:]
+								var29 = var29[0:var33] + c.GetIntString(c.GetIfVar(0, var14)) + var29[var33+2:]
 							}
 						}
 						var33 = strings.Index(var29, "\\n")
@@ -3958,7 +3971,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 					}
 				} else if var14.Type == 5 {
 					var var28 *pix32.Pix32
-					if c.ExecuteInterfaceScript(var14) {
+					if c.GetIfActive(var14) {
 						var28 = var14.ActiveGraphic
 					} else {
 						var28 = var14.Graphic
@@ -3977,7 +3990,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 					// which Go's 64-bit int would otherwise skip (deob/client.java:4159-4160).
 					var17 = int(int32(pix3d.SinTable[var14.Xan]*var14.Zoom)) >> 16
 					var18 = int(int32(pix3d.CosTable[var14.Xan]*var14.Zoom)) >> 16
-					var31 := c.ExecuteInterfaceScript(var14)
+					var31 := c.GetIfActive(var14)
 					if var31 {
 						var33 = var14.ActiveAnim
 					} else {
@@ -4027,7 +4040,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 					var31 = true
 				}
 				// Java: var32 — resolved colour (reuses the outer scratch local)
-				if c.ExecuteInterfaceScript(var14) {
+				if c.GetIfActive(var14) {
 					var32 = var14.ActiveColour
 					if var31 && var14.ActiveOverColour != 0 {
 						var32 = var14.ActiveOverColour
@@ -8380,7 +8393,7 @@ func (c *Client) UpdateInterfaceAnimation(arg0, arg1 int) bool {
 			}
 		}
 		if var7.Type == 6 && (var7.Anim != -1 || var7.ActiveAnim != -1) {
-			var8 := c.ExecuteInterfaceScript(var7)
+			var8 := c.GetIfActive(var7)
 			var9 := 0
 			if var8 {
 				var9 = var7.ActiveAnim
@@ -8457,22 +8470,25 @@ func (c *Client) RemoveFriend(arg1 int64) {
 	}
 }
 
-func (c *Client) ExecuteInterfaceScript(arg0 *iftype.IfType) bool {
-	if arg0.ScriptComparator == nil {
+// GetIfActive — Java: getIfActive (Client.java:9756 @2e62978; was
+// executeInterfaceScript / Go ExecuteInterfaceScript in 245.2; body
+// unchanged, rename adopted with the GetIfVar rework).
+func (c *Client) GetIfActive(arg1 *iftype.IfType) bool {
+	if arg1.ScriptComparator == nil {
 		return false
 	}
-	for i := range len(arg0.ScriptComparator) {
-		var4 := c.ExecuteClientscript1(arg0, i)
-		var5 := arg0.ScriptOperand[i]
-		if arg0.ScriptComparator[i] == 2 {
+	for i := range len(arg1.ScriptComparator) {
+		var4 := c.GetIfVar(i, arg1)
+		var5 := arg1.ScriptOperand[i]
+		if arg1.ScriptComparator[i] == 2 {
 			if var4 >= var5 {
 				return false
 			}
-		} else if arg0.ScriptComparator[i] == 3 {
+		} else if arg1.ScriptComparator[i] == 3 {
 			if var4 <= var5 {
 				return false
 			}
-		} else if arg0.ScriptComparator[i] == 4 {
+		} else if arg1.ScriptComparator[i] == 4 {
 			if var4 == var5 {
 				return false
 			}
@@ -9314,8 +9330,16 @@ func (c *Client) UpdateEntityChats() {
 	}
 }
 
-func (c *Client) ExecuteClientscript1(arg0 *iftype.IfType, arg2 int) (result int) {
-	if arg0.Scripts == nil || arg2 >= len(arg0.Scripts) {
+// GetIfVar evaluates interface script arg0 of component arg2 — 254's
+// clientscript value VM. Java: getIfVar (Client.java:9783 @2e62978; was
+// executeClientScript / Go ExecuteClientscript1 in 245.2). 254 turns the
+// pure accumulator into an operator state machine: ops 15/16/17 set a
+// pending operator (subtract / divide-with-≠0-guard / multiply; default
+// add) applied to the next value. New value sources: varbit read (14),
+// local-player world tile X/Z (18/19), inline literal (20); ops 4/10 gain
+// a members gate; op 9's skill total is Stats-table-driven.
+func (c *Client) GetIfVar(arg0 int, arg2 *iftype.IfType) (result int) {
+	if arg2.Scripts == nil || arg0 >= len(arg2.Scripts) {
 		return -2
 	}
 	// Java: catch (Exception) { return -1; } — primarily guards against
@@ -9327,95 +9351,151 @@ func (c *Client) ExecuteClientscript1(arg0 *iftype.IfType, arg2 int) (result int
 			result = -1
 		}
 	}()
-	var4 := arg0.Scripts[arg2]
-	var5 := 0
-	var6 := 0
+	var4 := arg2.Scripts[arg0]
+	var5 := 0 // accumulator
+	var6 := 0 // program counter
+	var7 := 0 // pending operator: 0 add, 1 sub, 2 div, 3 mul (Java: byte)
 	for {
-		var7 := var4[var6]
+		var8 := var4[var6]
 		var6++
-		if var7 == 0 {
+		var9 := 0  // value produced by this opcode
+		var10 := 0 // operator opcode seen this iteration (Java: byte)
+		if var8 == 0 {
 			return var5
 		}
-		if var7 == 1 {
-			var5 += c.SkillLevel[var4[var6]]
+		if var8 == 1 {
+			var9 = c.SkillLevel[var4[var6]] // Java: statEffectiveLevel
 			var6++
 		}
-		if var7 == 2 {
-			var5 += c.SkillBaseLevel[var4[var6]]
+		if var8 == 2 {
+			var9 = c.SkillBaseLevel[var4[var6]] // Java: statBaseLevel
 			var6++
 		}
-		if var7 == 3 {
-			var5 += c.SkillExperience[var4[var6]]
+		if var8 == 3 {
+			var9 = c.SkillExperience[var4[var6]] // Java: statXP
 			var6++
 		}
-		var var8 *iftype.IfType
-		var9 := 0
-		//var10 := 0
-		if var7 == 4 {
-			var8 = iftype.Instances[var4[var6]]
+		if var8 == 4 {
+			var11 := iftype.Instances[var4[var6]]
 			var6++
-			var9 = var4[var6] + 1
+			var12 := var4[var6]
 			var6++
-			for i := range len(var8.InvSlotObjId) {
-				if var8.InvSlotObjId[i] == var9 {
-					var5 += var8.InvSlotObjCount[i]
+			// 254 adds the members gate (Client.java:9812 @2e62978).
+			if var12 >= 0 && var12 < objtype.Count && (!objtype.Get(var12).Members || MembersWorld) {
+				for var13 := range len(var11.InvSlotObjId) {
+					if var11.InvSlotObjId[var13] == var12+1 {
+						var9 += var11.InvSlotObjCount[var13]
+					}
 				}
 			}
 		}
-		if var7 == 5 {
-			var5 += c.Varps[var4[var6]]
+		if var8 == 5 {
+			var9 = c.Varps[var4[var6]]
 			var6++
 		}
-		if var7 == 6 {
-			var5 += LevelExperience[c.SkillBaseLevel[var4[var6]]-1]
+		if var8 == 6 {
+			var9 = LevelExperience[c.SkillBaseLevel[var4[var6]]-1]
 			var6++
 		}
-		if var7 == 7 {
-			var5 += c.Varps[var4[var6]] * 100 / 46875
+		if var8 == 7 {
+			var9 = c.Varps[var4[var6]] * 100 / 46875
 			var6++
 		}
-		if var7 == 8 {
-			var5 += c.LocalPlayer.CombatLevel
+		if var8 == 8 {
+			var9 = c.LocalPlayer.CombatLevel
 		}
-		var12 := 0
-		if var7 == 9 {
-			for i := range 19 {
-				if i == 18 {
-					i = 20
-				}
-				var5 += c.SkillBaseLevel[i]
-			}
-		}
-		if var7 == 10 {
-			var8 = iftype.Instances[var4[var6]]
-			var6++
-			var9 = var4[var6] + 1
-			var6++
-			for i := range len(var8.InvSlotObjId) {
-				if var8.InvSlotObjId[i] == var9 {
-					var5 += 999999999
-					break
+		if var8 == 9 {
+			// 254: Stats-table-driven (245.2 hardcoded a skip-slayer loop).
+			for var14 := range StatsCount {
+				if StatsEnabled[var14] {
+					var9 += c.SkillBaseLevel[var14]
 				}
 			}
 		}
-		if var7 == 11 {
-			var5 += c.Energy
-		}
-		if var7 == 12 {
-			var5 += c.WeightCarried
-		}
-		if var7 == 13 {
-			var12 = c.Varps[var4[var6]]
+		if var8 == 10 {
+			var15 := iftype.Instances[var4[var6]]
 			var6++
-			var9 = var4[var6]
+			var16 := var4[var6] + 1
+			var6++
+			// 254 adds the members gate. Faithful Java quirk: unlike op 4 it
+			// range/members-checks var16 (= raw id + 1), not the raw id
+			// (Client.java:9839 @2e62978).
+			if var16 >= 0 && var16 < objtype.Count && (!objtype.Get(var16).Members || MembersWorld) {
+				for var17 := range len(var15.InvSlotObjId) {
+					if var15.InvSlotObjId[var17] == var16 {
+						var9 = 999999999
+						break
+					}
+				}
+			}
+		}
+		if var8 == 11 {
+			var9 = c.Energy // Java: runenergy
+		}
+		if var8 == 12 {
+			var9 = c.WeightCarried // Java: runweight
+		}
+		if var8 == 13 {
+			var18 := c.Varps[var4[var6]]
+			var6++
+			var19 := var4[var6]
 			var6++
 			// Java: int << implicitly masks the shift count to 5 bits
 			// (JLS 15.19); Go does not, so mask explicitly.
-			if var12&(0x1<<(var9&0x1F)) == 0 {
-				var5 += 0
+			if var18&(0x1<<(var19&0x1F)) == 0 {
+				var9 = 0
 			} else {
-				var5 += 1
+				var9 = 1
 			}
+		}
+		if var8 == 14 {
+			// NEW in 254: varbit read (Client.java:9861-9868 @2e62978).
+			var20 := var4[var6]
+			var6++
+			var21 := varbittype.Instances[var20]
+			var22 := var21.BaseVar
+			var23 := var21.StartBit
+			var24 := var21.EndBit
+			var25 := Bitmask[var24-var23]
+			// Java: int >> implicitly masks the shift count to 5 bits
+			// (JLS 15.19); Go does not, so mask explicitly.
+			var9 = (c.Varps[var22] >> (var23 & 0x1F)) & var25
+		}
+		if var8 == 15 {
+			var10 = 1
+		}
+		if var8 == 16 {
+			var10 = 2
+		}
+		if var8 == 17 {
+			var10 = 3
+		}
+		if var8 == 18 {
+			var9 = (c.LocalPlayer.X >> 7) + c.SceneBaseTileX
+		}
+		if var8 == 19 {
+			var9 = (c.LocalPlayer.Z >> 7) + c.SceneBaseTileZ
+		}
+		if var8 == 20 {
+			var9 = var4[var6]
+			var6++
+		}
+		if var10 == 0 {
+			if var7 == 0 {
+				var5 += var9
+			}
+			if var7 == 1 {
+				var5 -= var9
+			}
+			if var7 == 2 && var9 != 0 {
+				var5 /= var9
+			}
+			if var7 == 3 {
+				var5 *= var9
+			}
+			var7 = 0
+		} else {
+			var7 = var10
 		}
 	}
 }
