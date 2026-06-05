@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Go port of the RuneScape 2 (release #254 on this branch) Java client. The codebase is a direct translation from Java to Go, preserving the original game logic while adapting to Go's idioms and type system.
+This is a Go port of the RuneScape 2 (release #274 on this branch — port in progress, structural renames done, logic delta pending) Java client. The codebase is a direct translation from Java to Go, preserving the original game logic while adapting to Go's idioms and type system.
 
 ## Build & Run
 
