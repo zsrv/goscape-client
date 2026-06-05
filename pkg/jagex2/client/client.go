@@ -10479,7 +10479,7 @@ func (c *Client) TcpIn() (ok bool) {
 			// in Java, but `a - (b & 0xFF)` in Go.
 			c.PacketType = (c.PacketType - int(c.RandomIn.TakeNextValue())) & 0xFF
 		}
-		c.PacketSize = SERVERPROT_SIZES[c.PacketType]
+		c.PacketSize = io.SERVERPROT_SIZES[c.PacketType]
 		var2--
 	}
 	if c.PacketSize == -1 {
