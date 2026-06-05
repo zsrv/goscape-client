@@ -17,7 +17,7 @@ var (
 //	datastruct.DoublyLinkable[Pix2D]
 //}
 
-func Bind(width int, data []int, height int) {
+func SetPixels(width int, data []int, height int) {
 	Data = data
 	Width2D = width
 	Height2D = height
@@ -64,7 +64,7 @@ func SetClipping(bottom int, top int, right int, left int) {
 	CenterH2D = Bottom / 2
 }
 
-func Clear() {
+func Cls() {
 	length := Width2D * Height2D
 	for i := range length {
 		Data[i] = 0

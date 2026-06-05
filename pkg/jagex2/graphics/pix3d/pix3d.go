@@ -94,7 +94,7 @@ func Unload() {
 	TexturePalette = nil
 }
 
-func Init2D() {
+func Init() {
 	LineOffset = make([]int, pix2d.Height2D)
 	for i := range pix2d.Height2D {
 		LineOffset[i] = pix2d.Width2D * i
@@ -103,7 +103,7 @@ func Init2D() {
 	CenterH3D = pix2d.Height2D / 2
 }
 
-func Init3D(arg0 int, arg1 int) {
+func InitWH(arg0 int, arg1 int) {
 	LineOffset = make([]int, arg0)
 	for i := range arg0 {
 		LineOffset[i] = arg1 * i

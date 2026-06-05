@@ -46,7 +46,7 @@ func NewPixMap(width, height int) *PixMap {
 
 // Bind sets this PixMap as the active pix2d draw target.
 func (p *PixMap) Bind() {
-	pix2d.Bind(p.Width, p.Data, p.Height)
+	pix2d.SetPixels(p.Width, p.Data, p.Height)
 }
 
 // Draw uploads the pixels (only if changed since last Draw) and blits the

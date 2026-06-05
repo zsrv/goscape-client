@@ -1628,7 +1628,7 @@ func (c *Client) DrawScene() {
 	model.PickedCount = 0
 	model.MouseX = c.MouseX - 4 // Java: Client.java:5928 (244 viewport at 4,4)
 	model.MouseZ = c.MouseY - 4 // Java: Client.java:5929
-	pix2d.Clear()
+	pix2d.Cls()
 	c.Scene.Draw(c.CameraYaw, c.CameraX, var2, c.CameraPitch, c.CameraY, c.CameraZ)
 	c.Scene.ClearTemporaryLocs()
 	c.Draw2DEntityElements()
@@ -2891,8 +2891,8 @@ func (c *Client) DrawMinimap() {
 	var4 := 464 - c.LocalPlayer.Z/32
 	// Java: Client.java:11965 — 244 blits the minimap ring at (25,5) inside
 	// the mapback area (225: (21,9)), pairing with the Load mask rebase.
-	c.ImageMinimap.DrawRotatedMasked(var2, 146, c.MinimapMaskLineOffsets, 151, var4, c.MinimapZoom+256, var3, 25, 5, c.MinimapMaskLineLengths)
-	c.ImageCompass.DrawRotatedMasked(c.OrbitCameraYaw, 33, c.CompassMaskLineOffsets, 33, 25, 256, 25, 0, 0, c.CompassMaskLineLengths)
+	c.ImageMinimap.ScanlineRotatePlotSprite(var2, 146, c.MinimapMaskLineOffsets, 151, var4, c.MinimapZoom+256, var3, 25, 5, c.MinimapMaskLineLengths)
+	c.ImageCompass.ScanlineRotatePlotSprite(c.OrbitCameraYaw, 33, c.CompassMaskLineOffsets, 33, 25, 256, 25, 0, 0, c.CompassMaskLineLengths)
 	for i := range c.ActiveMapFunctionCount {
 		var3 = c.ActiveMapFunctionX[i]*4 + 2 - c.LocalPlayer.X/32
 		var4 = c.ActiveMapFunctionZ[i]*4 + 2 - c.LocalPlayer.Z/32
@@ -3091,7 +3091,7 @@ func (c *Client) CreateMinimap(arg0 int) {
 	}
 	var7 := ((int(rand.Float64()*20.0) + 238 - 10) << 16) + ((int(rand.Float64()*20.0) + 238 - 10) << 8) + (int(rand.Float64()*20.0) + 238 - 10)
 	var8 := (int(rand.Float64()*20.0) + 238 - 10) << 16
-	c.ImageMinimap.Bind()
+	c.ImageMinimap.SetPixels()
 	for i := 1; i < 103; i++ {
 		for j := 1; j < 103; j++ {
 			if c.LevelTileFlags[arg0][j][i]&0x18 == 0 {
@@ -3693,14 +3693,14 @@ func (c *Client) PrepareGameScreen() {
 	// 765x503 chrome (the 225 port used the 789-wide variants).
 	c.AreaChatback = pixmap.NewPixMap(479, 96)
 	c.AreaMapback = pixmap.NewPixMap(172, 156)
-	pix2d.Clear()
+	pix2d.Cls()
 	c.ImageMapback.PlotSprite(0, 0)
 	c.AreaSidebar = pixmap.NewPixMap(190, 261)
 	c.AreaViewport = pixmap.NewPixMap(512, 334)
 	// The viewport is re-rendered (DrawScene) almost every frame, so the
 	// hashPixels change-detection is pure overhead — upload unconditionally.
 	c.AreaViewport.AlwaysUpload = true
-	pix2d.Clear()
+	pix2d.Cls()
 	c.AreaBackbase1 = pixmap.NewPixMap(496, 50)
 	c.AreaBackbase2 = pixmap.NewPixMap(269, 37)
 	c.AreaBackhmid1 = pixmap.NewPixMap(249, 45)
@@ -3852,7 +3852,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 											var33 = 0
 											var21 = 0
 										}
-										var23.DrawAlpha(128, var18+var33, var32+var21)
+										var23.TransPlotSprite(128, var18+var33, var32+var21)
 										// Java: Client.java:10602-10628 — drag-to-edge
 										// autoscroll of the parent scrollable.
 										if var32+var21 < pix2d.Top && arg3.ScrollPosition > 0 {
@@ -3878,7 +3878,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 											c.ObjGrabY -= var35
 										}
 									} else if c.SelectedArea != 0 && c.SelectedItem == var27 && c.SelectedInterface == var14.Id {
-										var23.DrawAlpha(128, var18, var32)
+										var23.TransPlotSprite(128, var18, var32)
 									} else {
 										var23.PlotSprite(var32, var18)
 									}
@@ -6558,11 +6558,11 @@ func (c *Client) Load() {
 		c.MinimapMaskLineOffsets[i-5] = var23 - 25
 		c.MinimapMaskLineLengths[i-5] = var24 - var23
 	}
-	pix3d.Init3D(96, 479)
+	pix3d.InitWH(96, 479)
 	c.AreaChatbackOffsets = pix3d.LineOffset
-	pix3d.Init3D(261, 190)
+	pix3d.InitWH(261, 190)
 	c.AreaSidebarOffsets = pix3d.LineOffset
-	pix3d.Init3D(334, 512)
+	pix3d.InitWH(334, 512)
 	c.AreaViewportOffsets = pix3d.LineOffset
 	var50 := make([]int, 9)
 	for i := range 9 {
@@ -6885,7 +6885,7 @@ func (c *Client) DrawMinimapArrow(dx int, dy int, image *pix32.Pix32) {
 	var15 := int(math.Sin(var13) * 63.0)
 	var16 := int(math.Cos(var13) * 57.0)
 
-	c.ImageMapedge.DrawRotated(83-var16-20, var13, 256, 15, 15, 20, 20, var15+94+4-10)
+	c.ImageMapedge.RotatePlotSprite(83-var16-20, var13, 256, 15, 15, 20, 20, var15+94+4-10)
 }
 
 // Java: drawOnMinimap (Client.java:12083-12108). 244 shifts the plot origin
@@ -6903,7 +6903,7 @@ func (c *Client) DrawOnMinimap(arg0 int, arg2 *pix32.Pix32, arg3 int) {
 	var9 := (arg0*var11 + arg3*var12) >> 16
 	var10 := (arg0*var12 - arg3*var11) >> 16
 	if var6 > 2500 {
-		arg2.DrawMasked(c.ImageMapback, 83-var10-arg2.OHi/2-4, var9+94-arg2.OWi/2+4)
+		arg2.ScanlinePlotSprite(c.ImageMapback, 83-var10-arg2.OHi/2-4, var9+94-arg2.OWi/2+4)
 	} else {
 		arg2.PlotSprite(83-var10-arg2.OHi/2-4, var9+94-arg2.OWi/2+4)
 	}
@@ -7166,23 +7166,23 @@ func (c *Client) LoadTitle() {
 		return
 	}
 	c.ImageTitle0 = pixmap.NewPixMap(128, 265)
-	pix2d.Clear()
+	pix2d.Cls()
 	c.ImageTitle1 = pixmap.NewPixMap(128, 265)
-	pix2d.Clear()
+	pix2d.Cls()
 	c.ImageTitle2 = pixmap.NewPixMap(509, 171)
-	pix2d.Clear()
+	pix2d.Cls()
 	c.ImageTitle3 = pixmap.NewPixMap(360, 132)
-	pix2d.Clear()
+	pix2d.Cls()
 	c.ImageTitle4 = pixmap.NewPixMap(360, 200)
-	pix2d.Clear()
+	pix2d.Cls()
 	c.ImageTitle5 = pixmap.NewPixMap(202, 238)
-	pix2d.Clear()
+	pix2d.Cls()
 	c.ImageTitle6 = pixmap.NewPixMap(203, 238)
-	pix2d.Clear()
+	pix2d.Cls()
 	c.ImageTitle7 = pixmap.NewPixMap(74, 94)
-	pix2d.Clear()
+	pix2d.Cls()
 	c.ImageTitle8 = pixmap.NewPixMap(75, 94)
-	pix2d.Clear()
+	pix2d.Cls()
 	if c.JagTitle != nil {
 		c.LoadTitleBackground()
 		c.LoadTitleImages()

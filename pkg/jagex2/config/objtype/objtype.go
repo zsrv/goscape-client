@@ -416,9 +416,9 @@ func GetSprite(outlineRgb int, count int, id int) *pix32.Pix32 {
 	var13 := pix2d.Top
 	var14 := pix2d.Bottom
 	pix3d.Jagged = false
-	pix2d.Bind(32, var3.Pixels, 32)
+	pix2d.SetPixels(32, var3.Pixels, 32)
 	pix2d.FillRect(0, 0, 0, 32, 32)
-	pix3d.Init2D()
+	pix3d.Init()
 	// Java: zoom scaling per variant (ObjType.java:539-544, new in 244).
 	zoom := var4.Zoom2D
 	if outlineRgb == -1 {
@@ -491,7 +491,7 @@ func GetSprite(outlineRgb int, count int, id int) *pix32.Pix32 {
 	if outlineRgb == 0 { // Java: ObjType.java:602-604
 		SpriteCache.Put(int64(id), var3)
 	}
-	pix2d.Bind(var9, var8, var10)
+	pix2d.SetPixels(var9, var8, var10)
 	pix2d.SetClipping(var14, var13, var12, var11)
 	pix3d.CenterW3D = var5
 	pix3d.CenterH3D = var6

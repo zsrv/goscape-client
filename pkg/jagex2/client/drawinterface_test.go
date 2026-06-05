@@ -19,7 +19,7 @@ import (
 func TestDrawInterface_RendersChildren(t *testing.T) {
 	const w, h = 50, 50
 	pix2d.Reset()
-	pix2d.Bind(w, make([]int, w*h), h)
+	pix2d.SetPixels(w, make([]int, w*h), h)
 	t.Cleanup(pix2d.Reset)
 
 	prevInstances := iftype.List

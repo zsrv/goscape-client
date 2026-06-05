@@ -121,8 +121,8 @@ func NewPix323(jag *io.JagFile, name string, sprite int) *Pix32 {
 	return &p
 }
 
-func (p *Pix32) Bind() {
-	pix2d.Bind(p.Wi, p.Pixels, p.Hi)
+func (p *Pix32) SetPixels() {
+	pix2d.SetPixels(p.Wi, p.Pixels, p.Hi)
 }
 
 // was Translate
@@ -350,7 +350,7 @@ func (p *Pix32) Plot(pix2dData []int, pix32PixelsSrc []int, srcOff, dstOff, w, h
 // (ObjType.getIcon's cert overlay) uses plotSprite in 244, so the Go ports
 // were removed with the getIcon 244 migration.
 
-func (p *Pix32) DrawAlpha(arg0, x, y int) {
+func (p *Pix32) TransPlotSprite(arg0, x, y int) {
 	x += p.XOf
 	y += p.YOf
 
@@ -418,7 +418,7 @@ func (p *Pix32) TransPlot(arg0 int, arg2 []int, arg3 int, arg4 int, arg5 []int, 
 	}
 }
 
-func (p *Pix32) DrawRotatedMasked(arg0 int, w int, lineStart []int, h int, anchorY int, arg5 int, anchorX int, x int, y int, lineWidth []int) {
+func (p *Pix32) ScanlineRotatePlotSprite(arg0 int, w int, lineStart []int, h int, anchorY int, arg5 int, anchorX int, x int, y int, lineWidth []int) {
 	// Java: drawRotatedMasked() wraps its body in try { ... } catch (Exception
 	// var23) {} (Pix32.java:442-468) — silently swallow an out-of-bounds index
 	// (e.g. a rotated source coord outside Pixels) and skip this draw.
@@ -458,9 +458,9 @@ func (p *Pix32) DrawRotatedMasked(arg0 int, w int, lineStart []int, h int, ancho
 // Java: drawRotated (244 Pix32.java:414-451) — new in 244; plotSprite-style
 // rotated blit that skips transparent (0) pixels. First consumer is the
 // minimap hint-arrow edge sprite (Client.DrawMinimapArrow). Like
-// drawRotatedMasked, Java wraps the body in try { ... } catch (Exception) {}
+// scanlineRotatePlotSprite (254 name; was drawRotatedMasked), Java wraps the body in try { ... } catch (Exception) {}
 // — the recover mirrors that silent swallow for out-of-bounds source coords.
-func (p *Pix32) DrawRotated(y int, theta float64, zoom, anchorX, anchorY, w, h, x int) {
+func (p *Pix32) RotatePlotSprite(y int, theta float64, zoom, anchorX, anchorY, w, h, x int) {
 	defer func() { _ = recover() }()
 	centerX := -w / 2
 	centerY := -h / 2
@@ -495,7 +495,7 @@ func (p *Pix32) DrawRotated(y int, theta float64, zoom, anchorX, anchorY, w, h, 
 	}
 }
 
-func (p *Pix32) DrawMasked(arg0 *pix8.Pix8, arg1 int, arg2 int) {
+func (p *Pix32) ScanlinePlotSprite(arg0 *pix8.Pix8, arg1 int, arg2 int) {
 	arg2 += p.XOf
 	arg1 += p.YOf
 	var5 := arg2 + arg1*pix2d.Width2D
@@ -530,11 +530,11 @@ func (p *Pix32) DrawMasked(arg0 *pix8.Pix8, arg1 int, arg2 int) {
 		var9 += var11
 	}
 	if var8 > 0 && var7 > 0 {
-		p.CopyPixelsMasked(var8, var10, var7, var6, pix2d.Data, p.Pixels, var5, arg0.Pixels, var9)
+		p.ScanlinePlot(var8, var10, var7, var6, pix2d.Data, p.Pixels, var5, arg0.Pixels, var9)
 	}
 }
 
-func (p *Pix32) CopyPixelsMasked(arg0 int, arg1 int, arg4 int, arg5 int, arg6 []int, arg7 []int, arg8 int, arg9 []byte, arg10 int) {
+func (p *Pix32) ScanlinePlot(arg0 int, arg1 int, arg4 int, arg5 int, arg6 []int, arg7 []int, arg8 int, arg9 []byte, arg10 int) {
 	var12 := -(arg0 >> 2)
 	var16 := -(arg0 & 0x3)
 	for i := -arg4; i < 0; i++ {
