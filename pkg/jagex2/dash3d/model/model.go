@@ -514,6 +514,8 @@ func NewModel1(arg1 int) *Model {
 }
 
 func NewModel2(arg1 []*Model, arg2 int) *Model {
+	// Java: Model(Model[],int):loaded++ — first statement (audit model-A-02).
+	Loaded++
 	var m Model
 
 	var4 := false
@@ -623,6 +625,8 @@ func NewModel2(arg1 []*Model, arg2 int) *Model {
 // (arg0 []*Model, arg2 int) maps arg0=Java arg3 (parts), arg2=Java arg1
 // (count).
 func NewModel3(arg0 []*Model, arg2 int) *Model {
+	// Java: Model(int,Model[],boolean):loaded++ — first statement (audit model-A-02).
+	Loaded++
 	var m Model
 
 	var5 := false
@@ -737,6 +741,9 @@ func NewModel3(arg0 []*Model, arg2 int) *Model {
 }
 
 func NewModel4(arg0 *Model, arg1 bool, arg2 bool, arg4 bool) *Model {
+	// Java: Model(boolean,boolean,boolean,Model):loaded++ — first statement
+	// (audit model-A-02).
+	Loaded++
 	var m Model
 
 	m.VertexCount = arg0.VertexCount
@@ -793,6 +800,8 @@ func NewModel4(arg0 *Model, arg1 bool, arg2 bool, arg4 bool) *Model {
 }
 
 func NewModel5(arg0 *Model, arg2 bool, arg3 bool) *Model {
+	// Java: Model(boolean,Model,boolean):loaded++ — first statement (audit model-A-02).
+	Loaded++
 	var m Model
 
 	m.VertexCount = arg0.VertexCount

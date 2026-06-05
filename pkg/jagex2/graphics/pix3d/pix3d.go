@@ -2087,9 +2087,11 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 		var17 = 0
 		var18 = 0
 		var20 = arg5 - CenterW3D
-		var32 = arg9 + (arg12>>3)*var20
-		var33 = arg10 + (arg13>>3)*var20
-		var34 = arg11 + (arg14>>3)*var20
+		// Java: Pix3D.java:2239-2241 — perspective numerators are 32-bit
+		// products that wrap mod 2^32 (audit pix3d-C-01).
+		var32 = int(int32(arg9 + (arg12>>3)*var20))
+		var33 = int(int32(arg10 + (arg13>>3)*var20))
+		var34 = int(int32(arg11 + (arg14>>3)*var20))
 		var19 = var34 >> 12
 		if var19 != 0 {
 			arg2 = var32 / var19
@@ -2272,9 +2274,11 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 	var17 = 0
 	var18 = 0
 	var20 = arg5 - CenterW3D
-	var32 = arg9 + (arg12>>3)*var20
-	var33 = arg10 + (arg13>>3)*var20
-	var34 = arg11 + (arg14>>3)*var20
+	// Java: Pix3D.java:2065-2067 — perspective numerators are 32-bit
+	// products that wrap mod 2^32 (audit pix3d-C-01).
+	var32 = int(int32(arg9 + (arg12>>3)*var20))
+	var33 = int(int32(arg10 + (arg13>>3)*var20))
+	var34 = int(int32(arg11 + (arg14>>3)*var20))
 	var19 = var34 >> 14
 	if var19 != 0 {
 		arg2 = var32 / var19
