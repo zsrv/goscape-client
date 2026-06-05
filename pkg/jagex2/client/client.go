@@ -4169,13 +4169,13 @@ func (c *Client) UpdateVarp(arg1 int) {
 	if var4 == 1 {
 		switch var5 {
 		case 1:
-			pix3d.SetBrightness(0.9)
+			pix3d.InitColourTable(0.9)
 		case 2:
-			pix3d.SetBrightness(0.8)
+			pix3d.InitColourTable(0.8)
 		case 3:
-			pix3d.SetBrightness(0.7)
+			pix3d.InitColourTable(0.7)
 		case 4:
-			pix3d.SetBrightness(0.6)
+			pix3d.InitColourTable(0.6)
 		}
 		objtype.SpriteCache.Clear()
 		c.RedrawFrame = true
@@ -6535,7 +6535,7 @@ func (c *Client) Load() {
 
 	c.DrawProgress("Unpacking textures", 83)
 	pix3d.UnpackTextures(jagTextures)
-	pix3d.SetBrightness(0.8)
+	pix3d.InitColourTable(0.8)
 	pix3d.InitPool(20)
 
 	c.DrawProgress("Unpacking config", 86)
@@ -7848,7 +7848,7 @@ func (c *Client) AddLoc(arg0, arg1, arg2, arg3, arg4, arg5, arg7 int) {
 	if arg7 < 3 && c.LevelTileFlags[1][arg1][arg2]&0x2 == 2 {
 		var13 = arg7 + 1
 	}
-	clientbuild.AddLoc(arg1, c.LevelCollisionMap[arg7], arg2, arg0, c.LevelHeightMap, arg7, arg4, arg5, c.Scene, var13)
+	clientbuild.ChangeLocUnchecked(arg1, c.LevelCollisionMap[arg7], arg2, arg0, c.LevelHeightMap, arg7, arg4, arg5, c.Scene, var13)
 }
 
 // AppendLoc finds-or-creates the LocChange at (level,x,z,layer) and records the
@@ -8081,7 +8081,7 @@ func (c *Client) Unload() {
 	playerentity.ModelCache = nil
 	pix3d.Unload()
 	world.Unload()
-	model.Unload()
+	model.Unload(1) // Java: Model.unload((byte) 1) (Client.java:2246 @32f3062)
 	animframe.List = nil
 }
 

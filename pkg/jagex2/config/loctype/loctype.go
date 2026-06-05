@@ -448,7 +448,7 @@ func (loc *LocType) BuildModel(arg0, arg2, arg3 int) *model.Model {
 		var21.Scale(loc.ResizeZ, loc.ResizeY, loc.ResizeX)
 	}
 	if var20 {
-		var21.Translate(loc.OffsetY, loc.OffsetX, loc.OffsetZ)
+		var21.Translate(loc.OffsetX, loc.OffsetY, loc.OffsetZ) // Java: translate(offsetx, offsety, offsetz) (LocType.java:523 @32f3062)
 	}
 	var21.CalculateNormals(int(loc.Ambient)+64, int(loc.Contrast)*5+768, -50, -10, -50, !loc.ShareLight)
 	// Java: raiseobject == 1 gate (LocType.java:526 @2e62978) — was

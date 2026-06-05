@@ -45,7 +45,7 @@ func (e *ClientNpc) GetTempModel() *model.Model {
 			// (ClientNpc.java:27-29 @2e62978).
 			var5 := var3.Seq.Frames[e.SpotanimFrame] // Java: var5
 			var4 := model.NewModel4(spotModel, true, animframe.ShareAlpha(var5), false)
-			var4.Translate(-e.SpotanimOffset, 0, 0)
+			var4.Translate(0, -e.SpotanimOffset, 0) // Java: translate(0, -super.spotanimHeight, 0) (ClientNpc.java:31 @32f3062)
 			var4.PrepareAnim()
 			var4.Animate(var5)
 			var4.LabelFaces = nil

@@ -571,10 +571,10 @@ func (t *ObjType) GetWearModelNoCheck(arg1 int) *model.Model {
 		}
 	}
 	if arg1 == 0 && t.ManWearOffsetY != 0 {
-		var7.Translate(int(t.ManWearOffsetY), 0, 0)
+		var7.Translate(0, int(t.ManWearOffsetY), 0) // Java: translate(0, manwearOffset, 0) (ObjType.java:627 @32f3062)
 	}
 	if arg1 == 1 && t.WomanWearOffsetY != 0 {
-		var7.Translate(int(t.WomanWearOffsetY), 0, 0)
+		var7.Translate(0, int(t.WomanWearOffsetY), 0) // Java: translate(0, womanwearOffset, 0) (ObjType.java:630 @32f3062)
 	}
 	if t.RecolS != nil {
 		for i := range len(t.RecolS) {

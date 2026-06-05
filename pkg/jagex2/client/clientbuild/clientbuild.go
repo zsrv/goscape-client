@@ -443,6 +443,31 @@ func (w *ClientBuild) AddLoc(collision *dash3d.CollisionMap, level, z, angle, sh
 				collision.AddWall(angle, z, x, loc.BlockRange, shape)
 			}
 		} else {
+			// NEW in 274 (ClientBuild.java:790-811 @32f3062): hillskewed locs
+			// rotate the four corner heights by angle before building wall
+			// decorations. Only shapes 4-8 reach Java's final else; shapes
+			// 2/3/9 share this Go switch but sit in earlier else-if arms in
+			// Java, hence the explicit shape gate. buildModel captures the
+			// height vars, so the rotation flows into its getModel /
+			// ClientLocAnim calls below.
+			if loc.HillSkew && shape >= 4 && shape <= 8 {
+				if angle == 1 {
+					tmp := heightNW
+					heightNW = heightNE
+					heightNE = heightSE
+					heightSE = heightSW
+					heightSW = tmp
+				} else if angle == 2 {
+					heightNW, heightSE = heightSE, heightNW
+					heightNE, heightSW = heightSW, heightNE
+				} else if angle == 3 {
+					tmp := heightNW
+					heightNW = heightSW
+					heightSW = heightSE
+					heightSE = heightNE
+					heightNE = tmp
+				}
+			}
 			switch shape {
 			case 2:
 				offset := (angle + 1) & 0x3
@@ -1020,7 +1045,14 @@ func ChangeLocAvailable(id, shape int) bool {
 	return loc.CheckModel(shape)
 }
 
-func AddLoc(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [][][]int, arg7 int, arg8 int, shape int, scene *world.World, level int) {
+// ChangeLocUnchecked adds a loc to the scene from a zone-update packet without
+// the LowMemory draw-level checks the instance AddLoc applies.
+//
+// Java: ClientBuild.changeLocUnchecked (ClientBuild.java:225 @32f3062; same
+// name at 254 — the old Go name AddLoc was pre-254 legacy). 274 also moved
+// World to the first parameter position with every caller compensated in
+// lockstep (refuted churn class); Go keeps its existing parameter order.
+func ChangeLocUnchecked(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [][][]int, arg7 int, arg8 int, shape int, scene *world.World, level int) {
 	heightSW := heightMap[level][x][z]
 	heightSE := heightMap[level][x+1][z]
 	heightNE := heightMap[level][x+1][z+1]
@@ -1094,6 +1126,28 @@ func AddLoc(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [
 			collision.AddWall(angle, z, x, locType.BlockRange, shape)
 		}
 	} else {
+		// NEW in 274 (ClientBuild.java:345-361 @32f3062): same hillskew
+		// corner-height rotation as the instance AddLoc above — shapes 4-8
+		// only (2/3/9 share this Go switch but sit in earlier else-if arms
+		// in Java). buildModel captures the height vars by reference.
+		if locType.HillSkew && shape >= 4 && shape <= 8 {
+			if angle == 1 {
+				tmp := heightNW
+				heightNW = heightNE
+				heightNE = heightSE
+				heightSE = heightSW
+				heightSW = tmp
+			} else if angle == 2 {
+				heightNW, heightSE = heightSE, heightNW
+				heightNE, heightSW = heightSW, heightNE
+			} else if angle == 3 {
+				tmp := heightNW
+				heightNW = heightSW
+				heightSW = heightSE
+				heightSE = heightNE
+				heightNE = tmp
+			}
+		}
 		var24 := 0
 		switch shape {
 		case 2:

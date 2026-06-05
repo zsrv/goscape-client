@@ -175,7 +175,12 @@ func (m *Model) GetTempModel() *Model {
 	return m
 }
 
-func Unload() {
+// Unload nils the shared rasterization scratch state. The byte param is new
+// in 274: the trailing six statics are nulled only when arg0 == 1; the sole
+// caller (Client.unload) passes 1.
+//
+// Java: Model.unload(byte) (Model.java:232 @32f3062).
+func Unload(arg0 int8) {
 	Metadata = nil
 	FaceClippedX = nil
 	FaceNearClipped = nil
@@ -190,6 +195,9 @@ func Unload() {
 	TmpPriorityFaceCount = nil
 	TmpPriorityFaces = nil
 	TmpPriority10FaceDepth = nil
+	if arg0 != 1 {
+		return
+	}
 	TmpPriority11FaceDepth = nil
 	TmpPriorityDepthSum = nil
 	Sin = nil
@@ -1286,11 +1294,18 @@ func (m *Model) RotateXAxis(arg1 int) {
 	}
 }
 
-func (m *Model) Translate(arg0 int, arg1 int, arg3 int) {
+// Translate moves every vertex by the given axis offsets. 274 changed the
+// arg→axis convention to natural (x, y, z) — Java args (arg0→X, arg1→Y,
+// arg3→Z); 254 was effectively (x, z, y) and the pre-274 Go port used
+// (y, x, z) — with every call site swapped in lockstep (compensated pair,
+// adopted per standing policy in one commit with all callers).
+//
+// Java: Model.translate (Model.java:1296 @32f3062).
+func (m *Model) Translate(x int, y int, z int) {
 	for i := range m.VertexCount {
-		m.VertexX[i] += arg1
-		m.VertexY[i] += arg0
-		m.VertexZ[i] += arg3
+		m.VertexX[i] += x
+		m.VertexY[i] += y
+		m.VertexZ[i] += z
 	}
 }
 

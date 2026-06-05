@@ -180,7 +180,7 @@ func (e *ClientPlayer) GetTempModel() *model.Model {
 			// ClientNpc which passes the resolved frame id; faithful to the
 			// Java inconsistency.
 			var4 := model.NewModel4(spotModel, true, animframe.ShareAlpha(e.SpotanimFrame), false)
-			var4.Translate(-e.SpotanimOffset, 0, 0)
+			var4.Translate(0, -e.SpotanimOffset, 0) // Java: translate(0, -super.spotanimHeight, 0) (ClientPlayer.java:184 @32f3062)
 			var4.PrepareAnim()
 			var4.Animate(var3.Seq.Frames[e.SpotanimFrame])
 			var4.LabelFaces = nil
@@ -199,7 +199,7 @@ func (e *ClientPlayer) GetTempModel() *model.Model {
 		}
 		if clientextras.LoopCycle >= e.LocStartCycle && clientextras.LoopCycle < e.LocStopCycle {
 			var6 := e.LocModel
-			var6.Translate(e.LocOffsetY-e.Y, e.LocOffsetX-e.X, e.LocOffsetZ-e.Z)
+			var6.Translate(e.LocOffsetX-e.X, e.LocOffsetY-e.Y, e.LocOffsetZ-e.Z) // Java: ClientPlayer.java:203 @32f3062
 			if e.DstYaw == 512 {
 				var6.Rotate90()
 				var6.Rotate90()
@@ -222,7 +222,7 @@ func (e *ClientPlayer) GetTempModel() *model.Model {
 				var6.Rotate90()
 				var6.Rotate90()
 			}
-			var6.Translate(e.Y-e.LocOffsetY, e.X-e.LocOffsetX, e.Z-e.LocOffsetZ)
+			var6.Translate(e.X-e.LocOffsetX, e.Y-e.LocOffsetY, e.Z-e.LocOffsetZ) // Java: ClientPlayer.java:226 @32f3062
 		}
 	}
 	var2.UseAABBMouseCheck = true

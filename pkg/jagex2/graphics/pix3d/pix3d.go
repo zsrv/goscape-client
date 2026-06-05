@@ -192,7 +192,7 @@ func GetAverageTextureRGB(arg1 int) int {
 		var4 += TexturePalette[arg1][i] & 0xFF
 	}
 	var7 := ((var2 / var5) << 16) + ((var3 / var5) << 8) + var4/var5
-	var7 = SetGamma(var7, 1.4)
+	var7 = GammaCorrect(var7, 1.4)
 	if var7 == 0 {
 		var7 = 1
 	}
@@ -280,7 +280,10 @@ func GetTexels(arg0 int) []int {
 	return var1
 }
 
-func SetBrightness(arg1 float64) {
+// InitColourTable builds the HSL→RGB colour table and the gamma-corrected
+// texture palettes. Java: Pix3D.initColourTable (Pix3D.java:271 @32f3062;
+// same name at 254 — the old Go name SetBrightness was pre-254 legacy).
+func InitColourTable(arg1 float64) {
 	var28 := arg1 + (rand.Float64()*0.03 - 0.015)
 	var3 := 0
 	for i := range 512 {
@@ -339,7 +342,7 @@ func SetBrightness(arg1 float64) {
 			var19 := var14 * 256.0
 			var33 := var16 * 256.0
 			var21 := (int(var32) << 16) + (int(var19) << 8) + int(var33)
-			var34 := SetGamma(var21, var28)
+			var34 := GammaCorrect(var21, var28)
 			ColourTable[var3] = var34
 			var3++
 		}
@@ -349,7 +352,13 @@ func SetBrightness(arg1 float64) {
 			var6 := Textures[i].BPal
 			TexturePalette[i] = make([]int, len(var6))
 			for j := range len(var6) {
-				TexturePalette[i][j] = SetGamma(var6[j], var28)
+				TexturePalette[i][j] = GammaCorrect(var6[j], var28)
+				// NEW in 274 (Pix3D.java:340-342 @32f3062): keep
+				// non-transparent palette entries from collapsing into the
+				// transparent key (0) after gamma correction.
+				if (TexturePalette[i][j]&0xF8F8FF) == 0 && j != 0 {
+					TexturePalette[i][j] = 1
+				}
 			}
 		}
 	}
@@ -358,7 +367,10 @@ func SetBrightness(arg1 float64) {
 	}
 }
 
-func SetGamma(arg0 int, arg1 float64) int {
+// GammaCorrect applies per-channel gamma to a packed RGB value.
+// Java: Pix3D.gammaCorrect (Pix3D.java:352 @32f3062; same name at 254 —
+// the old Go name SetGamma was pre-254 legacy).
+func GammaCorrect(arg0 int, arg1 float64) int {
 	var3 := float64(arg0>>16) / 256.0
 	var5 := float64((arg0>>8)&0xFF) / 256.0
 	var7 := float64(arg0&0xFF) / 256.0
