@@ -1019,7 +1019,7 @@ func (c *Client) DrawPrivateMessages() {
 		if c.MessageText[i] != "" {
 			var5 := c.MessageType[i]
 			var6 := 0
-			// Java: Client.java:6634-6661 (244) — strip the @cr1@/@cr2@ crown
+			// Java: Client.java:6003-6012 @2e62978 — strip the @cr1@/@cr2@ crown
 			// tag from the sender and plot the mod/admin icon after "From".
 			var10 := c.MessageSender[i]
 			var11 := 0 // Java: byte modlevel
@@ -1062,8 +1062,10 @@ func (c *Client) DrawPrivateMessages() {
 			}
 			if var5 == 6 && c.PrivateChatSetting < 2 {
 				var6 = 329 - var3*13
-				var2.DrawString(4, var6, 0, "To "+c.MessageSender[i]+": "+c.MessageText[i])
-				var2.DrawString(4, var6-1, 0xFFFF, "To "+c.MessageSender[i]+": "+c.MessageText[i])
+				// Java: Client.java:6045-6046 @2e62978 — uses the crown-stripped
+				// sender local, like the type-3/7 branch (audit client-07-01).
+				var2.DrawString(4, var6, 0, "To "+var10+": "+c.MessageText[i])
+				var2.DrawString(4, var6-1, 0xFFFF, "To "+var10+": "+c.MessageText[i])
 				var3++
 				if var3 >= 5 {
 					return
@@ -1998,7 +2000,10 @@ func (c *Client) HandleChatSettingsInput() {
 	}
 }
 
-func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
+// Java: handleChatMouseInput(int, int) (Client.java:3535-3610 @2e62978) — the
+// dead second param and its Go-only PacketSize accumulator are dropped
+// (audit client-04-02, per the handleChatModeInput precedent).
+func (c *Client) HandleChatMouseInput(arg0 int) {
 	var4 := 0
 	for i := range 100 {
 		if c.MessageText[i] != "" {
@@ -2007,13 +2012,15 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 			if var7 < -20 {
 				break
 			}
-			// Java: Client.java:3815-3821 @176a85f — the @cr1@/@cr2@ crown tag
+			// Java: Client.java:3546-3553 @2e62978 — the @cr1@/@cr2@ crown tag
 			// is stripped before the friend/self checks and all menu strings;
-			// 245.2 makes the two strips mutually exclusive (if/else if).
+			// 254 uses two independent ifs (245.2's if/else-if reverted;
+			// audit client-04-01).
 			var10 := c.MessageSender[i]
 			if strings.HasPrefix(var10, "@cr1@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
 				var10 = var10[5:]
-			} else if strings.HasPrefix(var10, "@cr2@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
+			}
+			if strings.HasPrefix(var10, "@cr2@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
 				var10 = var10[5:]
 			}
 			if var6 == 0 {
@@ -2072,7 +2079,6 @@ func (c *Client) HandleChatMouseInput(arg0, arg1 int) {
 			}
 		}
 	}
-	c.PacketSize += arg1
 }
 
 // AddPlayers submits visible players for the pass being drawn: the local
@@ -5575,13 +5581,14 @@ func (c *Client) HandlePrivateChatInput(arg2 int) {
 	for i := range 100 {
 		if c.MessageText[i] != "" {
 			var6 := c.MessageType[i]
-			// Java: Client.java:3752-3759 @176a85f — strip the @cr1@/@cr2@
-			// crown tag before isFriend() and the menu strings; 245.2 makes
-			// the two strips mutually exclusive (if/else if).
+			// Java: Client.java:3490-3497 @2e62978 — strip the @cr1@/@cr2@
+			// crown tag before isFriend() and the menu strings; 254 uses two
+			// independent ifs (245.2's if/else-if reverted; audit client-04-01).
 			var10 := c.MessageSender[i]
 			if strings.HasPrefix(var10, "@cr1@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
 				var10 = var10[5:]
-			} else if strings.HasPrefix(var10, "@cr2@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
+			}
+			if strings.HasPrefix(var10, "@cr2@") { //nolint:staticcheck // S1017: mirrors Java's startsWith+substring pair
 				var10 = var10[5:]
 			}
 			if (var6 == 3 || var6 == 7) && (var6 == 7 || c.PrivateChatSetting == 0 || c.PrivateChatSetting == 1 && c.IsFriend(var10)) {
@@ -6623,7 +6630,7 @@ func (c *Client) HandleInput() {
 		if c.ChatLayerID != -1 {
 			c.HandleComponentInput(c.MouseY, c.MouseX, 357, iftype.List[c.ChatLayerID], 17, 0)
 		} else if c.MouseY < 434 && c.MouseX < 426 { // Java: Client.java:3694 @176a85f — message rows only
-			c.HandleChatMouseInput(c.MouseY-357, 0)
+			c.HandleChatMouseInput(c.MouseY - 357)
 		}
 	}
 	if c.ChatLayerID != -1 && c.LastHoveredInterfaceID != c.ChatHoveredInterfaceIndex {
@@ -7200,6 +7207,9 @@ func (c *Client) RenderFlames() {
 	var4 := 0
 	var5 := 20
 	for c.FlameActive {
+		// Java: this.flameCycle++ (Client.java:11091 @2e62978) — dead-write
+		// counter whose only reader is the unported lag() diagnostic family;
+		// intentionally not ported (audit client-13-01).
 		c.UpdateFlames()
 		c.UpdateFlames()
 		c.DrawFlames()
@@ -10306,10 +10316,13 @@ func (c *Client) DrawChatback() {
 				var6 := 70 - var3*14 + c.ChatScrollOffset
 				var10 := c.MessageSender[i]
 				var11 := 0 // Java: byte modicon
+				// Java: Client.java:10692-10699 @2e62978 — two independent ifs
+				// (245.2's if/else-if reverted; audit client-04-01).
 				if strings.HasPrefix(var10, "@cr1@") {
 					var10 = var10[5:]
 					var11 = 1
-				} else if strings.HasPrefix(var10, "@cr2@") {
+				}
+				if strings.HasPrefix(var10, "@cr2@") {
 					var10 = var10[5:]
 					var11 = 2
 				}
@@ -10886,19 +10899,21 @@ func (c *Client) TcpIn() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 96 — MIDI song change via on-demand archive 2 (Client.java:7473)
+	// Java: opcode 163 — MIDI song change via on-demand archive 2
+	// (Client.java:7181-7195 @2e62978); the NextMusicDelay==0 gate defers
+	// the swap while a jingle resume-delay is counting down (audit
+	// client-08-03).
 	if c.PacketType == SERVERPROT_MIDI_SONG {
 		id := c.In.G2()
 		if id == 65535 {
 			id = -1
 		}
-		if c.NextMidiSong != id && c.MidiActive && !LowMemory {
+		if c.NextMidiSong != id && c.MidiActive && !LowMemory && c.NextMusicDelay == 0 {
 			c.MidiSong = id
 			c.MidiFading = true
 			c.OnDemand.Request(2, c.MidiSong)
 		}
 		c.NextMidiSong = id
-		c.NextMusicDelay = 0
 		c.PacketType = -1
 		return true
 	}

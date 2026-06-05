@@ -454,6 +454,13 @@ var shiftedChar = map[rune]rune{
 }
 
 func charFor(e platform.KeyPress) int {
+	if e.Key == platform.KeyEscape {
+		// Java: AWT getKeyChar() for VK_ESCAPE is the control char 27 — not
+		// CHAR_UNDEFINED — so handleKey's `var3 < 30` zeroes it: Escape pushes
+		// nothing to KeyQueue and records 0 in InputTracking, matching
+		// GameShell.java:379-438 @2e62978 (audit client-shell-01).
+		return 27
+	}
 	if e.Key != platform.KeyRune {
 		// Java: arg0.getKeyChar() returns KeyEvent.CHAR_UNDEFINED ('￿' = 65535)
 		// for keys with no character (Shift/Alt/Caps/etc). handleKey's `var3 < 30`
