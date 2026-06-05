@@ -49,6 +49,9 @@ func init() {
 	}
 }
 
+// Java declares a per-instance `char[] base64enctab` of the 64 base64
+// alphabet chars (Packet.java:36 @2e62978) — never read anywhere.
+// Intentionally not ported per the dead deob-artifact exclusion policy.
 type Packet struct {
 	Data   []byte
 	Pos    int
@@ -242,14 +245,15 @@ func (p *Packet) G8() int64 {
 	return (high << 32) + low
 }
 
-// GJStr reads a null-line-terminated (\n) Latin-1 encoded string from the wire
-// and returns it as a Go (UTF-8) string. Java's `new String(this.data, var1,
-// this.pos - var1 - 1)` (Packet.java:239) uses the default platform charset to
+// GStr reads a null-line-terminated (\n) Latin-1 encoded string from the wire
+// and returns it as a Go (UTF-8) string. Java: gstr (Packet.java:252 @2e62978;
+// was gjstr in ≤245.2). Java's `new String(this.data, var1,
+// this.pos - var1 - 1)` uses the default platform charset to
 // decode bytes, but on the client this is effectively Latin-1: every byte
 // 0x00-0xFF maps 1:1 to the matching Unicode code point. We must transcode the
 // raw byte slice from Latin-1 → UTF-8 so the resulting Go string is valid UTF-8
 // and `for _, r := range s` recovers the original chars (e.g. byte 0xA3 → '£').
-func (p *Packet) GJStr() string {
+func (p *Packet) GStr() string {
 	start := p.Pos
 	for p.Data[p.Pos] != 10 {
 		p.Pos++
@@ -259,7 +263,8 @@ func (p *Packet) GJStr() string {
 }
 
 // GStrByte reads a null-line-terminated (\n) byte sequence verbatim — Java
-// returns the raw bytes here (Packet.java:237, `gjstrraw`). Description
+// returns the raw bytes here (Packet.java:261 @2e62978, `gstrbyte`; was
+// `gjstrraw` in ≤245.2). Description
 // strings on objtype/loctype/npctype are stored byte-for-byte and later
 // decoded by the caller via `new String(bytes)`. We preserve the raw byte
 // semantics; consumers that need a Go string must call `latin1ToUTF8` or

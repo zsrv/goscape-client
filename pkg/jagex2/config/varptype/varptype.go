@@ -69,7 +69,7 @@ func (t *VarpType) Decode(arg1 int, arg2 *io.Packet) {
 			// Java: this.code8 = true; this.code11 = true (rev-244 sets both) —
 			// both dead-write fields, omitted. No wire payload.
 		case 10:
-			arg2.GJStr() // Java: this.code10 = arg2.gjstr() — dead-write field omitted
+			arg2.GStr() // Java: this.debugname = arg2.gstr() (VarpType.java:100 @2e62978) — dead-write field omitted
 		case 11:
 			// Java: this.code11 = true (rev-244) — dead-write field omitted. No
 			// wire payload; handled so the default error branch is not hit.

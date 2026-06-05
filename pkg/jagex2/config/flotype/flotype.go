@@ -64,7 +64,7 @@ func (f *FloType) Decode(arg1 *io.Packet) {
 		case 5:
 			f.Occlude = false
 		case 6:
-			f.Name = arg1.GJStr()
+			f.Name = arg1.GStr()
 		default:
 			fmt.Println("Error unrecognised config code:", var3)
 		}

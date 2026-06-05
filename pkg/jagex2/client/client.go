@@ -1126,7 +1126,7 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 			}
 		}
 		if var7&0x8 == 8 {
-			var6.Chat = arg0.GJStr()
+			var6.Chat = arg0.GStr()
 			var6.ChatTimer = 100
 		}
 		if var7&0x10 == 16 {
@@ -10492,7 +10492,7 @@ func (c *Client) Read() (ok bool) {
 	// valid inputs the substring split below is identical to Java's
 	// substring(0, indexOf(":")). Fidelity-only divergence on non-ASCII names.
 	if c.PacketType == SERVERPROT_MESSAGE_GAME {
-		var3 := c.In.GJStr()
+		var3 := c.In.GStr()
 		if strings.HasSuffix(var3, ":tradereq:") {
 			var28 := var3[:strings.Index(var3, ":")]
 			var30 := jstring.ToBase37(var28)
@@ -11403,9 +11403,9 @@ func (c *Client) Read() (ok bool) {
 	// @2e62978). g1 slot (1-5) + g1 pushdown flag + gstr option text;
 	// "null" (case-insensitive) clears the slot.
 	if c.PacketType == SERVERPROT_SET_PLAYER_OP {
-		var6 := c.In.G1()    // Java: var6 — option slot
-		var7 := c.In.G1()    // Java: var7 — 0 = pushdown below "Walk here"
-		var8 := c.In.GJStr() // Java: var8 — option text
+		var6 := c.In.G1()   // Java: var6 — option slot
+		var7 := c.In.G1()   // Java: var7 — 0 = pushdown below "Walk here"
+		var8 := c.In.GStr() // Java: var8 — option text
 		if var6 >= 1 && var6 <= 5 {
 			if strings.EqualFold(var8, "null") {
 				var8 = ""
@@ -11459,7 +11459,7 @@ func (c *Client) Read() (ok bool) {
 	// Java: opcode 32 — component text (Client.java:7693)
 	if c.PacketType == SERVERPROT_IF_SETTEXT {
 		var26 := c.In.G2()
-		var28 := c.In.GJStr()
+		var28 := c.In.GStr()
 		iftype.Instances[var26].Text = var28
 		if iftype.Instances[var26].Layer == c.TabInterfaceID[c.SelectedTab] {
 			c.RedrawSidebar = true
@@ -11624,7 +11624,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		}
 	}
 	if arg2&0x8 == 8 {
-		arg4.Chat = arg3.GJStr()
+		arg4.Chat = arg3.GStr()
 		arg4.ChatColor = 0
 		arg4.ChatStyle = 0
 		arg4.ChatTimer = 150

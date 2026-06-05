@@ -130,7 +130,7 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 				t.Models[i] = arg1.G2()
 			}
 		case 2:
-			t.Name = arg1.GJStr()
+			t.Name = arg1.GStr()
 		case 3:
 			t.Desc = arg1.GStrByte()
 		case 12:
@@ -152,7 +152,7 @@ func (t *NpcType) Decode(arg1 *io.Packet) {
 			if t.Op == nil {
 				t.Op = make([]string, 5)
 			}
-			t.Op[var3-30] = arg1.GJStr()
+			t.Op[var3-30] = arg1.GStr()
 			// Java assigns op[i] = null here; Go uses "" — see LocType.Decode
 			// for the convention's full rationale.
 			if strings.ToLower(t.Op[var3-30]) == "hidden" {

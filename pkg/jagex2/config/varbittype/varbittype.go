@@ -57,7 +57,7 @@ func (t *VarBitType) Decode(arg0 int, arg2 *io.Packet) {
 			t.StartBit = arg2.G1()
 			t.EndBit = arg2.G1()
 		case 10:
-			arg2.GJStr() // Java: this.debugname = arg2.gstr() — dead-write field omitted
+			arg2.GStr() // Java: this.debugname = arg2.gstr() — dead-write field omitted
 		default:
 			fmt.Println("Error unrecognised config code:", var5)
 		}

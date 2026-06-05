@@ -35,7 +35,7 @@ func (r *javaRandom) NextInt() int {
 // Java's `arg1.charAt(i)` walks UTF-16 code units, so a char like '£'
 // (U+00A3) is one lookup against this table. The Go port previously
 // byte-indexed CHAR_LOOKUP[s[i]], which only works when `s` is invalid UTF-8
-// (one byte per char, our previous wire-decoded shape). After GJStr now
+// (one byte per char, our previous wire-decoded shape). After GStr now
 // returns valid UTF-8, callers must iterate runes — see GlyphIndex below.
 var CHAR_LOOKUP []int = make([]int, 256)
 
@@ -174,7 +174,7 @@ func (p *PixFont) DrawStringTaggableCenter(arg0 int, arg1 int, arg2 bool, arg3 i
 // StringWidth returns the rendered pixel width of arg1. Java walks code
 // units via `arg1.charAt(var4)` (PixFont.java:115-122), so we walk runes
 // here — byte-indexing a Go (UTF-8) string would mis-handle '£' and any
-// other Latin-1 char produced by GJStr after the wire→UTF-8 transcode.
+// other Latin-1 char produced by GStr after the wire→UTF-8 transcode.
 func (p *PixFont) StringWidth(arg1 string) int {
 	if arg1 == "" {
 		return 0

@@ -6,7 +6,8 @@ import (
 	"unicode/utf8"
 )
 
-// TestGJStrLatin1ToUTF8 — Java's `gjstr` decodes the wire bytes with the JVM
+// TestGStrLatin1ToUTF8 — Java's `gstr` (254 name; was `gjstr`) decodes the
+// wire bytes with the JVM
 // default charset, which on the client is effectively Latin-1: byte 0xA3 →
 // U+00A3 ('£'). The Go port previously sliced the raw bytes into a string,
 // producing invalid UTF-8 for any byte >= 0x80. Downstream pixfont
@@ -14,17 +15,17 @@ import (
 // font code applied to a Go literal like "£" (valid UTF-8 0xC2 0xA3) saw
 // different bytes and failed. The fix transcodes Latin-1 → UTF-8 on read so
 // all callers see a valid UTF-8 string.
-func TestGJStrLatin1ToUTF8(t *testing.T) {
+func TestGStrLatin1ToUTF8(t *testing.T) {
 	// Wire bytes: "5gp £" then 0x0A terminator.
 	wire := []byte{'5', 'g', 'p', ' ', 0xA3, 0x0A, 0x00}
 	p := NewPacket(wire)
-	got := p.GJStr()
+	got := p.GStr()
 	want := "5gp £"
 	if got != want {
-		t.Fatalf("GJStr = %q (%x), want %q (%x)", got, []byte(got), want, []byte(want))
+		t.Fatalf("GStr = %q (%x), want %q (%x)", got, []byte(got), want, []byte(want))
 	}
 	if !utf8.ValidString(got) {
-		t.Fatalf("GJStr returned invalid UTF-8: %x", []byte(got))
+		t.Fatalf("GStr returned invalid UTF-8: %x", []byte(got))
 	}
 	if p.Pos != 6 {
 		t.Fatalf("Pos = %d, want 6 (consumed bytes up to and including \\n)", p.Pos)
@@ -51,7 +52,7 @@ func TestPJStrUTF8ToLatin1(t *testing.T) {
 	}
 }
 
-// TestPacketRoundTripLatin1 — encode + decode through PJStr/GJStr returns the
+// TestPacketRoundTripLatin1 — encode + decode through PJStr/GStr returns the
 // original Go string for any Latin-1-bounded input.
 func TestPacketRoundTripLatin1(t *testing.T) {
 	cases := []string{"", "hello", "5gp £", "£££", "Foo Bar 123"}
@@ -61,7 +62,7 @@ func TestPacketRoundTripLatin1(t *testing.T) {
 			out := NewPacket(buf)
 			out.PJStr(want)
 			in := NewPacket(buf)
-			got := in.GJStr()
+			got := in.GStr()
 			if got != want {
 				t.Fatalf("round-trip %q → %q", want, got)
 			}

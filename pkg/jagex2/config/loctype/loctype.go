@@ -206,7 +206,7 @@ func (loc *LocType) Decode(buf *io.Packet) {
 				}
 			}
 		case 2:
-			loc.Name = buf.GJStr()
+			loc.Name = buf.GStr()
 		case 3:
 			loc.Desc = buf.GStrByte()
 		case 5:
@@ -254,7 +254,7 @@ func (loc *LocType) Decode(buf *io.Packet) {
 			if loc.Op == nil {
 				loc.Op = make([]string, 5)
 			}
-			loc.Op[code-30] = buf.GJStr()
+			loc.Op[code-30] = buf.GStr()
 			// Java assigns op[i] = null here; Go uses "" as the absence marker.
 			// All read sites compare via `!= ""`. The wire format never sends ""
 			// as a legitimate option, so the two markers are equivalent in

@@ -211,7 +211,7 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 					if var12 == 1 {
 						com.InvSlotOffsetX[i] = var4.G2B()
 						com.InvSlotOffsetY[i] = var4.G2B()
-						var17 := var4.GJStr()
+						var17 := var4.GStr()
 						if arg0 != nil && len(var17) > 0 {
 							var14 := strings.LastIndex(var17, ",")
 							v, err := strconv.Atoi(var17[var14+1:])
@@ -228,7 +228,7 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 				// `= ""` re-assignment is a no-op (already ""), kept to mirror
 				// Java's nulling pass for readability.
 				for i := range 5 {
-					com.IOps[i] = var4.GJStr()
+					com.IOps[i] = var4.GStr()
 					if len(com.IOps[i]) == 0 {
 						com.IOps[i] = ""
 					}
@@ -246,8 +246,8 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 				com.Shadowed = var4.G1() == 1
 			}
 			if com.Type == 4 {
-				com.Text = var4.GJStr()
-				com.ActiveText = var4.GJStr()
+				com.Text = var4.GStr()
+				com.ActiveText = var4.GStr()
 			}
 			if com.Type == 1 || com.Type == 3 || com.Type == 4 {
 				com.Colour = var4.G4()
@@ -260,7 +260,7 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 				com.ActiveOverColour = var4.G4()
 			}
 			if com.Type == 5 {
-				var16 := var4.GJStr()
+				var16 := var4.GStr()
 				if arg0 != nil && len(var16) > 0 {
 					var12 = strings.LastIndex(var16, ",")
 					v, err := strconv.Atoi(var16[var12+1:])
@@ -269,7 +269,7 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 					}
 					com.Graphic = GetImage(arg0, v, var16[0:var12])
 				}
-				var16 = var4.GJStr()
+				var16 = var4.GStr()
 				if arg0 != nil && len(var16) > 0 {
 					var12 = strings.LastIndex(var16, ",")
 					v, err := strconv.Atoi(var16[var12+1:])
@@ -321,19 +321,19 @@ func Unpack(arg0 *io.JagFile, arg1 []*pixfont.PixFont, arg3 *io.JagFile) {
 				com.Interactable = var4.G1() == 1
 				com.IOps = make([]string, 5)
 				for i := range 5 {
-					com.IOps[i] = var4.GJStr()
+					com.IOps[i] = var4.GStr()
 					if len(com.IOps[i]) == 0 {
 						com.IOps[i] = ""
 					}
 				}
 			}
 			if com.ButtonType == 2 || com.Type == 2 {
-				com.ActionVerb = var4.GJStr()
-				com.Action = var4.GJStr()
+				com.ActionVerb = var4.GStr()
+				com.Action = var4.GStr()
 				com.ActionTarget = var4.G2()
 			}
 		}
-		com.Option = var4.GJStr()
+		com.Option = var4.GStr()
 		if len(com.Option) == 0 {
 			switch com.ButtonType {
 			case 1:
