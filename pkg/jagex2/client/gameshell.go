@@ -13,6 +13,15 @@ import (
 type GameShell struct {
 }
 
+// Shutdown ports GameShell.shutdown(boolean) (GameShell.java:229 @2e62978).
+// The boolean param is a dead deob arg — not ported. 254 wraps the
+// sleep+exit (ONLY — state=-2 and unload stay unconditional) in
+// `if (frame != null)`: frame is non-null exactly when running standalone
+// (set by initApplication, GameShell.java:110) and null in applet mode,
+// where the browser owns the process. This host-shell port always runs
+// standalone — native and wasm both own the program lifecycle via
+// platform.Main — so the guard folds to constant-true and the sleep+exit
+// below remain unconditional.
 func (c *Client) Shutdown() {
 	c.State = -2
 	c.Unload()
@@ -557,7 +566,7 @@ func (c *Client) RunShell() {
 		var5 = max(var5, c.MinDel)
 		time.Sleep(time.Duration(var5) * time.Millisecond)
 		for var6 < 256 {
-			c.Update()
+			c.Loop() // Java: this.loop() (GameShell.java:205 @2e62978) — 254 rename of update()
 			c.MouseClickButton = 0
 			c.KeyQueueReadPos = c.KeyQueueWritePos
 			var6 += var4

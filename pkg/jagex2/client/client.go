@@ -9638,7 +9638,10 @@ func (c *Client) UpdateOnDemand() {
 	}
 }
 
-func (c *Client) Update() {
+// Loop is the per-tick logic hook driven by RunShell's catch-up loop. Java:
+// Client.loop (Client.java:1868 @2e62978) — 254 renames the GameShell hook
+// update()→loop() (GameShell.java:538); was Client.update in ≤245.2.
+func (c *Client) Loop() {
 	if c.ErrorStarted || c.ErrorLoading || c.ErrorHost {
 		return
 	}
@@ -9648,7 +9651,7 @@ func (c *Client) Update() {
 	} else {
 		c.UpdateTitle()
 	}
-	c.UpdateOnDemand() // Java: Client.update (Client.java:1997). Client-TS: update (Client.ts:~775).
+	c.UpdateOnDemand()
 }
 
 func (c *Client) UpdateEntityChats() {
