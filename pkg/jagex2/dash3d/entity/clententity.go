@@ -31,7 +31,11 @@ type ClientEntity struct {
 	CombatCycle int
 	Health      int
 	DstYaw      int
-	PathLength  int
+	// Java: turnspeed = 32 (ClientEntity.java:77 @2e62978) — NEW in 254;
+	// per-entity yaw step per cycle. NPCs overwrite it from
+	// NpcType.turnspeed in getNpcPosNewVis/Extended; 0 disables turning.
+	TurnSpeed  int
+	PathLength int
 	// Java: preanimRouteLength (z.ob, new in 244) — the route length captured
 	// when an ANIM block accepts a new primary seq; gates whether the seq
 	// blocks movement (preanim_move) vs plays after it (postanim_mode).
@@ -71,6 +75,7 @@ type ClientEntity struct {
 func NewClientEntity() *ClientEntity {
 	return &ClientEntity{
 		Size:            1,
+		TurnSpeed:       32, // Java: ClientEntity.java:77 @2e62978 (NEW in 254)
 		SeqStandID:      -1,
 		SeqTurnID:       -1,
 		SeqWalkID:       -1,

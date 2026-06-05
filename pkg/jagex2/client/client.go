@@ -1136,6 +1136,10 @@ func (c *Client) GetNpcPosExtended(arg0 *io.Packet) {
 		}
 		if var7&0x20 == 32 {
 			var6.Type = npctype.Get(arg0.G2())
+			// Java: Client.java:8450-8451 @2e62978 — NEW in 254: the transform
+			// branch now also re-copies size and turnspeed from the new type.
+			var6.Size = int(var6.Type.Size)
+			var6.TurnSpeed = var6.Type.TurnSpeed
 			// Java: 245.2 assigns walkanim_l/_r directly (Client.java:9006-9010
 			// @176a85f); 244 cross-swapped. Compensates the NpcType opcode-17
 			// read-order swap — net behaviour identical.
@@ -3692,7 +3696,7 @@ func (c *Client) GetPlayerNewVis(arg1 int, arg2 *io.Packet) {
 		if c.Players[var4] == nil {
 			c.Players[var4] = playerentity.NewClientPlayer()
 			if c.PlayerAppearanceBuffer[var4] != nil {
-				c.Players[var4].Read(c.PlayerAppearanceBuffer[var4])
+				c.Players[var4].SetAppearance(c.PlayerAppearanceBuffer[var4])
 			}
 		}
 		c.PlayerIDs[c.PlayerCount] = var4
@@ -4205,9 +4209,9 @@ func (c *Client) UpdateClientPlayer(arg0 *playerentity.ClientPlayer) {
 	} else if arg0.ForceMoveStartCycle >= clientextras.LoopCycle {
 		c.StartForceMovement(&arg0.ClientEntity, 0)
 	} else {
-		c.UpdateMovement(&arg0.ClientEntity)
+		c.RouteMove(&arg0.ClientEntity)
 	}
-	c.UpdateFacingDirection(&arg0.ClientEntity)
+	c.EntityFace(&arg0.ClientEntity)
 	c.UpdateSequences(&arg0.ClientEntity)
 }
 
@@ -4226,9 +4230,9 @@ func (c *Client) UpdateClientNpc(arg0 *entity.ClientNpc) {
 	} else if arg0.ForceMoveStartCycle >= clientextras.LoopCycle {
 		c.StartForceMovement(&arg0.ClientEntity, 0)
 	} else {
-		c.UpdateMovement(&arg0.ClientEntity)
+		c.RouteMove(&arg0.ClientEntity)
 	}
-	c.UpdateFacingDirection(&arg0.ClientEntity)
+	c.EntityFace(&arg0.ClientEntity)
 	c.UpdateSequences(&arg0.ClientEntity)
 }
 
@@ -4277,7 +4281,9 @@ func (c *Client) StartForceMovement(arg0 *entity.ClientEntity, arg1 int) {
 	arg0.Yaw = arg0.DstYaw
 }
 
-func (c *Client) UpdateMovement(arg1 *entity.ClientEntity) {
+// Java: routeMove (Client.java:4614-4726 @2e62978; was updateMovement at
+// 245.2).
+func (c *Client) RouteMove(arg1 *entity.ClientEntity) {
 	arg1.SecondarySeqID = arg1.SeqStandID
 	if arg1.PathLength == 0 {
 		arg1.SeqTrigger = 0
@@ -4344,7 +4350,9 @@ func (c *Client) UpdateMovement(arg1 *entity.ClientEntity) {
 	}
 	arg1.SecondarySeqID = var8
 	var9 := 4
-	if arg1.Yaw != arg1.DstYaw && arg1.TargetID == -1 {
+	// Java: `&& arg0.turnspeed != 0` (Client.java:4678 @2e62978) — NEW in
+	// 254: an entity that cannot turn no longer slows down to turn.
+	if arg1.Yaw != arg1.DstYaw && arg1.TargetID == -1 && arg1.TurnSpeed != 0 {
 		var9 = 2
 	}
 	if arg1.PathLength > 2 {
@@ -4394,7 +4402,14 @@ func (c *Client) UpdateMovement(arg1 *entity.ClientEntity) {
 	}
 }
 
-func (c *Client) UpdateFacingDirection(arg0 *entity.ClientEntity) {
+// Java: entityFace (Client.java:4728-4785 @2e62978; was
+// updateFacingDirection at 245.2).
+func (c *Client) EntityFace(arg0 *entity.ClientEntity) {
+	// Java: Client.java:4729-4731 @2e62978 — NEW in 254: turnspeed 0
+	// disables facing updates entirely.
+	if arg0.TurnSpeed == 0 {
+		return
+	}
 	var4 := 0
 	var5 := 0
 	if arg0.TargetID != -1 && arg0.TargetID < 32768 {
@@ -4435,12 +4450,14 @@ func (c *Client) UpdateFacingDirection(arg0 *entity.ClientEntity) {
 	if var7 == 0 {
 		return
 	}
-	if var7 < 32 || var7 > 2016 {
+	// Java: Client.java:4767-4772 @2e62978 — 254 replaces the hardcoded
+	// 32/2016 yaw step with the per-entity turnspeed.
+	if var7 < arg0.TurnSpeed || var7 > 2048-arg0.TurnSpeed {
 		arg0.Yaw = arg0.DstYaw
 	} else if var7 > 0x400 {
-		arg0.Yaw -= 32
+		arg0.Yaw -= arg0.TurnSpeed
 	} else {
-		arg0.Yaw += 32
+		arg0.Yaw += arg0.TurnSpeed
 	}
 	arg0.Yaw &= 0x7FF
 	if arg0.SecondarySeqID != arg0.SeqStandID || arg0.Yaw == arg0.DstYaw {
@@ -5799,6 +5816,9 @@ func (c *Client) GetNpcPosNewVis(arg1 *io.Packet, arg2 int) {
 		var5.Cycle = clientextras.LoopCycle
 		var5.Type = npctype.Get(arg1.GBit(11))
 		var5.Size = int(var5.Type.Size)
+		// Java: var5.turnspeed = var5.type.turnspeed (Client.java:8364
+		// @2e62978) — NEW in 254.
+		var5.TurnSpeed = var5.Type.TurnSpeed
 		// Java: 245.2 assigns walkanim_l/_r directly (Client.java:8921-8925
 		// @176a85f); 244 cross-swapped. Compensates the NpcType opcode-17
 		// read-order swap — net behaviour identical.
@@ -11261,7 +11281,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		var8 := io.NewPacket(var7)
 		arg3.GData(var6, 0, var7)
 		c.PlayerAppearanceBuffer[arg1] = var8
-		arg4.Read(var8)
+		arg4.SetAppearance(var8)
 	}
 	var15 := 0
 	if arg2&0x2 == 2 {

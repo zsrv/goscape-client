@@ -3,6 +3,7 @@ package playerentity
 import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/idktype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/npctype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/objtype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
@@ -49,6 +50,11 @@ type ClientPlayer struct {
 	MaxTileX      int
 	LowMemory     bool
 	MaxTileZ      int
+	// Java: transmog (ClientPlayer.java:78 @2e62978) — NEW in 254;
+	// player→NPC transformation. Set by setAppearance when appearance[0]
+	// reads 65535, cleared on every appearance update; getTempModel2
+	// short-circuits to the NPC model while non-nil.
+	Transmog *npctype.NpcType
 }
 
 func NewClientPlayer() *ClientPlayer {
@@ -61,10 +67,12 @@ func NewClientPlayer() *ClientPlayer {
 	}
 }
 
-func (e *ClientPlayer) Read(arg1 *io.Packet) {
+// Java: setAppearance (ClientPlayer.java:81-156 @2e62978; was read at 245.2).
+func (e *ClientPlayer) SetAppearance(arg1 *io.Packet) {
 	arg1.Pos = 0
 	e.Gender = arg1.G1()
 	e.HeadIcons = arg1.G1()
+	e.Transmog = nil // Java: ClientPlayer.java:86 — cleared on every update
 	for i := range 12 {
 		var4 := arg1.G1()
 		if var4 == 0 {
@@ -72,6 +80,13 @@ func (e *ClientPlayer) Read(arg1 *io.Packet) {
 		} else {
 			var5 := arg1.G1()
 			e.Appearances[i] = (var4 << 8) + var5
+			// Java: ClientPlayer.java:94-97 — NEW in 254: appearance[0]
+			// sentinel 65535 switches to NPC transmog; extra g2 NPC id, then
+			// the remaining 11 slots are skipped (break).
+			if i == 0 && e.Appearances[0] == 65535 {
+				e.Transmog = npctype.Get(arg1.G2())
+				break
+			}
 		}
 	}
 	for i := range 5 {
@@ -207,8 +222,26 @@ func (e *ClientPlayer) GetModel() *model.Model {
 }
 
 // Java: getTempModel2 (ClientPlayer.java:244-341 @2e62978; was
-// getAnimatedModel). WS5 will add the 254 transmog short-circuit here.
+// getAnimatedModel).
 func (e *ClientPlayer) GetTempModel2() *model.Model {
+	// Java: ClientPlayer.java:245-253 — NEW in 254: while transmogged,
+	// short-circuit to the NPC model (frame resolved from the player's own
+	// active seq; no secondary frame, no walkmerge).
+	if e.Transmog != nil {
+		frame := -1 // Java: var2
+		if e.PrimarySeqID >= 0 && e.PrimarySeqDelay == 0 {
+			frame = seqtype.Instances[e.PrimarySeqID].Frames[e.PrimarySeqFrame]
+		} else if e.SecondarySeqID >= 0 {
+			frame = seqtype.Instances[e.SecondarySeqID].Frames[e.SecondarySeqFrame]
+		}
+		if e.seqModel == nil {
+			e.seqModel = &model.Model{}
+		}
+		// Java: return this.transmog.getTempModel(var2, null, -1) — Go
+		// GetTempModel takes the caller-owned target model first (Go
+		// deviation replacing Java's Model.empty static).
+		return e.Transmog.GetTempModel(e.seqModel, frame, -1, nil)
+	}
 	var2 := e.AppearanceHashCode
 	var4 := -1
 	var5 := -1
