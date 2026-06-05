@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"hash/crc32"
 	io2 "io"
@@ -6159,46 +6160,9 @@ func (c *Client) Load() {
 			c.ErrorLoading = true
 		}
 	}()
-	// Java: int var3 = 5 (deob/client.java:5991) — initial backoff seconds.
-	retry := 5
-
-	errorLoading := func() {
-		for i := retry; i > 0; i-- {
-			c.DrawProgress("Error loading - Will retry in "+strconv.Itoa(i)+" secs.", 10)
-			time.Sleep(1 * time.Second)
-		}
-		retry *= 2
-		if retry > 60 {
-			retry = 60
-		}
-	}
-
-	c.JagChecksum[8] = 0
-	for c.JagChecksum[8] == 0 {
-		c.DrawProgress("Connecting to web server", 20)
-		reader, err := c.OpenURL("crc" + strconv.Itoa(int(rand.Float64()*9.9999999e7)))
-		if err != nil {
-			log.Printf("client: Client.Load OpenURL error: %v", err)
-			errorLoading()
-			continue
-		}
-
-		crc := io.NewPacket(make([]byte, 36))
-		// Java: in.readFully(var5.data, 0, 36) (client.java:5997-6002) blocks
-		// until all 36 bytes are read. io2.ReadFull matches that "fill exactly"
-		// semantics; a bare Read could return fewer bytes if the source were
-		// ever a streaming reader rather than the in-memory bytes.Reader.
-		_, err = io2.ReadFull(reader, crc.Data[:36])
-		if err != nil {
-			log.Printf("client: Client.Load Read error: %v", err)
-			errorLoading()
-			continue
-		}
-
-		for i := range 9 {
-			c.JagChecksum[i] = crc.G4()
-		}
-	}
+	// 274 splits the checksum fetch out of load() into getJagChecksums()
+	// with a rewritten body (call site: Client.java:5137 @32f3062).
+	c.GetJagChecksums()
 
 	c.JagTitle = c.GetJagFile("title screen", c.JagChecksum[1], "title", 25)
 	c.FontPlain11 = pixfont.NewPixFont(c.JagTitle, "p11")
@@ -7171,6 +7135,97 @@ func (c *Client) OpenURL(arg0 string) (*bytes.Reader, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 	return bytes.NewReader(b), nil
+}
+
+// GetJagChecksums fetches the nine archive CRCs from the web server and
+// self-validates them against a trailing checksum word, retrying with
+// doubling backoff (5..60s) and flipping the JAGGRAB transport each failed
+// cycle; after 10 failures it pins the "Game updated" banner forever.
+// Java: getJagChecksums (Client.java:11211-11269 @32f3062) — NEW in 274,
+// split out of 254 load() (Client.java:1516-1541 @2e62978) and rewritten:
+// the crc URL gains a version suffix, the response grows 36→40 bytes (10th
+// word = validation), error reporting is widened, and the 10-failure hard
+// stop is new.
+func (c *Client) GetJagChecksums() {
+	retry := 5    // Java: var2 — backoff seconds
+	failures := 0 // Java: var3
+	c.JagChecksum[8] = 0
+	for c.JagChecksum[8] == 0 {
+		problem := "Unknown problem" // Java: var4
+		c.DrawProgress("Connecting to web server", 20)
+
+		// Java wraps the attempt in try/catch; the Go error paths set
+		// problem + JagChecksum[8]=0 and fall through to the shared retry
+		// block, mirroring the catches. Java's catch(Exception) "logic
+		// problem" arm (guarded by signlink.reporterror) has no Go
+		// counterpart: nothing in this block panics, and Load()'s recover
+		// covers the impossible.
+		//
+		// URL: Java "crc"+rand+"-"+274 (Client.java:11219 @32f3062; the
+		// trailing literal is the constant-folded clientversion — Go uses
+		// the named constant, see signlink.ClientVersion).
+		reader, err := c.OpenURL("crc" + strconv.Itoa(int(rand.Float64()*9.9999999e7)) + "-" + strconv.Itoa(signlink.ClientVersion))
+		if err != nil {
+			log.Printf("client: Client.GetJagChecksums OpenURL error: %v", err)
+			problem = "connection problem"
+			c.JagChecksum[8] = 0
+		} else {
+			crc := io.NewPacket(make([]byte, 40))
+			// Java: var5.readFully(var6.pos, 0, 40) — fill exactly 40 bytes.
+			if _, err := io2.ReadFull(reader, crc.Data[:40]); err != nil {
+				log.Printf("client: Client.GetJagChecksums read error: %v", err)
+				// Java separates EOFException ("EOF problem") from
+				// IOException ("connection problem").
+				if errors.Is(err, io2.EOF) || errors.Is(err, io2.ErrUnexpectedEOF) {
+					problem = "EOF problem"
+				} else {
+					problem = "connection problem"
+				}
+				c.JagChecksum[8] = 0
+			} else {
+				for i := range 9 {
+					c.JagChecksum[i] = crc.G4()
+				}
+				// The 10th word self-validates the nine checksums.
+				// Java: var8/var9 (Client.java:11226-11233 @32f3062) — int
+				// arithmetic, overflow wraps at 32 bits, hence int32 here
+				// (Go G4 yields the unsigned interpretation; truncating
+				// both sides to int32 matches Java's signed compare).
+				expected := crc.G4()
+				acc := int32(1234)
+				for i := range 9 {
+					acc = acc<<1 + int32(c.JagChecksum[i])
+				}
+				if int32(expected) != acc {
+					problem = "checksum problem"
+					c.JagChecksum[8] = 0
+				}
+			}
+		}
+
+		if c.JagChecksum[8] == 0 {
+			failures++
+			// C-style loop: the i = 10 mutation must persist (no range
+			// loop) — at >= 10 failures Java re-pins i every iteration,
+			// showing the reload banner forever (deliberate hang).
+			for i := retry; i > 0; i-- {
+				if failures >= 10 {
+					c.DrawProgress("Game updated - please reload page", 10)
+					i = 10
+				} else {
+					c.DrawProgress(problem+" - Will retry in "+strconv.Itoa(i)+" secs.", 10)
+				}
+				time.Sleep(1 * time.Second)
+			}
+			retry *= 2
+			if retry > 60 {
+				retry = 60
+			}
+			// NEW in 274: alternate HTTP ↔ JAGGRAB per failed cycle
+			// (Client.java:11266 @32f3062).
+			c.JaggrabEnabled = !c.JaggrabEnabled
+		}
+	}
 }
 
 // onDemandDownloader adapts the client's OpenURL to ondemand.Downloader.
