@@ -9081,6 +9081,12 @@ func (c *Client) ApplyCutscene() {
 	}
 }
 
+// HandleTabInput selects a sidebar tab from a click in the tab strips.
+// Java: handleTabInput (Client.java:3923-3996 @2e62978) — 254 turned the
+// 245.2 else-if chain into independent ifs. NOT cosmetic: adjacent tab
+// rects overlap by a few pixels (e.g. 569-573 between tabs 0 and 1), so
+// independent ifs make boundary clicks last-match-wins where the chain was
+// first-match-wins.
 func (c *Client) HandleTabInput() {
 	if c.MouseClickButton != 1 {
 		return
@@ -9089,55 +9095,68 @@ func (c *Client) HandleTabInput() {
 		c.RedrawSidebar = true
 		c.SelectedTab = 0
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 569 && c.MouseClickX <= 599 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[1] != -1 {
+	}
+	if c.MouseClickX >= 569 && c.MouseClickX <= 599 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[1] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 1
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 597 && c.MouseClickX <= 627 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[2] != -1 {
+	}
+	if c.MouseClickX >= 597 && c.MouseClickX <= 627 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[2] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 2
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 625 && c.MouseClickX <= 669 && c.MouseClickY >= 168 && c.MouseClickY < 203 && c.TabInterfaceID[3] != -1 {
+	}
+	if c.MouseClickX >= 625 && c.MouseClickX <= 669 && c.MouseClickY >= 168 && c.MouseClickY < 203 && c.TabInterfaceID[3] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 3
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 666 && c.MouseClickX <= 696 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[4] != -1 {
+	}
+	if c.MouseClickX >= 666 && c.MouseClickX <= 696 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[4] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 4
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 694 && c.MouseClickX <= 724 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[5] != -1 {
+	}
+	if c.MouseClickX >= 694 && c.MouseClickX <= 724 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[5] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 5
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 722 && c.MouseClickX <= 756 && c.MouseClickY >= 169 && c.MouseClickY < 205 && c.TabInterfaceID[6] != -1 {
+	}
+	if c.MouseClickX >= 722 && c.MouseClickX <= 756 && c.MouseClickY >= 169 && c.MouseClickY < 205 && c.TabInterfaceID[6] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 6
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 540 && c.MouseClickX <= 574 && c.MouseClickY >= 466 && c.MouseClickY < 502 && c.TabInterfaceID[7] != -1 {
+	}
+	if c.MouseClickX >= 540 && c.MouseClickX <= 574 && c.MouseClickY >= 466 && c.MouseClickY < 502 && c.TabInterfaceID[7] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 7
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 572 && c.MouseClickX <= 602 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[8] != -1 {
+	}
+	if c.MouseClickX >= 572 && c.MouseClickX <= 602 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[8] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 8
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 599 && c.MouseClickX <= 629 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[9] != -1 {
+	}
+	if c.MouseClickX >= 599 && c.MouseClickX <= 629 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[9] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 9
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 627 && c.MouseClickX <= 671 && c.MouseClickY >= 467 && c.MouseClickY < 502 && c.TabInterfaceID[10] != -1 {
+	}
+	if c.MouseClickX >= 627 && c.MouseClickX <= 671 && c.MouseClickY >= 467 && c.MouseClickY < 502 && c.TabInterfaceID[10] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 10
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 669 && c.MouseClickX <= 699 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[11] != -1 {
+	}
+	if c.MouseClickX >= 669 && c.MouseClickX <= 699 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[11] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 11
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 696 && c.MouseClickX <= 726 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[12] != -1 {
+	}
+	if c.MouseClickX >= 696 && c.MouseClickX <= 726 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[12] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 12
 		c.RedrawSideIcons = true
-	} else if c.MouseClickX >= 724 && c.MouseClickX <= 758 && c.MouseClickY >= 466 && c.MouseClickY < 502 && c.TabInterfaceID[13] != -1 {
+	}
+	if c.MouseClickX >= 724 && c.MouseClickX <= 758 && c.MouseClickY >= 466 && c.MouseClickY < 502 && c.TabInterfaceID[13] != -1 {
 		c.RedrawSidebar = true
 		c.SelectedTab = 13
 		c.RedrawSideIcons = true
