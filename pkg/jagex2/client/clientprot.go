@@ -7,7 +7,7 @@ package client
 // comments via the LOGIC-DELTA-SCOPE-274.md pairing (the 274 deob has no
 // inline labels; every pairing adversarially verified against both pins).
 // vs 254: full renumber — ANTICHEAT_CYCLELOGIC5 (100) is the ONLY value
-// unchanged; EVENT_TRACKING is removed with InputTracking (WS2). Beware
+// unchanged; EVENT_TRACKING was removed with InputTracking. Beware
 // intra/cross-rev value reuse (e.g. 254 op9=FRIENDLIST_ADD but 274
 // op9=IF_BUTTON) — never port by value, always by message.
 // Written RAW through Packet.P1Isaac (Java 274 p1Enc: opcode + ISAAC
@@ -15,11 +15,8 @@ package client
 // (never read at runtime; re-verified at @32f3062: declaration only) —
 // intentionally not ported.
 const (
-	CLIENTPROT_NO_TIMEOUT = 120
-	CLIENTPROT_IDLE_TIMER = 209
-	// 254 value — the message does not exist in 274; constant and all its
-	// sites are deleted with InputTracking (WS2).
-	CLIENTPROT_EVENT_TRACKING        = 142
+	CLIENTPROT_NO_TIMEOUT            = 120
+	CLIENTPROT_IDLE_TIMER            = 209
 	CLIENTPROT_ANTICHEAT_OPLOGIC1    = 219
 	CLIENTPROT_ANTICHEAT_OPLOGIC2    = 201
 	CLIENTPROT_ANTICHEAT_OPLOGIC3    = 41

@@ -5,8 +5,8 @@ package client
 // 10-opcode zone set, verified 1:1 against the dispatch bodies via the
 // LOGIC-DELTA-SCOPE-274.md pairing; every value cross-checked against
 // SERVERPROT_SIZE at the new indices). vs 254: full renumber;
-// FINISH_TRACKING/ENABLE_TRACKING removed with InputTracking (WS2 —
-// constants below hold their 254 values until then); SET_MINIMAP_STATE is
+// FINISH_TRACKING (29) / ENABLE_TRACKING (251) were removed with
+// InputTracking; SET_MINIMAP_STATE is
 // new. Same-shape pair IF_SETNPCHEAD (3→142) vs IF_SETMODEL (211→129) was
 // adjudicated twice by model1Type=2 vs =1.
 // Zone opcodes (LOC_*/OBJ_*/MAP_*) share this number space: the server sends
@@ -41,14 +41,10 @@ const (
 	SERVERPROT_CAM_RESET                = 101
 	SERVERPROT_NPC_INFO                 = 197
 	SERVERPROT_PLAYER_INFO              = 167
-	// 254 values — the tracking messages do not exist in 274; constants and
-	// their handlers are deleted with InputTracking (WS2).
-	SERVERPROT_FINISH_TRACKING      = 29
-	SERVERPROT_ENABLE_TRACKING      = 251
-	SERVERPROT_MESSAGE_GAME         = 161
-	SERVERPROT_UPDATE_IGNORELIST    = 3
-	SERVERPROT_CHAT_FILTER_SETTINGS = 114
-	SERVERPROT_MESSAGE_PRIVATE      = 235
+	SERVERPROT_MESSAGE_GAME             = 161
+	SERVERPROT_UPDATE_IGNORELIST        = 3
+	SERVERPROT_CHAT_FILTER_SETTINGS     = 114
+	SERVERPROT_MESSAGE_PRIVATE          = 235
 	// NEW in 254: server-driven player right-click options (Client.java:8547
 	// @32f3062). Writes playerOptions/playerOptionsPushDown.
 	SERVERPROT_SET_PLAYER_OP = 17

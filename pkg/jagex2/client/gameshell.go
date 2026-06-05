@@ -4,7 +4,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/inputtracking"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/bootfont"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/platform"
@@ -13,15 +12,15 @@ import (
 type GameShell struct {
 }
 
-// Shutdown ports GameShell.shutdown(boolean) (GameShell.java:229 @2e62978).
-// The boolean param is a dead deob arg — not ported. 254 wraps the
-// sleep+exit (ONLY — state=-2 and unload stay unconditional) in
-// `if (frame != null)`: frame is non-null exactly when running standalone
-// (set by initApplication, GameShell.java:110) and null in applet mode,
-// where the browser owns the process. This host-shell port always runs
-// standalone — native and wasm both own the program lifecycle via
-// platform.Main — so the guard folds to constant-true and the sleep+exit
-// below remain unconditional.
+// Shutdown ports GameShell.shutdown() (GameShell.java:228 @32f3062).
+// 274 drops 254's dead boolean deob arg (this port never carried it) and
+// inverts the frame guard into an early `if (frame == null) return` before
+// the sleep+exit (state=-2 and unload stay unconditional, as in 254):
+// frame is non-null exactly when running standalone (set by
+// initApplication) and null in applet mode, where the browser owns the
+// process. This host-shell port always runs standalone — native and wasm
+// both own the program lifecycle via platform.Main — so the guard folds to
+// constant-false and the sleep+exit below remain unconditional.
 func (c *Client) Shutdown() {
 	c.State = -2
 	c.Unload()
@@ -113,27 +112,27 @@ func (c *Client) dispatchInputEvent(ev platform.Event) {
 	}
 }
 
-// handleFocus mirrors Java's focusGained / focusLost on
-// GameShell (GameShell.java:444-456). Java sets `refresh = true`
-// and calls `refresh()` on focus gained, then forwards both
-// events to InputTracking. The neutral FocusChange event is
-// delivered by the platform backend when the window's focus state changes.
+// handleFocus mirrors Java's focusGained / focusLost on GameShell
+// (GameShell.java:476-488 @32f3062). Java sets `fullredraw = true` and
+// calls `refresh()` on focus gained; focus lost zeroes every keyHeld slot.
+// The neutral FocusChange event is delivered by the platform backend when
+// the window's focus state changes.
 func (c *Client) handleFocus(e platform.FocusChange) {
-	// Java: hasFocus = true/false (GameShell.java:496,505 @2e62978) — NEW in
-	// 254; read by gameLoop's EVENT_APPLET_FOCUS telemetry.
+	// Java: focus = true/false (GameShell.java:477,484 @32f3062) — NEW in
+	// 254 (as hasFocus); read by gameLoop's EVENT_APPLET_FOCUS telemetry.
 	c.HasFocus = e.Gained
 	if e.Gained {
 		c.Refresh = true
-		// Java: this.refresh() (GameShell.java:517) dispatches to the Client
+		// Java: this.refresh() (GameShell.java:479) dispatches to the Client
 		// override, which forces the full frame rebuild (audit gameshell-07)
 		c.RefreshFunc()
-		if inputtracking.Enabled {
-			inputtracking.FocusGained()
-		}
 		return
 	}
-	if inputtracking.Enabled {
-		inputtracking.FocusLost()
+	// Java: GameShell.java:485-487 — NEW in 274 (stuck-key fix): a key held
+	// across the focus loss never delivers its release event, so its
+	// keyHeld slot would otherwise read as held forever.
+	for i := range 128 {
+		c.KeyHeld[i] = 0
 	}
 }
 
@@ -141,7 +140,7 @@ func (c *Client) handleFocus(e platform.FocusChange) {
 // character per event; control chars < 30 are dropped (matching Java).
 //
 // Java: keyPressed zeroes any keyChar < 30 then pushes only var3 > 4
-// (GameShell.java:342-396), so a bare control char in [5,29] is dropped;
+// (GameShell.java:363-420 @32f3062), so a bare control char in [5,29] is dropped;
 // only the explicit sentinel overrides (5/8/9/10/1000+) survive, and
 // those arrive via KeyPress (handleKey), not CharInput text. Skip < 30
 // here to match Java's drop — CharInput.Rune only carries printable
@@ -154,14 +153,14 @@ func (c *Client) handleCharInput(e platform.CharInput) {
 	}
 	c.KeyQueue[c.KeyQueueWritePos] = var3
 	c.KeyQueueWritePos = (c.KeyQueueWritePos + 1) & 0x7F
-	if inputtracking.Enabled {
-		inputtracking.KeyPressed(var3)
-	}
 }
 
 // handleMouseButton maps a platform press/release event onto the same mouse*
-// fields and InputTracking calls Java's mousePressed/mouseReleased used.
-// Java reference: GameShell.java:263-300.
+// fields Java's mousePressed/mouseReleased use.
+// Java reference: GameShell.java:294-320 @32f3062. 274 also drops 254's
+// NoSuchMethodError/isMetaDown fallback try/catch around the button test —
+// a no-op here: this port always branched on the platform button id
+// directly and never carried the AWT-reflection fallback.
 //
 // 245.2 (GameShell.java:311-374 @176a85f) drops the `x -= frame.insets.left /
 // y -= frame.insets.top` adjustment from mousePressed — a no-op here: the
@@ -178,47 +177,28 @@ func (c *Client) handleMouseButton(e platform.MouseButton) {
 		c.MouseClickX = e.X
 		c.MouseClickY = e.Y
 		// Java: nextMouseClickTime = System.currentTimeMillis()
-		// (GameShell.java:281 @2e62978), latched into mouseClickTime once per
+		// (GameShell.java:304 @32f3062), latched into mouseClickTime once per
 		// loop tick — the double-buffer is mapped away here (see above).
 		c.MouseClickTime = time.Now().UnixMilli()
-		// Java distinguishes the right ("meta") button via isMetaDown();
+		// Java distinguishes the right button via getButton() == BUTTON3;
 		// Button 2 maps to AWT's right-click (mouseButton == 2).
 		if e.Button == 2 {
 			c.MouseClickButton = 2
 			c.MouseButton = 2
-			if inputtracking.Enabled {
-				inputtracking.MousePressed(e.X, 1, e.Y)
-			}
 		} else {
 			c.MouseClickButton = 1
 			c.MouseButton = 1
-			if inputtracking.Enabled {
-				inputtracking.MousePressed(e.X, 0, e.Y)
-			}
 		}
 		return
 	}
-	// Java captures the meta state at release-time too; the platform
-	// event at Release describes the still-pressed buttons (i.e. excludes
-	// the just-released one), so we instead infer from c.MouseButton,
-	// the value latched at Press.
-	releasedRight := c.MouseButton == 2
+	// Java: mouseReleased (GameShell.java:316-320 @32f3062) — idleTimer is
+	// reset at the top of this function for both arms.
 	c.MouseButton = 0
-	if inputtracking.Enabled {
-		if releasedRight {
-			inputtracking.MouseReleased(1)
-		} else {
-			inputtracking.MouseReleased(0)
-		}
-	}
 }
 
-// handleMouseMove maps a platform move/drag event onto mouseX/Y and
-// InputTracking. Java's mouseDragged and mouseMoved are identical at this rev
-// (GameShell.java:381-407): both set mouseX/Y and call
-// InputTracking.mouseMoved(x, y). Go's MouseMoved signature is swapped vs
-// Java — (arg0=Y, arg2=X), encoding arg2+(arg0<<10) — so passing (e.Y, e.X)
-// reproduces Java's x+(y<<10) exactly.
+// handleMouseMove maps a platform move/drag event onto mouseX/Y. Java's
+// mouseDragged and mouseMoved are identical at this rev
+// (GameShell.java:337-361 @32f3062): both reset idleTimer and set mouseX/Y.
 //
 // 245.2 (GameShell.java:381-407 @176a85f) drops the frame.insets
 // subtraction from both handlers — a no-op here; the platform backends
@@ -227,38 +207,29 @@ func (c *Client) handleMouseMove(e platform.MouseMove) {
 	c.IdleCycles = 0
 	c.MouseX = e.X
 	c.MouseY = e.Y
-	if inputtracking.Enabled {
-		inputtracking.MouseMoved(e.Y, e.X) // Go signature is (y, x); ≡ Java mouseMoved(x, y) — see doc comment
-	}
 }
 
 // handleMouseCross maps a platform enter/leave event to the mouse-state
-// resets and InputTracking. Java: mouseEntered/mouseExited on GameShell
-// (GameShell.java:376-390).
+// resets. Java: mouseEntered/mouseExited on GameShell
+// (GameShell.java:326-334 @32f3062).
 func (c *Client) handleMouseCross(e platform.MouseCross) {
 	if e.Entered {
-		// Java: mouseEntered only records the tracking event.
-		if inputtracking.Enabled {
-			inputtracking.MouseEntered()
-		}
+		// Java: mouseEntered is empty in 274 (254's only content was the
+		// InputTracking record).
 		return
 	}
-	// Java: mouseExited resets idleCycles/mouseX/mouseY BEFORE the tracking
-	// gate (GameShell.java:383-385), so the resets run even with tracking
-	// disabled — without them the client keeps hovering at the last
-	// in-window position after the cursor leaves.
+	// Java: mouseExited resets idleTimer/mouseX/mouseY
+	// (GameShell.java:331-333) — without them the client keeps hovering at
+	// the last in-window position after the cursor leaves.
 	c.IdleCycles = 0
 	c.MouseX = -1
 	c.MouseY = -1
-	if inputtracking.Enabled {
-		inputtracking.MouseExited()
-	}
 }
 
-// handleKey ports keyPressed/keyReleased (GameShell.java:338-439). Java's
-// pipeline: getKeyCode (var2) → translate to a Java code (var3) via a series
-// of `if (var2 == N) var3 = ...` overrides; chars below 30 are zeroed; the
-// final var3 drives actionKey, the keyQueue, and InputTracking.
+// handleKey ports keyPressed/keyReleased (GameShell.java:363-460 @32f3062).
+// Java's pipeline: getKeyCode (var2) → translate to a Java code (var3) via a
+// series of `if (var2 == N) var3 = ...` overrides; chars below 30 are zeroed;
+// the final var3 drives keyHeld and the keyQueue.
 //
 // The platform layer reports physical platform.Key identifiers, so we
 // synthesize AWT keycodes via awtFor, then apply Java's exact override
@@ -302,16 +273,11 @@ func (c *Client) handleKey(e platform.KeyPress) {
 		var3 = 10
 	}
 
-	// Java: GameShell.java:338-397 (keyPressed) applies the F-key, Home,
-	// End, PgUp, PgDown overrides AFTER the var2 == 10 line; GameShell.java:
-	// 399-439 (keyReleased) deliberately stops at var2 == 10 and does NOT
-	// apply those overrides. The prior Go port collapsed both into one
-	// override sequence and then branched on Press/Release, causing the
-	// release branch to pick up press-only overrides and feed the
-	// override-mapped sentinel value (1008+offset, 1000, 1001, 1002, 1003)
-	// to inputtracking.KeyReleased — Java would have fed it the raw
-	// keyChar (typically CHAR_UNDEFINED = 0xFFFF). Recorded input-tracking
-	// byte streams therefore diverged on every release of a special key.
+	// Java: GameShell.java:363-420 @32f3062 (keyPressed) applies the F-key,
+	// Home, End, PgUp, PgDown overrides AFTER the var2 == 10 line;
+	// GameShell.java:422-460 (keyReleased) deliberately stops at
+	// var2 == 10 and does NOT apply those overrides — so they must stay
+	// inside the press-only branch here.
 	if e.Down {
 		if var2 >= 112 && var2 <= 123 {
 			var3 = var2 + 1008 - 112
@@ -328,12 +294,12 @@ func (c *Client) handleKey(e platform.KeyPress) {
 		if var2 == 34 {
 			var3 = 1003
 		}
-		// ActionKey records held-state for any in-range key, including
+		// KeyHeld records held-state for any in-range key, including
 		// text characters — non-text "letter held" checks elsewhere in
 		// the game still need this (e.g. while the chat input cursor
 		// is active).
 		if var3 > 0 && var3 < 128 {
-			c.ActionKey[var3] = 1
+			c.KeyHeld[var3] = 1
 		}
 		// Java (GameShell.java keyPressed): the KeyQueue push is gated by
 		// `var3 > 4`. Printable text arrives via the separate CharInput path in
@@ -347,26 +313,13 @@ func (c *Client) handleKey(e platform.KeyPress) {
 			c.KeyQueue[c.KeyQueueWritePos] = var3
 			c.KeyQueueWritePos = (c.KeyQueueWritePos + 1) & 0x7F
 		}
-		// Java: `if (InputTracking.enabled) InputTracking.keyPressed(var3);` runs
-		// UNCONDITIONALLY on every press (only the KeyQueue push above is gated by
-		// var3 > 4) — but Java has exactly ONE keyPressed event per physical key.
-		// In this port a printable key arrives as BOTH a KeyPress{KeyRune} and a
-		// CharInput; handleCharInput records it (with the real typed char, like
-		// Java's keyChar), so recording the KeyRune press here too would double
-		// every printable keystroke in the tracking stream.
-		if inputtracking.Enabled && e.Key != platform.KeyRune {
-			inputtracking.KeyPressed(var3)
-		}
 		return
 	}
 
 	// key release — note: no F-key / Home / End / PgUp / PgDown overrides
 	// here, matching Java's keyReleased.
 	if var3 > 0 && var3 < 128 {
-		c.ActionKey[var3] = 0
-	}
-	if inputtracking.Enabled {
-		inputtracking.KeyReleased(var3)
+		c.KeyHeld[var3] = 0
 	}
 }
 
@@ -457,15 +410,15 @@ func charFor(e platform.KeyPress) int {
 	if e.Key == platform.KeyEscape {
 		// Java: AWT getKeyChar() for VK_ESCAPE is the control char 27 — not
 		// CHAR_UNDEFINED — so handleKey's `var3 < 30` zeroes it: Escape pushes
-		// nothing to KeyQueue and records 0 in InputTracking, matching
-		// GameShell.java:379-438 @2e62978 (audit client-shell-01).
+		// nothing to KeyQueue, matching Java keyPressed
+		// (audit client-shell-01).
 		return 27
 	}
 	if e.Key != platform.KeyRune {
 		// Java: arg0.getKeyChar() returns KeyEvent.CHAR_UNDEFINED ('￿' = 65535)
 		// for keys with no character (Shift/Alt/Caps/etc). handleKey's `var3 < 30`
-		// leaves 65535 intact and `var3 > 4` then records it in keyQueue and
-		// InputTracking exactly as Java does (arrow keys are separately remapped to
+		// leaves 65535 intact and `var3 > 4` then records it in keyQueue
+		// exactly as Java does (arrow keys are separately remapped to
 		// 1..4 by the var2 == 37/39/38/40 overrides, so their 65535 here is moot).
 		return 65535
 	}

@@ -20,7 +20,6 @@ import (
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientbuild"
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/inputtracking"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/flotype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/idktype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/iftype"
@@ -173,11 +172,12 @@ type Client struct {
 	// this port maps the double-buffer away (events are polled on the loop
 	// goroutine) and stamps at press, like the other mouseClick* fields.
 	MouseClickTime int64
-	// Java: hasFocus = true (GameShell.java:54) — window focus state,
-	// maintained by focusGained/focusLost; read by gameLoop's
-	// EVENT_APPLET_FOCUS telemetry and forced true at login reply 2.
+	// Java: focus = true (GameShell.java:54 @32f3062; 274 rename of 254
+	// hasFocus) — window focus state, maintained by focusGained/focusLost;
+	// read by gameLoop's EVENT_APPLET_FOCUS telemetry and forced true at
+	// login reply 2.
 	HasFocus         bool
-	ActionKey        []int
+	KeyHeld          []int // Java: keyHeld (GameShell.java:78 @32f3062; 274 rename of 254 actionKey)
 	KeyQueue         []int
 	KeyQueueReadPos  int
 	KeyQueueWritePos int
@@ -612,13 +612,13 @@ func NewClient() *Client {
 	c := &Client{
 		//GameShell:                 NewGameShell(),
 		// BEGIN GameShell
-		DelTime:   20,
-		MinDel:    1,
-		OTim:      make([]int64, 10),
-		Refresh:   true,
-		HasFocus:  true, // Java: GameShell.java:54 @2e62978 (NEW in 254)
-		ActionKey: make([]int, 128),
-		KeyQueue:  make([]int, 128),
+		DelTime:  20,
+		MinDel:   1,
+		OTim:     make([]int64, 10),
+		Refresh:  true,
+		HasFocus: true, // Java: GameShell.java:54 @2e62978 (NEW in 254)
+		KeyHeld:  make([]int, 128),
+		KeyQueue: make([]int, 128),
 		// END GameShell
 
 		Focused: true, // Java: Client.java:517 @2e62978 (NEW in 254)
@@ -3785,7 +3785,6 @@ func (c *Client) Logout() {
 	c.TitleScreenState = 0
 	c.Username = ""
 	c.Password = ""
-	inputtracking.SetDisabled()
 	c.ClearCaches()
 	c.Scene.Reset()
 	for i := range 4 {
@@ -6760,16 +6759,16 @@ func (c *Client) UpdateOrbitCamera(arg0 int) {
 	if c.OrbitCameraZ != var3 {
 		c.OrbitCameraZ += (var3 - c.OrbitCameraZ) / 16
 	}
-	if c.ActionKey[1] == 1 {
+	if c.KeyHeld[1] == 1 {
 		c.OrbitCameraYawVelocity += (-24 - c.OrbitCameraYawVelocity) / 2
-	} else if c.ActionKey[2] == 1 {
+	} else if c.KeyHeld[2] == 1 {
 		c.OrbitCameraYawVelocity += (24 - c.OrbitCameraYawVelocity) / 2
 	} else {
 		c.OrbitCameraYawVelocity /= 2
 	}
-	if c.ActionKey[3] == 1 {
+	if c.KeyHeld[3] == 1 {
 		c.OrbitCameraPitchVelocity += (12 - c.OrbitCameraPitchVelocity) / 2
-	} else if c.ActionKey[4] == 1 {
+	} else if c.KeyHeld[4] == 1 {
 		c.OrbitCameraPitchVelocity += (-12 - c.OrbitCameraPitchVelocity) / 2
 	} else {
 		c.OrbitCameraPitchVelocity /= 2
@@ -7531,7 +7530,6 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 			return
 		}
 		MouseTracked = mouseTrackedByte == 1
-		inputtracking.SetDisabled()
 		// Java: Client.java:2454-2458 @2e62978 — NEW in 254: reset the
 		// gameLoop telemetry state on login. The Length reset takes the
 		// sampler lock (Java's bare write is a tolerated race; the Go port
@@ -8265,7 +8263,7 @@ func (c *Client) GameLoop() {
 	if c.SendCameraDelay > 0 {
 		c.SendCameraDelay--
 	}
-	if c.ActionKey[1] == 1 || c.ActionKey[2] == 1 || c.ActionKey[3] == 1 || c.ActionKey[4] == 1 {
+	if c.KeyHeld[1] == 1 || c.KeyHeld[2] == 1 || c.KeyHeld[3] == 1 || c.KeyHeld[4] == 1 {
 		c.SendCamera = true
 	}
 	if c.SendCamera && c.SendCameraDelay <= 0 {
@@ -8352,13 +8350,6 @@ func (c *Client) GameLoop() {
 			c.MidiFading = false
 			c.OnDemand.Request(2, c.MidiSong)
 		}
-	}
-	var11 := inputtracking.Flush()
-	if var11 != nil {
-		c.Out.P1Isaac(CLIENTPROT_EVENT_TRACKING) // Java: pIsaac(19)
-		c.Out.P2(var11.Pos)
-		c.Out.PData(var11.Data, var11.Pos, 0)
-		var11.Release()
 	}
 	c.PacketCycle++
 	if c.PacketCycle > 750 {
@@ -8817,7 +8808,7 @@ func (c *Client) TryMove(arg0, arg1 int, arg2 bool, arg3, arg4, arg6, arg7, arg8
 			c.Out.P1Isaac(CLIENTPROT_MOVE_OPCLICK) // Java: pIsaac(216) Client.java:7075
 			c.Out.P1(var21 + var21 + 3)
 		}
-		if c.ActionKey[5] == 1 {
+		if c.KeyHeld[5] == 1 {
 			c.Out.P1(1)
 		} else {
 			c.Out.P1(0)
@@ -11174,18 +11165,6 @@ func (c *Client) TcpIn() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 165 — InputTracking.stop → outbound EVENT_TRACKING (Client.java:7202)
-	if c.PacketType == SERVERPROT_FINISH_TRACKING {
-		var51 := inputtracking.Stop()
-		if var51 != nil {
-			c.Out.P1Isaac(CLIENTPROT_EVENT_TRACKING) // Java: pIsaac(19)
-			c.Out.P2(var51.Pos)
-			c.Out.PData(var51.Data, var51.Pos, 0)
-			var51.Release()
-		}
-		c.PacketType = -1
-		return true
-	}
 	// Java: opcode 156 — inventory slot full update (Client.java:7672)
 	if c.PacketType == SERVERPROT_UPDATE_INV_FULL {
 		c.RedrawSidebar = true
@@ -11204,12 +11183,6 @@ func (c *Client) TcpIn() (ok bool) {
 			var27.InvSlotObjId[var7] = 0
 			var27.InvSlotObjCount[var7] = 0
 		}
-		c.PacketType = -1
-		return true
-	}
-	// Java: opcode 28 — InputTracking.setEnabled (Client.java:7607)
-	if c.PacketType == SERVERPROT_ENABLE_TRACKING {
-		inputtracking.SetEnabled()
 		c.PacketType = -1
 		return true
 	}
