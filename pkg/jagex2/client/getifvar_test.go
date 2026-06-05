@@ -31,7 +31,7 @@ func TestGetIfVar(t *testing.T) {
 	prevVarbits := varbittype.List
 	t.Cleanup(func() { varbittype.List = prevVarbits })
 	// varbit 0: bits 2..5 of varp 3.
-	varbittype.List = []*varbittype.VarBitType{{BaseVar: 3, StartBit: 2, EndBit: 5}}
+	varbittype.List = []*varbittype.VarbitType{{BaseVar: 3, StartBit: 2, EndBit: 5}}
 
 	c := &Client{}
 	c.Varps = make([]int, 8)

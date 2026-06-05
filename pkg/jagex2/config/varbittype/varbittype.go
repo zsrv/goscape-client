@@ -6,7 +6,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
-// VarBitType decoder. Java: VarBitType.java @2e62978 (new in 254). A varbit
+// VarbitType decoder. Java: VarBitType.java @2e62978 (254 name); VarbitType.java @32f3062 — body at 254 parity, P4 pending. A varbit
 // addresses a bit-slice of a varp: getIfVar opcode 14 reads
 // `varps[basevar] >> startbit & BITMASK[endbit-startbit]`. Java's `debugname`
 // field (opcode 10) is written but never read anywhere at 2e62978 — per the
@@ -16,28 +16,28 @@ import (
 
 var (
 	Count int           // Java: VarBitType.count
-	List  []*VarBitType // Java: VarBitType.list (VarBitType.java:14 @2e62978)
+	List  []*VarbitType // Java: VarBitType.list (VarBitType.java:14 @2e62978)
 )
 
-type VarBitType struct {
+type VarbitType struct {
 	BaseVar  int // Java: basevar
 	StartBit int // Java: startbit
 	EndBit   int // Java: endbit
 }
 
-func NewVarBitType() *VarBitType {
-	return &VarBitType{}
+func NewVarbitType() *VarbitType {
+	return &VarbitType{}
 }
 
 func Unpack(arg1 *io.JagFile) {
 	var2 := io.NewPacket(arg1.Read("varbit.dat", nil))
 	Count = var2.G2()
 	if List == nil {
-		List = make([]*VarBitType, Count)
+		List = make([]*VarbitType, Count)
 	}
 	for i := range Count {
 		if List[i] == nil {
-			List[i] = NewVarBitType()
+			List[i] = NewVarbitType()
 		}
 		List[i].Decode(i, var2)
 	}
@@ -46,7 +46,7 @@ func Unpack(arg1 *io.JagFile) {
 	}
 }
 
-func (t *VarBitType) Decode(arg0 int, arg2 *io.Packet) {
+func (t *VarbitType) Decode(arg0 int, arg2 *io.Packet) {
 	for {
 		var5 := arg2.G1()
 		switch var5 {
