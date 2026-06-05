@@ -228,6 +228,7 @@ type Client struct {
 	Login                   *io.Packet
 	FriendWorld             []int
 	MinimapLevel            int
+	MinimapState            int // Java: minimapState (Client.java:802 @32f3062) — NEW in 274; 0=normal, 2=blackout, !=0 disables click-to-walk
 	SocialMessage           string
 	ImageHitmarks           []*pix32.Pix32
 	ChatbackInput           string
@@ -691,7 +692,7 @@ func NewClient() *Client {
 		ProjectY:                  -1,
 		TutLayerID:                -1,
 		CameraModifierCycle:       make([]int, 5),
-		ImageMapscene:             make([]*pix8.Pix8, 50),
+		ImageMapscene:             make([]*pix8.Pix8, 100), // Java: Client.java:349 @32f3062 — 274 grows 50→100
 		CHAT_COLORS:               []int{0xFFFF00, 0xFF0000, 0xFF00, 0xFFFF, 0xFF00FF, 0xFFFFFF},
 		SCROLLBAR_TRACK:           2301979,
 		Spotanims:                 datastruct.NewLinkList[*entity.MapSpotAnim](),
@@ -712,7 +713,7 @@ func NewClient() *Client {
 		CameraOffsetZModifier:     2,
 		MinimapMaskLineOffsets:    make([]int, 151),
 		CameraOffsetYawModifier:   1,
-		ImageMapFunction:          make([]*pix32.Pix32, 50),
+		ImageMapFunction:          make([]*pix32.Pix32, 100), // Java: Client.java:259 @32f3062 — 274 grows 50→100
 		MenuParamB:                make([]int, 500),
 		MenuParamC:                make([]int, 500),
 		MenuAction:                make([]int, 500),
@@ -2904,8 +2905,26 @@ func (c *Client) UpdateFlames() {
 	}
 }
 
-func (c *Client) DrawMinimap() {
+// Java: minimapDraw (Client.java:7463 @32f3062) — 274 rename of 254 drawMinimap.
+func (c *Client) MinimapDraw() {
 	c.AreaMapback.Bind()
+	// Java: Client.java:7465-7477 @32f3062 — NEW in 274: minimap blackout
+	// (state 2). Zero every pixel the mapback frame doesn't cover (mask
+	// byte 0 = inside the round window), draw only the compass, rebind the
+	// viewport, and skip the map/dots/hints entirely.
+	if c.MinimapState == 2 {
+		var2 := c.ImageMapback.Pixels
+		var3 := pix2d.Data
+		var4 := len(var2)
+		for var5 := range var4 {
+			if var2[var5] == 0 {
+				var3[var5] = 0
+			}
+		}
+		c.ImageCompass.ScanlineRotatePlotSprite(c.OrbitCameraYaw, 33, c.CompassMaskLineOffsets, 33, 25, 256, 25, 0, 0, c.CompassMaskLineLengths)
+		c.AreaViewport.Bind()
+		return
+	}
 	var2 := (c.OrbitCameraYaw + c.MinimapAnticheatAngle) & 0x7FF
 	var3 := c.LocalPlayer.X/32 + 48
 	var4 := 464 - c.LocalPlayer.Z/32
@@ -4686,7 +4705,7 @@ func (c *Client) DrawGame() {
 	// DrawChatback always runs — same rationale as DrawSidebar above.
 	c.DrawChatback()
 	if c.SceneState == 2 {
-		c.DrawMinimap()
+		c.MinimapDraw()
 		c.AreaMapback.Draw(550, 4)
 	}
 	if c.FlashingTab != -1 {
@@ -6362,24 +6381,26 @@ func (c *Client) Load() {
 
 	// Java: Client.java:1755-1756 — mapedge is new in 244 (the minimap
 	// hint-arrow edge sprite); drawn rotated at the minimap rim by
-	// DrawMinimapArrow from DrawMinimap's hint-arrow block.
+	// DrawMinimapArrow from MinimapDraw's hint-arrow block.
 	c.ImageMapedge = pix32.NewPix323(jagMedia, "mapedge", 0)
 	c.ImageMapedge.Trim()
 
 	// Java: load() wraps the mapscene loop in its own try { ... } catch (Exception) {}
-	// so a media archive with fewer than 50 mapscene sprites leaves the missing
-	// entries nil and lets the rest of load() continue (deob/client.java:6049-6055).
+	// so a media archive with fewer than 100 mapscene sprites leaves the missing
+	// entries nil and lets the rest of load() continue (Client.java:5299-5304
+	// @32f3062; 274 raises the bound 50→100).
 	func() {
 		defer RecoverPanic()
-		for i := range 50 {
+		for i := range 100 {
 			c.ImageMapscene[i] = pix8.NewPix8(jagMedia, "mapscene", i)
 		}
 	}()
 
-	// Java: same per-loop try/catch for mapfunction (deob/client.java:6056-6062).
+	// Java: same per-loop try/catch for mapfunction (Client.java:5305-5310
+	// @32f3062; 274 raises the bound 50→100).
 	func() {
 		defer RecoverPanic()
-		for i := range 50 {
+		for i := range 100 {
 			c.ImageMapFunction[i] = pix32.NewPix323(jagMedia, "mapfunction", i)
 		}
 	}()
@@ -6500,7 +6521,8 @@ func (c *Client) Load() {
 	randomB := int(rand.Float64()*21.0) - 10
 	random := int(rand.Float64()*41.0) - 20
 
-	for i := range 50 {
+	// Java: Client.java:5387-5394 @32f3062 — 274 raises the bound 50→100.
+	for i := range 100 {
 		if c.ImageMapFunction[i] != nil {
 			c.ImageMapFunction[i].RGBAdjust(randomR+random, randomG+random, randomB+random)
 		}
@@ -7569,6 +7591,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.MinimapAnticheatAngle = int(rand.Float64()*120.0) - 60
 		c.MinimapZoom = int(rand.Float64()*30.0) - 20
 		c.OrbitCameraYaw = (int(rand.Float64()*20.0) - 10) & 0x7FF
+		c.MinimapState = 0 // Java: Client.java:3643 @32f3062 — NEW in 274
 		c.MinimapLevel = -1
 		c.FlagSceneTileX = 0
 		c.FlagSceneTileZ = 0
@@ -8476,7 +8499,7 @@ func (c *Client) GameLoop() {
 		c.MouseClickButton = 0
 	}
 	c.HandleMouseInput()
-	c.HandleMinimapInput()
+	c.MinimapLoop()
 	c.HandleTabInput()
 	c.HandleChatSettingsInput()
 	if c.MouseButton == 1 || c.MouseClickButton == 1 {
@@ -8986,12 +9009,15 @@ func (c *Client) GetIfActive(arg1 *iftype.IfType) bool {
 	return true
 }
 
-func (c *Client) HandleMinimapInput() {
-	if c.MouseClickButton != 1 {
+// Java: minimapLoop (Client.java:10154 @32f3062) — 274 rename of 254 handleMinimapInput.
+func (c *Client) MinimapLoop() {
+	// Java: Client.java:10155 @32f3062 — 274 adds the minimapState gate:
+	// click-to-walk on the minimap is disabled unless state is 0.
+	if c.MinimapState != 0 || c.MouseClickButton != 1 {
 		return
 	}
-	var2 := c.MouseClickX - 25 - 550 // Java: Client.java:4170
-	var3 := c.MouseClickY - 5 - 4    // Java: Client.java:4171
+	var2 := c.MouseClickX - 25 - 550 // Java: Client.java:10157 @32f3062
+	var3 := c.MouseClickY - 5 - 4    // Java: Client.java:10158 @32f3062
 	if var2 < 0 || var3 < 0 || var2 >= 146 || var3 >= 151 {
 		return
 	}
@@ -9432,6 +9458,7 @@ func (c *Client) TryReconnect() {
 	c.FontPlain12.CentreString(159, 0, "Please wait - attempting to reestablish", 257)
 	c.FontPlain12.CentreString(158, 0xFFFFFF, "Please wait - attempting to reestablish", 256)
 	c.presentLoadingMessage()
+	c.MinimapState = 0 // Java: Client.java:6158 @32f3062 — NEW in 274
 	c.FlagSceneTileX = 0
 	var2 := c.Stream
 	c.InGame = false
@@ -11521,6 +11548,12 @@ func (c *Client) TcpIn() (ok bool) {
 				c.NPCs[var4].PrimarySeqID = -1
 			}
 		}
+		c.PacketType = -1
+		return true
+	}
+	// Java: opcode 194 — set minimap state, NEW in 274 (Client.java:8227 @32f3062)
+	if c.PacketType == SERVERPROT_SET_MINIMAP_STATE {
+		c.MinimapState = c.In.G1()
 		c.PacketType = -1
 		return true
 	}
