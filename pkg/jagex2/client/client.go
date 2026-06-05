@@ -218,7 +218,6 @@ type Client struct {
 	// warning (clientCodes 652-655).
 	WarnMembersInNonMembers int
 	HintNPC                 int
-	OverrideChat            int
 	SkillLevel              []int
 	ChatInterface           *iftype.IfType
 	WaveLoops               []int
@@ -986,51 +985,25 @@ func (c *Client) StopMidi() {
 	signlink.SetMidiCommand("stop")
 }
 
-func (c *Client) DrawWildyLevel() {
+// GetSpecialArea derives WorldLocationState from the local player's world
+// position: 1 inside two special regions, else 0. Java: getSpecialArea
+// (Client.java:6057-6070 @2e62978; was 245.2 updateWorldLocation) — 254
+// gutted the wilderness-level computation, the bank/arena region scan, and
+// overrideChat; the surviving tests are 245.2's overrideChat regions
+// retargeted at worldLocationState, whose readers (trade/duel-request and
+// chat gates) took over overrideChat's role.
+func (c *Client) GetSpecialArea() {
+	c.WorldLocationState = 0
 	var2 := (c.LocalPlayer.X >> 7) + c.SceneBaseTileX
 	var3 := (c.LocalPlayer.Z >> 7) + c.SceneBaseTileZ
-	if var2 >= 2944 && var2 < 3392 && var3 >= 3520 && var3 < 6400 {
-		c.WildernessLevel = (var3-3520)/8 + 1
-	} else if var2 >= 2944 && var2 < 3392 && var3 >= 9920 && var3 < 12800 {
-		c.WildernessLevel = (var3-9920)/8 + 1
-	} else {
-		c.WildernessLevel = 0
-	}
-	c.WorldLocationState = 0
-	if var2 >= 3328 && var2 < 3392 && var3 >= 3200 && var3 < 3264 {
-		var4 := var2 & 0x3F
-		var5 := var3 & 0x3F
-		if var4 >= 4 && var4 <= 29 && var5 >= 44 && var5 <= 58 {
-			c.WorldLocationState = 1
-		}
-		if var4 >= 36 && var4 <= 61 && var5 >= 44 && var5 <= 58 {
-			c.WorldLocationState = 1
-		}
-		if var4 >= 4 && var4 <= 29 && var5 >= 25 && var5 <= 39 {
-			c.WorldLocationState = 1
-		}
-		if var4 >= 36 && var4 <= 61 && var5 >= 25 && var5 <= 39 {
-			c.WorldLocationState = 1
-		}
-		if var4 >= 4 && var4 <= 29 && var5 >= 6 && var5 <= 20 {
-			c.WorldLocationState = 1
-		}
-		if var4 >= 36 && var4 <= 61 && var5 >= 6 && var5 <= 20 {
-			c.WorldLocationState = 1
-		}
-	}
-	if c.WorldLocationState == 0 && var2 >= 3328 && var2 <= 3393 && var3 >= 3203 && var3 <= 3325 {
-		c.WorldLocationState = 2
-	}
-	c.OverrideChat = 0
 	if var2 >= 3053 && var2 <= 3156 && var3 >= 3056 && var3 <= 3136 {
-		c.OverrideChat = 1
+		c.WorldLocationState = 1
 	}
 	if var2 >= 3072 && var2 <= 3118 && var3 >= 9492 && var3 <= 9535 {
-		c.OverrideChat = 1
+		c.WorldLocationState = 1
 	}
-	if c.OverrideChat == 1 && var2 >= 3139 && var2 <= 3199 && var3 >= 3008 && var3 <= 3062 {
-		c.OverrideChat = 0
+	if c.WorldLocationState == 1 && var2 >= 3139 && var2 <= 3199 && var3 >= 3008 && var3 <= 3062 {
+		c.WorldLocationState = 0
 	}
 }
 
@@ -6716,7 +6689,7 @@ func (c *Client) Draw3DEntityElements() {
 		c.UpdateInterfaceAnimation(c.ViewportInterfaceID, c.SceneDelta)
 		c.DrawInterface(0, 0, iftype.Instances[c.ViewportInterfaceID], 0)
 	}
-	c.DrawWildyLevel()
+	c.GetSpecialArea()
 	if !c.MenuVisible {
 		c.HandleInput()
 		c.DrawTooltip()
@@ -10513,7 +10486,9 @@ func (c *Client) Read() (ok bool) {
 					break
 				}
 			}
-			if !var32 && c.OverrideChat == 0 {
+			// Java: worldLocationState gate (Client.java:7346 @2e62978; was
+			// overrideChat in 245.2).
+			if !var32 && c.WorldLocationState == 0 {
 				c.AddMessage(4, "wishes to trade with you.", var28)
 			}
 		} else if strings.HasSuffix(var3, ":duelreq:") {
@@ -10526,7 +10501,9 @@ func (c *Client) Read() (ok bool) {
 					break
 				}
 			}
-			if !var32 && c.OverrideChat == 0 {
+			// Java: worldLocationState gate (Client.java:7359 @2e62978; was
+			// overrideChat in 245.2).
+			if !var32 && c.WorldLocationState == 0 {
 				c.AddMessage(8, "wishes to duel with you.", var28)
 			}
 		} else {
@@ -10555,7 +10532,9 @@ func (c *Client) Read() (ok bool) {
 				}
 			}
 		}
-		if !var32 && c.OverrideChat == 0 {
+		// Java: worldLocationState gate (Client.java:7063 @2e62978; was
+		// overrideChat in 245.2).
+		if !var32 && c.WorldLocationState == 0 {
 			// Java: try { ... } catch (Exception) { signlink.reporterror("cde1"); }
 			// (client.java:10054-10067) — a WordPack/WordFilter decode failure is
 			// swallowed locally, logged as "cde1", and the read continues. The
@@ -11666,7 +11645,9 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 					}
 				}
 			}
-			if !var12 && c.OverrideChat == 0 {
+			// Java: worldLocationState gate (Client.java:8212 @2e62978; was
+			// overrideChat in 245.2).
+			if !var12 && c.WorldLocationState == 0 {
 				// Java: try { ... } catch (Exception) { signlink.reporterror("cde2"); }
 				// (client.java:10513-10528) — a WordPack/WordFilter decode failure
 				// is swallowed locally, logged as "cde2", and processing continues.
