@@ -174,9 +174,19 @@ func (w *World) SetMinLevel(level int) {
 func (w *World) SetBridge(arg0, arg1 int) {
 	var4 := w.LevelTiles[0][arg1][arg0]
 	for i := range 3 {
-		w.LevelTiles[i][arg1][arg0] = w.LevelTiles[i+1][arg1][arg0]
-		if w.LevelTiles[i][arg1][arg0] != nil {
-			w.LevelTiles[i][arg1][arg0].Level--
+		var7 := w.LevelTiles[i+1][arg1][arg0]
+		w.LevelTiles[i][arg1][arg0] = var7
+		if var7 != nil {
+			var7.Level--
+			// Java: World.java:262-267 @2e62978 — 254 also decrements the level
+			// of carried locs anchored on this tile (typecode tag 2, min-tile
+			// match), keeping their draw level in sync with the pushed-down tile.
+			for j := range var7.LocCount {
+				var9 := var7.Locs[j]
+				if (var9.BitSet>>29)&0x3 == 2 && var9.MinSceneTileX == arg1 && var9.MinSceneTileZ == arg0 {
+					var9.Level--
+				}
+			}
 		}
 	}
 	if w.LevelTiles[0][arg1][arg0] == nil {
@@ -494,7 +504,9 @@ func (w *World) RemoveLoc1(arg0 *typ.Sprite) {
 }
 
 // Java: setDecorOffset (World.java:569 @176a85f)
-func (w *World) SetWallDecorationOffset(arg0, arg1, arg2, arg3, arg4 int) {
+// Java: setDecorOffset (World.java:563 @2e62978) — 254 dropped the -23232
+// sentinel param (245.2 arg3); the Z offset is now unconditional.
+func (w *World) SetWallDecorationOffset(arg0, arg1, arg2, arg4 int) {
 	var6 := w.LevelTiles[arg1][arg4][arg0]
 	if var6 == nil {
 		return
@@ -504,9 +516,7 @@ func (w *World) SetWallDecorationOffset(arg0, arg1, arg2, arg3, arg4 int) {
 		var8 := arg4*128 + 64
 		var9 := arg0*128 + 64
 		var7.X = var8 + (var7.X-var8)*arg2/16
-		if arg3 == -23232 {
-			var7.Z = var9 + (var7.Z-var9)*arg2/16
-		}
+		var7.Z = var9 + (var7.Z-var9)*arg2/16
 	}
 }
 
@@ -1559,9 +1569,22 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 										for index := range locBufferSize {
 											loc := LocBuffer[index]
 
-											if loc.Distance > farthestDistance && loc.Cycle != Cycle {
-												farthestDistance = loc.Distance
-												farthestIndex = index
+											if loc.Cycle != Cycle {
+												if loc.Distance > farthestDistance {
+													farthestDistance = loc.Distance
+													farthestIndex = index
+												} else if loc.Distance == farthestDistance {
+													// Java: World.java:1468-1475 @2e62978 — 254 adds an
+													// equal-distance euclidean tiebreak: the loc farther
+													// from the camera (squared XZ distance) wins.
+													var59 := loc.X - EyeX
+													var60 := loc.Z - EyeZ
+													var61 := LocBuffer[farthestIndex].X - EyeX
+													var62 := LocBuffer[farthestIndex].Z - EyeZ
+													if var59*var59+var60*var60 > var61*var61+var62*var62 {
+														farthestIndex = index
+													}
+												}
 											}
 										}
 

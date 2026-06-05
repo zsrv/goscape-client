@@ -142,18 +142,15 @@ func (m *CollisionMap) AddWall(arg1 int, arg2 int, arg3 int, arg4 bool, arg5 int
 	}
 }
 
-// Java: addLoc (CollisionMap.java:168 @176a85f); arg6 is a 245.2 dead guard —
-// every caller passes false.
-func (m *CollisionMap) AddLoc(arg0, arg1, arg2, arg3 int, arg4 bool, arg5 int, arg6 bool) {
+// Java: addLoc (CollisionMap.java:201 @2e62978) — 254 dropped the 245.2
+// trailing dead-guard bool and its early return.
+func (m *CollisionMap) AddLoc(arg0, arg1, arg2, arg3 int, arg4 bool, arg5 int) {
 	var8 := 256
 	if arg4 {
 		var8 += 131072
 	}
 	var9 := arg5 - m.OffsetX
 	var10 := arg0 - m.OffsetZ
-	if arg6 {
-		return
-	}
 	if arg1 == 1 || arg1 == 3 {
 		var11 := arg2
 		arg2 = arg3

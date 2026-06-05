@@ -359,7 +359,7 @@ func (w *ClientBuild) AddLoc(collision *dash3d.CollisionMap, level, z, angle, sh
 			}
 
 			if loc.BlockWalk && collision != nil {
-				collision.AddLoc(z, angle, loc.Width, loc.Length, loc.BlockRange, x, false)
+				collision.AddLoc(z, angle, loc.Width, loc.Length, loc.BlockRange, x)
 			}
 		} else if shape >= 12 {
 			modelSrc := buildModel(shape, angle)
@@ -371,7 +371,7 @@ func (w *ClientBuild) AddLoc(collision *dash3d.CollisionMap, level, z, angle, sh
 			}
 
 			if loc.BlockWalk && collision != nil {
-				collision.AddLoc(z, angle, loc.Width, loc.Length, loc.BlockRange, x, false)
+				collision.AddLoc(z, angle, loc.Width, loc.Length, loc.BlockRange, x)
 			}
 		} else if shape == 0 {
 			modelSrc := buildModel(0, angle)
@@ -419,7 +419,7 @@ func (w *ClientBuild) AddLoc(collision *dash3d.CollisionMap, level, z, angle, sh
 
 			if loc.WallWidth != 16 {
 				// Java: setDecorOffset(arg2, arg6, wallwidth, -23232, arg1) (ClientBuild.java:434 @176a85f)
-				scene.SetWallDecorationOffset(z, level, loc.WallWidth, -23232, x)
+				scene.SetWallDecorationOffset(z, level, loc.WallWidth, x)
 			}
 		} else if shape == 1 {
 			modelSrc := buildModel(1, angle)
@@ -475,7 +475,7 @@ func (w *ClientBuild) AddLoc(collision *dash3d.CollisionMap, level, z, angle, sh
 
 				if loc.WallWidth != 16 {
 					// Java: setDecorOffset(arg2, arg6, wallwidth, -23232, arg1) (ClientBuild.java:489 @176a85f)
-					scene.SetWallDecorationOffset(z, level, loc.WallWidth, -23232, x)
+					scene.SetWallDecorationOffset(z, level, loc.WallWidth, x)
 				}
 			case 3:
 				modelSrc := buildModel(3, angle)
@@ -504,7 +504,7 @@ func (w *ClientBuild) AddLoc(collision *dash3d.CollisionMap, level, z, angle, sh
 				scene.AddLoc1(y, level, typeCode, z, x, 1, info, modelSrc, 0, 1)
 
 				if loc.BlockWalk && collision != nil {
-					collision.AddLoc(z, angle, loc.Width, loc.Length, loc.BlockRange, x, false)
+					collision.AddLoc(z, angle, loc.Width, loc.Length, loc.BlockRange, x)
 				}
 			case 4:
 				modelSrc := buildModel(4, 0)
@@ -1073,13 +1073,13 @@ func AddLoc(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [
 			scene.AddLoc1(y, arg7, var18, z, x, var21, var19, modelSrc, var23, var22)
 		}
 		if locType.BlockWalk {
-			collision.AddLoc(z, angle, locType.Width, locType.Length, locType.BlockRange, x, false)
+			collision.AddLoc(z, angle, locType.Width, locType.Length, locType.BlockRange, x)
 		}
 	} else if shape >= 12 {
 		modelSrc := buildModel(shape, angle)
 		scene.AddLoc1(y, arg7, var18, z, x, 1, var19, modelSrc, 0, 1)
 		if locType.BlockWalk {
-			collision.AddLoc(z, angle, locType.Width, locType.Length, locType.BlockRange, x, false)
+			collision.AddLoc(z, angle, locType.Width, locType.Length, locType.BlockRange, x)
 		}
 	} else if shape == 0 {
 		modelSrc := buildModel(0, angle)
@@ -1114,7 +1114,7 @@ func AddLoc(x int, collision *dash3d.CollisionMap, z int, angle int, heightMap [
 			modelSrc := buildModel(shape, angle)
 			scene.AddLoc1(y, arg7, var18, z, x, 1, var19, modelSrc, 0, 1)
 			if locType.BlockWalk {
-				collision.AddLoc(z, angle, locType.Width, locType.Length, locType.BlockRange, x, false)
+				collision.AddLoc(z, angle, locType.Width, locType.Length, locType.BlockRange, x)
 			}
 		case 4:
 			modelSrc := buildModel(4, 0)
