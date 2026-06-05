@@ -27,6 +27,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/objtype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/varbittype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/varptype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
@@ -6361,6 +6362,7 @@ func (c *Client) Load() {
 	idktype.Unpack(jagConfig)
 	spotanimtype.Unpack(jagConfig)
 	varptype.Unpack(jagConfig)
+	varbittype.Unpack(jagConfig) // Java: VarBitType.unpack(var9) (Client.java:1800 @2e62978) — NEW in 254
 	objtype.MembersWorld = MembersWorld
 	if !LowMemory {
 		c.DrawProgress("Unpacking sounds", 90)
