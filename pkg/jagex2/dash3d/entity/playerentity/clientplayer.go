@@ -6,7 +6,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/npctype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/objtype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
-	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/spottype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/entity"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
@@ -164,7 +164,7 @@ func (e *ClientPlayer) GetTempModel() *model.Model {
 		return var2
 	}
 	if e.SpotanimID != -1 && e.SpotanimFrame != -1 {
-		var3 := spotanimtype.List[e.SpotanimID]
+		var3 := spottype.List[e.SpotanimID]
 		// Java: ClientPlayer.java:176-177 @2e62978 — spot model may be
 		// lazily absent.
 		if spotModel := var3.GetTempModel(); spotModel != nil {

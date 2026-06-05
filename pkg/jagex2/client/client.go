@@ -26,7 +26,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/npctype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/objtype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/seqtype"
-	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/spottype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/varbittype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/config/varptype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d"
@@ -4528,7 +4528,7 @@ func (c *Client) UpdateSequences(arg1 *entity.ClientEntity) {
 		if arg1.SpotanimFrame < 0 {
 			arg1.SpotanimFrame = 0
 		}
-		var3 = spotanimtype.List[arg1.SpotanimID].Seq
+		var3 = spottype.List[arg1.SpotanimID].Seq
 		arg1.SpotanimCycle++
 		for arg1.SpotanimFrame < var3.NumFrames && arg1.SpotanimCycle > var3.GetDuration(arg1.SpotanimFrame) {
 			arg1.SpotanimCycle -= var3.GetDuration(arg1.SpotanimFrame)
@@ -6528,7 +6528,7 @@ func (c *Client) Load() {
 	objtype.Unpack(jagConfig)
 	npctype.Unpack(jagConfig)
 	idktype.Unpack(jagConfig)
-	spotanimtype.Unpack(jagConfig)
+	spottype.Unpack(jagConfig)
 	varptype.Unpack(jagConfig)
 	varbittype.Unpack(jagConfig) // Java: VarBitType.unpack(var9) (Client.java:1800 @2e62978) — NEW in 254
 	objtype.MembersWorld = MembersWorld
@@ -6685,7 +6685,7 @@ func (c *Client) ClearCaches() {
 	objtype.ModelCache.Clear()
 	objtype.SpriteCache.Clear()
 	playerentity.ModelCache.Clear()
-	spotanimtype.ModelCache.Clear()
+	spottype.ModelCache.Clear()
 }
 
 // OtherOverlays draws the viewport-anchored overlays: private messages,
@@ -7915,8 +7915,8 @@ func (c *Client) Unload() {
 	// @2e62978) is equally dead). Project policy excludes pure deob
 	// artifacts.
 	seqtype.List = nil
-	spotanimtype.List = nil
-	spotanimtype.ModelCache = nil
+	spottype.List = nil
+	spottype.ModelCache = nil
 	varptype.List = nil
 	playerentity.ModelCache = nil
 	pix3d.Unload()

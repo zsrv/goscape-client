@@ -3,14 +3,14 @@ package entity
 import (
 	"math"
 
-	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/spottype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 )
 
 // ClientProj
 type ClientProj struct {
-	SpotAnim      *spotanimtype.SpotAnimType
+	SpotAnim      *spottype.SpotType
 	Level         int
 	SrcX          int
 	SrcZ          int
@@ -38,7 +38,7 @@ type ClientProj struct {
 
 func NewClientProj(offsetY, peakPitch, srcZ, lastCycle, level, target, startCycle, arc, srcY, arg10, srcX int) *ClientProj {
 	return &ClientProj{
-		SpotAnim:   spotanimtype.List[arg10],
+		SpotAnim:   spottype.List[arg10],
 		Level:      level,
 		SrcX:       srcX,
 		SrcZ:       srcZ,

@@ -1,14 +1,14 @@
 package entity
 
 import (
-	"github.com/zsrv/goscape-client/pkg/jagex2/config/spotanimtype"
+	"github.com/zsrv/goscape-client/pkg/jagex2/config/spottype"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/animframe"
 	"github.com/zsrv/goscape-client/pkg/jagex2/dash3d/model"
 )
 
 // MapSpotAnim
 type MapSpotAnim struct {
-	Type        *spotanimtype.SpotAnimType
+	Type        *spottype.SpotType
 	StartCycle  int
 	Level       int
 	X           int
@@ -21,7 +21,7 @@ type MapSpotAnim struct {
 
 func NewMapSpotAnim(x, arg1, z, arg4, y, level, arg7 int) *MapSpotAnim {
 	return &MapSpotAnim{
-		Type:        spotanimtype.List[arg1],
+		Type:        spottype.List[arg1],
 		Level:       level,
 		X:           x,
 		Z:           z,

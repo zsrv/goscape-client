@@ -48,7 +48,7 @@ func (l *LruCache[T]) Get(key int64) T {
 // A duplicate-key Put would orphan the previous node in History and
 // double-decrement Available. Java's HashTable.put unlinked the prior bucket
 // node first; the Go map redesign drops that structural protection. All current
-// callers (objtype/loctype/npctype/spotanimtype/component/playerentity) follow
+// callers (objtype/loctype/npctype/spottype/component/playerentity) follow
 // the Get-then-Put-if-miss pattern, so this is latent, not a live bug.
 // Re-confirmed by the 2026-06-04 audit (datastruct-07): Java's true duplicate-
 // key behavior (both nodes coexist in bucket+history; the OLDER one wins get)

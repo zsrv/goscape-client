@@ -1,4 +1,4 @@
-package spotanimtype
+package spottype
 
 import (
 	"fmt"
@@ -11,13 +11,13 @@ import (
 
 var (
 	Count      int
-	List       []*SpotAnimType
+	List       []*SpotType
 	ModelCache = datastruct.NewLruCache[*model.Model](30)
 )
 
 // 254 deletes the animHasAlpha field + decode opcode 3 — alpha sharing is
 // now derived per-frame via animframe.ShareAlpha (WS3).
-type SpotAnimType struct {
+type SpotType struct {
 	Index       int
 	Model       int
 	Anim        int
@@ -31,8 +31,8 @@ type SpotAnimType struct {
 	Contrast    int
 }
 
-func NewSpotAnimType() *SpotAnimType {
-	return &SpotAnimType{
+func NewSpotType() *SpotType {
+	return &SpotType{
 		Anim:    -1,
 		RecolS:  make([]int, 6),
 		RecolD:  make([]int, 6),
@@ -45,18 +45,18 @@ func Unpack(arg0 *io.JagFile) {
 	var2 := io.NewPacket(arg0.Read("spotanim.dat", nil))
 	Count = var2.G2()
 	if List == nil {
-		List = make([]*SpotAnimType, Count)
+		List = make([]*SpotType, Count)
 	}
 	for i := range Count {
 		if List[i] == nil {
-			List[i] = NewSpotAnimType()
+			List[i] = NewSpotType()
 		}
 		List[i].Index = i
 		List[i].Decode(var2)
 	}
 }
 
-func (t *SpotAnimType) Decode(arg1 *io.Packet) {
+func (t *SpotType) Decode(arg1 *io.Packet) {
 	for {
 		var3 := arg1.G1()
 		switch var3 {
@@ -92,9 +92,9 @@ func (t *SpotAnimType) Decode(arg1 *io.Packet) {
 }
 
 // GetTempModel returns the (cached) recoloured spotanim model.
-// Java: getTempModel (SpotAnimType.java:103-121 @2e62978; was getModel at
+// Java: getTempModel (SpotAnimType.java:103-121 @2e62978; SpotType.java @32f3062; was getModel at
 // 245.2).
-func (t *SpotAnimType) GetTempModel() *model.Model {
+func (t *SpotType) GetTempModel() *model.Model {
 	var1 := ModelCache.Get(int64(t.Index))
 	if var1 != nil {
 		return var1
