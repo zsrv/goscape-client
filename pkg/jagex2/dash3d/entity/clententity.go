@@ -109,9 +109,10 @@ func (e *ClientEntity) Hit(arg0 int, arg2 int) {
 	}
 }
 
-// ClearRoute resets the walk route and its preanim capture.
-// Java: ClientEntity.clearRoute (ClientEntity.java:252-256, new in 244).
-func (e *ClientEntity) ClearRoute() {
+// AbortRoute resets the walk route and its preanim capture.
+// Java: ClientEntity.abortRoute (ClientEntity.java:256 @2e62978; was
+// clearRoute in 244/245.2, new in 244).
+func (e *ClientEntity) AbortRoute() {
 	e.PathLength = 0
 	e.PreanimRouteLength = 0
 }
@@ -151,7 +152,10 @@ func (e *ClientEntity) Teleport(arg1 bool, arg2 int, arg3 int) {
 	e.Z = e.PathTileZ[0]*128 + e.Size*64
 }
 
-func (e *ClientEntity) MoveAlongRoute(arg0 bool, arg1 int) {
+// MoveCode advances the entity one tile in compass direction arg1.
+// Java: ClientEntity.moveCode (ClientEntity.java:208 @2e62978; was step
+// in ≤245.2).
+func (e *ClientEntity) MoveCode(arg0 bool, arg1 int) {
 	var4 := e.PathTileX[0]
 	var5 := e.PathTileZ[0]
 	switch arg1 {
@@ -213,7 +217,7 @@ func (e *ClientEntity) Pathing() *ClientEntity {
 
 type PathableEntity interface {
 	Teleport(bool, int, int)
-	MoveAlongRoute(bool, int)
+	MoveCode(bool, int)
 	IsReady() bool
 	Pathing() *ClientEntity
 }

@@ -3457,7 +3457,7 @@ func (c *Client) GetPlayerOldVis(arg1 *io.Packet) {
 					c.PlayerCount++
 					var7.Cycle = clientextras.LoopCycle
 					var10 = arg1.GBit(3)
-					var7.MoveAlongRoute(false, var10)
+					var7.MoveCode(false, var10)
 					var11 = arg1.GBit(1)
 					if var11 == 1 {
 						c.EntityUpdateIDs[c.EntityUpdateCount] = var6
@@ -3468,9 +3468,9 @@ func (c *Client) GetPlayerOldVis(arg1 *io.Packet) {
 					c.PlayerCount++
 					var7.Cycle = clientextras.LoopCycle
 					var10 = arg1.GBit(3)
-					var7.MoveAlongRoute(true, var10)
+					var7.MoveCode(true, var10)
 					var11 = arg1.GBit(3)
-					var7.MoveAlongRoute(true, var11)
+					var7.MoveCode(true, var11)
 					var12 := arg1.GBit(1)
 					if var12 == 1 {
 						c.EntityUpdateIDs[c.EntityUpdateCount] = var6
@@ -4214,7 +4214,7 @@ func (c *Client) UpdateClientPlayer(arg0 *playerentity.ClientPlayer) {
 		arg0.ForceMoveStartCycle = 0
 		arg0.X = arg0.PathTileX[0]*128 + arg0.Size*64
 		arg0.Z = arg0.PathTileZ[0]*128 + arg0.Size*64
-		arg0.ClearRoute() // Java: e.clearRoute() (Client.java:4915)
+		arg0.AbortRoute() // Java: e.clearRoute() (Client.java:4915)
 	}
 	if arg0 == c.LocalPlayer && (arg0.X < 1536 || arg0.Z < 1536 || arg0.X >= 11776 || arg0.Z >= 11776) {
 		arg0.PrimarySeqID = -1
@@ -4223,7 +4223,7 @@ func (c *Client) UpdateClientPlayer(arg0 *playerentity.ClientPlayer) {
 		arg0.ForceMoveStartCycle = 0
 		arg0.X = arg0.PathTileX[0]*128 + arg0.Size*64
 		arg0.Z = arg0.PathTileZ[0]*128 + arg0.Size*64
-		arg0.ClearRoute() // Java: e.clearRoute() (Client.java:4925)
+		arg0.AbortRoute() // Java: e.clearRoute() (Client.java:4925)
 	}
 	if arg0.ForceMoveEndCycle > clientextras.LoopCycle {
 		c.UpdateForceMovement(&arg0.ClientEntity)
@@ -4244,7 +4244,7 @@ func (c *Client) UpdateClientNpc(arg0 *entity.ClientNpc) {
 		arg0.ForceMoveStartCycle = 0
 		arg0.X = arg0.PathTileX[0]*128 + arg0.Size*64
 		arg0.Z = arg0.PathTileZ[0]*128 + arg0.Size*64
-		arg0.ClearRoute() // Java: e.clearRoute() (Client.java:4915)
+		arg0.AbortRoute() // Java: e.clearRoute() (Client.java:4915)
 	}
 	if arg0.ForceMoveEndCycle > clientextras.LoopCycle {
 		c.UpdateForceMovement(&arg0.ClientEntity)
@@ -9239,7 +9239,7 @@ func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
 					c.NPCCount++
 					var7.Cycle = clientextras.LoopCycle
 					var10 = arg1.GBit(3)
-					var7.MoveAlongRoute(false, var10)
+					var7.MoveCode(false, var10)
 					var11 = arg1.GBit(1)
 					if var11 == 1 {
 						c.EntityUpdateIDs[c.EntityUpdateCount] = var6
@@ -9250,9 +9250,9 @@ func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
 					c.NPCCount++
 					var7.Cycle = clientextras.LoopCycle
 					var10 = arg1.GBit(3)
-					var7.MoveAlongRoute(true, var10)
+					var7.MoveCode(true, var10)
 					var11 = arg1.GBit(3)
-					var7.MoveAlongRoute(true, var11)
+					var7.MoveCode(true, var11)
 					var12 := arg1.GBit(1)
 					if var12 == 1 {
 						c.EntityUpdateIDs[c.EntityUpdateCount] = var6
@@ -10232,7 +10232,7 @@ func (c *Client) GetPlayerLocal(arg2 *io.Packet) {
 	var7 := 0
 	if var5 == 1 {
 		var6 = arg2.GBit(3)
-		c.LocalPlayer.MoveAlongRoute(false, var6)
+		c.LocalPlayer.MoveCode(false, var6)
 		var7 = arg2.GBit(1)
 		if var7 == 1 {
 			c.EntityUpdateIDs[c.EntityUpdateCount] = c.LOCAL_PLAYER_INDEX
@@ -10244,9 +10244,9 @@ func (c *Client) GetPlayerLocal(arg2 *io.Packet) {
 	switch var5 {
 	case 2:
 		var6 = arg2.GBit(3)
-		c.LocalPlayer.MoveAlongRoute(true, var6)
+		c.LocalPlayer.MoveCode(true, var6)
 		var7 = arg2.GBit(3)
-		c.LocalPlayer.MoveAlongRoute(true, var7)
+		c.LocalPlayer.MoveCode(true, var7)
 		var8 = arg2.GBit(1)
 		if var8 == 1 {
 			c.EntityUpdateIDs[c.EntityUpdateCount] = c.LOCAL_PLAYER_INDEX
@@ -11728,7 +11728,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		arg4.ForceMoveFaceDirection = arg3.G1()
 		// Java: player.clearRoute() (Client.java:9290) — 244 dropped 225's
 		// routeTileX/Z[0] writes here.
-		arg4.ClearRoute()
+		arg4.AbortRoute()
 	}
 	if arg2&0x400 == 1024 {
 		// Java: DAMAGE_STACK (Client.java:9296-9302, new in 244) — the second
