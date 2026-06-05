@@ -4867,6 +4867,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 	var8 := 0
 	var9 := ""
 	var11 := 0
+	// Java: Client.java:8872-8911 @2e62978 — chat-driven trade/duel by name.
+	// Go keeps 245.2 ids 903/363 until WS7 renumbers the chat pushers
+	// (254: 507/957); the 254 oplogic innards land here with WS5.
 	if var5 == 903 || var5 == 363 {
 		var7 = c.MenuOption[arg1]
 		var8 = strings.Index(var7, "@whi@")
@@ -4878,11 +4881,21 @@ func (c *Client) UseMenuOption(arg1 int) {
 				var12 := c.Players[c.PlayerIDs[i]]
 				if var12 != nil && var12.Name != "" && strings.EqualFold(var12.Name, var9) {
 					c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var12.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var12.PathTileZ[0], 0, 0, 0)
-					if var5 == 903 {
-						c.Out.P1Isaac(CLIENTPROT_OPPLAYER4) // Java: pIsaac(54)
+					if var5 == 903 { // Java: var5 == 507 (254)
+						OpLogic5 += var6
+						if OpLogic5 >= 66 {
+							c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC5) // Java: pIsaac(233) Client.java:8887
+							c.Out.P1(154)
+						}
+						c.Out.P1Isaac(CLIENTPROT_OPPLAYER4) // Java: pIsaac(72) Client.java:8891
 					}
-					if var5 == 363 {
-						c.Out.P1Isaac(CLIENTPROT_OPPLAYER1) // Java: pIsaac(135)
+					if var5 == 363 { // Java: var5 == 957 (254)
+						OpLogic4++
+						if OpLogic4 >= 52 {
+							c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC4) // Java: pIsaac(121) Client.java:8897
+							c.Out.P1(131)
+						}
+						c.Out.P1Isaac(CLIENTPROT_OPPLAYER1) // Java: pIsaac(192) Client.java:8901
 					}
 					c.Out.P2(c.PlayerIDs[i])
 					var10 = true
@@ -5099,7 +5112,11 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	var var19 *playerentity.ClientPlayer
-	if var5 == 1373 || var5 == 1544 || var5 == 151 || var5 == 1101 {
+	// Java: Client.java:9043-9085 @2e62978 — 254 replaces the fixed
+	// follow/trade/attack/fight/duel player blocks with one slot-driven
+	// dispatch for the five server-set options (addPlayerOptions slots 0-4 →
+	// actions 639/499/27/387/185 → OPPLAYER1-5).
+	if var5 == 639 || var5 == 499 || var5 == 27 || var5 == 387 || var5 == 185 {
 		var19 = c.Players[var6]
 		if var19 != nil {
 			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var19.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var19.PathTileZ[0], 0, 0, 0)
@@ -5107,22 +5124,30 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
 			c.CrossCycle = 0
-			if var5 == 1101 {
-				c.Out.P1Isaac(CLIENTPROT_OPPLAYER1) // Java: pIsaac(135)
-			}
-			if var5 == 151 {
-				OpLogic8++
-				if OpLogic8 >= 90 {
-					c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC8) // Java: pIsaac(171) Client.java:9538
-					c.Out.P2(31114)
+			if var5 == 387 {
+				OpLogic5 += var6
+				if OpLogic5 >= 66 {
+					c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC5) // Java: pIsaac(233) Client.java:9055
+					c.Out.P1(154)
 				}
-				c.Out.P1Isaac(CLIENTPROT_OPPLAYER2) // Java: pIsaac(165) Client.java:9542
+				c.Out.P1Isaac(CLIENTPROT_OPPLAYER4) // Java: pIsaac(72) Client.java:9059
 			}
-			if var5 == 1373 {
-				c.Out.P1Isaac(CLIENTPROT_OPPLAYER4) // Java: pIsaac(54)
+			if var5 == 27 {
+				c.Out.P1Isaac(CLIENTPROT_OPPLAYER3) // Java: pIsaac(18) Client.java:9063
 			}
-			if var5 == 1544 {
-				c.Out.P1Isaac(CLIENTPROT_OPPLAYER3) // Java: pIsaac(172) Client.java:9532
+			if var5 == 639 {
+				OpLogic4++
+				if OpLogic4 >= 52 {
+					c.Out.P1Isaac(CLIENTPROT_ANTICHEAT_OPLOGIC4) // Java: pIsaac(121) Client.java:9069
+					c.Out.P1(131)
+				}
+				c.Out.P1Isaac(CLIENTPROT_OPPLAYER1) // Java: pIsaac(192) Client.java:9073
+			}
+			if var5 == 185 {
+				c.Out.P1Isaac(CLIENTPROT_OPPLAYER5) // Java: pIsaac(230) Client.java:9077
+			}
+			if var5 == 499 {
+				c.Out.P1Isaac(CLIENTPROT_OPPLAYER2) // Java: pIsaac(17) Client.java:9081
 			}
 			c.Out.P2(var6)
 		}
@@ -5365,7 +5390,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 	if var5 == 947 {
 		c.CloseInterfaces()
 	}
-	if var5 == 367 {
+	if var5 == 275 { // Java: 254 id (was 367); pushed by addPlayerOptions
 		var19 = c.Players[var6]
 		if var19 != nil {
 			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var19.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var19.PathTileZ[0], 0, 0, 0)
@@ -5373,7 +5398,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
 			c.CrossCycle = 0
-			c.Out.P1Isaac(CLIENTPROT_OPPLAYERU) // Java: pIsaac(210) Client.java:9470
+			c.Out.P1Isaac(CLIENTPROT_OPPLAYERU) // Java: pIsaac(113) Client.java:9172
 			c.Out.P2(var6)
 			c.Out.P2(c.ObjInterface)
 			c.Out.P2(c.ObjSelectedSlot)
@@ -5410,7 +5435,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			}
 		}
 	}
-	if var5 == 651 {
+	if var5 == 131 { // Java: 254 id (was 651); pushed by addPlayerOptions
 		var19 = c.Players[var6]
 		if var19 != nil {
 			c.TryMove(c.LocalPlayer.PathTileX[0], 1, false, var19.PathTileX[0], c.LocalPlayer.PathTileZ[0], 2, 1, var19.PathTileZ[0], 0, 0, 0)
@@ -5418,7 +5443,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossY = c.MouseClickY
 			c.CrossMode = 2
 			c.CrossCycle = 0
-			c.Out.P1Isaac(CLIENTPROT_OPPLAYERT) // Java: pIsaac(52) Client.java:9325
+			c.Out.P1Isaac(CLIENTPROT_OPPLAYERT) // Java: pIsaac(68) Client.java:9111
 			c.Out.P2(var6)
 			c.Out.P2(c.ActiveSpellID)
 		}
@@ -7740,6 +7765,13 @@ func (c *Client) OpenSocket(port int) (net.Conn, error) {
 	return signlink.OpenSocket(port)
 }
 
+// Java: addPlayerOptions (Client.java:9297-9359 @2e62978) — rewritten in 254:
+// the fixed Follow/Trade-with/Attack/Fight/Duel-with options are replaced by
+// the five server-driven playerOptions slots (SET_PLAYER_OP), walked 4→0 so
+// slot 0 lands on top. Action ids are slot-fixed (639/499/27/387/185); +2000
+// pushes the entry below "Walk here" (an "attack" option auto-pushes when the
+// target outlevels the local player; other slots when the server set the
+// pushdown flag).
 func (c *Client) AddPlayerOptions(arg1 int, arg2 int, arg3 *playerentity.ClientPlayer, arg4 int) {
 	if arg3 == c.LocalPlayer || c.MenuSize >= 400 {
 		return
@@ -7747,66 +7779,60 @@ func (c *Client) AddPlayerOptions(arg1 int, arg2 int, arg3 *playerentity.ClientP
 	var6 := arg3.Name + GetCombatLevelColorTag(c.LocalPlayer.CombatLevel, arg3.CombatLevel) + " (level-" + strconv.Itoa(arg3.CombatLevel) + ")"
 	if c.ObjSelected == 1 {
 		c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @whi@" + var6
-		c.MenuAction[c.MenuSize] = 367
+		c.MenuAction[c.MenuSize] = 275 // Java: Client.java:9305 (254 id; was 367)
 		c.MenuParamA[c.MenuSize] = arg2
 		c.MenuParamB[c.MenuSize] = arg4
 		c.MenuParamC[c.MenuSize] = arg1
 		c.MenuSize++
-	} else if c.SpellSelected != 1 {
-		c.MenuOption[c.MenuSize] = "Follow @whi@" + var6
-		c.MenuAction[c.MenuSize] = 1544
-		c.MenuParamA[c.MenuSize] = arg2
-		c.MenuParamB[c.MenuSize] = arg4
-		c.MenuParamC[c.MenuSize] = arg1
-		c.MenuSize++
-		if c.OverrideChat == 0 {
-			c.MenuOption[c.MenuSize] = "Trade with @whi@" + var6
-			c.MenuAction[c.MenuSize] = 1373
+	} else if c.SpellSelected == 1 {
+		if c.ActiveSpellFlags&0x8 == 8 {
+			c.MenuOption[c.MenuSize] = c.SpellCaption + " @whi@" + var6
+			c.MenuAction[c.MenuSize] = 131 // Java: Client.java:9313 (254 id; was 651)
 			c.MenuParamA[c.MenuSize] = arg2
 			c.MenuParamB[c.MenuSize] = arg4
 			c.MenuParamC[c.MenuSize] = arg1
 			c.MenuSize++
 		}
-		if c.WildernessLevel > 0 {
-			c.MenuOption[c.MenuSize] = "Attack @whi@" + var6
-			if c.LocalPlayer.CombatLevel >= arg3.CombatLevel {
-				c.MenuAction[c.MenuSize] = 151
-			} else {
-				c.MenuAction[c.MenuSize] = 2151
+	} else {
+		for var7 := 4; var7 >= 0; var7-- {
+			if c.PlayerOptions[var7] != "" {
+				c.MenuOption[c.MenuSize] = c.PlayerOptions[var7] + " @whi@" + var6
+				var8 := 0 // Java: short var8 — pushdown action offset
+				if strings.EqualFold(c.PlayerOptions[var7], "attack") {
+					if arg3.CombatLevel > c.LocalPlayer.CombatLevel {
+						var8 = 2000
+					}
+				} else if c.PlayerOptionsPushDown[var7] {
+					var8 = 2000
+				}
+				if var7 == 0 {
+					c.MenuAction[c.MenuSize] = var8 + 639
+				}
+				if var7 == 1 {
+					c.MenuAction[c.MenuSize] = var8 + 499
+				}
+				if var7 == 2 {
+					c.MenuAction[c.MenuSize] = var8 + 27
+				}
+				if var7 == 3 {
+					c.MenuAction[c.MenuSize] = var8 + 387
+				}
+				if var7 == 4 {
+					c.MenuAction[c.MenuSize] = var8 + 185
+				}
+				c.MenuParamA[c.MenuSize] = arg2
+				c.MenuParamB[c.MenuSize] = arg4
+				c.MenuParamC[c.MenuSize] = arg1
+				c.MenuSize++
 			}
-			c.MenuParamA[c.MenuSize] = arg2
-			c.MenuParamB[c.MenuSize] = arg4
-			c.MenuParamC[c.MenuSize] = arg1
-			c.MenuSize++
 		}
-		if c.WorldLocationState == 1 {
-			c.MenuOption[c.MenuSize] = "Fight @whi@" + var6
-			c.MenuAction[c.MenuSize] = 151
-			c.MenuParamA[c.MenuSize] = arg2
-			c.MenuParamB[c.MenuSize] = arg4
-			c.MenuParamC[c.MenuSize] = arg1
-			c.MenuSize++
-		}
-		if c.WorldLocationState == 2 {
-			c.MenuOption[c.MenuSize] = "Duel-with @whi@" + var6
-			c.MenuAction[c.MenuSize] = 1101
-			c.MenuParamA[c.MenuSize] = arg2
-			c.MenuParamB[c.MenuSize] = arg4
-			c.MenuParamC[c.MenuSize] = arg1
-			c.MenuSize++
-		}
-	} else if c.ActiveSpellFlags&0x8 == 8 {
-		c.MenuOption[c.MenuSize] = c.SpellCaption + " @whi@" + var6
-		c.MenuAction[c.MenuSize] = 651
-		c.MenuParamA[c.MenuSize] = arg2
-		c.MenuParamB[c.MenuSize] = arg4
-		c.MenuParamC[c.MenuSize] = arg1
-		c.MenuSize++
 	}
 	for i := range c.MenuSize {
+		// Java: menuAction[var9] == 718 (Client.java:9353 @2e62978) — Go keeps
+		// 660 until WS7 renumbers the walk-here pusher (pairwise set).
 		if c.MenuAction[i] == 660 {
 			c.MenuOption[i] = "Walk here @whi@" + var6
-			return
+			break
 		}
 	}
 }
