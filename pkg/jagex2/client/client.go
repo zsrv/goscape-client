@@ -618,7 +618,7 @@ func NewClient() *Client {
 		IgnoreName37:          make([]int64, 100),
 		MessageIds:            make([]int, 100),
 		Out:                   io.Alloc(1),
-		SkillLevel:            make([]int, StatsCount), // Java: new int[Stats.COUNT] (Client.java:349 @2e62978; 245.2 was 50)
+		SkillLevel:            make([]int, SkillCount), // Java: new int[Stats.COUNT] (Client.java:349 @2e62978; 245.2 was 50)
 		ChatInterface:         iftype.NewIfType(),
 		WaveLoops:             make([]int, 50),
 		LocalPID:              -1,
@@ -660,7 +660,7 @@ func NewClient() *Client {
 		ReportAbuseInterfaceID:    -1,
 		ActiveMapFunctionX:        make([]int, 1000),
 		ActiveMapFunctionZ:        make([]int, 1000),
-		SkillBaseLevel:            make([]int, StatsCount),          // Java: new int[Stats.COUNT] (Client.java:397 @2e62978; 245.2 was 50)
+		SkillBaseLevel:            make([]int, SkillCount),          // Java: new int[Stats.COUNT] (Client.java:397 @2e62978; 245.2 was 50)
 		NPCs:                      make([]*entity.ClientNpc, 16384), // Java: new ClientNpc[16384] (Client.java:55 @2e62978; 254 doubled from 8192)
 		NPCIDs:                    make([]int, 16384),               // Java: new int[16384] (Client.java:61 @2e62978; 254 doubled from 8192)
 		MinimapZoomModifier:       1,
@@ -689,7 +689,7 @@ func NewClient() *Client {
 		LastWaveLoops:             -1,
 		TextureBuffer:             make([]byte, 16384),
 		VarCache:                  make([]int, 2000),
-		SkillExperience:           make([]int, StatsCount), // Java: new int[Stats.COUNT] (Client.java:478 @2e62978; 245.2 was 50)
+		SkillExperience:           make([]int, SkillCount), // Java: new int[Stats.COUNT] (Client.java:478 @2e62978; 245.2 was 50)
 		MinimapAngleModifier:      2,
 		MAX_CHATS:                 50,
 		LOC_SHAPE_TO_LAYER:        []int{0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3},
@@ -9787,8 +9787,8 @@ func (c *Client) GetIfVar(arg0 int, arg2 *iftype.IfType) (result int) {
 		}
 		if var8 == 9 {
 			// 254: Stats-table-driven (245.2 hardcoded a skip-slayer loop).
-			for var14 := range StatsCount {
-				if StatsEnabled[var14] {
+			for var14 := range SkillCount {
+				if SkillUsed[var14] {
 					var9 += c.SkillBaseLevel[var14]
 				}
 			}

@@ -38,8 +38,8 @@ func TestGetIfVar(t *testing.T) {
 	// Client BITMASK[i] = 2^(i+1)-1 (one wider than io.Bitmask!), so
 	// endbit-startbit = 3 masks FOUR bits: (44 >> 2) & 15 = 11.
 	c.Varps[3] = 0b101100
-	c.SkillBaseLevel = make([]int, StatsCount)
-	for i := range StatsCount {
+	c.SkillBaseLevel = make([]int, SkillCount)
+	for i := range SkillCount {
 		c.SkillBaseLevel[i] = i
 	}
 	c.LocalPlayer = playerentity.NewClientPlayer()
@@ -48,7 +48,7 @@ func TestGetIfVar(t *testing.T) {
 	c.SceneBaseTileX = 3200
 	c.SceneBaseTileZ = 3400
 
-	// Sum of enabled slot indices: 0..17 plus 20 (StatsEnabled holes at
+	// Sum of enabled slot indices: 0..17 plus 20 (SkillUsed holes at
 	// 18, 19, 21-24) = 153 + 20.
 	const statTotal = 153 + 20
 
