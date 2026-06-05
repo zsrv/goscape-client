@@ -110,6 +110,9 @@ func (c *Client) dispatchInputEvent(ev platform.Event) {
 // events to InputTracking. The neutral FocusChange event is
 // delivered by the platform backend when the window's focus state changes.
 func (c *Client) handleFocus(e platform.FocusChange) {
+	// Java: hasFocus = true/false (GameShell.java:496,505 @2e62978) — NEW in
+	// 254; read by gameLoop's EVENT_APPLET_FOCUS telemetry.
+	c.HasFocus = e.Gained
 	if e.Gained {
 		c.Refresh = true
 		// Java: this.refresh() (GameShell.java:517) dispatches to the Client
@@ -165,6 +168,10 @@ func (c *Client) handleMouseButton(e platform.MouseButton) {
 	if e.Pressed {
 		c.MouseClickX = e.X
 		c.MouseClickY = e.Y
+		// Java: nextMouseClickTime = System.currentTimeMillis()
+		// (GameShell.java:281 @2e62978), latched into mouseClickTime once per
+		// loop tick — the double-buffer is mapped away here (see above).
+		c.MouseClickTime = time.Now().UnixMilli()
 		// Java distinguishes the right ("meta") button via isMetaDown();
 		// Button 2 maps to AWT's right-click (mouseButton == 2).
 		if e.Button == 2 {

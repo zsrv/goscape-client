@@ -159,6 +159,16 @@ type Client struct {
 	MouseClickButton int
 	MouseClickX      int
 	MouseClickY      int
+	// Java: mouseClickTime (GameShell.java:102 @2e62978) — ms timestamp of
+	// the latched click; read by gameLoop's EVENT_MOUSE_CLICK telemetry.
+	// Java latches nextMouseClickTime → mouseClickTime once per loop tick;
+	// this port maps the double-buffer away (events are polled on the loop
+	// goroutine) and stamps at press, like the other mouseClick* fields.
+	MouseClickTime int64
+	// Java: hasFocus = true (GameShell.java:54) — window focus state,
+	// maintained by focusGained/focusLost; read by gameLoop's
+	// EVENT_APPLET_FOCUS telemetry and forced true at login reply 2.
+	HasFocus         bool
 	ActionKey        []int
 	KeyQueue         []int
 	KeyQueueReadPos  int
@@ -538,9 +548,22 @@ type Client struct {
 	// versionlist archive at boot. Java: client.onDemand (OnDemand).
 	OnDemand *ondemand.OnDemand
 	// Java: public MouseTracking mouseTracking (Client.java:1204 @2e62978) —
-	// NEW in 254; sampler started at the load() tail, drained by WS5
-	// gameLoop telemetry.
-	MouseTracking              *MouseTracking
+	// NEW in 254; sampler started at the load() tail, drained by the
+	// gameLoop telemetry serializer below.
+	MouseTracking *MouseTracking
+	// gameLoop telemetry state — all NEW in 254 (Client.java @2e62978):
+	// sendCamera/sendCameraDelay gate EVENT_CAMERA_POSITION to one send per
+	// 20 cycles (:295,:751); focused mirrors hasFocus into EVENT_APPLET_FOCUS
+	// edges (:517); mouseTrackedX/Y/Delta hold the packed-delta serializer
+	// state (:829,:832,:958); prevMousePressTime is the previous click's ms
+	// timestamp for EVENT_MOUSE_CLICK's time delta (:1015).
+	SendCamera                 bool
+	Focused                    bool
+	SendCameraDelay            int
+	MouseTrackedX              int
+	MouseTrackedY              int
+	MouseTrackedDelta          int
+	PrevMousePressTime         int64
 	Stream                     *clientstream.ClientStream
 	ModalMessage               string
 	ObjSelectedName            string
@@ -579,9 +602,12 @@ func NewClient() *Client {
 		MinDel:    1,
 		OTim:      make([]int64, 10),
 		Refresh:   true,
+		HasFocus:  true, // Java: GameShell.java:54 @2e62978 (NEW in 254)
 		ActionKey: make([]int, 128),
 		KeyQueue:  make([]int, 128),
 		// END GameShell
+
+		Focused: true, // Java: Client.java:517 @2e62978 (NEW in 254)
 
 		CameraModifierEnabled:      make([]bool, 5),
 		IgnoreName37:               make([]int64, 100),
@@ -7276,12 +7302,18 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 			return
 		}
 		MouseTracked = mouseTrackedByte == 1
-		// Java: Client.java:2454-2458 @2e62978 also resets the mouse/focus
-		// telemetry here (prevMousePressTime=0L, mouseTrackedDelta=0,
-		// mouseTracking.length=0, super.hasFocus=true, focused=true). Unlike
-		// 245.2 (where the equivalents were write-only deob artifacts), these
-		// are LIVE at 254 — gameLoop telemetry reads them; ported with WS5.
 		inputtracking.SetDisabled()
+		// Java: Client.java:2454-2458 @2e62978 — NEW in 254: reset the
+		// gameLoop telemetry state on login. The Length reset takes the
+		// sampler lock (Java's bare write is a tolerated race; the Go port
+		// keeps all Length access under Lock per the MouseTracking audit).
+		c.PrevMousePressTime = 0
+		c.MouseTrackedDelta = 0
+		c.MouseTracking.Lock.Lock()
+		c.MouseTracking.Length = 0
+		c.MouseTracking.Lock.Unlock()
+		c.HasFocus = true // Java: super.hasFocus = true (Client.java:2457)
+		c.Focused = true
 		c.InGame = true
 		c.Out.Pos = 0
 		c.In.Pos = 0
@@ -7891,6 +7923,139 @@ func (c *Client) UpdateGame() {
 	}
 	if !c.InGame {
 		return
+	}
+	// Java: synchronized (this.mouseTracking.lock) (Client.java:2706-2767
+	// @2e62978) — NEW in 254: serialize the 50ms sampler ring buffer into
+	// EVENT_MOUSE_MOVE. Real mutex audit: the sampler goroutine appends
+	// under the same Lock (mousetracking.go), so the Go critical section
+	// matches the Java monitor exactly.
+	c.MouseTracking.Lock.Lock()
+	if !MouseTracked {
+		c.MouseTracking.Length = 0
+	} else if c.MouseClickButton != 0 || c.MouseTracking.Length >= 40 {
+		c.Out.P1Isaac(CLIENTPROT_EVENT_MOUSE_MOVE) // Java: pIsaac(232) Client.java:2711
+		c.Out.P1(0)                                // size placeholder, backpatched below
+		var4 := c.Out.Pos
+		var5 := 0 // Java: var5 — samples consumed this flush
+		// Java: `var4 - this.out.pos < 240` (Client.java:2715) — inert as
+		// written (var4 is the START pos, so the difference is ≤ 0 and the
+		// 240-byte cap never trips); ported faithfully.
+		for var6 := 0; var6 < c.MouseTracking.Length && var4-c.Out.Pos < 240; var6++ {
+			var5++
+			var7 := c.MouseTracking.Y[var6]
+			if var7 < 0 {
+				var7 = 0
+			} else if var7 > 502 {
+				var7 = 502
+			}
+			var8 := c.MouseTracking.X[var6]
+			if var8 < 0 {
+				var8 = 0
+			} else if var8 > 764 {
+				var8 = 764
+			}
+			var9 := var7*765 + var8
+			// Java: Client.java:2730-2734 — (-1,-1) is the mouse-left-window
+			// sample; sentinel position 524287.
+			if c.MouseTracking.Y[var6] == -1 && c.MouseTracking.X[var6] == -1 {
+				var8 = -1
+				var7 = -1
+				var9 = 524287
+			}
+			if var8 != c.MouseTrackedX || var7 != c.MouseTrackedY {
+				var10 := var8 - c.MouseTrackedX
+				c.MouseTrackedX = var8
+				var11 := var7 - c.MouseTrackedY
+				c.MouseTrackedY = var7
+				// Java: Client.java:2740-2752 — 2-byte packed small delta
+				// (4-bit idle run + two 6-bit offsets), else 3-byte absolute
+				// (flag 0x800000), else 4-byte absolute (flag 0xC0000000).
+				if c.MouseTrackedDelta < 8 && var10 >= -32 && var10 <= 31 && var11 >= -32 && var11 <= 31 {
+					var10 += 32
+					var11 += 32
+					c.Out.P2((c.MouseTrackedDelta << 12) + (var10 << 6) + var11)
+					c.MouseTrackedDelta = 0
+				} else if c.MouseTrackedDelta < 8 {
+					c.Out.P3((c.MouseTrackedDelta << 19) + 8388608 + var9)
+					c.MouseTrackedDelta = 0
+				} else {
+					c.Out.P4((c.MouseTrackedDelta << 19) + -1073741824 + var9)
+					c.MouseTrackedDelta = 0
+				}
+			} else if c.MouseTrackedDelta < 2047 {
+				c.MouseTrackedDelta++
+			}
+		}
+		c.Out.PSize1(c.Out.Pos - var4)
+		// Java: Client.java:2757-2766 — drop the consumed prefix; shift any
+		// remainder down.
+		if var5 >= c.MouseTracking.Length {
+			c.MouseTracking.Length = 0
+		} else {
+			c.MouseTracking.Length -= var5
+			for var12 := 0; var12 < c.MouseTracking.Length; var12++ {
+				c.MouseTracking.X[var12] = c.MouseTracking.X[var12+var5]
+				c.MouseTracking.Y[var12] = c.MouseTracking.Y[var12+var5]
+			}
+		}
+	}
+	c.MouseTracking.Lock.Unlock()
+	// Java: Client.java:2768-2794 @2e62978 — NEW in 254: EVENT_MOUSE_CLICK
+	// with a 50ms-quantized time delta (cap 4095), button bit and y*765+x
+	// position packed into one word.
+	if c.MouseClickButton != 0 {
+		var13 := (c.MouseClickTime - c.PrevMousePressTime) / 50
+		if var13 > 4095 {
+			var13 = 4095
+		}
+		c.PrevMousePressTime = c.MouseClickTime
+		var15 := c.MouseClickY
+		if var15 < 0 {
+			var15 = 0
+		} else if var15 > 502 {
+			var15 = 502
+		}
+		var16 := c.MouseClickX
+		if var16 < 0 {
+			var16 = 0
+		} else if var16 > 764 {
+			var16 = 764
+		}
+		var17 := var15*765 + var16
+		var18 := 0 // Java: byte var18 — 1 = right button
+		if c.MouseClickButton == 2 {
+			var18 = 1
+		}
+		var19 := int(var13)
+		c.Out.P1Isaac(CLIENTPROT_EVENT_MOUSE_CLICK) // Java: pIsaac(234) Client.java:2793
+		c.Out.P4((var19 << 20) + (var18 << 19) + var17)
+	}
+	// Java: Client.java:2796-2809 @2e62978 — NEW in 254: camera key state
+	// sends EVENT_CAMERA_POSITION at most once per 20 cycles.
+	if c.SendCameraDelay > 0 {
+		c.SendCameraDelay--
+	}
+	if c.ActionKey[1] == 1 || c.ActionKey[2] == 1 || c.ActionKey[3] == 1 || c.ActionKey[4] == 1 {
+		c.SendCamera = true
+	}
+	if c.SendCamera && c.SendCameraDelay <= 0 {
+		c.SendCameraDelay = 20
+		c.SendCamera = false
+		c.Out.P1Isaac(CLIENTPROT_EVENT_CAMERA_POSITION) // Java: pIsaac(91) Client.java:2806
+		c.Out.P2(c.OrbitCameraPitch)
+		c.Out.P2(c.OrbitCameraYaw)
+	}
+	// Java: Client.java:2810-2822 @2e62978 — NEW in 254: EVENT_APPLET_FOCUS
+	// on focus edges (focused trails hasFocus).
+	if c.HasFocus && !c.Focused {
+		c.Focused = true
+		c.Out.P1Isaac(CLIENTPROT_EVENT_APPLET_FOCUS) // Java: pIsaac(8) Client.java:2813
+		c.Out.P1(1)
+	}
+	if !c.HasFocus && c.Focused {
+		c.Focused = false
+		c.Out.P1Isaac(CLIENTPROT_EVENT_APPLET_FOCUS) // Java: pIsaac(8) Client.java:2819
+		c.Out.P1(0)
 	}
 	// Java: client.updateGame (Client.java:2943) — updateSceneState() runs first
 	// inside the in-game block, before updateLocChanges/updateAudio. Guarded so it
