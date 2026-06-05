@@ -237,24 +237,32 @@ type Client struct {
 	ChatScrollHeight        int
 	In                      *io.Packet
 	JagChecksum             []int
-	ImageSideIcons          []*pix8.Pix8
-	ImageModIcons           []*pix8.Pix8
-	OrbitCameraPitch        int
-	MAX_PLAYER_COUNT        int
-	LOCAL_PLAYER_INDEX      int
-	Players                 []*playerentity.ClientPlayer
-	PlayerIDs               []int
-	EntityUpdateIDs         []int
-	PlayerAppearanceBuffer  []*io.Packet
-	Projectiles             *datastruct.LinkList[*entity.ClientProj]
-	MenuOption              []string
-	MidiActive              bool
-	DesignGenderMale        bool
-	FlameLineOffset         []int
-	CompassMaskLineOffsets  []int
-	WaveDelay               []int
-	TabInterfaceID          []int
-	ErrorLoading            bool
+	// JAGGRAB fallback transport state (NEW in 274). Java: jaggrabEnabled
+	// (Client.java:373 @32f3062) flips on every failed getJagFile /
+	// getJagChecksums retry cycle, alternating archive fetches between HTTP
+	// and the raw JAGGRAB socket protocol (port 43595). Java's jaggrabSocket
+	// field (Client.java:1228) is intentionally not ported: it only exists
+	// so the NEXT openUrl call can close the previous socket; the Go OpenURL
+	// slurps the whole response and closes the socket eagerly.
+	JaggrabEnabled         bool
+	ImageSideIcons         []*pix8.Pix8
+	ImageModIcons          []*pix8.Pix8
+	OrbitCameraPitch       int
+	MAX_PLAYER_COUNT       int
+	LOCAL_PLAYER_INDEX     int
+	Players                []*playerentity.ClientPlayer
+	PlayerIDs              []int
+	EntityUpdateIDs        []int
+	PlayerAppearanceBuffer []*io.Packet
+	Projectiles            *datastruct.LinkList[*entity.ClientProj]
+	MenuOption             []string
+	MidiActive             bool
+	DesignGenderMale       bool
+	FlameLineOffset        []int
+	CompassMaskLineOffsets []int
+	WaveDelay              []int
+	TabInterfaceID         []int
+	ErrorLoading           bool
 	// Java: lastProgressPercent (Client.java:725) / lastProgressMessage
 	// (Client.java:1205) — written first thing in drawProgress; Java reads
 	// them in load()'s loaderror reporterror (Client.java:1960, catch path
@@ -2651,6 +2659,10 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 		if retry > 60 {
 			retry = 60
 		}
+		// NEW in 274: alternate between HTTP and the JAGGRAB socket
+		// transport on every failed cycle (Client.java:4930 @32f3062 —
+		// the only real delta in getJagFile vs 254).
+		c.JaggrabEnabled = !c.JaggrabEnabled
 	}
 
 	for data == nil {
@@ -7116,6 +7128,35 @@ func (c *Client) ShowContextMenu() {
 }
 
 func (c *Client) OpenURL(arg0 string) (*bytes.Reader, error) {
+	// JAGGRAB fallback (NEW in 274): a one-shot socket protocol on port
+	// 43595 — write "JAGGRAB /<path>\n\n", read the response, the server
+	// closes. Java: openUrl (Client.java:6504-6518 @32f3062) returns a
+	// stream over the socket and closes it on the NEXT openUrl call; the Go
+	// shape slurps and closes eagerly to keep OpenURL's *bytes.Reader
+	// contract (jaggrabSocket field not ported, see the JaggrabEnabled
+	// declaration). The 10s deadline mirrors setSoTimeout(10000). Dialing
+	// goes through OpenSocket → signlink.OpenSocket so the TCP/WebSocket
+	// transport seam is preserved. The port is the Java literal 43595, NOT
+	// derived from -world-server: Java's port-offset applies only to the
+	// game socket.
+	if c.JaggrabEnabled {
+		conn, err := c.OpenSocket(43595)
+		if err != nil {
+			return nil, fmt.Errorf("jaggrab open: %w", err)
+		}
+		defer func() { _ = conn.Close() }()
+		if err := conn.SetDeadline(time.Now().Add(10 * time.Second)); err != nil {
+			return nil, fmt.Errorf("jaggrab deadline: %w", err)
+		}
+		if _, err := conn.Write([]byte("JAGGRAB /" + arg0 + "\n\n")); err != nil {
+			return nil, fmt.Errorf("jaggrab write: %w", err)
+		}
+		b, err := io2.ReadAll(conn)
+		if err != nil {
+			return nil, fmt.Errorf("jaggrab read: %w", err)
+		}
+		return bytes.NewReader(b), nil
+	}
 	// Go client is standalone; the Java applet branch (signlink.openurl) is intentionally absent.
 	resp, err := http.Get(c.GetCodeBase() + "/" + arg0)
 	if err != nil {
