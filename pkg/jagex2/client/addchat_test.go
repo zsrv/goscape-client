@@ -73,7 +73,7 @@ func TestAddChat_DropsOldestAtSlot99(t *testing.T) {
 
 func TestAddChat_ZeroTypeWithStickyInterfaceCapturesModal(t *testing.T) {
 	c := NewClient()
-	c.StickyChatInterfaceID = 42
+	c.TutLayerID = 42
 	c.MouseClickButton = 1
 
 	c.AddChat(0, "you are dead", "")
@@ -88,7 +88,7 @@ func TestAddChat_ZeroTypeWithStickyInterfaceCapturesModal(t *testing.T) {
 
 func TestAddChat_ZeroTypeWithoutStickyInterfaceSkipsModal(t *testing.T) {
 	c := NewClient()
-	// StickyChatInterfaceID stays at NewClient's default of -1.
+	// TutLayerID stays at NewClient's default of -1.
 	c.MouseClickButton = 1
 
 	c.AddChat(0, "you are dead", "")
@@ -103,7 +103,7 @@ func TestAddChat_ZeroTypeWithoutStickyInterfaceSkipsModal(t *testing.T) {
 
 func TestAddChat_NonZeroTypeNeverCapturesModal(t *testing.T) {
 	c := NewClient()
-	c.StickyChatInterfaceID = 42
+	c.TutLayerID = 42
 	c.MouseClickButton = 1
 
 	c.AddChat(2, "regular chat", "alice")
@@ -118,7 +118,7 @@ func TestAddChat_NonZeroTypeNeverCapturesModal(t *testing.T) {
 
 func TestAddChat_NoChatInterfaceRequestsRedrawChatback(t *testing.T) {
 	c := NewClient()
-	// ChatInterfaceID stays at NewClient's default of -1.
+	// ChatLayerID stays at NewClient's default of -1.
 	c.RedrawChatback = false
 
 	c.AddChat(2, "hi", "alice")
@@ -130,7 +130,7 @@ func TestAddChat_NoChatInterfaceRequestsRedrawChatback(t *testing.T) {
 
 func TestAddChat_OpenChatInterfaceLeavesRedrawAlone(t *testing.T) {
 	c := NewClient()
-	c.ChatInterfaceID = 100
+	c.ChatLayerID = 100
 	c.RedrawChatback = false
 
 	c.AddChat(2, "hi", "alice")

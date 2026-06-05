@@ -233,7 +233,7 @@ func loopbackPair(t *testing.T) (net.Conn, net.Conn) {
 // the peer wrote even when no prior Read/ReadFully has happened. The Java
 // dispatcher uses Available()>0 as a non-blocking "is data ready" gate at
 // the top of read(), so if it returns 0 here the dispatcher never advances
-// and IdleNetCycles times out into "Connection lost".
+// and PacketCycle times out into "Connection lost".
 func TestAvailableSeesUnreadKernelData(t *testing.T) {
 	a, b := loopbackPair(t)
 	cs := NewClientStream(a)

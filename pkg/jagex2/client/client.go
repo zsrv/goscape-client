@@ -197,7 +197,7 @@ type Client struct {
 	RandomIn              *io.Isaac
 	CameraModifierEnabled []bool
 	PrivateChatSetting    int
-	SelectedTab           int
+	SideTab               int
 	BFSCost               [][]int
 	SocialAction          int
 	SceneBaseTileX        int
@@ -293,17 +293,17 @@ type Client struct {
 	CameraModifierWobbleScale     []int
 	Cutscene                      bool
 	ReportAbuseInput              string
-	ViewportInterfaceID           int
+	MainLayerID                   int
 	InGame                        bool
 	FlamesThread                  bool
 	SCROLLBAR_GRIP_LOWLIGHT       int
 	SCROLLBAR_GRIP_HIGHLIGHT      int
 	BFSStepX                      []int
 	BFSStepZ                      []int
-	ChatInterfaceID               int
+	ChatLayerID                   int
 	ProjectX                      int
 	ProjectY                      int
-	StickyChatInterfaceID         int
+	TutLayerID                    int
 	StaffModLevel                 int // Java: staffmodlevel
 	CameraModifierCycle           []int
 	ImageMapscene                 []*pix8.Pix8
@@ -342,7 +342,7 @@ type Client struct {
 	CameraOffsetXModifier         int
 	FriendName                    []string
 	FlashingTab                   int
-	SidebarInterfaceID            int
+	SideLayerID                   int
 	CameraOffsetZModifier         int
 	MinimapMaskLineOffsets        []int
 	CameraOffsetYawModifier       int
@@ -370,9 +370,9 @@ type Client struct {
 	HintTileX                     int
 	PacketSize                    int
 	PacketType                    int
-	IdleNetCycles                 int
+	PacketCycle                   int
 	HeartbeatTimer                int
-	IdleTimeout                   int
+	PendingLogout                 int
 	CameraOffsetCycle             int
 	IgnoreCount                   int
 	LastWaveLength                int
@@ -562,41 +562,41 @@ type Client struct {
 	// edges (:517); mouseTrackedX/Y/Delta hold the packed-delta serializer
 	// state (:829,:832,:958); prevMousePressTime is the previous click's ms
 	// timestamp for EVENT_MOUSE_CLICK's time delta (:1015).
-	SendCamera                 bool
-	Focused                    bool
-	SendCameraDelay            int
-	MouseTrackedX              int
-	MouseTrackedY              int
-	MouseTrackedDelta          int
-	PrevMousePressTime         int64
-	Stream                     *clientstream.ClientStream
-	ModalMessage               string
-	ObjSelectedName            string
-	SpellCaption               string
-	AreaChatbackOffsets        []int
-	AreaSidebarOffsets         []int
-	AreaViewportOffsets        []int
-	FlameBuffer0               []int
-	FlameBuffer1               []int
-	FlameGradient              []int
-	FlameGradient0             []int
-	FlameGradient1             []int
-	FlameGradient2             []int
-	SceneMapIndex              []int
-	FlameBuffer3               []int
-	FlameBuffer2               []int
-	ImageRunes                 []*pix8.Pix8
-	SceneMapLocData            [][]byte
-	SceneMapLandFile           []int      // Java: sceneMapLandFile[]; allocated/filled by WS2 opcode 165 (REBUILD_NORMAL, Client.java:7744) — nil until then
-	SceneMapLocFile            []int      // Java: sceneMapLocFile[];  allocated/filled by WS2 opcode 165 (Client.java:7745) — nil until then
-	AwaitingSync               bool       // Java: awaitingSync
-	WithinTutorialIsland       bool       // Java: withinTutorialIsland
-	SceneLoadStartTime         int64      // Java: sceneLoadStartTime
-	LevelTileFlags             [][][]int8 // Java: byte[][][] (signed) — int8 so int() sign-extends
-	LevelHeightMap             [][][]int
-	NextMidiSong               int // Java: nextMidiSong (Client.java)
-	MembersAccount             int // Java: membersAccount (Client.java)
-	ViewportOverlayInterfaceID int // Java: viewportOverlayInterfaceId (Client.java) — WS2-followup: render viewportOverlay in DrawScene (Java Client.java:6555-6557)
+	SendCamera           bool
+	Focused              bool
+	SendCameraDelay      int
+	MouseTrackedX        int
+	MouseTrackedY        int
+	MouseTrackedDelta    int
+	PrevMousePressTime   int64
+	Stream               *clientstream.ClientStream
+	ModalMessage         string
+	ObjSelectedName      string
+	SpellCaption         string
+	AreaChatbackOffsets  []int
+	AreaSidebarOffsets   []int
+	AreaViewportOffsets  []int
+	FlameBuffer0         []int
+	FlameBuffer1         []int
+	FlameGradient        []int
+	FlameGradient0       []int
+	FlameGradient1       []int
+	FlameGradient2       []int
+	SceneMapIndex        []int
+	FlameBuffer3         []int
+	FlameBuffer2         []int
+	ImageRunes           []*pix8.Pix8
+	SceneMapLocData      [][]byte
+	SceneMapLandFile     []int      // Java: sceneMapLandFile[]; allocated/filled by WS2 opcode 165 (REBUILD_NORMAL, Client.java:7744) — nil until then
+	SceneMapLocFile      []int      // Java: sceneMapLocFile[];  allocated/filled by WS2 opcode 165 (Client.java:7745) — nil until then
+	AwaitingSync         bool       // Java: awaitingSync
+	WithinTutorialIsland bool       // Java: withinTutorialIsland
+	SceneLoadStartTime   int64      // Java: sceneLoadStartTime
+	LevelTileFlags       [][][]int8 // Java: byte[][][] (signed) — int8 so int() sign-extends
+	LevelHeightMap       [][][]int
+	NextMidiSong         int // Java: nextMidiSong (Client.java)
+	MembersAccount       int // Java: membersAccount (Client.java)
+	MainOverlayLayerID   int // Java: viewportOverlayInterfaceId (Client.java) — WS2-followup: render viewportOverlay in DrawScene (Java Client.java:6555-6557)
 }
 
 func NewClient() *Client {
@@ -614,35 +614,35 @@ func NewClient() *Client {
 
 		Focused: true, // Java: Client.java:517 @2e62978 (NEW in 254)
 
-		CameraModifierEnabled:      make([]bool, 5),
-		IgnoreName37:               make([]int64, 100),
-		MessageIds:                 make([]int, 100),
-		Out:                        io.Alloc(1),
-		SkillLevel:                 make([]int, StatsCount), // Java: new int[Stats.COUNT] (Client.java:349 @2e62978; 245.2 was 50)
-		ChatInterface:              iftype.NewIfType(),
-		WaveLoops:                  make([]int, 50),
-		LocalPID:                   -1,
-		NextMidiSong:               -1,
-		ViewportOverlayInterfaceID: -1,
-		DesignColors:               make([]int, 5),
-		Login:                      io.Alloc(1),
-		FriendWorld:                make([]int, 200), // Java: new int[200] (244; 225 was 100)
-		MinimapLevel:               -1,
-		ImageHitmarks:              make([]*pix32.Pix32, 20),
-		LastWaveID:                 -1,
-		DesignIdentikits:           make([]int, 7),
-		ActiveMapFunctions:         make([]*pix32.Pix32, 1000),
-		ChatScrollHeight:           78,
-		In:                         io.Alloc(1),
-		JagChecksum:                make([]int, 9),
-		ImageSideIcons:             make([]*pix8.Pix8, 13),
-		ImageModIcons:              make([]*pix8.Pix8, 2),
-		OrbitCameraPitch:           128,
+		CameraModifierEnabled: make([]bool, 5),
+		IgnoreName37:          make([]int64, 100),
+		MessageIds:            make([]int, 100),
+		Out:                   io.Alloc(1),
+		SkillLevel:            make([]int, StatsCount), // Java: new int[Stats.COUNT] (Client.java:349 @2e62978; 245.2 was 50)
+		ChatInterface:         iftype.NewIfType(),
+		WaveLoops:             make([]int, 50),
+		LocalPID:              -1,
+		NextMidiSong:          -1,
+		MainOverlayLayerID:    -1,
+		DesignColors:          make([]int, 5),
+		Login:                 io.Alloc(1),
+		FriendWorld:           make([]int, 200), // Java: new int[200] (244; 225 was 100)
+		MinimapLevel:          -1,
+		ImageHitmarks:         make([]*pix32.Pix32, 20),
+		LastWaveID:            -1,
+		DesignIdentikits:      make([]int, 7),
+		ActiveMapFunctions:    make([]*pix32.Pix32, 1000),
+		ChatScrollHeight:      78,
+		In:                    io.Alloc(1),
+		JagChecksum:           make([]int, 9),
+		ImageSideIcons:        make([]*pix8.Pix8, 13),
+		ImageModIcons:         make([]*pix8.Pix8, 2),
+		OrbitCameraPitch:      128,
 		// Java: deob/client.java:92 — `public int selectedTab = 3;`
 		// Latent in current flows (Login resets to 3 before InGame goes
 		// true) but the field-init keeps the Go state aligned with Java
-		// for any future caller that reads SelectedTab pre-login.
-		SelectedTab:               3,
+		// for any future caller that reads SideTab pre-login.
+		SideTab:                   3,
 		MAX_PLAYER_COUNT:          2048,
 		LOCAL_PLAYER_INDEX:        2047,
 		Projectiles:               datastruct.NewLinkList[*entity.ClientProj](),
@@ -672,15 +672,15 @@ func NewClient() *Client {
 		ImageHeadIcons:            make([]*pix32.Pix32, 20),
 		CameraModifierJitter:      make([]int, 5),
 		CameraModifierWobbleScale: make([]int, 5),
-		ViewportInterfaceID:       -1,
+		MainLayerID:               -1,
 		SCROLLBAR_GRIP_LOWLIGHT:   3353893,
 		SCROLLBAR_GRIP_HIGHLIGHT:  7759444,
 		BFSStepX:                  make([]int, 4000),
 		BFSStepZ:                  make([]int, 4000),
-		ChatInterfaceID:           -1,
+		ChatLayerID:               -1,
 		ProjectX:                  -1,
 		ProjectY:                  -1,
-		StickyChatInterfaceID:     -1,
+		TutLayerID:                -1,
 		CameraModifierCycle:       make([]int, 5),
 		ImageMapscene:             make([]*pix8.Pix8, 50),
 		CHAT_COLORS:               []int{0xFFFF00, 0xFF0000, 0xFF00, 0xFFFF, 0xFF00FF, 0xFFFFFF},
@@ -699,7 +699,7 @@ func NewClient() *Client {
 		CameraOffsetXModifier:     2,
 		FriendName:                make([]string, 200), // Java: new String[200] (244; 225 was 100)
 		FlashingTab:               -1,
-		SidebarInterfaceID:        -1,
+		SideLayerID:               -1,
 		CameraOffsetZModifier:     2,
 		MinimapMaskLineOffsets:    make([]int, 151),
 		CameraOffsetYawModifier:   1,
@@ -965,18 +965,18 @@ func (c *Client) Draw2DEntityElements() {
 
 func (c *Client) CloseModal() {
 	c.Out.P1Isaac(CLIENTPROT_CLOSE_MODAL) // Java: pIsaac(245) Client.java:4350
-	if c.SidebarInterfaceID != -1 {
-		c.SidebarInterfaceID = -1
+	if c.SideLayerID != -1 {
+		c.SideLayerID = -1
 		c.RedrawSidebar = true
 		c.PressedContinueOption = false
 		c.RedrawSideIcons = true
 	}
-	if c.ChatInterfaceID != -1 {
-		c.ChatInterfaceID = -1
+	if c.ChatLayerID != -1 {
+		c.ChatLayerID = -1
 		c.RedrawChatback = true
 		c.PressedContinueOption = false
 	}
-	c.ViewportInterfaceID = -1
+	c.MainLayerID = -1
 }
 
 func (c *Client) StopMidi() {
@@ -1990,8 +1990,8 @@ func (c *Client) HandleChatSettingsInput() {
 	c.ReportAbuseMuteOption = false
 	for i := range len(iftype.Instances) {
 		if iftype.Instances[i] != nil && iftype.Instances[i].ClientCode == 600 {
-			c.ViewportInterfaceID = iftype.Instances[i].Layer
-			c.ReportAbuseInterfaceID = c.ViewportInterfaceID
+			c.MainLayerID = iftype.Instances[i].Layer
+			c.ReportAbuseInterfaceID = c.MainLayerID
 			return
 		}
 	}
@@ -2260,7 +2260,7 @@ func (c *Client) HandleInputKey() {
 				if var2 == -1 {
 					return
 				}
-				if c.ViewportInterfaceID != -1 && c.ViewportInterfaceID == c.ReportAbuseInterfaceID {
+				if c.MainLayerID != -1 && c.MainLayerID == c.ReportAbuseInterfaceID {
 					if var2 == 8 && len(c.ReportAbuseInput) > 0 {
 						c.ReportAbuseInput = c.ReportAbuseInput[0 : len(c.ReportAbuseInput)-1]
 					}
@@ -2346,7 +2346,7 @@ func (c *Client) HandleInputKey() {
 						c.ChatbackInputOpen = false
 						c.RedrawChatback = true
 					}
-				} else if c.ChatInterfaceID == -1 {
+				} else if c.ChatLayerID == -1 {
 					// Java: Client.java:4690 — inside a ::command, chars up to 126
 					// ({ | } ~) are also accepted.
 					if var2 >= 32 && (var2 <= 122 || strings.HasPrefix(c.ChatTyped, "::") && var2 <= 126) && len(c.ChatTyped) < 80 {
@@ -4609,8 +4609,8 @@ func (c *Client) DrawGame() {
 		c.RedrawSidebar = true
 	}
 	var2 := false
-	if c.SidebarInterfaceID != -1 {
-		var2 = c.UpdateInterfaceAnimation(c.SidebarInterfaceID, c.SceneDelta)
+	if c.SideLayerID != -1 {
+		var2 = c.UpdateInterfaceAnimation(c.SideLayerID, c.SceneDelta)
 		if var2 {
 			c.RedrawSidebar = true
 		}
@@ -4625,7 +4625,7 @@ func (c *Client) DrawGame() {
 	// repaint on c.RedrawSidebar but unconditionally blits AreaSidebar
 	// via PixMap.Draw so the GPU always sees the current state.
 	c.DrawSidebar()
-	if c.ChatInterfaceID == -1 {
+	if c.ChatLayerID == -1 {
 		c.ChatInterface.ScrollPosition = c.ChatScrollHeight - c.ChatScrollOffset - 77
 		if c.MouseX > 448 && c.MouseX < 560 && c.MouseY > 332 {
 			c.HandleScrollInput(c.MouseX-17, c.MouseY-357, c.ChatScrollHeight, 77, false, 463, 0, c.ChatInterface)
@@ -4638,8 +4638,8 @@ func (c *Client) DrawGame() {
 			c.RedrawChatback = true
 		}
 	}
-	if c.ChatInterfaceID != -1 {
-		var2 = c.UpdateInterfaceAnimation(c.ChatInterfaceID, c.SceneDelta)
+	if c.ChatLayerID != -1 {
+		var2 = c.UpdateInterfaceAnimation(c.ChatLayerID, c.SceneDelta)
 		if var2 {
 			c.RedrawChatback = true
 		}
@@ -4666,17 +4666,17 @@ func (c *Client) DrawGame() {
 		c.RedrawSideIcons = true
 	}
 	if c.RedrawSideIcons {
-		if c.FlashingTab != -1 && c.FlashingTab == c.SelectedTab {
+		if c.FlashingTab != -1 && c.FlashingTab == c.SideTab {
 			c.FlashingTab = -1
 			c.Out.P1Isaac(CLIENTPROT_TUTORIAL_CLICKSIDE) // Java: pIsaac(243) Client.java:5650
-			c.Out.P1(c.SelectedTab)
+			c.Out.P1(c.SideTab)
 		}
 		c.RedrawSideIcons = false
 		c.AreaBackhmid1.Bind()
 		c.ImageBackhmid1.PlotSprite(0, 0)
-		if c.SidebarInterfaceID == -1 {
-			if c.TabInterfaceID[c.SelectedTab] != -1 {
-				switch c.SelectedTab {
+		if c.SideLayerID == -1 {
+			if c.TabInterfaceID[c.SideTab] != -1 {
+				switch c.SideTab {
 				case 0:
 					c.ImageRedstone1.PlotSprite(10, 22)
 				case 1:
@@ -4717,9 +4717,9 @@ func (c *Client) DrawGame() {
 		}
 		c.AreaBackbase2.Bind()
 		c.ImageBackbase2.PlotSprite(0, 0)
-		if c.SidebarInterfaceID == -1 {
-			if c.TabInterfaceID[c.SelectedTab] != -1 {
-				switch c.SelectedTab {
+		if c.SideLayerID == -1 {
+			if c.TabInterfaceID[c.SideTab] != -1 {
+				switch c.SideTab {
 				case 7:
 					c.ImageRedstone1v.PlotSprite(0, 42)
 				case 8:
@@ -4964,10 +4964,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
 		c.SelectedArea = 2
-		if iftype.Instances[var4].Layer == c.ViewportInterfaceID {
+		if iftype.Instances[var4].Layer == c.MainLayerID {
 			c.SelectedArea = 1
 		}
-		if iftype.Instances[var4].Layer == c.ChatInterfaceID {
+		if iftype.Instances[var4].Layer == c.ChatLayerID {
 			c.SelectedArea = 3
 		}
 	}
@@ -5045,10 +5045,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
 		c.SelectedArea = 2
-		if iftype.Instances[var4].Layer == c.ViewportInterfaceID {
+		if iftype.Instances[var4].Layer == c.MainLayerID {
 			c.SelectedArea = 1
 		}
-		if iftype.Instances[var4].Layer == c.ChatInterfaceID {
+		if iftype.Instances[var4].Layer == c.ChatLayerID {
 			c.SelectedArea = 3
 		}
 	}
@@ -5062,10 +5062,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
 		c.SelectedArea = 2
-		if iftype.Instances[var4].Layer == c.ViewportInterfaceID {
+		if iftype.Instances[var4].Layer == c.MainLayerID {
 			c.SelectedArea = 1
 		}
-		if iftype.Instances[var4].Layer == c.ChatInterfaceID {
+		if iftype.Instances[var4].Layer == c.ChatLayerID {
 			c.SelectedArea = 3
 		}
 	}
@@ -5295,7 +5295,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SpellCaption = var18 + " " + var22.Action + " " + var9
 		if c.ActiveSpellFlags == 16 {
 			c.RedrawSidebar = true
-			c.SelectedTab = 3
+			c.SideTab = 3
 			c.RedrawSideIcons = true
 		}
 		return
@@ -5347,10 +5347,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
 		c.SelectedArea = 2
-		if iftype.Instances[var4].Layer == c.ViewportInterfaceID {
+		if iftype.Instances[var4].Layer == c.MainLayerID {
 			c.SelectedArea = 1
 		}
-		if iftype.Instances[var4].Layer == c.ChatInterfaceID {
+		if iftype.Instances[var4].Layer == c.ChatLayerID {
 			c.SelectedArea = 3
 		}
 	}
@@ -5420,8 +5420,8 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.ReportAbuseMuteOption = false
 			for i := range len(iftype.Instances) {
 				if iftype.Instances[i] != nil && iftype.Instances[i].ClientCode == 600 {
-					c.ViewportInterfaceID = iftype.Instances[i].Layer
-					c.ReportAbuseInterfaceID = c.ViewportInterfaceID
+					c.MainLayerID = iftype.Instances[i].Layer
+					c.ReportAbuseInterfaceID = c.MainLayerID
 					break
 				}
 			}
@@ -5971,7 +5971,7 @@ func (c *Client) HandleInterfaceAction(arg1 *iftype.IfType) bool {
 			c.SocialMessage = "Enter name of friend to delete from list"
 		}
 	case 205:
-		c.IdleTimeout = 250
+		c.PendingLogout = 250
 		return true
 	case 501:
 		c.RedrawChatback = true
@@ -6593,10 +6593,10 @@ func (c *Client) HandleInput() {
 	// 244's 765x503 layout — viewport at (4,4), sidebar at (553,205), chat
 	// at (17,357).
 	if c.MouseX > 4 && c.MouseY > 4 && c.MouseX < 516 && c.MouseY < 338 {
-		if c.ViewportInterfaceID == -1 {
+		if c.MainLayerID == -1 {
 			c.HandleViewportOptions()
 		} else {
-			c.HandleComponentInput(c.MouseY, c.MouseX, 4, iftype.Instances[c.ViewportInterfaceID], 4, 0)
+			c.HandleComponentInput(c.MouseY, c.MouseX, 4, iftype.Instances[c.MainLayerID], 4, 0)
 		}
 	}
 	if c.LastHoveredInterfaceID != c.ViewportHoveredInterfaceIndex {
@@ -6604,10 +6604,10 @@ func (c *Client) HandleInput() {
 	}
 	c.LastHoveredInterfaceID = 0
 	if c.MouseX > 553 && c.MouseY > 205 && c.MouseX < 743 && c.MouseY < 466 {
-		if c.SidebarInterfaceID != -1 {
-			c.HandleComponentInput(c.MouseY, c.MouseX, 205, iftype.Instances[c.SidebarInterfaceID], 553, 0)
-		} else if c.TabInterfaceID[c.SelectedTab] != -1 {
-			c.HandleComponentInput(c.MouseY, c.MouseX, 205, iftype.Instances[c.TabInterfaceID[c.SelectedTab]], 553, 0)
+		if c.SideLayerID != -1 {
+			c.HandleComponentInput(c.MouseY, c.MouseX, 205, iftype.Instances[c.SideLayerID], 553, 0)
+		} else if c.TabInterfaceID[c.SideTab] != -1 {
+			c.HandleComponentInput(c.MouseY, c.MouseX, 205, iftype.Instances[c.TabInterfaceID[c.SideTab]], 553, 0)
 		}
 	}
 	if c.LastHoveredInterfaceID != c.SidebarHoveredInterfaceIndex {
@@ -6619,13 +6619,13 @@ func (c *Client) HandleInput() {
 	// hit-box to x<496 (interface input); plain chat rows stay re-guarded
 	// to y<434 && x<426.
 	if c.MouseX > 17 && c.MouseY > 357 && c.MouseX < 496 && c.MouseY < 453 {
-		if c.ChatInterfaceID != -1 {
-			c.HandleComponentInput(c.MouseY, c.MouseX, 357, iftype.Instances[c.ChatInterfaceID], 17, 0)
+		if c.ChatLayerID != -1 {
+			c.HandleComponentInput(c.MouseY, c.MouseX, 357, iftype.Instances[c.ChatLayerID], 17, 0)
 		} else if c.MouseY < 434 && c.MouseX < 426 { // Java: Client.java:3694 @176a85f — message rows only
 			c.HandleChatMouseInput(c.MouseY-357, 0)
 		}
 	}
-	if c.ChatInterfaceID != -1 && c.LastHoveredInterfaceID != c.ChatHoveredInterfaceIndex {
+	if c.ChatLayerID != -1 && c.LastHoveredInterfaceID != c.ChatHoveredInterfaceIndex {
 		c.RedrawChatback = true
 		c.ChatHoveredInterfaceIndex = c.LastHoveredInterfaceID
 	}
@@ -6688,13 +6688,13 @@ func (c *Client) OtherOverlays() {
 	}
 	// Java: Client.java:6555-6558 (new in 244) — the viewport overlay
 	// interface (IF_OPENOVERLAY) renders before the main viewport interface.
-	if c.ViewportOverlayInterfaceID != -1 {
-		c.UpdateInterfaceAnimation(c.ViewportOverlayInterfaceID, c.SceneDelta)
-		c.DrawInterface(0, 0, iftype.Instances[c.ViewportOverlayInterfaceID], 0)
+	if c.MainOverlayLayerID != -1 {
+		c.UpdateInterfaceAnimation(c.MainOverlayLayerID, c.SceneDelta)
+		c.DrawInterface(0, 0, iftype.Instances[c.MainOverlayLayerID], 0)
 	}
-	if c.ViewportInterfaceID != -1 {
-		c.UpdateInterfaceAnimation(c.ViewportInterfaceID, c.SceneDelta)
-		c.DrawInterface(0, 0, iftype.Instances[c.ViewportInterfaceID], 0)
+	if c.MainLayerID != -1 {
+		c.UpdateInterfaceAnimation(c.MainLayerID, c.SceneDelta)
+		c.DrawInterface(0, 0, iftype.Instances[c.MainLayerID], 0)
 	}
 	c.GetSpecialArea()
 	if !c.MenuVisible {
@@ -7392,9 +7392,9 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.LastPacketType1 = -1
 		c.LastPacketType2 = -1
 		c.PacketSize = 0
-		c.IdleNetCycles = 0
+		c.PacketCycle = 0
 		c.SystemUpdateTimer = 0
-		c.IdleTimeout = 0
+		c.PendingLogout = 0
 		c.HintType = 0
 		c.MenuSize = 0
 		c.MenuVisible = false
@@ -7438,13 +7438,13 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.LocChanges = datastruct.NewLinkList[*entity.LocChange]() // Java: this.locChanges = new LinkList() (Client.java:2742)
 		c.FriendListStatus = 0                                     // Java: Client.java:2510 @2e62978 (NEW in 254)
 		c.FriendCount = 0
-		c.StickyChatInterfaceID = -1
-		c.ChatInterfaceID = -1
-		c.ViewportInterfaceID = -1
-		c.SidebarInterfaceID = -1
-		c.ViewportOverlayInterfaceID = -1 // Java: Client.java:2748
+		c.TutLayerID = -1
+		c.ChatLayerID = -1
+		c.MainLayerID = -1
+		c.SideLayerID = -1
+		c.MainOverlayLayerID = -1 // Java: Client.java:2748
 		c.PressedContinueOption = false
-		c.SelectedTab = 3
+		c.SideTab = 3
 		c.ChatbackInputOpen = false
 		c.MenuVisible = false
 		c.ShowSocialInput = false
@@ -7546,7 +7546,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.LastPacketType1 = -1
 		c.LastPacketType2 = -1
 		c.PacketSize = 0
-		c.IdleNetCycles = 0
+		c.PacketCycle = 0
 		c.SystemUpdateTimer = 0
 		c.MenuSize = 0
 		c.MenuVisible = false
@@ -7985,8 +7985,8 @@ func (c *Client) GameLoop() {
 	if c.SystemUpdateTimer > 1 {
 		c.SystemUpdateTimer--
 	}
-	if c.IdleTimeout > 0 {
-		c.IdleTimeout--
+	if c.PendingLogout > 0 {
+		c.PendingLogout--
 	}
 	for i := 0; i < 5 && c.TcpIn(); i++ {
 	}
@@ -8199,8 +8199,8 @@ func (c *Client) GameLoop() {
 		c.Out.PData(var11.Data, var11.Pos, 0)
 		var11.Release()
 	}
-	c.IdleNetCycles++
-	if c.IdleNetCycles > 750 {
+	c.PacketCycle++
+	if c.PacketCycle > 750 {
 		c.TryReconnect()
 	}
 	c.UpdatePlayers()
@@ -8342,7 +8342,7 @@ func (c *Client) GameLoop() {
 	c.HandleInputKey()
 	c.IdleCycles++
 	if c.IdleCycles > 4500 {
-		c.IdleTimeout = 250
+		c.PendingLogout = 250
 		c.IdleCycles -= 500
 		c.Out.P1Isaac(CLIENTPROT_IDLE_TIMER) // Java: pIsaac(102) Client.java:3122
 	}
@@ -8756,11 +8756,11 @@ func (c *Client) UpdateInterfaceAnimation(arg0, arg1 int) bool {
 }
 
 func (c *Client) AddChat(arg0 int, arg1 string, arg3 string) {
-	if arg0 == 0 && c.StickyChatInterfaceID != -1 {
+	if arg0 == 0 && c.TutLayerID != -1 {
 		c.ModalMessage = arg1
 		c.MouseClickButton = 0
 	}
-	if c.ChatInterfaceID == -1 {
+	if c.ChatLayerID == -1 {
 		c.RedrawChatback = true
 	}
 	for i := 99; i > 0; i-- {
@@ -8900,10 +8900,10 @@ func (c *Client) HandleMouseInput() {
 					c.ObjDragArea = 2
 					c.ObjGrabX = c.MouseClickX
 					c.ObjGrabY = c.MouseClickY
-					if iftype.Instances[var5].Layer == c.ViewportInterfaceID {
+					if iftype.Instances[var5].Layer == c.MainLayerID {
 						c.ObjDragArea = 1
 					}
-					if iftype.Instances[var5].Layer == c.ChatInterfaceID {
+					if iftype.Instances[var5].Layer == c.ChatLayerID {
 						c.ObjDragArea = 3
 					}
 					return
@@ -9095,72 +9095,72 @@ func (c *Client) HandleTabInput() {
 	}
 	if c.MouseClickX >= 539 && c.MouseClickX <= 573 && c.MouseClickY >= 169 && c.MouseClickY < 205 && c.TabInterfaceID[0] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 0
+		c.SideTab = 0
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 569 && c.MouseClickX <= 599 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[1] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 1
+		c.SideTab = 1
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 597 && c.MouseClickX <= 627 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[2] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 2
+		c.SideTab = 2
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 625 && c.MouseClickX <= 669 && c.MouseClickY >= 168 && c.MouseClickY < 203 && c.TabInterfaceID[3] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 3
+		c.SideTab = 3
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 666 && c.MouseClickX <= 696 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[4] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 4
+		c.SideTab = 4
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 694 && c.MouseClickX <= 724 && c.MouseClickY >= 168 && c.MouseClickY < 205 && c.TabInterfaceID[5] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 5
+		c.SideTab = 5
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 722 && c.MouseClickX <= 756 && c.MouseClickY >= 169 && c.MouseClickY < 205 && c.TabInterfaceID[6] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 6
+		c.SideTab = 6
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 540 && c.MouseClickX <= 574 && c.MouseClickY >= 466 && c.MouseClickY < 502 && c.TabInterfaceID[7] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 7
+		c.SideTab = 7
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 572 && c.MouseClickX <= 602 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[8] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 8
+		c.SideTab = 8
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 599 && c.MouseClickX <= 629 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[9] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 9
+		c.SideTab = 9
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 627 && c.MouseClickX <= 671 && c.MouseClickY >= 467 && c.MouseClickY < 502 && c.TabInterfaceID[10] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 10
+		c.SideTab = 10
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 669 && c.MouseClickX <= 699 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[11] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 11
+		c.SideTab = 11
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 696 && c.MouseClickX <= 726 && c.MouseClickY >= 466 && c.MouseClickY < 503 && c.TabInterfaceID[12] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 12
+		c.SideTab = 12
 		c.RedrawSideIcons = true
 	}
 	if c.MouseClickX >= 724 && c.MouseClickX <= 758 && c.MouseClickY >= 466 && c.MouseClickY < 502 && c.TabInterfaceID[13] != -1 {
 		c.RedrawSidebar = true
-		c.SelectedTab = 13
+		c.SideTab = 13
 		c.RedrawSideIcons = true
 	}
 	// 245.2's trailing CYCLELOGIC1 block here was removed in 254
@@ -9270,7 +9270,7 @@ func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
 // GetParameter (applet HTML <param>) intentionally not ported: Go client takes config from CLI args / clientextras.
 
 func (c *Client) TryReconnect() {
-	if c.IdleTimeout > 0 {
+	if c.PendingLogout > 0 {
 		c.Logout()
 		return
 	}
@@ -9607,7 +9607,7 @@ func (c *Client) OnDemandLoop() {
 			model.Unpack(req.File, req.Data)
 			if c.OnDemand.GetModelFlags(req.File)&0x62 != 0 {
 				c.RedrawSidebar = true
-				if c.ChatInterfaceID != -1 {
+				if c.ChatLayerID != -1 {
 					c.RedrawChatback = true
 				}
 			}
@@ -10289,9 +10289,9 @@ func (c *Client) DrawChatback() {
 	} else if c.ModalMessage != "" {
 		c.FontBold12.CentreString(40, 0, c.ModalMessage, 239)
 		c.FontBold12.CentreString(60, 128, "Click to continue", 239)
-	} else if c.ChatInterfaceID != -1 {
-		c.DrawInterface(0, 0, iftype.Instances[c.ChatInterfaceID], 0)
-	} else if c.StickyChatInterfaceID == -1 {
+	} else if c.ChatLayerID != -1 {
+		c.DrawInterface(0, 0, iftype.Instances[c.ChatLayerID], 0)
+	} else if c.TutLayerID == -1 {
 		var2 := c.FontPlain12
 		var3 := 0
 		pix2d.SetClipping(77, 0, 463, 0)
@@ -10391,7 +10391,7 @@ func (c *Client) DrawChatback() {
 		var2.DrawString(var2.StringWidth(var13+": ")+6, 90, 0xFF, c.ChatTyped+"*")
 		pix2d.HLine(0, 77, 479, 0)
 	} else {
-		c.DrawInterface(0, 0, iftype.Instances[c.StickyChatInterfaceID], 0)
+		c.DrawInterface(0, 0, iftype.Instances[c.TutLayerID], 0)
 	}
 	if c.MenuVisible && c.MenuArea == 2 {
 		c.DrawMenu()
@@ -10484,7 +10484,7 @@ func (c *Client) TcpIn() (ok bool) {
 		c.TryReconnect()
 		return true
 	}
-	c.IdleNetCycles = 0
+	c.PacketCycle = 0
 	c.LastPacketType2 = c.LastPacketType1
 	c.LastPacketType1 = c.LastPacketType0
 	c.LastPacketType0 = c.PacketType
@@ -10632,7 +10632,7 @@ func (c *Client) TcpIn() (ok bool) {
 			c.Varps[var26] = int(var52)
 			c.UpdateVarp(var26)
 			c.RedrawSidebar = true
-			if c.StickyChatInterfaceID != -1 {
+			if c.TutLayerID != -1 {
 				c.RedrawChatback = true
 			}
 		}
@@ -10917,7 +10917,7 @@ func (c *Client) TcpIn() (ok bool) {
 	// Java: opcode 115 — open overlay interface in viewport (Client.java:7982)
 	if c.PacketType == SERVERPROT_IF_OPENOVERLAY {
 		com := c.In.G2B()
-		c.ViewportOverlayInterfaceID = com
+		c.MainOverlayLayerID = com
 		c.PacketType = -1
 		return true
 	}
@@ -10944,16 +10944,16 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_IF_OPENMAIN_SIDE {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
-		if c.ChatInterfaceID != -1 {
-			c.ChatInterfaceID = -1
+		if c.ChatLayerID != -1 {
+			c.ChatLayerID = -1
 			c.RedrawChatback = true
 		}
 		if c.ChatbackInputOpen {
 			c.ChatbackInputOpen = false
 			c.RedrawChatback = true
 		}
-		c.ViewportInterfaceID = var26
-		c.SidebarInterfaceID = var4
+		c.MainLayerID = var26
+		c.SideLayerID = var4
 		c.RedrawSidebar = true
 		c.RedrawSideIcons = true
 		c.PressedContinueOption = false
@@ -10971,7 +10971,7 @@ func (c *Client) TcpIn() (ok bool) {
 			c.Varps[var26] = var4
 			c.UpdateVarp(var26)
 			c.RedrawSidebar = true
-			if c.StickyChatInterfaceID != -1 {
+			if c.TutLayerID != -1 {
 				c.RedrawChatback = true
 			}
 		}
@@ -11065,7 +11065,7 @@ func (c *Client) TcpIn() (ok bool) {
 		c.DaysSinceRecoveriesChanged = c.In.G1()
 		c.UnreadMessages = c.In.G2()
 		c.WarnMembersInNonMembers = c.In.G1() // Java: Client.java:7281 (5th field, new in 244)
-		if c.LastAddress != 0 && c.ViewportInterfaceID == -1 {
+		if c.LastAddress != 0 && c.MainLayerID == -1 {
 			signlink.DNSLookup(jstring.FormatIPv4(int32(c.LastAddress)))
 			c.CloseModal()
 			var47 := 650 // Java: short var47
@@ -11076,7 +11076,7 @@ func (c *Client) TcpIn() (ok bool) {
 			c.ReportAbuseMuteOption = false
 			for var4 := range len(iftype.Instances) {
 				if iftype.Instances[var4] != nil && iftype.Instances[var4].ClientCode == var47 {
-					c.ViewportInterfaceID = iftype.Instances[var4].Layer
+					c.MainLayerID = iftype.Instances[var4].Layer
 					break
 				}
 			}
@@ -11087,11 +11087,11 @@ func (c *Client) TcpIn() (ok bool) {
 	// Java: opcode 132 — flashing tab (Client.java:7646)
 	if c.PacketType == SERVERPROT_TUT_FLASH {
 		c.FlashingTab = c.In.G1()
-		if c.FlashingTab == c.SelectedTab {
+		if c.FlashingTab == c.SideTab {
 			if c.FlashingTab == 3 {
-				c.SelectedTab = 1
+				c.SideTab = 1
 			} else {
-				c.SelectedTab = 3
+				c.SideTab = 3
 			}
 			c.RedrawSidebar = true
 		}
@@ -11148,18 +11148,18 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_IF_OPENSIDE {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
-		if c.ChatInterfaceID != -1 {
-			c.ChatInterfaceID = -1
+		if c.ChatLayerID != -1 {
+			c.ChatLayerID = -1
 			c.RedrawChatback = true
 		}
 		if c.ChatbackInputOpen {
 			c.ChatbackInputOpen = false
 			c.RedrawChatback = true
 		}
-		c.SidebarInterfaceID = var26
+		c.SideLayerID = var26
 		c.RedrawSidebar = true
 		c.RedrawSideIcons = true
-		c.ViewportInterfaceID = -1
+		c.MainLayerID = -1
 		c.PressedContinueOption = false
 		c.PacketType = -1
 		return true
@@ -11168,14 +11168,14 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_IF_OPENCHAT {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
-		if c.SidebarInterfaceID != -1 {
-			c.SidebarInterfaceID = -1
+		if c.SideLayerID != -1 {
+			c.SideLayerID = -1
 			c.RedrawSidebar = true
 			c.RedrawSideIcons = true
 		}
-		c.ChatInterfaceID = var26
+		c.ChatLayerID = var26
 		c.RedrawChatback = true
-		c.ViewportInterfaceID = -1
+		c.MainLayerID = -1
 		c.PressedContinueOption = false
 		c.PacketType = -1
 		return true
@@ -11255,14 +11255,14 @@ func (c *Client) TcpIn() (ok bool) {
 	// Java: opcode 152 — sticky chat interface (Client.java:7249)
 	if c.PacketType == SERVERPROT_TUT_OPEN {
 		var26 := c.In.G2B()
-		c.StickyChatInterfaceID = var26
+		c.TutLayerID = var26
 		c.RedrawChatback = true
 		c.PacketType = -1
 		return true
 	}
 	// Java: opcode 208 — energy update (Client.java:8079)
 	if c.PacketType == SERVERPROT_UPDATE_RUNENERGY {
-		if c.SelectedTab == 12 {
+		if c.SideTab == 12 {
 			c.RedrawSidebar = true
 		}
 		c.Energy = c.In.G1()
@@ -11301,7 +11301,7 @@ func (c *Client) TcpIn() (ok bool) {
 	}
 	// Java: opcode 8 — selected sidebar tab (Client.java:7241)
 	if c.PacketType == SERVERPROT_IF_SETTAB_ACTIVE {
-		c.SelectedTab = c.In.G1()
+		c.SideTab = c.In.G1()
 		c.RedrawSidebar = true
 		c.RedrawSideIcons = true
 		c.PacketType = -1
@@ -11332,20 +11332,20 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_IF_OPENMAIN {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
-		if c.SidebarInterfaceID != -1 {
-			c.SidebarInterfaceID = -1
+		if c.SideLayerID != -1 {
+			c.SideLayerID = -1
 			c.RedrawSidebar = true
 			c.RedrawSideIcons = true
 		}
-		if c.ChatInterfaceID != -1 {
-			c.ChatInterfaceID = -1
+		if c.ChatLayerID != -1 {
+			c.ChatLayerID = -1
 			c.RedrawChatback = true
 		}
 		if c.ChatbackInputOpen {
 			c.ChatbackInputOpen = false
 			c.RedrawChatback = true
 		}
-		c.ViewportInterfaceID = var26
+		c.MainLayerID = var26
 		c.PressedContinueOption = false
 		c.PacketType = -1
 		return true
@@ -11441,20 +11441,20 @@ func (c *Client) TcpIn() (ok bool) {
 	}
 	// Java: opcode 174 — close all interfaces (Client.java:7613)
 	if c.PacketType == SERVERPROT_IF_CLOSE {
-		if c.SidebarInterfaceID != -1 {
-			c.SidebarInterfaceID = -1
+		if c.SideLayerID != -1 {
+			c.SideLayerID = -1
 			c.RedrawSidebar = true
 			c.RedrawSideIcons = true
 		}
-		if c.ChatInterfaceID != -1 {
-			c.ChatInterfaceID = -1
+		if c.ChatLayerID != -1 {
+			c.ChatLayerID = -1
 			c.RedrawChatback = true
 		}
 		if c.ChatbackInputOpen {
 			c.ChatbackInputOpen = false
 			c.RedrawChatback = true
 		}
-		c.ViewportInterfaceID = -1
+		c.MainLayerID = -1
 		c.PressedContinueOption = false
 		c.PacketType = -1
 		return true
@@ -11464,7 +11464,7 @@ func (c *Client) TcpIn() (ok bool) {
 		var26 := c.In.G2()
 		var28 := c.In.GStr()
 		iftype.Instances[var26].Text = var28
-		if iftype.Instances[var26].Layer == c.TabInterfaceID[c.SelectedTab] {
+		if iftype.Instances[var26].Layer == c.TabInterfaceID[c.SideTab] {
 			c.RedrawSidebar = true
 		}
 		c.PacketType = -1
@@ -11489,7 +11489,7 @@ func (c *Client) TcpIn() (ok bool) {
 	}
 	// Java: opcode 70 — weight carried (Client.java:8015)
 	if c.PacketType == SERVERPROT_UPDATE_RUNWEIGHT {
-		if c.SelectedTab == 12 {
+		if c.SideTab == 12 {
 			c.RedrawSidebar = true
 		}
 		c.WeightCarried = c.In.G2B()
@@ -11548,10 +11548,10 @@ func (c *Client) DrawSidebar() {
 		c.AreaSidebar.Bind()
 		pix3d.LineOffset = c.AreaSidebarOffsets
 		c.ImageInvback.PlotSprite(0, 0)
-		if c.SidebarInterfaceID != -1 {
-			c.DrawInterface(0, 0, iftype.Instances[c.SidebarInterfaceID], 0)
-		} else if c.TabInterfaceID[c.SelectedTab] != -1 {
-			c.DrawInterface(0, 0, iftype.Instances[c.TabInterfaceID[c.SelectedTab]], 0)
+		if c.SideLayerID != -1 {
+			c.DrawInterface(0, 0, iftype.Instances[c.SideLayerID], 0)
+		} else if c.TabInterfaceID[c.SideTab] != -1 {
+			c.DrawInterface(0, 0, iftype.Instances[c.TabInterfaceID[c.SideTab]], 0)
 		}
 		if c.MenuVisible && c.MenuArea == 1 {
 			c.DrawMenu()
