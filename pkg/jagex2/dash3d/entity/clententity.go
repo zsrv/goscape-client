@@ -75,7 +75,8 @@ type ClientEntity struct {
 func NewClientEntity() *ClientEntity {
 	return &ClientEntity{
 		Size:            1,
-		TurnSpeed:       32, // Java: ClientEntity.java:77 @2e62978 (NEW in 254)
+		Height:          200, // Java: ClientEntity.java:71 @2e62978 — default 0→200 in 254
+		TurnSpeed:       32,  // Java: ClientEntity.java:77 @2e62978 (NEW in 254)
 		SeqStandID:      -1,
 		SeqTurnID:       -1,
 		SeqWalkID:       -1,
