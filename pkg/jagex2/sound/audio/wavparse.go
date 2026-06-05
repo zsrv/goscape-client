@@ -2,7 +2,7 @@ package audio
 
 import "encoding/binary"
 
-// parseWave8Mono validates a RIFF/WAV file emitted by sound/wave.GetWave
+// parseWave8Mono validates a RIFF/WAV file emitted by sound/jagfx.GetWave
 // (22050 Hz, 1 ch, 8-bit unsigned PCM) and returns the raw 8-bit unsigned
 // mono sample bytes. ok is false if the header doesn't match exactly.
 func parseWave8Mono(data []byte) (samples []byte, ok bool) {

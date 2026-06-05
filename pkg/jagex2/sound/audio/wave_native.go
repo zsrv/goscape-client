@@ -22,7 +22,7 @@ var (
 )
 
 // PlayWave plays a one-shot sound effect from in-memory WAV bytes (the 22050 Hz
-// mono 8-bit format sound/wave.GetWave emits). It caches a copy for ReplayWave,
+// mono 8-bit format sound/jagfx.GetWave emits). It caches a copy for ReplayWave,
 // then plays it if the audio context is ready.
 //
 // SFX are fire-and-forget: if the context is not ready — pre-gesture (oto only
@@ -109,7 +109,7 @@ func playWaveBytes(ctx *oto.Context, data []byte) {
 }
 
 // wave8MonoToStereoInt16 parses a RIFF/WAV file emitted by sound.wave
-// (22050 Hz, 1 ch, 8-bit unsigned PCM — see sound/wave.GetWave) and returns
+// (22050 Hz, 1 ch, 8-bit unsigned PCM — see sound/jagfx.GetWave) and returns
 // interleaved stereo 16-bit signed LE samples. Returns false if the header
 // doesn't match: any deviation means the file wasn't produced by our own tone
 // synthesizer and we'd rather skip than play garbage.

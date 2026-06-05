@@ -89,8 +89,8 @@ func TestClipInt16Saturates(t *testing.T) {
 }
 
 func TestWave8MonoToStereoInt16ConvertsMidpoint(t *testing.T) {
-	// sound/wave.GetWave emits 22050 Hz mono 8-bit unsigned PCM with
-	// 0x80 as the silent midpoint (sound/wave.go:138). The converter
+	// sound/jagfx.GetWave emits 22050 Hz mono 8-bit unsigned PCM with
+	// 0x80 as the silent midpoint (sound/jagfx/jagfx.go:144). The converter
 	// must subtract 128 before promoting to 16-bit so silence maps to
 	// 0 and the stereo channels match.
 	wav := makeTestWAV([]byte{0x80, 0xFF, 0x00})
@@ -121,7 +121,7 @@ func TestWave8MonoToStereoInt16RejectsForeignFormat(t *testing.T) {
 
 // makeTestWAV builds a minimal RIFF/WAV in the exact format sound.wave
 // emits: 22050 Hz, 1 channel, 8-bit unsigned PCM. Header bytes are
-// little-endian per the RIFF spec; layout matches sound/wave.go:99.
+// little-endian per the RIFF spec; layout matches sound/jagfx/jagfx.go:107.
 func makeTestWAV(samples []byte) []byte {
 	const headerLen = 44
 	buf := make([]byte, headerLen+len(samples))

@@ -65,7 +65,7 @@ The `main` goroutine flow (from `main.go`):
 | `graphics/pixmap/` | CPU-side pixel buffer bridging the game renderer to GPU upload (via the `platform` backend) |
 | `datastruct/` | Generic `LruCache[T]`, doubly-linked list, `JString` |
 | `io/` | `Packet` (binary reader/writer), `JagFile` (JAG archive), ISAAC CSPRNG, `bzip2` decompressor (protocol constants moved to `client/` in rev-254, per Java `io/Protocol` → `client/Protocol`) |
-| `sound/wave/` | PCM wave audio |
+| `sound/jagfx/` | PCM wave audio (Java 274 JagFX; was Wave in ≤254) |
 | `sound/envelope/` & `tone/` | MIDI-style sound envelope/tone synthesis |
 | `wordfilter/wordfilter/` & `wordpack/` | Chat word filter and word packing (was wordenc/ in ≤254; Java 274 jagex2/wordfilter) |
 | `../sign/signlink/` (i.e. `pkg/sign/signlink/`) | Filesystem/network bridge originally for the signed Java applet; handles cache directory, HTTP downloads, DNS, and audio requests (moved to top-level `sign/` in rev-245.2 per Java `sign.signlink`) |

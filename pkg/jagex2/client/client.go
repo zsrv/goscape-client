@@ -49,7 +49,7 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/io/clientstream"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io/ondemand"
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/audio"
-	"github.com/zsrv/goscape-client/pkg/jagex2/sound/wave"
+	"github.com/zsrv/goscape-client/pkg/jagex2/sound/jagfx"
 	"github.com/zsrv/goscape-client/pkg/jagex2/wordfilter/wordfilter"
 	"github.com/zsrv/goscape-client/pkg/jagex2/wordfilter/wordpack"
 	"github.com/zsrv/goscape-client/pkg/sign/signlink"
@@ -6536,7 +6536,7 @@ func (c *Client) Load() {
 		c.DrawProgress("Unpacking sounds", 90)
 		var20 := jagSounds.Read("sounds.dat", nil)
 		var21 := io.NewPacket(var20)
-		wave.Unpack(var21)
+		jagfx.Unpack(var21)
 	}
 	c.DrawProgress("Unpacking interfaces", 95)
 	var48 := []*pixfont.PixFont{c.FontPlain11, c.FontPlain12, c.FontBold12, c.FontQuill8}
@@ -8174,7 +8174,7 @@ func (c *Client) GameLoop() {
 				defer func() { _ = recover() }()
 				if c.WaveIDs[i] != c.LastWaveID || c.WaveLoops[i] != c.LastWaveLoops {
 					// Java: Wave.generate(waveIds[wave], waveLoops[wave]) (Client.java:3601 @176a85f)
-					var5 := wave.Generate(c.WaveIDs[i], c.WaveLoops[i])
+					var5 := jagfx.Generate(c.WaveIDs[i], c.WaveLoops[i])
 					if time.Now().UnixMilli()+int64(var5.Pos/22) > c.LastWaveStartTime+int64(c.LastWaveLength/22) {
 						c.LastWaveLength = var5.Pos
 						c.LastWaveStartTime = time.Now().UnixMilli()
@@ -11150,7 +11150,7 @@ func (c *Client) TcpIn() (ok bool) {
 		if c.WaveEnabled && !LowMemory && c.WaveCount < 50 {
 			c.WaveIDs[c.WaveCount] = var26
 			c.WaveLoops[c.WaveCount] = var4
-			c.WaveDelay[c.WaveCount] = var5 + wave.Delay[var26]
+			c.WaveDelay[c.WaveCount] = var5 + jagfx.Delay[var26]
 			c.WaveCount++
 		}
 		c.PacketType = -1

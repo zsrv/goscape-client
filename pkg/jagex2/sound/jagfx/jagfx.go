@@ -1,4 +1,4 @@
-package wave
+package jagfx
 
 import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
@@ -6,21 +6,21 @@ import (
 )
 
 var (
-	Tracks []*Wave = make([]*Wave, 1000)
+	Tracks []*JagFX = make([]*JagFX, 1000)
 	// Java: delay (Wave.java:13 @176a85f) — 245.2 renames 244's delays.
 	Delay      []int = make([]int, 1000)
 	WaveBytes  []byte
 	WaveBuffer *io.Packet
 )
 
-type Wave struct {
+type JagFX struct {
 	Tones     []*tone.Tone
 	LoopBegin int
 	LoopEnd   int
 }
 
-func NewWave() *Wave {
-	return &Wave{
+func NewJagFX() *JagFX {
+	return &JagFX{
 		Tones: make([]*tone.Tone, 10),
 	}
 }
@@ -39,7 +39,7 @@ func Unpack(buf *io.Packet) {
 		if id == 0xFFFF {
 			return
 		}
-		Tracks[id] = NewWave()
+		Tracks[id] = NewJagFX()
 		Tracks[id].Read(buf)
 		Delay[id] = Tracks[id].Trim()
 	}
@@ -55,7 +55,7 @@ func Generate(id, loops int) *io.Packet {
 	return sound.GetWave(loops)
 }
 
-func (w *Wave) Read(buf *io.Packet) {
+func (w *JagFX) Read(buf *io.Packet) {
 	for tn := range 10 {
 		hasTone := buf.G1()
 		if hasTone != 0 {
@@ -69,7 +69,7 @@ func (w *Wave) Read(buf *io.Packet) {
 	w.LoopEnd = buf.G2()
 }
 
-func (w *Wave) Trim() int {
+func (w *JagFX) Trim() int {
 	start := 9999999
 	for tn := range 10 {
 		if w.Tones[tn] != nil && w.Tones[tn].Start/20 < start {
@@ -99,7 +99,7 @@ func (w *Wave) Trim() int {
 	return start
 }
 
-func (w *Wave) GetWave(loopCount int) *io.Packet {
+func (w *JagFX) GetWave(loopCount int) *io.Packet {
 	length := w.Generate(loopCount)
 	WaveBuffer.Pos = 0
 	WaveBuffer.P4(0x52494646)   // "RIFF" ChunkID
@@ -119,7 +119,7 @@ func (w *Wave) GetWave(loopCount int) *io.Packet {
 	return WaveBuffer
 }
 
-func (w *Wave) Generate(loopCount int) int {
+func (w *JagFX) Generate(loopCount int) int {
 	duration := 0
 	for tn := range 10 {
 		if w.Tones[tn] != nil && w.Tones[tn].Length+w.Tones[tn].Start > duration {

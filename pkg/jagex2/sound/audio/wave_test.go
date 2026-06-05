@@ -9,7 +9,7 @@ import (
 )
 
 // makeWAV builds the 22050 Hz / mono / 8-bit unsigned RIFF WAV that
-// wave8MonoToStereoInt16 accepts (the format sound/wave.GetWave emits).
+// wave8MonoToStereoInt16 accepts (the format sound/jagfx.GetWave emits).
 func makeWAV(samples []byte) []byte {
 	buf := make([]byte, 44+len(samples))
 	copy(buf[0:], "RIFF")

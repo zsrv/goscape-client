@@ -1,7 +1,7 @@
 package audio
 
 // Format constants for the audio pipeline. 22050 Hz stereo matches the TS
-// reference client and the Wave/SFX pipeline (sound/wave.GetWave).
+// reference client and the Wave/SFX pipeline (sound/jagfx.GetWave).
 const (
 	SampleRate   = 22050
 	ChannelCount = 2

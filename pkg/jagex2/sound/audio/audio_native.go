@@ -22,7 +22,7 @@ package audio
 // fixed sample format. We pick 22050 Hz stereo signed 16-bit LE because:
 //   - It matches the TS reference client (tinymidipcm.js:137).
 //   - The Wave/SFX pipeline already produces 22050 Hz mono 8-bit PCM
-//     (see sound/wave.GetWave), upconversion to 16-bit stereo is cheap.
+//     (see sound/jagfx.GetWave), upconversion to 16-bit stereo is cheap.
 //   - meltysynth renders stereo float32; quantizing to int16 with volume
 //     bake-in matches the TS GainNode model.
 
