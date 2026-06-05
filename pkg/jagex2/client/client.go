@@ -50,8 +50,8 @@ import (
 	"github.com/zsrv/goscape-client/pkg/jagex2/io/ondemand"
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/audio"
 	"github.com/zsrv/goscape-client/pkg/jagex2/sound/wave"
-	"github.com/zsrv/goscape-client/pkg/jagex2/wordenc/wordfilter"
-	"github.com/zsrv/goscape-client/pkg/jagex2/wordenc/wordpack"
+	"github.com/zsrv/goscape-client/pkg/jagex2/wordfilter/wordfilter"
+	"github.com/zsrv/goscape-client/pkg/jagex2/wordfilter/wordpack"
 	"github.com/zsrv/goscape-client/pkg/sign/signlink"
 )
 

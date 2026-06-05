@@ -67,7 +67,7 @@ The `main` goroutine flow (from `main.go`):
 | `io/` | `Packet` (binary reader/writer), `JagFile` (JAG archive), ISAAC CSPRNG, `bzip2` decompressor (protocol constants moved to `client/` in rev-254, per Java `io/Protocol` → `client/Protocol`) |
 | `sound/wave/` | PCM wave audio |
 | `sound/envelope/` & `tone/` | MIDI-style sound envelope/tone synthesis |
-| `wordenc/wordfilter/` & `wordpack/` | Chat word filter and word packing |
+| `wordfilter/wordfilter/` & `wordpack/` | Chat word filter and word packing (was wordenc/ in ≤254; Java 274 jagex2/wordfilter) |
 | `../sign/signlink/` (i.e. `pkg/sign/signlink/`) | Filesystem/network bridge originally for the signed Java applet; handles cache directory, HTTP downloads, DNS, and audio requests (moved to top-level `sign/` in rev-245.2 per Java `sign.signlink`) |
 
 ### Key Java→Go Translation Notes (from README.md)
