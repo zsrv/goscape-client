@@ -11,7 +11,7 @@ import (
 // client.go:3420 — that Logout transitions the client out of the
 // in-game render dispatch and back to title-screen rendering. Java
 // `deob/client.java:3963` sets `this.ingame = false`; the prior Go
-// port omitted this assignment, so `UpdateGame`'s `if !c.InGame { return }`
+// port omitted this assignment, so `GameLoop`'s `if !c.InGame { return }`
 // guard at client.go:6818 (and the in-game render branches) never
 // fired and the title screen never reappeared after logout.
 //

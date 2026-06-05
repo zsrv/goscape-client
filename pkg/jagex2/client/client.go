@@ -182,8 +182,8 @@ type Client struct {
 	KeyQueueWritePos int
 
 	// flameMu guards concurrent access to ImageTitle0/1 pixel buffers between
-	// the RunFlames goroutine (writer) and the render loop (reader, via
-	// DrawTitleScreen, DrawGame, DrawProgress). Replaces the former global
+	// the RenderFlames goroutine (writer) and the render loop (reader, via
+	// TitleScreenDraw, DrawGame, DrawProgress). Replaces the former global
 	// pixmap.OpsMu for this narrow writer↔reader hand-off.
 	flameMu sync.Mutex
 	// END GameShell
@@ -963,7 +963,7 @@ func (c *Client) Draw2DEntityElements() {
 	}
 }
 
-func (c *Client) CloseInterfaces() {
+func (c *Client) CloseModal() {
 	c.Out.P1Isaac(CLIENTPROT_CLOSE_MODAL) // Java: pIsaac(245) Client.java:4350
 	if c.SidebarInterfaceID != -1 {
 		c.SidebarInterfaceID = -1
@@ -1181,19 +1181,19 @@ func (c *Client) AddIgnore(arg0 int64) {
 		return
 	}
 	if c.IgnoreCount >= 100 {
-		c.AddMessage(0, "Your ignore list is full. Max of 100 hit", "")
+		c.AddChat(0, "Your ignore list is full. Max of 100 hit", "")
 		return
 	}
 	var4 := jstring.FormatName(jstring.FromBase37(arg0))
 	for i := range c.IgnoreCount {
 		if c.IgnoreName37[i] == arg0 {
-			c.AddMessage(0, var4+" is already on your ignore list", "")
+			c.AddChat(0, var4+" is already on your ignore list", "")
 			return
 		}
 	}
 	for i := range c.FriendCount {
 		if c.FriendName37[i] == arg0 {
-			c.AddMessage(0, "Please remove "+var4+" from your friend list first", "")
+			c.AddChat(0, "Please remove "+var4+" from your friend list first", "")
 			return
 		}
 	}
@@ -1204,7 +1204,7 @@ func (c *Client) AddIgnore(arg0 int64) {
 	c.Out.P8(arg0)
 }
 
-func (c *Client) ReadZonePacket(arg1 *io.Packet, arg2 int) {
+func (c *Client) ZonePacket(arg1 *io.Packet, arg2 int) {
 	var4 := 0
 	var5 := 0
 	var6 := 0
@@ -1652,13 +1652,13 @@ func SetLowMem() {
 }
 
 func (c *Client) DrawFlames() {
-	// DrawFlames runs from the RunFlames goroutine, independent of
+	// DrawFlames runs from the RenderFlames goroutine, independent of
 	// c.Draw. It updates the ImageTitle0 / ImageTitle1 pixel buffers
 	// with the next animation step. The GPU upload of those buffers
-	// happens in DrawTitleScreen / DrawGame / DrawProgress each frame.
+	// happens in TitleScreenDraw / DrawGame / DrawProgress each frame.
 	//
 	// Hold flameMu while writing the pixel buffers so the render loop
-	// readers (DrawTitleScreen, DrawGame, DrawProgress) don't race with
+	// readers (TitleScreenDraw, DrawGame, DrawProgress) don't race with
 	// these writes. The lock is tight-scoped to just this function;
 	// each reader wraps only the consecutive ImageTitle0/1 .Draw calls.
 	c.flameMu.Lock()
@@ -1723,7 +1723,7 @@ func (c *Client) DrawFlames() {
 		var5 += var8
 	}
 	// Right-side flame buffer update (left-side ImageTitle0.Data was
-	// updated above). GPU upload of both happens in DrawTitleScreen /
+	// updated above). GPU upload of both happens in TitleScreenDraw /
 	// DrawGame each frame, not here.
 	for i := range 33920 {
 		c.ImageTitle1.Data[i] = c.ImageFlamesRight.Pixels[i]
@@ -1753,7 +1753,7 @@ func (c *Client) DrawFlames() {
 	}
 }
 
-func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *iftype.IfType, arg5 int, arg6 int) {
+func (c *Client) HandleComponentInput(arg0, arg1, arg2 int, arg3 *iftype.IfType, arg5 int, arg6 int) {
 	if arg3.Type != 0 || arg3.ChildID == nil || arg3.Hide || (arg1 < arg5 || arg0 < arg2 || arg1 > arg5+arg3.Width || arg0 > arg2+arg3.Height) {
 		return
 	}
@@ -1772,7 +1772,7 @@ func (c *Client) HandleInterfaceInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 			}
 		}
 		if var12.Type == 0 {
-			c.HandleInterfaceInput(arg0, arg1, var21, var12, var20, var12.ScrollPosition)
+			c.HandleComponentInput(arg0, arg1, var21, var12, var20, var12.ScrollPosition)
 			if var12.Scroll > var12.Height {
 				c.HandleScrollInput(arg1, arg0, var12.Scroll, var12.Height, true, var20+var12.Width, var21, var12)
 			}
@@ -1985,7 +1985,7 @@ func (c *Client) HandleChatSettingsInput() {
 	if c.MouseClickX < 412 || c.MouseClickX > 512 || c.MouseClickY < 467 || c.MouseClickY > 499 {
 		return
 	}
-	c.CloseInterfaces()
+	c.CloseModal()
 	c.ReportAbuseInput = ""
 	c.ReportAbuseMuteOption = false
 	for i := range len(iftype.Instances) {
@@ -2291,7 +2291,7 @@ func (c *Client) HandleInputKey() {
 						}
 						if c.SocialAction == 2 && c.FriendCount > 0 {
 							var8 = jstring.ToBase37(c.SocialInput)
-							c.RemoveFriend(var8)
+							c.DelFriend(var8)
 						}
 						if c.SocialAction == 3 && len(c.SocialInput) > 0 {
 							c.Out.P1Isaac(CLIENTPROT_MESSAGE_PRIVATE) // Java: pIsaac(99) Client.java:4626
@@ -2302,7 +2302,7 @@ func (c *Client) HandleInputKey() {
 							c.Out.PSize1(c.Out.Pos - var7)
 							c.SocialInput = jstring.ToSentenceCase(c.SocialInput)
 							c.SocialInput = wordfilter.Filter(c.SocialInput)
-							c.AddMessage(6, c.SocialInput, jstring.FormatName(jstring.FromBase37(c.SocialName37)))
+							c.AddChat(6, c.SocialInput, jstring.FormatName(jstring.FromBase37(c.SocialName37)))
 							if c.PrivateChatSetting == 2 {
 								c.PrivateChatSetting = 1
 								c.RedrawPrivacySettings = true
@@ -2318,7 +2318,7 @@ func (c *Client) HandleInputKey() {
 						}
 						if c.SocialAction == 5 && c.IgnoreCount > 0 {
 							var8 = jstring.ToBase37(c.SocialInput)
-							c.RemoveIgnore(var8)
+							c.DelIgnore(var8)
 						}
 					}
 				} else if c.ChatbackInputOpen {
@@ -2458,11 +2458,11 @@ func (c *Client) HandleInputKey() {
 							// Java: Client.java:4796-4802 — local outgoing chat
 							// carries the staff crown prefix too.
 							if c.StaffModLevel == 2 {
-								c.AddMessage(2, c.LocalPlayer.Chat, "@cr2@"+c.LocalPlayer.Name)
+								c.AddChat(2, c.LocalPlayer.Chat, "@cr2@"+c.LocalPlayer.Name)
 							} else if c.StaffModLevel == 1 {
-								c.AddMessage(2, c.LocalPlayer.Chat, "@cr1@"+c.LocalPlayer.Name)
+								c.AddChat(2, c.LocalPlayer.Chat, "@cr1@"+c.LocalPlayer.Name)
 							} else {
-								c.AddMessage(2, c.LocalPlayer.Chat, c.LocalPlayer.Name)
+								c.AddChat(2, c.LocalPlayer.Chat, c.LocalPlayer.Name)
 							}
 							if c.PublicChatSetting == 2 {
 								c.PublicChatSetting = 3
@@ -2493,12 +2493,12 @@ func (c *Client) Draw() {
 	if c.InGame {
 		c.DrawGame()
 	} else {
-		c.DrawTitleScreen(false)
+		c.TitleScreenDraw(false)
 	}
 	c.DragCycles = 0
 }
 
-func (c *Client) UpdateTitle() {
+func (c *Client) TitleScreenLoop() {
 	var2 := 0
 	var3 := 0
 	if c.TitleScreenState == 0 {
@@ -3329,7 +3329,7 @@ func (c *Client) GetNpcPos(arg0 *io.Packet, psize int) {
 // signlink.startthread which does the same thing inside the signed jar.
 //
 // The Go translation uses goroutines directly at every call site:
-//   - client.go: `go c.RunFlames()` for the flames thread
+//   - client.go: `go c.RenderFlames()` for the flames thread
 //     (Java: `this.startThread(this, 2)` at deob/client.java:3685)
 //   - client.go: `go c.RunMidi()` for the MIDI loader thread
 //     (Java: `this.startThread(this, 2)` at deob/client.java:5952)
@@ -3414,7 +3414,7 @@ func (c *Client) LoadTitleImages() {
 		c.FlamesThread = true
 		c.FlameActive = true
 		// Direct call — see Load:5491 for the dispatch-race rationale.
-		go c.RunFlames()
+		go c.RenderFlames()
 	}
 }
 
@@ -3574,10 +3574,10 @@ func (c *Client) SetMidiVolume(active bool, volume int) {
 	}
 }
 
-// DrawTitleScreen renders the title/login screen. arg0 mirrors Java 254's new
+// TitleScreenDraw renders the title/login screen. arg0 mirrors Java 254's new
 // boolean (Client.java:5011 @2e62978): true while a login attempt is redrawing
 // the screen out-of-band, which hides the Login/Cancel buttons.
-func (c *Client) DrawTitleScreen(arg0 bool) {
+func (c *Client) TitleScreenDraw(arg0 bool) {
 	c.LoadTitle()
 	c.ImageTitle4.Bind()
 	c.ImageTitleBox.PlotSprite(0, 0)
@@ -3658,7 +3658,7 @@ func (c *Client) DrawTitleScreen(arg0 bool) {
 	// flame tiles 0 and 1 are uploaded here too (DrawFlames now only updates
 	// their pixel buffers; this entry point owns the GPU upload).
 	c.RedrawFrame = false
-	// flameMu: ImageTitle0/1 buffers are written by the RunFlames goroutine.
+	// flameMu: ImageTitle0/1 buffers are written by the RenderFlames goroutine.
 	c.flameMu.Lock()
 	c.ImageTitle0.Draw(0, 0)
 	c.ImageTitle1.Draw(637, 0)
@@ -3682,7 +3682,7 @@ func (c *Client) PrepareGameScreen() {
 	//      corner flame regions) via PixMap.Draw → platform.Active.Blit;
 	//      pre-Gio (Java/AWT) the retained back buffer preserved them
 	//      between frames, but the current platform model re-blits each frame.
-	//   2. ImageTitle2..8 stay alive so c.DrawTitleScreen → c.LoadTitle's
+	//   2. ImageTitle2..8 stay alive so c.TitleScreenDraw → c.LoadTitle's
 	//      early-return (the `if c.ImageTitle2 != nil` guard) fires on the
 	//      Logout transition. Otherwise LoadTitle would re-run LoadTitleImages
 	//      → DrawProgress from mid-render, re-initialising title assets
@@ -3749,7 +3749,7 @@ func (c *Client) Logout() {
 	}
 	c.Stream = nil
 	// Java: deob/client.java:3963 — `this.ingame = false`. Without
-	// this, the game-vs-title render dispatch (e.g. UpdateGame's early
+	// this, the game-vs-title render dispatch (e.g. GameLoop's early
 	// return at client.go:6818, and the InGame branches in the main draw
 	// path) keeps treating the session as in-game and the title screen
 	// never reappears.
@@ -4569,7 +4569,7 @@ func (c *Client) DrawGame() {
 	// transition window where the buffers are briefly nil before
 	// being re-allocated.
 	//
-	// flameMu: ImageTitle0/1 buffers are written by the RunFlames goroutine.
+	// flameMu: ImageTitle0/1 buffers are written by the RenderFlames goroutine.
 	c.flameMu.Lock()
 	if c.ImageTitle0 != nil {
 		c.ImageTitle0.Draw(0, 0)
@@ -4922,7 +4922,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 				}
 			}
 			if !var10 {
-				c.AddMessage(0, "Unable to find "+var9, "")
+				c.AddChat(0, "Unable to find "+var9, "")
 			}
 		}
 	}
@@ -5028,7 +5028,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		} else {
 			var9 = io.Latin1ToUTF8(var16.Desc) // Java: new String(byte[]) — default (Latin-1) charset
 		}
-		c.AddMessage(0, var9, "")
+		c.AddChat(0, var9, "")
 	}
 	if var5 == 625 {
 		c.InteractWithLoc(CLIENTPROT_OPLOC1, var3, var4, var6) // Java: interactWithLoc(1,...)
@@ -5107,7 +5107,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		} else {
 			var18 = io.Latin1ToUTF8(var17.Desc) // Java: new String(byte[]) — default (Latin-1) charset
 		}
-		c.AddMessage(0, var18, "")
+		c.AddChat(0, var18, "")
 	}
 	if var5 == 829 {
 		var13 = c.NPCs[var6]
@@ -5264,7 +5264,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 			} else {
 				var18 = io.Latin1ToUTF8(var13.Type.Desc) // Java: new String(byte[]) — default (Latin-1) charset
 			}
-			c.AddMessage(0, var18, "")
+			c.AddChat(0, var18, "")
 		}
 	}
 	if var5 == 721 {
@@ -5396,7 +5396,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		} else {
 			var18 = io.Latin1ToUTF8(var17.Desc) // Java: new String(byte[]) — default (Latin-1) charset
 		}
-		c.AddMessage(0, var18, "")
+		c.AddChat(0, var18, "")
 	}
 	if var5 == 225 {
 		c.Out.P1Isaac(CLIENTPROT_IF_BUTTON) // Java: pIsaac(177)
@@ -5415,7 +5415,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		var7 = c.MenuOption[arg1]
 		var8 = strings.Index(var7, "@whi@")
 		if var8 != -1 {
-			c.CloseInterfaces()
+			c.CloseModal()
 			c.ReportAbuseInput = strings.TrimSpace(var7[var8+5:])
 			c.ReportAbuseMuteOption = false
 			for i := range len(iftype.Instances) {
@@ -5428,7 +5428,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	if var5 == 737 {
-		c.CloseInterfaces()
+		c.CloseModal()
 	}
 	if var5 == 275 { // Java: 254 id (was 367); pushed by addPlayerOptions
 		var19 = c.Players[var6]
@@ -5468,10 +5468,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 				c.AddIgnore(var20)
 			}
 			if var5 == 513 {
-				c.RemoveFriend(var20)
+				c.DelFriend(var20)
 			}
 			if var5 == 884 {
-				c.RemoveIgnore(var20)
+				c.DelIgnore(var20)
 			}
 		}
 	}
@@ -6067,7 +6067,7 @@ func (c *Client) HandleInterfaceAction(arg1 *iftype.IfType) bool {
 		c.ReportAbuseMuteOption = !c.ReportAbuseMuteOption
 	}
 	if var3 >= 601 && var3 <= 612 {
-		c.CloseInterfaces()
+		c.CloseModal()
 		if len(c.ReportAbuseInput) > 0 {
 			c.Out.P1Isaac(CLIENTPROT_REPORT_ABUSE) // Java: pIsaac(205) Client.java:11109
 			c.Out.P8(jstring.ToBase37(c.ReportAbuseInput))
@@ -6219,14 +6219,14 @@ func (c *Client) Load() {
 	// Java: Client.load (Client.java:1599–1660).
 	// Client-TS: load (Client.ts:624–675). Thread.sleep() calls are omitted —
 	// Run() drives I/O directly (no worker thread) and is called inside
-	// UpdateOnDemand(), so a bare loop is correct and faithful.
+	// OnDemandLoop(), so a bare loop is correct and faithful.
 
 	if !LowMemory {
 		c.MidiSong = 0
 		c.MidiFading = false
 		c.OnDemand.Request(2, c.MidiSong)
 		for c.OnDemand.Remaining() > 0 {
-			c.UpdateOnDemand()
+			c.OnDemandLoop()
 		}
 	}
 
@@ -6240,7 +6240,7 @@ func (c *Client) Load() {
 		if progress > 0 {
 			c.DrawProgress("Loading animations - "+strconv.Itoa(progress*100/animCount)+"%", 65)
 		}
-		c.UpdateOnDemand()
+		c.OnDemandLoop()
 	}
 
 	c.DrawProgress("Requesting models", 70)
@@ -6256,7 +6256,7 @@ func (c *Client) Load() {
 		if progress > 0 {
 			c.DrawProgress("Loading models - "+strconv.Itoa(progress*100/modelPrefetch)+"%", 70)
 		}
-		c.UpdateOnDemand()
+		c.OnDemandLoop()
 	}
 
 	// Boot map prefetch block.
@@ -6283,7 +6283,7 @@ func (c *Client) Load() {
 			if progress > 0 {
 				c.DrawProgress("Loading maps - "+strconv.Itoa(progress*100/mapPrefetch)+"%", 75)
 			}
-			c.UpdateOnDemand()
+			c.OnDemandLoop()
 		}
 	}
 
@@ -6596,7 +6596,7 @@ func (c *Client) HandleInput() {
 		if c.ViewportInterfaceID == -1 {
 			c.HandleViewportOptions()
 		} else {
-			c.HandleInterfaceInput(c.MouseY, c.MouseX, 4, iftype.Instances[c.ViewportInterfaceID], 4, 0)
+			c.HandleComponentInput(c.MouseY, c.MouseX, 4, iftype.Instances[c.ViewportInterfaceID], 4, 0)
 		}
 	}
 	if c.LastHoveredInterfaceID != c.ViewportHoveredInterfaceIndex {
@@ -6605,9 +6605,9 @@ func (c *Client) HandleInput() {
 	c.LastHoveredInterfaceID = 0
 	if c.MouseX > 553 && c.MouseY > 205 && c.MouseX < 743 && c.MouseY < 466 {
 		if c.SidebarInterfaceID != -1 {
-			c.HandleInterfaceInput(c.MouseY, c.MouseX, 205, iftype.Instances[c.SidebarInterfaceID], 553, 0)
+			c.HandleComponentInput(c.MouseY, c.MouseX, 205, iftype.Instances[c.SidebarInterfaceID], 553, 0)
 		} else if c.TabInterfaceID[c.SelectedTab] != -1 {
-			c.HandleInterfaceInput(c.MouseY, c.MouseX, 205, iftype.Instances[c.TabInterfaceID[c.SelectedTab]], 553, 0)
+			c.HandleComponentInput(c.MouseY, c.MouseX, 205, iftype.Instances[c.TabInterfaceID[c.SelectedTab]], 553, 0)
 		}
 	}
 	if c.LastHoveredInterfaceID != c.SidebarHoveredInterfaceIndex {
@@ -6620,7 +6620,7 @@ func (c *Client) HandleInput() {
 	// to y<434 && x<426.
 	if c.MouseX > 17 && c.MouseY > 357 && c.MouseX < 496 && c.MouseY < 453 {
 		if c.ChatInterfaceID != -1 {
-			c.HandleInterfaceInput(c.MouseY, c.MouseX, 357, iftype.Instances[c.ChatInterfaceID], 17, 0)
+			c.HandleComponentInput(c.MouseY, c.MouseX, 357, iftype.Instances[c.ChatInterfaceID], 17, 0)
 		} else if c.MouseY < 434 && c.MouseX < 426 { // Java: Client.java:3694 @176a85f — message rows only
 			c.HandleChatMouseInput(c.MouseY-357, 0)
 		}
@@ -7161,7 +7161,7 @@ func (c *Client) LoadTitle() {
 			c.FlamesThread = true
 			c.FlameActive = true
 			// Direct call — see Load:5491 for the dispatch-race rationale.
-			go c.RunFlames()
+			go c.RenderFlames()
 		}
 		return
 	}
@@ -7190,7 +7190,7 @@ func (c *Client) LoadTitle() {
 	c.RedrawFrame = true
 }
 
-func (c *Client) RunFlames() {
+func (c *Client) RenderFlames() {
 	c.FlameThread = true
 	// Java: try { ... } catch (Exception) {} — empty swallow around the flame
 	// animation loop. In Go we let any panic propagate naturally; no equivalent
@@ -7259,7 +7259,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		// Out-of-band repaint: show "Connecting to server..." before blocking
 		// on the socket dial. Runs on the game goroutine, not the main loop
 		// iteration, so we present explicitly.
-		c.present(func() { c.DrawTitleScreen(true) }) // Java: titleScreenDraw(true) (Client.java:2395 @2e62978)
+		c.present(func() { c.TitleScreenDraw(true) }) // Java: titleScreenDraw(true) (Client.java:2395 @2e62978)
 	}
 	// Java: openSocket(portOffset + 43594) (deob/client.java:6786). The port
 	// offset is not ported; instead the full game-server port comes from the
@@ -7583,7 +7583,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 			c.LoginMessage1 = "Your profile will be transfered in: " + strconv.Itoa(var20) + " seconds"
 			// Out-of-band repaint, same mechanism as the "Connecting to
 			// server..." draw above.
-			c.present(func() { c.DrawTitleScreen(true) })
+			c.present(func() { c.TitleScreenDraw(true) })
 			time.Sleep(1000 * time.Millisecond)
 		}
 		c.LoginFunc(arg0, arg1, arg2)
@@ -7735,22 +7735,22 @@ func (c *Client) AddFriend(arg0 int64) {
 	}
 	// Java: two-tier cap (Client.java:12154-12159) — free users 100, members 200.
 	if c.FriendCount >= 100 && c.MembersAccount != 1 {
-		c.AddMessage(0, "Your friendlist is full. Max of 100 for free users, and 200 for members", "")
+		c.AddChat(0, "Your friendlist is full. Max of 100 for free users, and 200 for members", "")
 		return
 	} else if c.FriendCount >= 200 {
-		c.AddMessage(0, "Your friendlist is full. Max of 100 for free users, and 200 for members", "")
+		c.AddChat(0, "Your friendlist is full. Max of 100 for free users, and 200 for members", "")
 		return
 	}
 	var4 := jstring.FormatName(jstring.FromBase37(arg0))
 	for i := range c.FriendCount {
 		if c.FriendName37[i] == arg0 {
-			c.AddMessage(0, var4+" is already on your friend list", "")
+			c.AddChat(0, var4+" is already on your friend list", "")
 			return
 		}
 	}
 	for i := range c.IgnoreCount {
 		if c.IgnoreName37[i] == arg0 {
-			c.AddMessage(0, "Please remove "+var4+" from your ignore list first", "")
+			c.AddChat(0, "Please remove "+var4+" from your ignore list first", "")
 			return
 		}
 	}
@@ -7981,14 +7981,14 @@ func (c *Client) AddPlayerOptions(arg1 int, arg2 int, arg3 *playerentity.ClientP
 	}
 }
 
-func (c *Client) UpdateGame() {
+func (c *Client) GameLoop() {
 	if c.SystemUpdateTimer > 1 {
 		c.SystemUpdateTimer--
 	}
 	if c.IdleTimeout > 0 {
 		c.IdleTimeout--
 	}
-	for i := 0; i < 5 && c.Read(); i++ {
+	for i := 0; i < 5 && c.TcpIn(); i++ {
 	}
 	if !c.InGame {
 		return
@@ -8755,7 +8755,7 @@ func (c *Client) UpdateInterfaceAnimation(arg0, arg1 int) bool {
 	return var4
 }
 
-func (c *Client) AddMessage(arg0 int, arg1 string, arg3 string) {
+func (c *Client) AddChat(arg0 int, arg1 string, arg3 string) {
 	if arg0 == 0 && c.StickyChatInterfaceID != -1 {
 		c.ModalMessage = arg1
 		c.MouseClickButton = 0
@@ -8785,7 +8785,7 @@ func (c *Client) ResetInterfaceAnimation(arg1 int) {
 	}
 }
 
-func (c *Client) RemoveFriend(arg1 int64) {
+func (c *Client) DelFriend(arg1 int64) {
 	if arg1 == 0 {
 		return
 	}
@@ -9458,14 +9458,14 @@ func (c *Client) CheckScene() int {
 	}
 	c.SceneState = 2
 	clientbuild.LevelBuilt = c.CurrentLevel
-	c.BuildScene()
+	c.MapBuild()
 	// Java: this.out.pIsaac(134) — MAP_BUILD_COMPLETE, NEW in 254; zero-length
 	// notification sent right after mapBuild() (Client.java:3121 @2e62978).
 	c.Out.P1Isaac(CLIENTPROT_MAP_BUILD_COMPLETE)
 	return 0
 }
 
-func (c *Client) BuildScene() {
+func (c *Client) MapBuild() {
 	// Java: try { ... } catch (Exception) {} — empty swallow around the entire
 	// build-scene body (scene/landscape assembly). The Java finally-equivalent
 	// (LocType.modelCacheStatic.clear() + Pix3D.initPool(20) at the tail) is
@@ -9583,15 +9583,16 @@ func (c *Client) BuildScene() {
 	}
 }
 
-// UpdateOnDemand dispatches completed on-demand responses for archives 0
+// OnDemandLoop dispatches completed on-demand responses for archives 0
 // (models), 1 (anim frames), and 2 (MIDI). Archives 3 and 93 (map tiles) are
 // handled in WS1 Inc 4.
 //
 // Client-TS: updateOnDemand (Client.ts:1223). The TS path calls onDemand.run()
 // first because there is no worker thread; Java's worker thread calls cycle()
 // after its own internal I/O — we mirror the TS ordering.
-// Java: Client.updateOnDemand (Client.java:2425).
-func (c *Client) UpdateOnDemand() {
+// Java: Client.onDemandLoop (Client.java:2248 @2e62978; was updateOnDemand
+// in ≤245.2).
+func (c *Client) OnDemandLoop() {
 	if c.OnDemand == nil {
 		return
 	}
@@ -9649,11 +9650,11 @@ func (c *Client) Loop() {
 	}
 	clientextras.LoopCycle++
 	if c.InGame {
-		c.UpdateGame()
+		c.GameLoop()
 	} else {
-		c.UpdateTitle()
+		c.TitleScreenLoop()
 	}
-	c.UpdateOnDemand()
+	c.OnDemandLoop()
 }
 
 func (c *Client) UpdateEntityChats() {
@@ -10009,7 +10010,7 @@ func (c *Client) LoadTitleBackground() {
 	logo.PlotSprite(18, 382-logo.Wi/2-128) // Java: hard 382 (= 765/2), Client.java:5391
 }
 
-func (c *Client) RemoveIgnore(arg1 int64) {
+func (c *Client) DelIgnore(arg1 int64) {
 	if arg1 == 0 {
 		return
 	}
@@ -10400,7 +10401,7 @@ func (c *Client) DrawChatback() {
 	c.AreaChatback.Draw(17, 357)
 }
 
-func (c *Client) Read() (ok bool) {
+func (c *Client) TcpIn() (ok bool) {
 	if c.Stream == nil {
 		return false
 	}
@@ -10508,7 +10509,7 @@ func (c *Client) Read() (ok bool) {
 			// Java: worldLocationState gate (Client.java:7346 @2e62978; was
 			// overrideChat in 245.2).
 			if !var32 && c.WorldLocationState == 0 {
-				c.AddMessage(4, "wishes to trade with you.", var28)
+				c.AddChat(4, "wishes to trade with you.", var28)
 			}
 		} else if strings.HasSuffix(var3, ":duelreq:") {
 			var28 := var3[:strings.Index(var3, ":")]
@@ -10523,10 +10524,10 @@ func (c *Client) Read() (ok bool) {
 			// Java: worldLocationState gate (Client.java:7359 @2e62978; was
 			// overrideChat in 245.2).
 			if !var32 && c.WorldLocationState == 0 {
-				c.AddMessage(8, "wishes to duel with you.", var28)
+				c.AddChat(8, "wishes to duel with you.", var28)
 			}
 		} else {
-			c.AddMessage(0, var3, "")
+			c.AddChat(0, var3, "")
 		}
 		c.PacketType = -1
 		return true
@@ -10573,11 +10574,11 @@ func (c *Client) Read() (ok bool) {
 				// Java: Client.java:8396-8404 — three staffModLevel branches:
 				// 2/3 -> @cr2@ type 7, 1 -> @cr1@ type 7, else plain type 3.
 				if var6 == 2 || var6 == 3 {
-					c.AddMessage(7, var38, "@cr2@"+jstring.FormatName(jstring.FromBase37(var39)))
+					c.AddChat(7, var38, "@cr2@"+jstring.FormatName(jstring.FromBase37(var39)))
 				} else if var6 == 1 {
-					c.AddMessage(7, var38, "@cr1@"+jstring.FormatName(jstring.FromBase37(var39)))
+					c.AddChat(7, var38, "@cr1@"+jstring.FormatName(jstring.FromBase37(var39)))
 				} else {
-					c.AddMessage(3, var38, jstring.FormatName(jstring.FromBase37(var39)))
+					c.AddChat(3, var38, jstring.FormatName(jstring.FromBase37(var39)))
 				}
 			}()
 		}
@@ -10599,7 +10600,7 @@ func (c *Client) Read() (ok bool) {
 		c.BaseZ = c.In.G1()
 		for c.In.Pos < c.PacketSize {
 			var26 := c.In.G1()
-			c.ReadZonePacket(c.In, var26)
+			c.ZonePacket(c.In, var26)
 		}
 		c.PacketType = -1
 		return true
@@ -10618,7 +10619,7 @@ func (c *Client) Read() (ok bool) {
 	// Java: zone-packet opcode group (client.java:9697-9700) — ten opcodes,
 	// each a thin pass-through to readZonePacket which dispatches internally.
 	if c.PacketType == SERVERPROT_OBJ_COUNT || c.PacketType == SERVERPROT_LOC_MERGE || c.PacketType == SERVERPROT_OBJ_REVEAL || c.PacketType == SERVERPROT_MAP_ANIM || c.PacketType == SERVERPROT_MAP_PROJANIM || c.PacketType == SERVERPROT_OBJ_DEL || c.PacketType == SERVERPROT_OBJ_ADD || c.PacketType == SERVERPROT_LOC_ANIM || c.PacketType == SERVERPROT_LOC_DEL || c.PacketType == SERVERPROT_LOC_ADD_CHANGE {
-		c.ReadZonePacket(c.In, c.PacketType)
+		c.ZonePacket(c.In, c.PacketType)
 		c.PacketType = -1
 		return true
 	}
@@ -10650,10 +10651,10 @@ func (c *Client) Read() (ok bool) {
 					c.FriendWorld[var7] = var5
 					c.RedrawSidebar = true
 					if var5 > 0 {
-						c.AddMessage(5, var44+" has logged in.", "")
+						c.AddChat(5, var44+" has logged in.", "")
 					}
 					if var5 == 0 {
-						c.AddMessage(5, var44+" has logged out.", "")
+						c.AddChat(5, var44+" has logged out.", "")
 					}
 				}
 				matched = true
@@ -11066,7 +11067,7 @@ func (c *Client) Read() (ok bool) {
 		c.WarnMembersInNonMembers = c.In.G1() // Java: Client.java:7281 (5th field, new in 244)
 		if c.LastAddress != 0 && c.ViewportInterfaceID == -1 {
 			signlink.DNSLookup(jstring.FormatIPv4(int32(c.LastAddress)))
-			c.CloseInterfaces()
+			c.CloseModal()
 			var47 := 650 // Java: short var47
 			if c.DaysSinceRecoveriesChanged != 201 || c.WarnMembersInNonMembers == 1 {
 				var47 = 655
@@ -11630,7 +11631,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 		arg4.ChatColor = 0
 		arg4.ChatStyle = 0
 		arg4.ChatTimer = 150
-		c.AddMessage(2, arg4.Chat, arg4.Name)
+		c.AddChat(2, arg4.Chat, arg4.Name)
 	}
 	if arg2&0x10 == 16 {
 		// Java: DAMAGE (Client.java:9203-9209) — 244 routes through the
@@ -11689,11 +11690,11 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 					// sender; types 2/3 (mod/admin) and 1 (pmod) become type-1
 					// messages, everyone else stays type 2.
 					if var15 == 2 || var15 == 3 {
-						c.AddMessage(1, var18, "@cr2@"+arg4.Name)
+						c.AddChat(1, var18, "@cr2@"+arg4.Name)
 					} else if var15 == 1 {
-						c.AddMessage(1, var18, "@cr1@"+arg4.Name)
+						c.AddChat(1, var18, "@cr1@"+arg4.Name)
 					} else {
-						c.AddMessage(2, var18, arg4.Name)
+						c.AddChat(2, var18, arg4.Name)
 					}
 				}()
 			}
@@ -11782,7 +11783,7 @@ func (c *Client) DrawProgress(message string, percent int) {
 		// post-refactor) and produced white rectangles at (0,0) /
 		// (637,0) during boot when FlameActive is true.
 		c.RedrawFrame = false
-		// flameMu: ImageTitle0/1 buffers are written by the RunFlames goroutine.
+		// flameMu: ImageTitle0/1 buffers are written by the RenderFlames goroutine.
 		c.flameMu.Lock()
 		c.ImageTitle0.Draw(0, 0)
 		c.ImageTitle1.Draw(637, 0)
