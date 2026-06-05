@@ -361,7 +361,7 @@ func GetSprite(outlineRgb int, count int, id int) *pix32.Pix32 {
 	if outlineRgb == 0 {
 		var3 := SpriteCache.Get(int64(id))
 		if var3 != nil && var3.OHi != count && var3.OHi != -1 {
-			// Java: var3.unlink() — DoublyLinkable's unlink() removes the node
+			// Java: var3.unlink() — Linkable2's unlink() removes the node
 			// from both the hashtable bucket and the history list. The Go port
 			// of LruCache exposes Delete(key) for the same effect.
 			SpriteCache.Delete(int64(id))

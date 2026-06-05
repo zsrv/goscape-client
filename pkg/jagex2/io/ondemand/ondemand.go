@@ -20,17 +20,17 @@ import (
 	jio "github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
 
-// OnDemandRequest mirrors Java's jagex2.io.OnDemandRequest (extends DoublyLinkable).
+// OnDemandRequest mirrors Java's jagex2.io.OnDemandRequest (extends Linkable2).
 // Java: nb (obfuscated class name).
 //
 // In Java the class inherits two link-field pairs (next/prev from Linkable,
-// next2/prev2 from DoublyLinkable) which allow a single request to sit in
-// both a DoublyLinkList (requests) and a LinkList (queue/missing/pending/
+// next2/prev2 from Linkable2) which allow a single request to sit in
+// both a LinkList2 (requests) and a LinkList (queue/missing/pending/
 // completed/prefetches) simultaneously.
 //
-// In Go we hold one *datastruct.DoublyLinkable[*OnDemandRequest] whose
+// In Go we hold one *datastruct.Linkable2[*OnDemandRequest] whose
 // embedded *Linkable[*OnDemandRequest] provides the second link pair:
-//   - r.node        → DoublyLinkList slot (next2/prev2 via Uncache/Push/Pop)
+//   - r.node        → LinkList2 slot (next2/prev2 via Uncache/Push/Pop)
 //   - r.node.Linkable → LinkList slot     (next/prev  via Unlink/AddHead/…)
 type OnDemandRequest struct {
 	// Java: nb.i
@@ -45,18 +45,18 @@ type OnDemandRequest struct {
 	Urgent bool
 
 	// node provides the two link-field pairs that Java inherits from
-	// DoublyLinkable -> Linkable:
-	//   - r.node             → DoublyLinkList slot (requests; next2/prev2 via
+	// Linkable2 -> Linkable:
+	//   - r.node             → LinkList2 slot (requests; next2/prev2 via
 	//                          Push/Pop/Uncache)
 	//   - r.node.Linkable    → LinkList slot (queue/missing/pending/completed/
 	//                          prefetches; next/prev via AddTail/RemoveHead/Unlink)
-	node *datastruct.DoublyLinkable[*OnDemandRequest]
+	node *datastruct.Linkable2[*OnDemandRequest]
 }
 
 // newRequest allocates a request with the Java default Urgent=true.
 func newRequest() *OnDemandRequest {
 	r := &OnDemandRequest{Urgent: true}
-	r.node = datastruct.NewDoublyLinkable(r)
+	r.node = datastruct.NewLinkable2(r)
 	return r
 }
 
@@ -135,7 +135,7 @@ type OnDemand struct {
 	// ---- request queues (Java: vb.x/y/z/A/B/C) ----------------------------
 	// requests holds all in-flight OnDemandRequests in a doubly-linked list
 	// so they can be found by (archive, file) and removed in O(1).
-	requests *datastruct.DoublyLinkList[*OnDemandRequest]
+	requests *datastruct.LinkList2[*OnDemandRequest]
 	// queue: incoming urgent requests waiting to be dispatched.
 	queue *datastruct.LinkList[*OnDemandRequest]
 	// missing: requests not satisfied from local cache; need network fetch.
@@ -174,7 +174,7 @@ type OnDemand struct {
 // (the modernized transport uses /ondemand.zip), so it is not a parameter here.
 func New(versionlist Archive, dl Downloader, cache Cache) *OnDemand {
 	od := &OnDemand{
-		requests:   datastruct.NewDoublyLinkList[*OnDemandRequest](),
+		requests:   datastruct.NewLinkList2[*OnDemandRequest](),
 		queue:      datastruct.NewLinkList[*OnDemandRequest](),
 		missing:    datastruct.NewLinkList[*OnDemandRequest](),
 		pending:    datastruct.NewLinkList[*OnDemandRequest](),
@@ -433,7 +433,7 @@ func (od *OnDemand) Cycle() *OnDemandRequest {
 	}
 
 	r := n.Value
-	r.node.Uncache() // Java: req.unlink2() — drop from the requests DoublyLinkList
+	r.node.Uncache() // Java: req.unlink2() — drop from the requests LinkList2
 
 	// len(nil) == 0, so this also covers the no-data case; a present-but-
 	// truncated bundle entry (len 0/1) would panic the slice below — treat it

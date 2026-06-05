@@ -63,7 +63,7 @@ The `main` goroutine flow (from `main.go`):
 | `graphics/pix32/` | 32-bit RGBA pixel buffer |
 | `graphics/pixfont/` | Bitmap font rendering |
 | `graphics/pixmap/` | CPU-side pixel buffer bridging the game renderer to GPU upload (via the `platform` backend) |
-| `datastruct/` | Generic `LruCache[T]`, doubly-linked list, `JString` |
+| `datastruct/` | Generic `LruCache[T]`, doubly-linked list (Java 274 `Linkable2`/`LinkList2`), `JString` |
 | `io/` | `Packet` (binary reader/writer), `JagFile` (JAG archive), ISAAC CSPRNG, `bzip2` decompressor (protocol constants moved to `client/` in rev-254, per Java `io/Protocol` → `client/Protocol`) |
 | `sound/jagfx/` | PCM wave audio (Java 274 JagFX; was Wave in ≤254) |
 | `sound/envelope/` & `tone/` | MIDI-style sound envelope/tone synthesis |

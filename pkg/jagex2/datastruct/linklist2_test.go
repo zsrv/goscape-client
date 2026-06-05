@@ -2,14 +2,14 @@ package datastruct
 
 import "testing"
 
-// TestDoublyLinkListSizeHeadNextPop exercises the three new iteration
+// TestLinkList2SizeHeadNextPop exercises the three new iteration
 // primitives (Head/Next/Size) and confirms FIFO order matches the push order.
-func TestDoublyLinkListSizeHeadNextPop(t *testing.T) {
-	l := NewDoublyLinkList[int]()
+func TestLinkList2SizeHeadNextPop(t *testing.T) {
+	l := NewLinkList2[int]()
 
-	a := NewDoublyLinkable(10)
-	b := NewDoublyLinkable(20)
-	c := NewDoublyLinkable(30)
+	a := NewLinkable2(10)
+	b := NewLinkable2(20)
+	c := NewLinkable2(30)
 	l.Push(a)
 	l.Push(b)
 	l.Push(c)
@@ -19,7 +19,7 @@ func TestDoublyLinkListSizeHeadNextPop(t *testing.T) {
 	}
 
 	// Head/Next must yield nodes in FIFO (insertion) order: a, b, c.
-	want := []*DoublyLinkable[int]{a, b, c}
+	want := []*Linkable2[int]{a, b, c}
 	i := 0
 	for n := l.Head(); n != nil; n = l.Next() {
 		if i >= len(want) {

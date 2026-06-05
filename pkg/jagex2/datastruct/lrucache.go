@@ -5,7 +5,7 @@ package datastruct
 // linked History list. On Get, the cached node is moved to the front; on
 // Put when full, the head of History is evicted and removed from the map.
 //
-// Java stores DoublyLinkable subclass instances directly; the same node is
+// Java stores Linkable2 subclass instances directly; the same node is
 // in BOTH the HashTable bucket list AND the History list via two distinct
 // pointer pairs. The Go port stores the wrapper node in the map and relies
 // on the embedded Key for back-reference on eviction.
@@ -16,16 +16,16 @@ type LruCache[T any] struct {
 	// get(); no reader exists at this rev (audit datastruct-05).
 	NotFound  int32
 	Found     int32
-	HashTable map[int64]*DoublyLinkable[T]
-	History   *DoublyLinkList[T]
+	HashTable map[int64]*Linkable2[T]
+	History   *LinkList2[T]
 }
 
 func NewLruCache[T any](size int32) *LruCache[T] {
 	return &LruCache[T]{
 		Capacity:  size,
 		Available: size,
-		HashTable: make(map[int64]*DoublyLinkable[T], 0x400),
-		History:   NewDoublyLinkList[T](),
+		HashTable: make(map[int64]*Linkable2[T], 0x400),
+		History:   NewLinkList2[T](),
 	}
 }
 
@@ -64,7 +64,7 @@ func (l *LruCache[T]) Put(key int64, v T) {
 	} else {
 		l.Available--
 	}
-	node := NewDoublyLinkable(v)
+	node := NewLinkable2(v)
 	node.Key = key
 	l.HashTable[key] = node
 	l.History.Push(node)

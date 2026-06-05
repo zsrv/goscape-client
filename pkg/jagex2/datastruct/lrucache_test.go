@@ -21,7 +21,7 @@ func TestLruCachePutGet(t *testing.T) {
 
 // TestLruCacheGetMovesToFront verifies that Get on an existing key re-pushes
 // the node to the tail (most-recently-used slot). Before the 2026-05-22
-// rewrite, Get allocated a fresh DoublyLinkable on every call, so the
+// rewrite, Get allocated a fresh Linkable2 on every call, so the
 // original cached node never moved and LRU degenerated to FIFO.
 func TestLruCacheGetMovesToFront(t *testing.T) {
 	c := NewLruCache[int](3)

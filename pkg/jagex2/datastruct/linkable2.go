@@ -1,6 +1,6 @@
 package datastruct
 
-type DoublyLinkable[T any] struct {
+type Linkable2[T any] struct {
 	*Linkable[T]
 
 	// Key mirrors Java's Linkable.key (a long stored on the linkable itself
@@ -9,18 +9,18 @@ type DoublyLinkable[T any] struct {
 	// the history list.
 	Key int64
 
-	next2 *DoublyLinkable[T]
-	prev2 *DoublyLinkable[T]
+	next2 *Linkable2[T]
+	prev2 *Linkable2[T]
 }
 
-func NewDoublyLinkable[T any](value T) *DoublyLinkable[T] {
-	return &DoublyLinkable[T]{
+func NewLinkable2[T any](value T) *Linkable2[T] {
+	return &Linkable2[T]{
 		Linkable: NewLinkable(value),
 	}
 }
 
 // Unlink2
-func (d *DoublyLinkable[T]) Uncache() {
+func (d *Linkable2[T]) Uncache() {
 	if d.prev2 != nil {
 		d.prev2.next2 = d.next2
 		d.next2.prev2 = d.prev2

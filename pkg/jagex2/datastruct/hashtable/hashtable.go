@@ -5,7 +5,7 @@
 // bucket selection (key & (bucketCount - 1)) and per-bucket lookup.
 //
 // The existing Go datastruct package has a Linkable[T] type, but it is a
-// value-wrapper used by LinkList/DoublyLinkList and has no `key` field — its
+// value-wrapper used by LinkList/LinkList2 and has no `key` field — its
 // semantics differ from Java's Linkable, which is itself the superclass of all
 // hash-tabled objects (callers extend Linkable rather than wrapping a value).
 // To preserve the Java surface (and to keep this package self-contained), we

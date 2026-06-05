@@ -238,7 +238,7 @@ func TestCycle_GunzipTrailer(t *testing.T) {
 	r.File = 1
 	r.Data = gzipTrailer(t, payload, 7)
 	// Place the request in both lists the way the real pipeline would: it is in
-	// requests (DoublyLinkList) and completed (LinkList).
+	// requests (LinkList2) and completed (LinkList).
 	od.requests.Push(r.node)
 	od.completed.AddTail(r.node.Linkable)
 

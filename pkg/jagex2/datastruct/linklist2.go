@@ -1,20 +1,20 @@
 package datastruct
 
-type DoublyLinkList[T any] struct {
-	head   *DoublyLinkable[T]
-	cursor *DoublyLinkable[T]
+type LinkList2[T any] struct {
+	head   *Linkable2[T]
+	cursor *Linkable2[T]
 }
 
-func NewDoublyLinkList[T any]() *DoublyLinkList[T] {
-	head := new(DoublyLinkable[T])
+func NewLinkList2[T any]() *LinkList2[T] {
+	head := new(Linkable2[T])
 	head.next2 = head
 	head.prev2 = head
-	return &DoublyLinkList[T]{
+	return &LinkList2[T]{
 		head: head,
 	}
 }
 
-func (l *DoublyLinkList[T]) Push(node *DoublyLinkable[T]) {
+func (l *LinkList2[T]) Push(node *Linkable2[T]) {
 	if node.prev2 != nil {
 		node.Uncache()
 	}
@@ -24,7 +24,7 @@ func (l *DoublyLinkList[T]) Push(node *DoublyLinkable[T]) {
 	node.next2.prev2 = node
 }
 
-func (l *DoublyLinkList[T]) Pop() *DoublyLinkable[T] {
+func (l *LinkList2[T]) Pop() *Linkable2[T] {
 	node := l.head.next2
 	if node == l.head {
 		return nil
@@ -34,8 +34,8 @@ func (l *DoublyLinkList[T]) Pop() *DoublyLinkable[T] {
 }
 
 // Head returns the first node and seeds the cursor for Next, mirroring Java
-// DoublyLinkList.head() (datastruct/DoublyLinkList.java).
-func (l *DoublyLinkList[T]) Head() *DoublyLinkable[T] {
+// LinkList2.head() (datastruct/LinkList2.java).
+func (l *LinkList2[T]) Head() *Linkable2[T] {
 	n := l.head.next2
 	if n == l.head {
 		l.cursor = nil
@@ -45,8 +45,8 @@ func (l *DoublyLinkList[T]) Head() *DoublyLinkable[T] {
 	return n
 }
 
-// Next advances the cursor seeded by Head. Java DoublyLinkList.next().
-func (l *DoublyLinkList[T]) Next() *DoublyLinkable[T] {
+// Next advances the cursor seeded by Head. Java LinkList2.next().
+func (l *LinkList2[T]) Next() *Linkable2[T] {
 	n := l.cursor
 	if n == l.head {
 		l.cursor = nil
@@ -56,8 +56,8 @@ func (l *DoublyLinkList[T]) Next() *DoublyLinkable[T] {
 	return n
 }
 
-// Size counts live nodes. Java DoublyLinkList.size().
-func (l *DoublyLinkList[T]) Size() int {
+// Size counts live nodes. Java LinkList2.size().
+func (l *LinkList2[T]) Size() int {
 	count := 0
 	for n := l.head.next2; n != l.head; n = n.next2 {
 		count++

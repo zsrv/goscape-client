@@ -14,7 +14,7 @@ var (
 )
 
 //type Pix2D struct {
-//	datastruct.DoublyLinkable[Pix2D]
+//	datastruct.Linkable2[Pix2D]
 //}
 
 func SetPixels(width int, data []int, height int) {
