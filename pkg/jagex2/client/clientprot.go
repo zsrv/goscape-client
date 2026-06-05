@@ -1,107 +1,114 @@
 package client
 
-// 254 client→server opcodes. Numbers: Client.java pIsaac/interactWithLoc
-// sites @2e62978 (83 distinct: 76 pIsaac literals + the 7 OPLOC* routed
-// through interactWithLoc's pIsaac(arg4) re-emission, Client.java:6312);
-// names: the deob's adjacent // LABEL comments. vs 245.2: full renumber plus
-// seven NEW messages — the EVENT_* mouse/camera/focus telemetry set,
-// MAP_BUILD_COMPLETE, ANTICHEAT_CYCLELOGIC7, and OPPLAYER5.
-// Written RAW through Packet.P1Isaac (opcode + ISAAC keystream). Java's
-// CLIENTPROT_LOOKUP table is a deobfuscation artifact (never read at runtime;
-// re-verified at @2e62978: declaration only) — intentionally not ported.
+// 274 client→server opcodes. Numbers: Client.java p1Enc/interactWithLoc
+// sites @32f3062 (82 messages: 75 as p1Enc literals across 90 sites, plus
+// the 7 OPLOC* routed through interactWithLoc's p1Enc(arg3) re-emission,
+// Client.java:3876 @32f3062); names: carried from the 254 deob's // LABEL
+// comments via the LOGIC-DELTA-SCOPE-274.md pairing (the 274 deob has no
+// inline labels; every pairing adversarially verified against both pins).
+// vs 254: full renumber — ANTICHEAT_CYCLELOGIC5 (100) is the ONLY value
+// unchanged; EVENT_TRACKING is removed with InputTracking (WS2). Beware
+// intra/cross-rev value reuse (e.g. 254 op9=FRIENDLIST_ADD but 274
+// op9=IF_BUTTON) — never port by value, always by message.
+// Written RAW through Packet.P1Isaac (Java 274 p1Enc: opcode + ISAAC
+// keystream). Java's CLIENTPROT_SCRAMBLED table is a deobfuscation artifact
+// (never read at runtime; re-verified at @32f3062: declaration only) —
+// intentionally not ported.
 const (
-	CLIENTPROT_NO_TIMEOUT            = 239
-	CLIENTPROT_IDLE_TIMER            = 144
+	CLIENTPROT_NO_TIMEOUT = 120
+	CLIENTPROT_IDLE_TIMER = 209
+	// 254 value — the message does not exist in 274; constant and all its
+	// sites are deleted with InputTracking (WS2).
 	CLIENTPROT_EVENT_TRACKING        = 142
-	CLIENTPROT_ANTICHEAT_OPLOGIC1    = 28
-	CLIENTPROT_ANTICHEAT_OPLOGIC2    = 77
-	CLIENTPROT_ANTICHEAT_OPLOGIC3    = 56
-	CLIENTPROT_ANTICHEAT_OPLOGIC4    = 121
-	CLIENTPROT_ANTICHEAT_OPLOGIC5    = 233
-	CLIENTPROT_ANTICHEAT_OPLOGIC6    = 131
-	CLIENTPROT_ANTICHEAT_OPLOGIC7    = 187
-	CLIENTPROT_ANTICHEAT_OPLOGIC8    = 206
-	CLIENTPROT_ANTICHEAT_OPLOGIC9    = 162
-	CLIENTPROT_ANTICHEAT_CYCLELOGIC1 = 51
-	CLIENTPROT_ANTICHEAT_CYCLELOGIC2 = 225
-	CLIENTPROT_ANTICHEAT_CYCLELOGIC3 = 4
-	CLIENTPROT_ANTICHEAT_CYCLELOGIC4 = 226
+	CLIENTPROT_ANTICHEAT_OPLOGIC1    = 219
+	CLIENTPROT_ANTICHEAT_OPLOGIC2    = 201
+	CLIENTPROT_ANTICHEAT_OPLOGIC3    = 41
+	CLIENTPROT_ANTICHEAT_OPLOGIC4    = 80
+	CLIENTPROT_ANTICHEAT_OPLOGIC5    = 235
+	CLIENTPROT_ANTICHEAT_OPLOGIC6    = 250
+	CLIENTPROT_ANTICHEAT_OPLOGIC7    = 25
+	CLIENTPROT_ANTICHEAT_OPLOGIC8    = 0
+	CLIENTPROT_ANTICHEAT_OPLOGIC9    = 24
+	CLIENTPROT_ANTICHEAT_CYCLELOGIC1 = 12
+	CLIENTPROT_ANTICHEAT_CYCLELOGIC2 = 149
+	CLIENTPROT_ANTICHEAT_CYCLELOGIC3 = 52
+	CLIENTPROT_ANTICHEAT_CYCLELOGIC4 = 230
 	CLIENTPROT_ANTICHEAT_CYCLELOGIC5 = 100
-	CLIENTPROT_ANTICHEAT_CYCLELOGIC6 = 36
-	// NEW in 254: sent from gameLoop when field1294 overflows its threshold
-	// (Client.java:2927 @2e62978). Handler lands with WS5 anticheat.
-	CLIENTPROT_ANTICHEAT_CYCLELOGIC7 = 182
-	CLIENTPROT_OPOBJ1                = 141
-	CLIENTPROT_OPOBJ2                = 67
-	CLIENTPROT_OPOBJ3                = 178
-	CLIENTPROT_OPOBJ4                = 47
-	CLIENTPROT_OPOBJ5                = 97
-	CLIENTPROT_OPOBJT                = 202
-	CLIENTPROT_OPOBJU                = 245
-	CLIENTPROT_OPNPC1                = 143
-	CLIENTPROT_OPNPC2                = 195
-	CLIENTPROT_OPNPC3                = 69
-	CLIENTPROT_OPNPC4                = 122
-	CLIENTPROT_OPNPC5                = 118
-	CLIENTPROT_OPNPCT                = 231
-	CLIENTPROT_OPNPCU                = 119
-	CLIENTPROT_OPLOC1                = 33
-	CLIENTPROT_OPLOC2                = 213
-	CLIENTPROT_OPLOC3                = 98
-	CLIENTPROT_OPLOC4                = 87
-	CLIENTPROT_OPLOC5                = 147
-	CLIENTPROT_OPLOCT                = 26
-	CLIENTPROT_OPLOCU                = 240
-	CLIENTPROT_OPPLAYER1             = 192
-	CLIENTPROT_OPPLAYER2             = 17
-	CLIENTPROT_OPPLAYER3             = 18
-	CLIENTPROT_OPPLAYER4             = 72
+	CLIENTPROT_ANTICHEAT_CYCLELOGIC6 = 188
+	// NEW in 254: sent from gameLoop when cyclelogic7 overflows its threshold
+	// (Client.java:9553 @32f3062).
+	CLIENTPROT_ANTICHEAT_CYCLELOGIC7 = 89
+	CLIENTPROT_OPOBJ1                = 247
+	CLIENTPROT_OPOBJ2                = 169
+	CLIENTPROT_OPOBJ3                = 108
+	CLIENTPROT_OPOBJ4                = 62
+	CLIENTPROT_OPOBJ5                = 117
+	CLIENTPROT_OPOBJT                = 91
+	CLIENTPROT_OPOBJU                = 39
+	CLIENTPROT_OPNPC1                = 236
+	CLIENTPROT_OPNPC2                = 233
+	CLIENTPROT_OPNPC3                = 223
+	CLIENTPROT_OPNPC4                = 147
+	CLIENTPROT_OPNPC5                = 189
+	CLIENTPROT_OPNPCT                = 181
+	CLIENTPROT_OPNPCU                = 150
+	CLIENTPROT_OPLOC1                = 215
+	CLIENTPROT_OPLOC2                = 103
+	CLIENTPROT_OPLOC3                = 187
+	CLIENTPROT_OPLOC4                = 157
+	CLIENTPROT_OPLOC5                = 127
+	CLIENTPROT_OPLOCT                = 213
+	CLIENTPROT_OPLOCU                = 60
+	CLIENTPROT_OPPLAYER1             = 109
+	CLIENTPROT_OPPLAYER2             = 166
+	CLIENTPROT_OPPLAYER3             = 196
+	CLIENTPROT_OPPLAYER4             = 98
 	// NEW in 254: fifth player op slot, paired with the server-driven
-	// SET_PLAYER_OP options (Client.java:9077 @2e62978; WS5).
-	CLIENTPROT_OPPLAYER5            = 230
-	CLIENTPROT_OPPLAYERT            = 68
-	CLIENTPROT_OPPLAYERU            = 113
-	CLIENTPROT_OPHELD1              = 243
-	CLIENTPROT_OPHELD2              = 228
-	CLIENTPROT_OPHELD3              = 80
-	CLIENTPROT_OPHELD4              = 163
-	CLIENTPROT_OPHELD5              = 74
-	CLIENTPROT_OPHELDT              = 102
-	CLIENTPROT_OPHELDU              = 200
-	CLIENTPROT_INV_BUTTON1          = 181
-	CLIENTPROT_INV_BUTTON2          = 70
-	CLIENTPROT_INV_BUTTON3          = 59
-	CLIENTPROT_INV_BUTTON4          = 160
-	CLIENTPROT_INV_BUTTON5          = 62
-	CLIENTPROT_IF_BUTTON            = 244
-	CLIENTPROT_RESUME_PAUSEBUTTON   = 146
-	CLIENTPROT_CLOSE_MODAL          = 58
-	CLIENTPROT_RESUME_P_COUNTDIALOG = 161
-	CLIENTPROT_TUTORIAL_CLICKSIDE   = 201
-	CLIENTPROT_MOVE_OPCLICK         = 127
-	CLIENTPROT_REPORT_ABUSE         = 203
-	CLIENTPROT_MOVE_MINIMAPCLICK    = 220
-	CLIENTPROT_INV_BUTTOND          = 176
-	CLIENTPROT_IGNORELIST_DEL       = 193
-	CLIENTPROT_IGNORELIST_ADD       = 189
-	CLIENTPROT_IF_PLAYERDESIGN      = 13
-	CLIENTPROT_CHAT_SETMODE         = 129
-	CLIENTPROT_MESSAGE_PRIVATE      = 214
-	CLIENTPROT_FRIENDLIST_DEL       = 84
-	CLIENTPROT_FRIENDLIST_ADD       = 9
-	CLIENTPROT_CLIENT_CHEAT         = 86
-	CLIENTPROT_MESSAGE_PUBLIC       = 83
-	CLIENTPROT_MOVE_GAMECLICK       = 6
-	// NEW in 254: outbound telemetry set, emitted by gameLoop (WS5).
-	// EVENT_MOUSE_MOVE: packed mouse deltas (Client.java:2711 @2e62978);
-	// EVENT_MOUSE_CLICK: time/button/position word (:2793);
-	// EVENT_CAMERA_POSITION: camera state on a 20-cycle gate (:2806);
-	// EVENT_APPLET_FOCUS: focus gained/lost p1(1/0) (:2813,2819).
-	CLIENTPROT_EVENT_MOUSE_MOVE      = 232
-	CLIENTPROT_EVENT_MOUSE_CLICK     = 234
-	CLIENTPROT_EVENT_CAMERA_POSITION = 91
-	CLIENTPROT_EVENT_APPLET_FOCUS    = 8
+	// SET_PLAYER_OP options (Client.java:4412 @32f3062).
+	CLIENTPROT_OPPLAYER5            = 174
+	CLIENTPROT_OPPLAYERT            = 240
+	CLIENTPROT_OPPLAYERU            = 36
+	CLIENTPROT_OPHELD1              = 185
+	CLIENTPROT_OPHELD2              = 2
+	CLIENTPROT_OPHELD3              = 123
+	CLIENTPROT_OPHELD4              = 216
+	CLIENTPROT_OPHELD5              = 42
+	CLIENTPROT_OPHELDT              = 135
+	CLIENTPROT_OPHELDU              = 136
+	CLIENTPROT_INV_BUTTON1          = 74
+	CLIENTPROT_INV_BUTTON2          = 82
+	CLIENTPROT_INV_BUTTON3          = 239
+	CLIENTPROT_INV_BUTTON4          = 179
+	CLIENTPROT_INV_BUTTON5          = 46
+	CLIENTPROT_IF_BUTTON            = 9
+	CLIENTPROT_RESUME_PAUSEBUTTON   = 72
+	CLIENTPROT_CLOSE_MODAL          = 51
+	CLIENTPROT_RESUME_P_COUNTDIALOG = 102
+	CLIENTPROT_TUTORIAL_CLICKSIDE   = 94
+	CLIENTPROT_MOVE_OPCLICK         = 138
+	CLIENTPROT_REPORT_ABUSE         = 137
+	CLIENTPROT_MOVE_MINIMAPCLICK    = 86
+	CLIENTPROT_INV_BUTTOND          = 93
+	CLIENTPROT_IGNORELIST_DEL       = 101
+	CLIENTPROT_IGNORELIST_ADD       = 255
+	CLIENTPROT_IF_PLAYERDESIGN      = 125
+	CLIENTPROT_CHAT_SETMODE         = 154
+	CLIENTPROT_MESSAGE_PRIVATE      = 139
+	CLIENTPROT_FRIENDLIST_DEL       = 106
+	CLIENTPROT_FRIENDLIST_ADD       = 13
+	CLIENTPROT_CLIENT_CHEAT         = 224
+	CLIENTPROT_MESSAGE_PUBLIC       = 253
+	CLIENTPROT_MOVE_GAMECLICK       = 207
+	// NEW in 254: outbound telemetry set, emitted by gameLoop (274 sites).
+	// EVENT_MOUSE_MOVE: packed mouse deltas (Client.java:9352 @32f3062);
+	// EVENT_MOUSE_CLICK: time/button/position word (:9433);
+	// EVENT_CAMERA_POSITION: camera state on a 20-cycle gate (:9445);
+	// EVENT_APPLET_FOCUS: focus gained/lost p1(1/0) (:9451,9456).
+	CLIENTPROT_EVENT_MOUSE_MOVE      = 222
+	CLIENTPROT_EVENT_MOUSE_CLICK     = 20
+	CLIENTPROT_EVENT_CAMERA_POSITION = 53
+	CLIENTPROT_EVENT_APPLET_FOCUS    = 73
 	// NEW in 254: zero-length notification sent by checkScene immediately
-	// after mapBuild() (Client.java:3121 @2e62978).
-	CLIENTPROT_MAP_BUILD_COMPLETE = 134
+	// after mapBuild() (Client.java:3283 @32f3062).
+	CLIENTPROT_MAP_BUILD_COMPLETE = 214
 )
