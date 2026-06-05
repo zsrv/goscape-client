@@ -5590,12 +5590,35 @@ func (c *Client) UpdateInterfaceContent(arg1 *iftype.IfType) {
 	// below (-701 -> friendWorld[100..199]); at 244 they matched here and
 	// indexed past friendCount, blanking page 2's world column.
 	if (var3 >= 1 && var3 <= 100) || (var3 >= 701 && var3 <= 800) {
+		// Java: Client.java:10481-10508 @2e62978 — NEW in 254: while the
+		// friend server is not yet connected (friendListStatus != 2), the
+		// first list slots show connection progress and the name list is
+		// forced empty.
+		if var3 == 1 && c.FriendListStatus == 0 {
+			arg1.Text = "Loading friend list"
+			arg1.ButtonType = 0
+			return
+		}
+		if var3 == 1 && c.FriendListStatus == 1 {
+			arg1.Text = "Connecting to friendserver"
+			arg1.ButtonType = 0
+			return
+		}
+		if var3 == 2 && c.FriendListStatus != 2 {
+			arg1.Text = "Please wait..."
+			arg1.ButtonType = 0
+			return
+		}
+		var4 := c.FriendCount // Java: var4 (Client.java:10491)
+		if c.FriendListStatus != 2 {
+			var4 = 0
+		}
 		if var3 > 700 {
 			var3 -= 601
 		} else {
 			var3--
 		}
-		if var3 >= c.FriendCount {
+		if var3 >= var4 {
 			arg1.Text = ""
 			arg1.ButtonType = 0
 		} else {
@@ -5603,12 +5626,18 @@ func (c *Client) UpdateInterfaceContent(arg1 *iftype.IfType) {
 			arg1.ButtonType = 1
 		}
 	} else if (var3 >= 101 && var3 <= 200) || !(var3 < 801 || var3 > 900) { //nolint:staticcheck // QF1001: mirrors Java's literal `!(var3 < 801 || var3 > 900)` (Client.java:10807 @176a85f)
+		// Java: var5 = friendCount clamped to 0 unless friendListStatus == 2
+		// (Client.java:10285-10288 @2e62978) — NEW in 254.
+		var5 := c.FriendCount
+		if c.FriendListStatus != 2 {
+			var5 = 0
+		}
 		if var3 > 800 {
 			var3 -= 701
 		} else {
 			var3 -= 101
 		}
-		if var3 >= c.FriendCount {
+		if var3 >= var5 {
 			arg1.Text = ""
 			arg1.ButtonType = 0
 		} else {
@@ -5623,7 +5652,13 @@ func (c *Client) UpdateInterfaceContent(arg1 *iftype.IfType) {
 			arg1.ButtonType = 1
 		}
 	} else if var3 == 203 {
-		arg1.Scroll = c.FriendCount*15 + 20
+		// Java: var6 = friendCount clamped to 0 unless friendListStatus == 2
+		// (Client.java:10308-10311 @2e62978) — NEW in 254.
+		var6 := c.FriendCount
+		if c.FriendListStatus != 2 {
+			var6 = 0
+		}
+		arg1.Scroll = var6*15 + 20
 		if arg1.Scroll <= arg1.Height {
 			arg1.Scroll = arg1.Height + 1
 		}
@@ -5874,19 +5909,27 @@ func (c *Client) HandleInterfaceAction(arg1 *iftype.IfType) bool {
 	var3 := arg1.ClientCode
 	switch var3 {
 	case 201:
-		c.RedrawChatback = true
-		c.ChatbackInputOpen = false
-		c.ShowSocialInput = true
-		c.SocialInput = ""
-		c.SocialAction = 1
-		c.SocialMessage = "Enter name of friend to add to list"
+		// Java: Client.java:10513-10522 @2e62978 — NEW in 254: friend
+		// add/delete prompts only respond once the friend server is
+		// connected (friendListStatus == 2).
+		if c.FriendListStatus == 2 {
+			c.RedrawChatback = true
+			c.ChatbackInputOpen = false
+			c.ShowSocialInput = true
+			c.SocialInput = ""
+			c.SocialAction = 1
+			c.SocialMessage = "Enter name of friend to add to list"
+		}
 	case 202:
-		c.RedrawChatback = true
-		c.ChatbackInputOpen = false
-		c.ShowSocialInput = true
-		c.SocialInput = ""
-		c.SocialAction = 2
-		c.SocialMessage = "Enter name of friend to delete from list"
+		// Java: Client.java:10523-10530 @2e62978 — same status==2 gate.
+		if c.FriendListStatus == 2 {
+			c.RedrawChatback = true
+			c.ChatbackInputOpen = false
+			c.ShowSocialInput = true
+			c.SocialInput = ""
+			c.SocialAction = 2
+			c.SocialMessage = "Enter name of friend to delete from list"
+		}
 	case 205:
 		c.IdleTimeout = 250
 		return true
