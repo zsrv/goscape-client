@@ -13,8 +13,9 @@ var (
 	Domains         [][]rune
 	TLDs            [][]rune
 	TLDType         []int
-	// Java: WordFilter.java:29 — 244 added "woop"/"woops" (225 had 5 entries).
-	ALLOWLIST []string = []string{"cook", "cook's", "cooks", "seeks", "sheet", "woop", "woops"}
+	// Java: WordFilter.java:29 @2e62978 — 254 added "faq" (8th entry);
+	// 244 added "woop"/"woops" (225 had 5 entries).
+	ALLOWLIST []string = []string{"cook", "cook's", "cooks", "seeks", "sheet", "woop", "woops", "faq"}
 )
 
 func Unpack(jag *io.JagFile) {
