@@ -465,7 +465,6 @@ type Client struct {
 	PlayerOptions          [5]string
 	PlayerOptionsPushDown  [5]bool
 	ChatCount              int
-	WildernessLevel        int
 	TitleScreenState       int
 	CameraX                int
 	CameraY                int
@@ -1635,7 +1634,7 @@ func (c *Client) DrawScene() {
 	c.Draw2DEntityElements()
 	c.DrawTileHint()
 	c.UpdateTextures(var9)
-	c.Draw3DEntityElements()
+	c.OtherOverlays()
 	c.AreaViewport.Draw(4, 4)
 	c.CameraX = var3
 	c.CameraY = var4
@@ -6663,8 +6662,13 @@ func (c *Client) ClearCaches() {
 	spotanimtype.ModelCache.Clear()
 }
 
-func (c *Client) Draw3DEntityElements() {
-	var2 := 0
+// OtherOverlays draws the viewport-anchored overlays: private messages,
+// click crosses, viewport interfaces, menus/tooltips, the multizone icon,
+// and the system-update countdown. Java: otherOverlays
+// (Client.java:5945-5988 @2e62978; was 245.2 draw3DEntityElements — 254
+// removed the field1504 yellow-flash overlay [gone since WS1 with
+// VIEWPORT_FLASH] and the wilderness/arena HUD).
+func (c *Client) OtherOverlays() {
 	c.DrawPrivateMessages()
 	if c.CrossMode == 1 {
 		c.ImageCrosses[c.CrossCycle/100].PlotSprite(c.CrossY-8-4, c.CrossX-8-4)
@@ -6696,25 +6700,16 @@ func (c *Client) Draw3DEntityElements() {
 	} else if c.MenuArea == 0 {
 		c.DrawMenu()
 	}
+	// Java: Client.java:5974-5976 @2e62978 — with the wilderness/arena HUD
+	// gone, the multizone icon always sits at its lower slot (472,296); the
+	// (472,258) raised variant was 245.2-only.
 	if c.InMultizone == 1 {
-		if c.WildernessLevel > 0 || c.WorldLocationState == 1 {
-			c.ImageHeadIcons[1].PlotSprite(258, 472)
-		} else {
-			c.ImageHeadIcons[1].PlotSprite(296, 472)
-		}
-	}
-	if c.WildernessLevel > 0 {
-		c.ImageHeadIcons[0].PlotSprite(296, 472)
-		c.FontPlain12.CentreString(329, 0xFFFF00, "Level: "+strconv.Itoa(c.WildernessLevel), 484)
-	}
-	if c.WorldLocationState == 1 {
-		c.ImageHeadIcons[6].PlotSprite(296, 472)
-		c.FontPlain12.CentreString(329, 0xFFFF00, "Arena", 484)
+		c.ImageHeadIcons[1].PlotSprite(296, 472)
 	}
 	if c.SystemUpdateTimer == 0 {
 		return
 	}
-	var2 = c.SystemUpdateTimer / 50
+	var2 := c.SystemUpdateTimer / 50
 	var3 := var2 / 60
 	var2 %= 60
 	if var2 < 10 {
