@@ -585,11 +585,14 @@ func (od *OnDemand) Stop() {
 	od.running = false
 }
 
-// Run pumps the request state machine once. It is called once per game frame
-// (≈20 ms); Java ran the same body on a worker thread sleeping 20|50 ms per
-// iteration (OnDemand.java:380-460 @32f3062). The resend walk, packetCycle
-// teardown, and keepalive tail (Java :406-456) land with a following commit;
-// until then only the idle message clear from that tail is ported.
+// Run pumps the request state machine once: drain incoming requests, promote
+// misses to pending (sending each), service socket responses, re-send stale
+// pending requests, and keep the connection alive. It is called once per
+// game frame (≈20 ms); Java ran the same body on a worker thread sleeping
+// 20|50 ms per iteration (OnDemand.java:380-460 @32f3062), so the 50/500/750
+// cycle thresholds carry identical wall-clock meaning. Java's catch(Exception)
+// → reporterror("od_ex") wrapper has no Go analogue — error paths return
+// explicitly inside send()/read().
 func (od *OnDemand) Run() {
 	if !od.running {
 		return
@@ -616,11 +619,61 @@ func (od *OnDemand) Run() {
 		}
 	}
 
-	// Java: OnDemand.java:405-441 — the resend walk sets var3 iff the pending
-	// list is non-empty; the walk and its if half (packetCycle/socket reset)
-	// land with a following commit, only the else half's message clear is here.
-	if od.pending.Head() == nil {
+	// Resend walk (Java: OnDemand.java:406-425): urgent pending requests are
+	// re-sent every 50 frames; only if none are urgent, all pending are.
+	resent := false // Java: var3 — true while ANY pending request exists
+	for n := od.pending.Head(); n != nil; n = od.pending.Next() {
+		if n.Value.Urgent {
+			resent = true
+			n.Value.Cycle++
+			if n.Value.Cycle > 50 {
+				n.Value.Cycle = 0
+				od.send(n.Value)
+			}
+		}
+	}
+	if !resent {
+		for n := od.pending.Head(); n != nil; n = od.pending.Next() {
+			resent = true
+			n.Value.Cycle++
+			if n.Value.Cycle > 50 {
+				n.Value.Cycle = 0
+				od.send(n.Value)
+			}
+		}
+	}
+
+	if resent {
+		// Java: OnDemand.java:426-437 — tear down a connection that has
+		// gone 750 frames without answering anything pending; send() then
+		// redials past the 4 s backoff.
+		od.packetCycle++
+		if od.packetCycle > 750 {
+			od.closeStream()
+		}
+	} else {
+		// Java: OnDemand.java:438-441 — idle: reset staleness and clear the
+		// "Loading extra files" status line.
+		od.packetCycle = 0
 		od.message = ""
+	}
+
+	// Keepalive (Java: OnDemand.java:442-456): every 500 idle frames while
+	// in game, write the [0,0,0,10] no-op frame so the server keeps the
+	// connection open. With a nil cache, Java's fileStreams[0]==null half of
+	// the gate is always true.
+	if od.app.InGame() && od.stream != nil && (od.topPriority > 0 || od.cache == nil) {
+		od.noTimeoutCycle++
+		if od.noTimeoutCycle > 500 {
+			od.noTimeoutCycle = 0
+			od.buf[0] = 0
+			od.buf[1] = 0
+			od.buf[2] = 0
+			od.buf[3] = 10
+			if err := od.stream.Write(od.buf[:], 4, 0); err != nil {
+				od.packetCycle = 5000 // Java: forces the >750 teardown next frame
+			}
+		}
 	}
 }
 

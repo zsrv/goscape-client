@@ -510,3 +510,97 @@ func TestRead_GrowingSizeTearsDownStream(t *testing.T) {
 
 	waitFor(t, func() { od.Run() }, func() bool { return od.stream == nil })
 }
+
+// ---- Run() tail --------------------------------------------------------------
+
+func TestRun_ResendAfter50Cycles(t *testing.T) {
+	od, server := newConnectedOD(t)
+	pushPending(od, 0, 5, true)
+
+	// 52 frames with no response → the resend walk re-sends once at >50.
+	for range 52 {
+		od.Run()
+	}
+	waitFor(t, func() {}, func() bool {
+		return slices.Contains(server.requests(), [4]byte{0, 0, 5, 2})
+	})
+}
+
+func TestRun_PacketCycleTearsDownAfter750(t *testing.T) {
+	od, server := newConnectedOD(t)
+	_ = server
+	pushPending(od, 0, 5, true)
+
+	for range 751 {
+		od.Run()
+	}
+	if od.stream != nil {
+		t.Fatal("stream still attached after 751 unanswered frames")
+	}
+}
+
+func TestRun_KeepaliveAfter500IdleCyclesInGame(t *testing.T) {
+	server, conn := startODServer(t)
+	app := &fakeApp{conns: []net.Conn{conn}, ingame: true}
+	od := New(buildMinimalVersionlist(1, 0), app, nil)
+	probe := newRequest()
+	probe.Archive = 0
+	probe.File = 0
+	connectOD(t, od, probe)
+
+	// No pending requests → packetCycle stays 0, noTimeoutCycle climbs.
+	for range 501 {
+		od.Run()
+	}
+	waitFor(t, func() {}, func() bool {
+		return slices.Contains(server.requests(), [4]byte{0, 0, 0, 10})
+	})
+}
+
+func TestRun_MessageClearedWhenPendingEmpty(t *testing.T) {
+	od, _ := newConnectedOD(t)
+	od.message = "Loading extra files - 50%"
+	od.Run()
+	if od.message != "" {
+		t.Fatalf("message = %q, want cleared with empty pending", od.message)
+	}
+}
+
+// ---- end to end ---------------------------------------------------------------
+
+func TestEndToEnd_RequestRunCycle(t *testing.T) {
+	server, conn := startODServer(t)
+	app := &fakeApp{conns: []net.Conn{conn}}
+	od := New(buildMinimalVersionlist(1, 0), app, nil)
+
+	// Wire payload = gzip(content) + 2-byte version trailer, as served and
+	// cached; Cycle() strips the trailer and gunzips.
+	content := []byte("the quick brown fox")
+	var gz bytes.Buffer
+	zw := gzip.NewWriter(&gz)
+	if _, err := zw.Write(content); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	wire := append(gz.Bytes(), 0, 1) // version trailer (unchecked off-cache)
+
+	od.Request(0, 0)
+	// Pump until the request frame reaches the server (connect + resend),
+	// then answer it and pump to completion.
+	waitFor(t, func() { od.Run() }, func() bool { return len(server.requests()) >= 1 })
+	server.respond(t, 0, 0, len(wire), 0, wire)
+
+	var got *OnDemandRequest
+	waitFor(t, func() { od.Run() }, func() bool {
+		got = od.Cycle()
+		return got != nil
+	})
+	if got.Archive != 0 || got.File != 0 || !bytes.Equal(got.Data, content) {
+		t.Fatalf("end-to-end: archive=%d file=%d data=%q", got.Archive, got.File, got.Data)
+	}
+	if od.Remaining() != 0 {
+		t.Fatalf("Remaining = %d, want 0", od.Remaining())
+	}
+}

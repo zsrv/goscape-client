@@ -6270,11 +6270,14 @@ func (c *Client) Load() {
 	animframe.Init(c.OnDemand.GetAnimCount())
 	model.Init(c.OnDemand.GetFileCount(0), c.OnDemand)
 
-	// Boot on-demand request loops: MIDI, animations, flagged models.
-	// Java: Client.load (Client.java:1599–1660).
-	// Client-TS: load (Client.ts:624–675). Thread.sleep() calls are omitted —
-	// Run() drives I/O directly (no worker thread) and is called inside
-	// OnDemandLoop(), so a bare loop is correct and faithful.
+	// Boot on-demand request loops: MIDI, animations, flagged models, maps.
+	// Java: Client.load (Client.java:5165-5250 @32f3062). Java polls each
+	// wait loop at Thread.sleep(100) while the OnDemand worker thread pumps
+	// at 20 ms; here Run() is driven inside OnDemandLoop() on this goroutine
+	// (no worker), so each wait loop sleeps the WORKER's 20 ms cadence — the
+	// socket transport's resend/keepalive/teardown counters (50/500/750
+	// cycles) assume ~20 ms per Run(). A bare loop would spin packetCycle
+	// past 750 in microseconds and churn connections forever.
 
 	if !LowMemory {
 		// Java: Client.java:5165-5171 @32f3062 — 274 flips midiFading
@@ -6286,6 +6289,7 @@ func (c *Client) Load() {
 		c.MidiFading = true
 		c.OnDemand.Request(2, c.MidiSong)
 		for c.OnDemand.Remaining() > 0 {
+			time.Sleep(20 * time.Millisecond) // Java: Thread.sleep(100L) poll (Client.java:5175/5196/5220/5246 @32f3062); 20 ms = the worker cadence, see above
 			c.OnDemandLoop()
 			// NEW in 274 (Client.java:5178-5181 @32f3062): bounded
 			// transport failure escapes to the load-error screen instead
@@ -6304,6 +6308,7 @@ func (c *Client) Load() {
 		c.OnDemand.Request(1, i)
 	}
 	for c.OnDemand.Remaining() > 0 {
+		time.Sleep(20 * time.Millisecond) // Java: Thread.sleep(100L) poll (Client.java:5175/5196/5220/5246 @32f3062); 20 ms = the worker cadence, see above
 		progress := animCount - c.OnDemand.Remaining()
 		if progress > 0 {
 			c.MessageBox("Loading animations - "+strconv.Itoa(progress*100/animCount)+"%", 65)
@@ -6325,6 +6330,7 @@ func (c *Client) Load() {
 	}
 	modelPrefetch := c.OnDemand.Remaining()
 	for c.OnDemand.Remaining() > 0 {
+		time.Sleep(20 * time.Millisecond) // Java: Thread.sleep(100L) poll (Client.java:5175/5196/5220/5246 @32f3062); 20 ms = the worker cadence, see above
 		progress := modelPrefetch - c.OnDemand.Remaining()
 		if progress > 0 {
 			c.MessageBox("Loading models - "+strconv.Itoa(progress*100/modelPrefetch)+"%", 70)
@@ -6352,6 +6358,7 @@ func (c *Client) Load() {
 		c.OnDemand.Request(3, c.OnDemand.GetMapFile(148, 48, 1))
 		mapPrefetch := c.OnDemand.Remaining()
 		for c.OnDemand.Remaining() > 0 {
+			time.Sleep(20 * time.Millisecond) // Java: Thread.sleep(100L) poll (Client.java:5175/5196/5220/5246 @32f3062); 20 ms = the worker cadence, see above
 			progress := mapPrefetch - c.OnDemand.Remaining()
 			if progress > 0 {
 				c.MessageBox("Loading maps - "+strconv.Itoa(progress*100/mapPrefetch)+"%", 75)
