@@ -9390,32 +9390,30 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 		}
 	}
 	var3.AddHead(var5Link)
-	var15 := -1
-	var8 := -1
-	var9 := 0
-	var10 := 0
+	// Java: showObject keeps the second/third most-valuable ClientObj refs
+	// (var9/var10) and hands the ENTITIES to the scene (Client.java:7949-7964
+	// @2e62978) — their models resolve lazily per frame via GetTempModel, so
+	// an obj whose model is still in on-demand flight appears the moment the
+	// model arrives. The old Go shape (carried from rev-225, whose Java DOES
+	// bake here) built Models at sort time, which froze a nil for a
+	// not-yet-loaded model until the next re-sort: drops showed on the
+	// minimap (drawn from LevelObjStacks directly) but not on the ground
+	// until relog rebuilt the scene.
+	var var9 *entity.ClientObj
+	var var10 *entity.ClientObj
 	for var6 := var3.Head(); var6 != nil; var6 = var3.Next() {
 		v := var6.Value
-		if v.Index != var5.Index && var15 == -1 {
-			var15 = v.Index
-			var9 = v.Count
+		if v.Index != var5.Index && var9 == nil {
+			var9 = v
 		}
-		if v.Index != var5.Index && v.Index != var15 && var8 == -1 {
-			var8 = v.Index
-			var10 = v.Count
+		// Java evaluates var9.id only after var11.id != var5.id, by which
+		// point var9 is always set; Go's && short-circuits identically.
+		if v.Index != var5.Index && v.Index != var9.Index && var10 == nil {
+			var10 = v
 		}
-	}
-	var var11 *model.Model
-	if var15 != -1 {
-		var11 = objtype.Get(var15).GetInterfaceModel(var9)
-	}
-	var var12 *model.Model
-	if var8 != -1 {
-		var12 = objtype.Get(var8).GetInterfaceModel(var10)
 	}
 	var13 := arg0 + (arg1 << 7) + 1610612736
-	var14 := objtype.Get(var5.Index)
-	c.Scene.AddObjStack(entity.ModelSourceOf(var14.GetInterfaceModel(var5.Count)), entity.ModelSourceOf(var11), c.GetHeightMapY(c.CurrentLevel, arg0*128+64, arg1*128+64), c.CurrentLevel, var13, arg1, arg0, entity.ModelSourceOf(var12))
+	c.Scene.AddObjStack(entity.ObjSourceOf(var5), entity.ObjSourceOf(var9), c.GetHeightMapY(c.CurrentLevel, arg0*128+64, arg1*128+64), c.CurrentLevel, var13, arg1, arg0, entity.ObjSourceOf(var10))
 }
 
 // UpdateSceneState drives the scene load/rebuild state machine each game cycle.
