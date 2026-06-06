@@ -117,6 +117,34 @@ a method-paired multi-agent comparison with adversarial verification of every
 claimed delta), then execute it as workstreams. Treat the scope doc's claims
 as strong hints, not gospel — one of its claims was refuted during execution.
 
+### Seams expire across revisions (re-validate the *other* side)
+
+A documented seam — a transport/storage shim borrowed from a secondary
+reference instead of the Java primary — carries a hidden dependency on the
+*other side of its contract*, and that side moves with the revision. First
+observed at **rev-274**: the OnDemand "modernized" `/ondemand.zip` HTTP shim
+(a Client-TS-era convention, served by Engine-TS ≤254) was carried forward
+through three ports — and Engine-TS 274 retired the route *and* its packer
+for the genuine Java socket protocol. The seam passed every static gate and
+the full parity audit (audits verify Go↔Java *within* the seam's declared
+boundary; the seam itself is an axiom to them) and died at the first 274
+host smoke. Two rules:
+
+- **At each revision bump, re-validate every seam's far side** (engine
+  routes, packer outputs, server listeners) against the new engine branch —
+  a one-line grep per seam, before the port starts.
+- **The host smoke is the only gate that checks cross-system contracts.**
+  Budget for at least one smoke→fix→re-smoke loop on transport-adjacent
+  revisions.
+
+The mismatch also runs the other way: the **engine may lag the client's own
+revision**. Engine-TS 274 `close()`s any ondemand frame with priority > 2 —
+which includes the genuine Java 274 keepalive `[0,0,0,10]` that the 274
+Client-TS worker also sends. Upstream never noticed because their client
+runs a browser file cache that suppresses both the keepalive gate and most
+in-game fetches. A faithful client can be *punished* by an unfaithful
+server; diagnose with the engine source before "fixing" the client.
+
 ---
 
 ## 3. Java → Go translation gotchas
@@ -181,7 +209,27 @@ against the Java source before "fixing" anything a linter flags.
   actually starting. Call the target method directly. (Caused a boot crash.)
 - **`InputStream.available()` ≠ `bufio.Reader.Buffered()`.** Java reports
   OS-buffered bytes; `bufio` is lazy and returns 0 until a read fills it. A naive
-  port reads 0 forever.
+  port reads 0 forever. (The `clientstream` package's eager reader goroutine +
+  ring buffer is the established solution — reuse it for any socket that needs
+  Java `available()` semantics.)
+- **Worker-thread cycle counters encode wall-clock.** A Java worker loop's
+  thresholds (rev-274 OnDemand: resend > 50, keepalive > 500, teardown > 750
+  cycles) mean seconds only via the worker's `Thread.sleep(20)`. When the
+  worker is merged into a frame-driven Go loop, the in-game tick supplies the
+  cadence — but every *busy-wait* loop that Java merely polled (boot wait
+  loops with `sleep(100)`) becomes load-bearing pacing: a bare Go loop spins
+  the 750-cycle teardown in microseconds and churns connections forever. Port
+  the worker's sleep into the merged loop.
+- **Java unchecked exceptions are thread-scoped; Go panics are
+  process-scoped.** A malformed server response that throws AIOOBE out of a
+  Java worker thread kills only that thread (it escapes the worker's
+  IOException catch); the equivalent Go slice-bounds overflow kills the whole
+  client. At sites where Java can throw past its own catch, add an explicit
+  bounds guard that routes to the IOException-equivalent failure path
+  (rev-274: a part-size mismatch became a connection teardown instead of a
+  crash). Same family as the shift-count masking entry in §3 Operators —
+  review ports by asking "where does Go *panic* where Java merely corrupts
+  or loses a thread?"
 
 ### Rendering (host-shell / `platform` seam specifics)
 The renderer is toolkit-neutral behind the `platform.Backend` seam (GLFW+go-gl
@@ -204,6 +252,18 @@ lessons is obsolete, but the invariants survived the rewrite:
   caller-owned RGBA buffer (one wide big-endian store per pixel) to avoid a
   per-frame allocation. Java's `DirectColorModel` has no alpha mask, so every
   pixel is opaque and premultiplied RGBA equals straight NRGBA byte-for-byte.
+- **Scene insertion: check WHO Java passes — entity or baked Model.** Java
+  inserts some scene nodes as *entities* (`ModelSource` — the model is
+  re-resolved every frame via `getTempModel`, tolerant of on-demand asset
+  latency: rev-274 `showObject` passes the `ClientObj`s themselves) and others
+  as eagerly-baked `Model`s (static locs in `World.addLoc`). Porting an
+  entity-passing site as an eager bake freezes whatever the resolver returned
+  at insert time — nil for a not-yet-faulted model — and nothing re-renders
+  when the asset arrives (rev-274: NPC drops showed on the minimap but not on
+  the ground until relog). The bug class is *masked* under bulk/boot-loaded
+  asset regimes and only manifests once assets gain real arrival latency.
+  Mind Go's typed-nil interface trap when passing possibly-nil entity
+  pointers (`ObjSourceOf`/`ModelSourceOf` normalize to a genuine nil).
 
 ### Things intentionally NOT ported
 - **Deobfuscation artifacts** — empty placeholder classes, dead-write fields —
@@ -228,6 +288,13 @@ lessons is obsolete, but the invariants survived the rewrite:
 - **No per-comment revision tags.** The branch *is* the revision context, and
   `REFERENCES.md` pins the exact Java commit — together they make every bare
   `// Java:` comment unambiguous without tagging hundreds of sites.
+- **Cite-integrity across a rename gap (rev-274 "CITE-INTEGRITY"):** a
+  `// Java:` comment cites names *as they exist at the cited pin*. Where the
+  Java symbol was renamed between the prior and current revision, use a
+  dual-form header at the declaration (`Java 274 loop(); was cycle() in
+  ≤254`) so the comment stays greppable from both references; never let a
+  comment pair the *new* name with the *old* pin or vice versa (one such
+  mismatch survived to review in the 274 port).
 - **Renaming:** local vars and nondescript Java function names *may* be renamed,
   but every rename needs a `// Java: <original-name> (file:lines)` comment.
 
@@ -251,13 +318,15 @@ lessons is obsolete, but the invariants survived the rewrite:
 
 ### The full parity audit (one per revision port — a standard phase, not an extra)
 
-All four completed ports ended with an exhaustive line-by-line audit of the Go
+All five completed ports ended with an exhaustive line-by-line audit of the Go
 branch against the pinned Java reference (rev-225: `PARITY-AUDIT-2026-05-28.md`,
 rev-244: `PARITY-AUDIT-2026-06-03.md`, rev-245.2: `PARITY-AUDIT-2026-06-04.md`,
-rev-254: `PARITY-AUDIT-2026-06-05.md`, each at its rev branch root), and every
+rev-254: `PARITY-AUDIT-2026-06-05.md`, rev-274: `PARITY-AUDIT-2026-06-06.md`,
+each at its rev branch root), and every
 one found real bugs that had survived every gate **and** (where one had run)
 smoke testing — 14 bugs (225) vs 11 blockers + 62 bugs (244) vs 1 blocker +
-6 bugs + 22 latent (245.2) vs 2 blockers + 3 bugs + 13 latent (254). The 4–5×
+6 bugs + 22 latent (245.2) vs 2 blockers + 3 bugs + 13 latent (254) vs
+0 blockers + 1 bug + 7 latent (274). The 4–5×
 jump at 244 is the divergent deob lineage (§2): rename churn multiplies the
 miss rate, so the dirtier the diff, the more the audit pays. The 245.2 numbers
 show the floor is NOT zero even for a clean same-lineage delta port whose base
@@ -324,7 +393,23 @@ caught a ledger item still marked "deferred" that had in fact already landed.
 
 **Scale honestly.** The 244 audit ran as a single multi-agent workflow
 (50 units / 683 Java methods walked / every finding adversarially verified);
-245.2's was 54 units / 674 methods / 89 agents, and 254's was 50 units /
-805 methods / 72 agents, all the same shape.
+245.2's was 54 units / 674 methods / 89 agents, 254's was 50 units /
+805 methods / 72 agents, and 274's was 53 units / ~967 methods / 65 agents,
+all the same shape.
 The *method* — full coverage, per-statement checks, skeptic pass, reverse
 coverage — is the requirement; the tooling that delivers it is not.
+
+**Multi-agent audit ops lessons (274).** Two failure modes the method itself
+can't catch:
+- **Schema-valid-but-degenerate agent output exists.** One 274 audit agent
+  returned a well-formed result whose findings were vacuous, and another
+  silently read its work assignment 1-based (`chunks[7]`), duplicating a
+  neighbour's unit while reporting its own as covered. Completeness
+  checklists pass both. The countermeasures: spot-read every unit's actual
+  findings (counts lie), and cross-check per-unit method counts against an
+  independently derived ground-truth table; assign corrective re-runs by
+  explicit line ranges, never by index.
+- **Rate-limited agent waves: resume with the UNCHANGED script first.** A
+  wave that dies to API rate limiting re-runs cleanly from the journal if
+  the script is byte-identical; editing it first invalidates the cache and
+  re-runs everything. Retry-unchanged, then edit.
