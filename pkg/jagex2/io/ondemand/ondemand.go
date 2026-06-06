@@ -5,10 +5,9 @@
 //
 // Transport: the genuine Java 274 socket protocol (OnDemand.java @32f3062) —
 // handshake byte 15 on the world port, 4-byte requests, 6-byte response
-// headers with 500-byte part reassembly. The pre-274 "modernized"
-// /ondemand.zip bundle shim (a Client-TS-era convention served by Engine-TS
-// ≤254) was removed when Engine-TS 274 dropped the route in favour of the
-// real protocol.
+// headers with 500-byte part reassembly. (An earlier port revision used an
+// HTTP bundle shim served by Engine-TS ≤254; that route is gone, both here
+// and in the server, in favour of the real protocol.)
 //
 // Threading: Java runs OnDemand on a worker thread (startThread(this, 2),
 // OnDemand.java:216) sleeping 20|50 ms between pump iterations; this port
@@ -114,7 +113,7 @@ var _ jio.OnDemandProvider = (*OnDemand)(nil)
 // ---- OnDemand struct -------------------------------------------------------
 
 // OnDemand ports Java jagex2.io.OnDemand (obfuscated: vb).
-// Fields, the request/cycle/prefetch/run/read state machine, and the modernized
+// Fields, the request/cycle/prefetch/run/read state machine, and the socket
 // read path all live in this file.
 type OnDemand struct {
 	// Java: vb.h — per-archive file version tables (4 archives)
@@ -144,14 +143,15 @@ type OnDemand struct {
 	// Java: vb.s
 	running bool
 
-	// active mirrors Client-TS OnDemand.active — set whenever the pump did
-	// real work in a Run() iteration so the loop keeps spinning.
+	// Java: ub.s — set whenever the pump did real work in a Run() iteration so
+	// the inner loop keeps spinning.
 	active bool
-	// cycle mirrors Client-TS OnDemand.cycle (incremented once per Run()).
-	// Client-TS also only increments this; intentionally write-only in the modernized path (no reader).
+	// Java: ub.Q — incremented once per Run(). Java's worker reads it nowhere
+	// either; kept write-only for structural parity.
 	cycle int
-	// importantCount/requestCount mirror Client-TS — urgent vs non-urgent
-	// pending counters recomputed each handlePending().
+	// Java: ub.t urgentCount / ub.u requestCount — urgent vs non-urgent pending
+	// counters recomputed each handlePending(). importantCount keeps its
+	// established Go name.
 	importantCount int
 	requestCount   int
 	// Java: ub.I — the pending request read() is currently reassembling.
@@ -503,8 +503,8 @@ func (od *OnDemand) Cycle() *OnDemandRequest {
 
 	gz, err := gzip.NewReader(bytes.NewReader(r.Data[:len(r.Data)-2]))
 	if err != nil {
-		// Java threw RuntimeException("error unzipping"); the modernized path
-		// drops the corrupt entry instead of crashing the game loop.
+		// Java threw RuntimeException("error unzipping"); this port drops the
+		// corrupt entry instead of crashing the game loop.
 		r.Data = nil
 		return r
 	}
@@ -679,8 +679,8 @@ func (od *OnDemand) Run() {
 
 // handleQueue drains incoming requests, satisfying them from the local cache
 // when possible (→ completed) or routing them to the missing list otherwise.
-// Client-TS: handleQueue(). 274 drops 254's dead dummy-arg guard
-// (handleQueue(int) `if (arg0 != 2) return` → handleQueue(),
+// Java: handleQueue (OnDemand.java:463-493 @32f3062). 274 drops 254's dead
+// dummy-arg guard (handleQueue(int) `if (arg0 != 2) return` → handleQueue(),
 // OnDemand.java:464 @32f3062) — this port never carried it, so the Go
 // shape is already exact.
 func (od *OnDemand) handleQueue() {
@@ -708,7 +708,7 @@ func (od *OnDemand) handleQueue() {
 
 // handlePending recomputes the urgent/non-urgent pending counts, then promotes
 // missing requests into pending (sending each) until 10 urgent are in flight.
-// Client-TS: handlePending().
+// Java: handlePending (OnDemand.java:495-523 @32f3062).
 func (od *OnDemand) handlePending() {
 	od.importantCount = 0
 	od.requestCount = 0
@@ -743,7 +743,7 @@ func (od *OnDemand) handlePending() {
 // handleExtras drains prefetch requests (and then a top-priority scan over the
 // four archives) into pending while no urgent requests are in flight and fewer
 // than 10 non-urgent requests are queued. It updates the progress message.
-// Client-TS: handleExtras().
+// Java: handleExtra (OnDemand.java:525-582 @32f3062).
 func (od *OnDemand) handleExtras() {
 	for od.importantCount == 0 && od.requestCount < 10 {
 		if od.topPriority == 0 {

@@ -6265,7 +6265,7 @@ func (c *Client) Load() {
 	// Java: rev-244 replaces the 225 bulk model/anim archives with an on-demand
 	// versionlist + per-id blobs. The OnDemand is created here and the model/anim
 	// index tables are sized from it; the actual blobs are faulted in at runtime
-	// by the request loops (WS1 Inc 3b).
+	// by the request loops.
 	c.OnDemand = ondemand.New(jagVersionList, onDemandApp{c}, nil)
 	animframe.Init(c.OnDemand.GetAnimCount())
 	model.Init(c.OnDemand.GetFileCount(0), c.OnDemand)
@@ -9737,7 +9737,7 @@ func (c *Client) MapBuild() {
 	}
 	c.Out.P1Isaac(CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(206)
 	// Java: Client.java:3331-3340 — 244 passes the map data straight through:
-	// the OnDemand layer already gunzipped it on receipt (WS1), so 225's
+	// the OnDemand layer already gunzipped it (OnDemand.cycle()), so 225's
 	// G4-length + headerless-bzip2 decode here is gone.
 	for i := range var5 {
 		var8 := (c.SceneMapIndex[i]>>8)*64 - c.SceneBaseTileX
@@ -9825,14 +9825,14 @@ func (c *Client) MapBuild() {
 }
 
 // OnDemandLoop dispatches completed on-demand responses for archives 0
-// (models), 1 (anim frames), and 2 (MIDI). Archives 3 and 93 (map tiles) are
-// handled in WS1 Inc 4.
+// (models), 1 (anim frames), 2 (MIDI), and 3/93 (map tiles) — all handled in
+// the switch below.
 //
-// Client-TS: updateOnDemand (Client.ts:1223). The TS path calls onDemand.run()
-// first because there is no worker thread; Java's worker thread calls cycle()
-// after its own internal I/O — we mirror the TS ordering.
-// Java: Client.onDemandLoop (Client.java:2248 @2e62978; was updateOnDemand
-// in ≤245.2).
+// The Java worker thread pumps I/O continuously and Client.onDemandLoop only
+// drains OnDemand.loop() — 274's name for 254's cycle(); the Go method keeps
+// its established Cycle() name. With no worker, Run() is pumped here first,
+// then the drain — same data flow, one goroutine.
+// Java: Client.onDemandLoop (Client.java:1837 @32f3062).
 func (c *Client) OnDemandLoop() {
 	if c.OnDemand == nil {
 		return
