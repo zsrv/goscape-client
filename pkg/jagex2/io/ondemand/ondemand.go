@@ -26,11 +26,13 @@ import (
 	"hash/crc32"
 	"io"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
 	jio "github.com/zsrv/goscape-client/pkg/jagex2/io"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io/clientstream"
+	"github.com/zsrv/goscape-client/pkg/sign/signlink"
 )
 
 // OnDemandRequest mirrors Java's jagex2.io.OnDemandRequest (extends Linkable2).
@@ -608,7 +610,10 @@ func (od *OnDemand) Run() {
 		}
 
 		od.handleExtras()
-		od.read()
+		// Java: if (in != null) read() (OnDemand.java:401-403)
+		if od.stream != nil {
+			od.read()
+		}
 	}
 
 	// Java: OnDemand.java:405-441 — the resend walk sets var3 iff the pending
@@ -747,9 +752,125 @@ func (od *OnDemand) handleExtras() {
 	}
 }
 
-// read consumes ondemand socket responses; the full part-reassembly port of
-// Java read() (OnDemand.java:583-670 @32f3062) lands with the next commit.
-func (od *OnDemand) read() {}
+// read consumes one response header and/or one ≤500-byte part from the
+// ondemand socket, reassembling parts into current.Data and routing
+// completions. Java: read() (OnDemand.java:583-670 @32f3062). Java wraps the
+// body in one IOException catch (close + reset, :661-668); each Go error
+// path calls closeStream instead. Both gates compare against the available
+// count measured once at entry, exactly like Java's single
+// in.available() snapshot.
+func (od *OnDemand) read() {
+	avail, _ := od.stream.Available() // clientstream.Available never errors
+
+	if od.partAvailable == 0 && avail >= 6 {
+		od.active = true
+
+		// Java: 6-byte header [archive, file>>8, file, size>>8, size, part]
+		// (OnDemand.java:588-597).
+		if err := od.stream.ReadFully(od.buf[:], 0, 6); err != nil {
+			od.closeStream()
+			return
+		}
+		archive := int(od.buf[0]) & 0xFF
+		file := (int(od.buf[1])&0xFF)<<8 + int(od.buf[2])&0xFF
+		size := (int(od.buf[3])&0xFF)<<8 + int(od.buf[4])&0xFF
+		part := int(od.buf[5]) & 0xFF
+
+		// Find the matching pending request; every request from the match
+		// onward gets its resend counter reset (Java: OnDemand.java:599-606).
+		od.current = nil
+		for n := od.pending.Head(); n != nil; n = od.pending.Next() {
+			if n.Value.Archive == archive && n.Value.File == file {
+				od.current = n.Value
+			}
+			if od.current != nil {
+				n.Value.Cycle = 0
+			}
+		}
+
+		if od.current != nil {
+			od.packetCycle = 0
+			if size == 0 {
+				// Server rejected the request (Java: OnDemand.java:607-620).
+				signlink.ReportErrorFunc("Rej: " + strconv.Itoa(archive) + "," + strconv.Itoa(file))
+				od.current.Data = nil
+				if od.current.Urgent {
+					od.completed.Push(od.current.node.Linkable)
+				} else {
+					od.current.node.Unlink()
+				}
+				od.current = nil
+			} else {
+				if od.current.Data == nil && part == 0 {
+					od.current.Data = make([]byte, size)
+				}
+				if od.current.Data == nil && part != 0 {
+					// Java: throw new IOException("missing start of file")
+					// (OnDemand.java:626) — lands in read()'s catch.
+					od.closeStream()
+					return
+				}
+			}
+		}
+
+		// Java: OnDemand.java:629-634 — runs whether or not a request
+		// matched, so orphaned parts are measured for draining below.
+		// A header with size < part*500 leaves partAvailable negative and
+		// read() permanently wedged (neither gate fires again) — faithful:
+		// Java computes and sticks the same way.
+		od.partOffset = part * 500
+		od.partAvailable = 500
+		if od.partAvailable > size-part*500 {
+			od.partAvailable = size - part*500
+		}
+	}
+
+	if od.partAvailable > 0 && avail >= od.partAvailable {
+		od.active = true
+
+		// Orphaned parts (no matching request) drain into the scratch
+		// buffer (Java: OnDemand.java:637-642).
+		dst := od.buf[:]
+		off := 0
+		if od.current != nil {
+			dst = od.current.Data
+			off = od.partOffset
+		}
+		// A part whose header size disagrees with the allocation would write
+		// past len(Data). Java overflows here too, but its AIOOBE escapes
+		// read()'s IOException catch and only kills the OnDemand worker
+		// thread (OnDemand.java:637-642 @32f3062); a Go panic would kill the
+		// whole client, so the mismatch becomes a connection teardown.
+		if off+od.partAvailable > len(dst) {
+			od.closeStream()
+			return
+		}
+		if err := od.stream.ReadFully(dst, off, od.partAvailable); err != nil {
+			od.closeStream()
+			return
+		}
+
+		// Java: OnDemand.java:644-658 — completion when this part reaches
+		// the end of the buffer.
+		if od.partAvailable+od.partOffset >= len(dst) && od.current != nil {
+			if od.cache != nil {
+				od.cache.Write(od.current.Archive+1, od.current.File, dst)
+			}
+			// archive-3 → 93 promotion: a non-urgent map fetch becomes an
+			// urgent archive-93 completion (Java: OnDemand.java:648-651).
+			if !od.current.Urgent && od.current.Archive == 3 {
+				od.current.Urgent = true
+				od.current.Archive = 93
+			}
+			if od.current.Urgent {
+				od.completed.Push(od.current.node.Linkable)
+			} else {
+				od.current.node.Unlink()
+			}
+		}
+		od.partAvailable = 0
+	}
+}
 
 // connectResult carries the outcome of one async dial+handshake attempt.
 type connectResult struct {

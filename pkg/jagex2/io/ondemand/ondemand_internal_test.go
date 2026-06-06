@@ -12,6 +12,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/zsrv/goscape-client/pkg/sign/signlink"
 )
 
 // fakeArchiveInternal satisfies the Archive interface for internal tests.
@@ -370,4 +372,141 @@ func TestSend_DialFailureIncrementsFailCount(t *testing.T) {
 	if od.stream != nil {
 		t.Fatal("stream attached despite dial failure")
 	}
+}
+
+// ---- read() ------------------------------------------------------------------
+
+// pushPending crafts a request directly onto the pending list, as
+// handlePending would after a cache miss.
+func pushPending(od *OnDemand, archive, file int, urgent bool) *OnDemandRequest {
+	r := newRequest()
+	r.Archive = archive
+	r.File = file
+	r.Urgent = urgent
+	od.pending.Push(r.node.Linkable)
+	return r
+}
+
+// newConnectedOD returns an OnDemand with an attached stream and its server.
+func newConnectedOD(t *testing.T) (*OnDemand, *odServer) {
+	t.Helper()
+	server, conn := startODServer(t)
+	app := &fakeApp{conns: []net.Conn{conn}}
+	od := New(buildMinimalVersionlist(1, 0), app, nil)
+	probe := newRequest()
+	probe.Archive = 0
+	probe.File = 0
+	connectOD(t, od, probe)
+	return od, server
+}
+
+func TestRead_SinglePartCompletion(t *testing.T) {
+	od, server := newConnectedOD(t)
+	r := pushPending(od, 1, 7, true)
+
+	payload := bytes.Repeat([]byte{0xAB}, 300)
+	server.respond(t, 1, 7, 300, 0, payload)
+
+	waitFor(t, func() { od.Run() }, func() bool { return od.completed.Head() != nil })
+	if !bytes.Equal(r.Data, payload) {
+		t.Fatalf("reassembled %d bytes, want 300 matching payload", len(r.Data))
+	}
+	if got := od.completed.Head().Value; got != r {
+		t.Fatalf("completed head = %+v, want the pending request", got)
+	}
+}
+
+func TestRead_MultiPartReassembly(t *testing.T) {
+	od, server := newConnectedOD(t)
+	r := pushPending(od, 0, 9, true)
+
+	payload := make([]byte, 700)
+	for i := range payload {
+		payload[i] = byte(i * 31)
+	}
+	server.respond(t, 0, 9, 700, 0, payload[:500])
+	server.respond(t, 0, 9, 700, 1, payload[500:])
+
+	waitFor(t, func() { od.Run() }, func() bool { return od.completed.Head() != nil })
+	if !bytes.Equal(r.Data, payload) {
+		t.Fatal("multi-part reassembly mismatch")
+	}
+}
+
+func TestRead_RejectionDeliversNilData(t *testing.T) {
+	// The rejection path calls signlink.ReportErrorFunc, which defaults to
+	// enabled (signlink.go:79) and would block forever on OpenURL's
+	// cond.Wait — the signlink polling goroutine (StartPriv) is not running
+	// in unit tests. Disable it for this test.
+	old := signlink.ReportError
+	signlink.ReportError = false
+	t.Cleanup(func() { signlink.ReportError = old })
+
+	od, server := newConnectedOD(t)
+	r := pushPending(od, 2, 4, true)
+
+	server.respond(t, 2, 4, 0, 0, nil) // size 0 = server rejection
+
+	waitFor(t, func() { od.Run() }, func() bool { return od.completed.Head() != nil })
+	if r.Data != nil {
+		t.Fatalf("rejected request carries %d bytes, want nil", len(r.Data))
+	}
+}
+
+func TestRead_MissingStartOfFileTearsDownStream(t *testing.T) {
+	od, server := newConnectedOD(t)
+	pushPending(od, 0, 5, true)
+
+	// part 1 with no prior part 0 → Java throws IOException("missing start
+	// of file") → its catch closes the socket.
+	server.respond(t, 0, 5, 700, 1, bytes.Repeat([]byte{1}, 200))
+
+	waitFor(t, func() { od.Run() }, func() bool { return od.stream == nil })
+}
+
+func TestRead_Archive3PromotedTo93(t *testing.T) {
+	od, server := newConnectedOD(t)
+	r := pushPending(od, 3, 6, false) // non-urgent map fetch
+
+	server.respond(t, 3, 6, 100, 0, bytes.Repeat([]byte{7}, 100))
+
+	waitFor(t, func() { od.Run() }, func() bool { return od.completed.Head() != nil })
+	if r.Archive != 93 || !r.Urgent {
+		t.Fatalf("archive=%d urgent=%v, want 93/true promotion", r.Archive, r.Urgent)
+	}
+}
+
+func TestRead_OrphanResponseDrainsToScratch(t *testing.T) {
+	od, server := newConnectedOD(t)
+
+	// Response for a (archive, file) that is not pending: header parsed,
+	// part drained into the scratch buffer, nothing completed, stream alive.
+	server.respond(t, 1, 99, 50, 0, bytes.Repeat([]byte{3}, 50))
+
+	// Then a real request still completes over the same connection.
+	r := pushPending(od, 1, 7, true)
+	payload := bytes.Repeat([]byte{0xCD}, 80)
+	server.respond(t, 1, 7, 80, 0, payload)
+
+	waitFor(t, func() { od.Run() }, func() bool { return od.completed.Head() != nil })
+	if od.stream == nil {
+		t.Fatal("stream torn down by orphan response")
+	}
+	if !bytes.Equal(r.Data, payload) {
+		t.Fatal("real request corrupted by orphan response")
+	}
+}
+
+func TestRead_GrowingSizeTearsDownStream(t *testing.T) {
+	od, server := newConnectedOD(t)
+	pushPending(od, 0, 5, true)
+
+	// part 0 allocates Data at size 700; a malformed part 1 then claims
+	// size 1300, putting partOffset+partAvailable past len(Data). Java's
+	// AIOOBE killed only its worker thread; the Go port must tear down the
+	// connection instead of panicking.
+	server.respond(t, 0, 5, 700, 0, bytes.Repeat([]byte{1}, 500))
+	server.respond(t, 0, 5, 1300, 1, bytes.Repeat([]byte{2}, 500))
+
+	waitFor(t, func() { od.Run() }, func() bool { return od.stream == nil })
 }
