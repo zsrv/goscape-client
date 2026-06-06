@@ -423,7 +423,7 @@ type Client struct {
 	NPCCount                      int
 	MinimapZoom                   int
 	CameraPitchClamp              int
-	WorldLocationState            int
+	ChatDisabled                  int
 	DragCycles                    int
 	EntityRemovalCount            int
 	SidebarHoveredInterfaceIndex  int
@@ -443,10 +443,10 @@ type Client struct {
 	ChatScrollOffset              int
 	InMultizone                   int
 	TryMoveNearest                int
-	ObjSelected                   int
+	UseMode                       int
 	ObjSelectedSlot               int
-	ObjSelectedInterface          int
-	ObjInterface                  int
+	ObjSelectedComId              int
+	ObjComId                      int
 	WaveCount                     int
 	SpellSelected                 int
 	ActiveSpellID                 int
@@ -995,25 +995,26 @@ func (c *Client) StopMidi() {
 	signlink.SetMidiCommand("stop")
 }
 
-// GetSpecialArea derives WorldLocationState from the local player's world
+// GetSpecialArea derives ChatDisabled from the local player's world
 // position: 1 inside two special regions, else 0. Java: getSpecialArea
-// (Client.java:6057-6070 @2e62978; was 245.2 updateWorldLocation) — 254
-// gutted the wilderness-level computation, the bank/arena region scan, and
-// overrideChat; the surviving tests are 245.2's overrideChat regions
-// retargeted at worldLocationState, whose readers (trade/duel-request and
-// chat gates) took over overrideChat's role.
+// (Client.java:7641-7654 @32f3062; body unchanged since 254 @2e62978, which
+// was 245.2's updateWorldLocation) — 254 gutted the wilderness-level
+// computation, the bank/arena region scan, and overrideChat; the surviving
+// tests are 245.2's overrideChat regions retargeted at the field 274 renames
+// worldLocationState→chatDisabled (Go ChatDisabled), whose readers
+// (trade/duel-request and chat gates) took over overrideChat's role.
 func (c *Client) GetSpecialArea() {
-	c.WorldLocationState = 0
+	c.ChatDisabled = 0
 	var2 := (c.LocalPlayer.X >> 7) + c.SceneBaseTileX
 	var3 := (c.LocalPlayer.Z >> 7) + c.SceneBaseTileZ
 	if var2 >= 3053 && var2 <= 3156 && var3 >= 3056 && var3 <= 3136 {
-		c.WorldLocationState = 1
+		c.ChatDisabled = 1
 	}
 	if var2 >= 3072 && var2 <= 3118 && var3 >= 9492 && var3 <= 9535 {
-		c.WorldLocationState = 1
+		c.ChatDisabled = 1
 	}
-	if c.WorldLocationState == 1 && var2 >= 3139 && var2 <= 3199 && var3 >= 3008 && var3 <= 3062 {
-		c.WorldLocationState = 0
+	if c.ChatDisabled == 1 && var2 >= 3139 && var2 <= 3199 && var3 >= 3008 && var3 <= 3062 {
+		c.ChatDisabled = 0
 	}
 }
 
@@ -1851,8 +1852,8 @@ func (c *Client) HandleComponentInput(arg0, arg1, arg2 int, arg3 *iftype.IfType,
 							c.HoveredSlotParentID = var12.Id
 							if var12.InvSlotObjId[var23] > 0 {
 								var18 := objtype.List(var12.InvSlotObjId[var23] - 1)
-								if c.ObjSelected == 1 && var12.Interactable {
-									if var12.Id != c.ObjSelectedInterface || var23 != c.ObjSelectedSlot {
+								if c.UseMode == 1 && var12.Interactable {
+									if var12.Id != c.ObjSelectedComId || var23 != c.ObjSelectedSlot {
 										c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @lre@" + var18.Name
 										c.MenuAction[c.MenuSize] = 398
 										c.MenuParamA[c.MenuSize] = var18.Index
@@ -2179,9 +2180,9 @@ func (c *Client) AddNPCOptions(arg0 *npctype.NpcType, arg2, arg3, arg4 int) {
 	}
 	var6 := arg0.Name
 	if arg0.VisLevel != 0 {
-		var6 = var6 + GetCombatLevelColorTag(c.LocalPlayer.CombatLevel, arg0.VisLevel) + " (level-" + strconv.Itoa(arg0.VisLevel) + ")"
+		var6 = var6 + CombatColourCode(c.LocalPlayer.CombatLevel, arg0.VisLevel) + " (level-" + strconv.Itoa(arg0.VisLevel) + ")"
 	}
-	if c.ObjSelected == 1 {
+	if c.UseMode == 1 {
 		c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @yel@" + var6
 		c.MenuAction[c.MenuSize] = 829
 		c.MenuParamA[c.MenuSize] = arg4
@@ -2365,9 +2366,10 @@ func (c *Client) HandleInputKey() {
 						c.RedrawChatback = true
 					}
 				} else if c.ChatLayerID == -1 {
-					// Java: Client.java:4690 — inside a ::command, chars up to 126
-					// ({ | } ~) are also accepted.
-					if var2 >= 32 && (var2 <= 122 || strings.HasPrefix(c.ChatTyped, "::") && var2 <= 126) && len(c.ChatTyped) < 80 {
+					// Java: Client.java:10285 @32f3062 — 274 drops 254's ::command
+					// extension (chatTyped.startsWith("::") && c <= 126 for { | } ~);
+					// only 32..122 is accepted now.
+					if var2 >= 32 && var2 <= 122 && len(c.ChatTyped) < 80 {
 						c.ChatTyped = c.ChatTyped + string(rune(var2))
 						c.RedrawChatback = true
 					}
@@ -2382,7 +2384,7 @@ func (c *Client) HandleInputKey() {
 						// ::-prefixed line goes to the server regardless.
 						if c.StaffModLevel == 2 {
 							if c.ChatTyped == "::clientdrop" {
-								c.TryReconnect()
+								c.LostCon()
 							} else if c.ChatTyped == "::prefetchmusic" {
 								for i := range c.OnDemand.GetFileCount(2) {
 									c.OnDemand.PrefetchPriority(2, i, 1)
@@ -3891,7 +3893,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 								// Java: Client.java:10575-10580 (new in 244) — white
 								// outline on the selected/being-used inventory item.
 								outline := 0
-								if c.ObjSelected == 1 && c.ObjSelectedSlot == var27 && c.ObjSelectedInterface == var14.Id {
+								if c.UseMode == 1 && c.ObjSelectedSlot == var27 && c.ObjSelectedComId == var14.Id {
 									outline = 16777215
 								}
 								// Java 274: ObjType.getSprite(id, outlineRgb, count) — id
@@ -4266,6 +4268,9 @@ func (c *Client) UpdateNpcs() {
 	}
 }
 
+// Java: moveEntity (Client.java:10558-10586 @32f3062) — 274 drops the dead
+// size param 254 carried (the body always read entity.size). Go splits the
+// single Java method per concrete type; this is the player half.
 func (c *Client) UpdateClientPlayer(arg0 *playerentity.ClientPlayer) {
 	if arg0.X < 128 || arg0.Z < 128 || arg0.X >= 13184 || arg0.Z >= 13184 {
 		arg0.PrimarySeqID = -1
@@ -4296,6 +4301,9 @@ func (c *Client) UpdateClientPlayer(arg0 *playerentity.ClientPlayer) {
 	c.UpdateSequences(&arg0.ClientEntity)
 }
 
+// Java: moveEntity (Client.java:10558-10586 @32f3062) — NPC half of the Go
+// per-type split; the localPlayer bounds check is omitted (an NPC can never
+// be localPlayer, so Java's second guard is dead here).
 func (c *Client) UpdateClientNpc(arg0 *entity.ClientNpc) {
 	if arg0.X < 128 || arg0.Z < 128 || arg0.X >= 13184 || arg0.Z >= 13184 {
 		arg0.PrimarySeqID = -1
@@ -4987,9 +4995,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	if var5 == 810 && c.InteractWithLoc(CLIENTPROT_OPLOCU, var3, var4, var6) { // Java: interactWithLoc(147,...)
-		c.Out.P2(c.ObjInterface)
+		c.Out.P2(c.ObjComId)
 		c.Out.P2(c.ObjSelectedSlot)
-		c.Out.P2(c.ObjSelectedInterface)
+		c.Out.P2(c.ObjSelectedComId)
 	}
 	if var5 == 694 || var5 == 962 || var5 == 795 || var5 == 681 || var5 == 100 {
 		if var5 == 681 {
@@ -5076,9 +5084,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.Out.P2(var3 + c.SceneBaseTileX)
 		c.Out.P2(var4 + c.SceneBaseTileZ)
 		c.Out.P2(var6)
-		c.Out.P2(c.ObjInterface)
+		c.Out.P2(c.ObjComId)
 		c.Out.P2(c.ObjSelectedSlot)
-		c.Out.P2(c.ObjSelectedInterface)
+		c.Out.P2(c.ObjSelectedComId)
 	}
 	if var5 == 1381 {
 		var15 := (var6 >> 14) & 0x7FFF
@@ -5098,9 +5106,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.Out.P2(var6)
 		c.Out.P2(var3)
 		c.Out.P2(var4)
-		c.Out.P2(c.ObjInterface)
+		c.Out.P2(c.ObjComId)
 		c.Out.P2(c.ObjSelectedSlot)
-		c.Out.P2(c.ObjSelectedInterface)
+		c.Out.P2(c.ObjSelectedComId)
 		c.SelectedCycle = 0
 		c.SelectedInterface = var4
 		c.SelectedItem = var3
@@ -5137,10 +5145,10 @@ func (c *Client) UseMenuOption(arg1 int) {
 		}
 	}
 	if var5 == 102 {
-		c.ObjSelected = 1
+		c.UseMode = 1
 		c.ObjSelectedSlot = var3
-		c.ObjSelectedInterface = var4
-		c.ObjInterface = var6
+		c.ObjSelectedComId = var4
+		c.ObjComId = var6
 		c.ObjSelectedName = objtype.List(var6).Name
 		c.SpellSelected = 0
 		c.RedrawSidebar = true
@@ -5179,9 +5187,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossCycle = 0
 			c.Out.P1Isaac(CLIENTPROT_OPNPCU) // Java: pIsaac(14) Client.java:9291
 			c.Out.P2(var6)
-			c.Out.P2(c.ObjInterface)
+			c.Out.P2(c.ObjComId)
 			c.Out.P2(c.ObjSelectedSlot)
-			c.Out.P2(c.ObjSelectedInterface)
+			c.Out.P2(c.ObjSelectedComId)
 		}
 	}
 	var var19 *playerentity.ClientPlayer
@@ -5342,7 +5350,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		c.SpellSelected = 1
 		c.ActiveSpellID = var4
 		c.ActiveSpellFlags = var22.ActionTarget
-		c.ObjSelected = 0
+		c.UseMode = 0
 		c.RedrawSidebar = true
 		var18 = var22.ActionVerb
 		if strings.Contains(var18, " ") {
@@ -5500,9 +5508,9 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.CrossCycle = 0
 			c.Out.P1Isaac(CLIENTPROT_OPPLAYERU) // Java: pIsaac(113) Client.java:9172
 			c.Out.P2(var6)
-			c.Out.P2(c.ObjInterface)
+			c.Out.P2(c.ObjComId)
 			c.Out.P2(c.ObjSelectedSlot)
-			c.Out.P2(c.ObjSelectedInterface)
+			c.Out.P2(c.ObjSelectedComId)
 		}
 	}
 	if var5 == 435 {
@@ -5548,12 +5556,15 @@ func (c *Client) UseMenuOption(arg1 int) {
 			c.Out.P2(c.ActiveSpellID)
 		}
 	}
-	c.ObjSelected = 0
+	c.UseMode = 0
 	c.SpellSelected = 0
 	c.RedrawSidebar = true // Java: Client.java:10317 (new in 244)
 }
 
-func GetCombatLevelColorTag(arg0 int, arg2 int) string {
+// Java: combatColourCode (Client.java:1356 @32f3062; was getCombatLevelTag in
+// ≤254). Go's (local, other) arg order is the compensated reverse of Java's
+// (other, local) — the difference computed is local-other in both.
+func CombatColourCode(arg0 int, arg2 int) string {
 	var3 := arg0 - arg2
 	if var3 < -9 {
 		return "@red@"
@@ -6660,7 +6671,7 @@ func (c *Client) HandleInput() {
 	// at (17,357).
 	if c.MouseX > 4 && c.MouseY > 4 && c.MouseX < 516 && c.MouseY < 338 {
 		if c.MainLayerID == -1 {
-			c.HandleViewportOptions()
+			c.AddWorldOptions()
 		} else {
 			c.HandleComponentInput(c.MouseY, c.MouseX, 4, iftype.List[c.MainLayerID], 4, 0)
 		}
@@ -7609,7 +7620,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		for i := range 100 {
 			c.MessageText[i] = ""
 		}
-		c.ObjSelected = 0
+		c.UseMode = 0
 		c.SpellSelected = 0
 		c.SceneState = 0
 		c.WaveCount = 0
@@ -8131,8 +8142,16 @@ func (c *Client) AddPlayerOptions(arg1 int, arg2 int, arg3 *playerentity.ClientP
 	if arg3 == c.LocalPlayer || c.MenuSize >= 400 {
 		return
 	}
-	var6 := arg3.Name + GetCombatLevelColorTag(c.LocalPlayer.CombatLevel, arg3.CombatLevel) + " (level-" + strconv.Itoa(arg3.CombatLevel) + ")"
-	if c.ObjSelected == 1 {
+	// Java: Client.java:2615-2620 @32f3062 — new in 274: a player whose
+	// appearance carries a non-zero skillLevel is captioned "(skill-N)"
+	// instead of the combat-level tag.
+	var var6 string
+	if arg3.SkillLevel == 0 {
+		var6 = arg3.Name + CombatColourCode(c.LocalPlayer.CombatLevel, arg3.CombatLevel) + " (level-" + strconv.Itoa(arg3.CombatLevel) + ")"
+	} else {
+		var6 = arg3.Name + " (skill-" + strconv.Itoa(arg3.SkillLevel) + ")"
+	}
+	if c.UseMode == 1 {
 		c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @whi@" + var6
 		c.MenuAction[c.MenuSize] = 275 // Java: Client.java:9305 (254 id; was 367)
 		c.MenuParamA[c.MenuSize] = arg2
@@ -8406,7 +8425,7 @@ func (c *Client) GameLoop() {
 	}
 	c.PacketCycle++
 	if c.PacketCycle > 750 {
-		c.TryReconnect()
+		c.LostCon()
 	}
 	c.UpdatePlayers()
 	c.UpdateNpcs()
@@ -8618,7 +8637,7 @@ func (c *Client) GameLoop() {
 		//   catch (IOException) { tryReconnect(); }
 		//   catch (Exception)   { logout(); }
 		// (client.java:7569-7580). ClientStream.Write returns a single untyped
-		// error for the IOException arm (-> TryReconnect); a genuine runtime
+		// error for the IOException arm (-> LostCon); a genuine runtime
 		// panic maps to Java's catch (Exception) -> logout via this recover.
 		func() {
 			defer func() {
@@ -8627,7 +8646,7 @@ func (c *Client) GameLoop() {
 				}
 			}()
 			if err := c.Stream.Write(c.Out.Data, c.Out.Pos, 0); err != nil {
-				c.TryReconnect()
+				c.LostCon()
 			} else {
 				c.Out.Pos = 0
 				c.HeartbeatTimer = 0
@@ -8637,11 +8656,11 @@ func (c *Client) GameLoop() {
 }
 
 func (c *Client) DrawTooltip() {
-	if c.MenuSize < 2 && c.ObjSelected == 0 && c.SpellSelected == 0 {
+	if c.MenuSize < 2 && c.UseMode == 0 && c.SpellSelected == 0 {
 		return
 	}
 	var2 := ""
-	if c.ObjSelected == 1 && c.MenuSize < 2 {
+	if c.UseMode == 1 && c.MenuSize < 2 {
 		var2 = "Use " + c.ObjSelectedName + " with..."
 	} else if c.SpellSelected == 1 && c.MenuSize < 2 {
 		var2 = c.SpellCaption + "..."
@@ -9477,7 +9496,8 @@ func (c *Client) GetNpcPosOldVis(arg1 *io.Packet) {
 
 // GetParameter (applet HTML <param>) intentionally not ported: Go client takes config from CLI args / clientextras.
 
-func (c *Client) TryReconnect() {
+// Java: lostCon (Client.java:6147-6170 @32f3062; was tryReconnect in ≤254).
+func (c *Client) LostCon() {
 	if c.PendingLogout > 0 {
 		c.Logout()
 		return
@@ -10237,8 +10257,10 @@ func (c *Client) DelIgnore(arg1 int64) {
 	}
 }
 
-func (c *Client) HandleViewportOptions() {
-	if c.ObjSelected == 0 && c.SpellSelected == 0 {
+// Java: addWorldOptions (Client.java:3375 @32f3062; was handleViewportOptions
+// in ≤254).
+func (c *Client) AddWorldOptions() {
+	if c.UseMode == 0 && c.SpellSelected == 0 {
 		c.MenuOption[c.MenuSize] = "Walk here"
 		c.MenuAction[c.MenuSize] = 718
 		c.MenuParamB[c.MenuSize] = c.MouseX
@@ -10257,7 +10279,7 @@ func (c *Client) HandleViewportOptions() {
 			//var10 := 0
 			if var7 == 2 && c.Scene.GetInfo(c.CurrentLevel, var5, var6, var4) >= 0 {
 				var9 := loctype.List(var8)
-				if c.ObjSelected == 1 {
+				if c.UseMode == 1 {
 					c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @cya@" + var9.Name
 					c.MenuAction[c.MenuSize] = 810
 					c.MenuParamA[c.MenuSize] = var4
@@ -10313,6 +10335,14 @@ func (c *Client) HandleViewportOptions() {
 							c.AddNPCOptions(var11.Type, var6, var5, c.NPCIDs[j])
 						}
 					}
+					// Java: Client.java:3452-3457 @32f3062 — new in 274: players
+					// co-located with the clicked size-1 NPC get their options too.
+					for j := range c.PlayerCount {
+						var15 := c.Players[c.PlayerIDs[j]]
+						if var15 != nil && var15.X == var13.X && var15.Z == var13.Z {
+							c.AddPlayerOptions(var6, c.PlayerIDs[j], var15, var5)
+						}
+					}
 				}
 				c.AddNPCOptions(var13.Type, var6, var5, var8)
 			}
@@ -10340,7 +10370,7 @@ func (c *Client) HandleViewportOptions() {
 					for var17 := var15.Tail(); var17 != nil; var17 = var15.Prev() {
 						v := var17.Value
 						var18 := objtype.List(v.Index)
-						if c.ObjSelected == 1 {
+						if c.UseMode == 1 {
 							c.MenuOption[c.MenuSize] = "Use " + c.ObjSelectedName + " with @lre@" + var18.Name
 							c.MenuAction[c.MenuSize] = 111
 							c.MenuParamA[c.MenuSize] = v.Index
@@ -10621,7 +10651,7 @@ func (c *Client) TcpIn() (ok bool) {
 	//   try { ... } catch (IOException) { tryReconnect() }
 	//                catch (Exception)  { reporterror("T2 ...") ; logout() }
 	// The catch (IOException) path is handled inline below: every Available/
-	// ReadFully error routes to TryReconnect()+return true. The deferred
+	// ReadFully error routes to LostCon()+return true. The deferred
 	// recover here reproduces catch (Exception): a panic while parsing or
 	// dispatching a packet (e.g. a malformed/hostile packet) emits the "T2"
 	// diagnostic byte-dump and logs out gracefully instead of crashing the
@@ -10647,7 +10677,7 @@ func (c *Client) TcpIn() (ok bool) {
 	}()
 	var2, err := c.Stream.Available()
 	if err != nil {
-		c.TryReconnect()
+		c.LostCon()
 		return true
 	}
 	if var2 == 0 {
@@ -10655,7 +10685,7 @@ func (c *Client) TcpIn() (ok bool) {
 	}
 	if c.PacketType == -1 {
 		if err := c.Stream.ReadFully(c.In.Data, 0, 1); err != nil {
-			c.TryReconnect()
+			c.LostCon()
 			return true
 		}
 		c.PacketType = int(c.In.Data[0]) & 0xFF
@@ -10672,7 +10702,7 @@ func (c *Client) TcpIn() (ok bool) {
 			return false
 		}
 		if err := c.Stream.ReadFully(c.In.Data, 0, 1); err != nil {
-			c.TryReconnect()
+			c.LostCon()
 			return true
 		}
 		c.PacketSize = int(c.In.Data[0]) & 0xFF
@@ -10683,7 +10713,7 @@ func (c *Client) TcpIn() (ok bool) {
 			return false
 		}
 		if err := c.Stream.ReadFully(c.In.Data, 0, 2); err != nil {
-			c.TryReconnect()
+			c.LostCon()
 			return true
 		}
 		c.In.Pos = 0
@@ -10695,7 +10725,7 @@ func (c *Client) TcpIn() (ok bool) {
 	}
 	c.In.Pos = 0
 	if err := c.Stream.ReadFully(c.In.Data, 0, c.PacketSize); err != nil {
-		c.TryReconnect()
+		c.LostCon()
 		return true
 	}
 	c.PacketCycle = 0
@@ -10722,7 +10752,7 @@ func (c *Client) TcpIn() (ok bool) {
 			}
 			// Java: worldLocationState gate (Client.java:7346 @2e62978; was
 			// overrideChat in 245.2).
-			if !var32 && c.WorldLocationState == 0 {
+			if !var32 && c.ChatDisabled == 0 {
 				c.AddChat(4, "wishes to trade with you.", var28)
 			}
 		} else if strings.HasSuffix(var3, ":duelreq:") {
@@ -10737,7 +10767,7 @@ func (c *Client) TcpIn() (ok bool) {
 			}
 			// Java: worldLocationState gate (Client.java:7359 @2e62978; was
 			// overrideChat in 245.2).
-			if !var32 && c.WorldLocationState == 0 {
+			if !var32 && c.ChatDisabled == 0 {
 				c.AddChat(8, "wishes to duel with you.", var28)
 			}
 		} else {
@@ -10768,7 +10798,7 @@ func (c *Client) TcpIn() (ok bool) {
 		}
 		// Java: worldLocationState gate (Client.java:7063 @2e62978; was
 		// overrideChat in 245.2).
-		if !var32 && c.WorldLocationState == 0 {
+		if !var32 && c.ChatDisabled == 0 {
 			// Java: try { ... } catch (Exception) { signlink.reporterror("cde1"); }
 			// (client.java:10054-10067) — a WordPack/WordFilter decode failure is
 			// swallowed locally, logged as "cde1", and the read continues. The
@@ -11878,7 +11908,7 @@ func (c *Client) GetPlayerExtended2(arg1 int, arg2 int, arg3 *io.Packet, arg4 *p
 			}
 			// Java: worldLocationState gate (Client.java:8212 @2e62978; was
 			// overrideChat in 245.2).
-			if !var12 && c.WorldLocationState == 0 {
+			if !var12 && c.ChatDisabled == 0 {
 				// Java: try { ... } catch (Exception) { signlink.reporterror("cde2"); }
 				// (client.java:10513-10528) — a WordPack/WordFilter decode failure
 				// is swallowed locally, logged as "cde2", and processing continues.

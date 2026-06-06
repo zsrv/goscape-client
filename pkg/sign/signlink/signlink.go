@@ -483,9 +483,10 @@ func ReportErrorFunc(e string) {
 	// is subsumed by the call itself. Discarding the body is the
 	// equivalent of Java's readLine-then-close pattern; the HTTP
 	// transaction is observably identical.
-	// Java: "reporterror" + 254 + ".cgi?..." (signlink.java:302 @2e62978) —
-	// a literal in Java, not clientversion.
-	_, err := OpenURL("reporterror" + strconv.Itoa(254) + ".cgi?error=" + ErrorName + " " + var4)
+	// Java: "reporterror" + 274 + ".cgi?..." (signlink.java:303 @32f3062) —
+	// a literal in Java, not clientversion (274's deob leaves clientversion
+	// a dead uninitialized field).
+	_, err := OpenURL("reporterror" + strconv.Itoa(274) + ".cgi?error=" + ErrorName + " " + var4)
 	if err != nil {
 		log.Printf("signlink: failed to open url: %v", err)
 		return

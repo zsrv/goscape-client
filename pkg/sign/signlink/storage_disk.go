@@ -69,8 +69,14 @@ func storeDirName() string {
 	return ".file_store_" + strconv.Itoa(StoreID)
 }
 
+// Java: findcachedir (signlink.java:172-195 @32f3062) — 274 appends
+// "c:/rscache" and "/rscache" (12→14 candidates). Those two lack the
+// trailing slash the rest carry, and Java builds the target by raw string
+// concat (var3 + var1), so they resolve to SIBLING directories
+// ("c:/rscache.file_store_32", "/rscache.file_store_32"), not
+// subdirectories — Go concatenates the same way to stay faithful.
 func FindCacheDir() string {
-	var0 := []string{"c:/windows/", "c:/winnt/", "d:/windows/", "d:/winnt/", "e:/windows/", "e:/winnt/", "f:/windows/", "f:/winnt/", "c:/", "~/", "/tmp/", ""}
+	var0 := []string{"c:/windows/", "c:/winnt/", "d:/windows/", "d:/winnt/", "e:/windows/", "e:/winnt/", "f:/windows/", "f:/winnt/", "c:/", "~/", "/tmp/", "", "c:/rscache", "/rscache"}
 	var1 := storeDirName()
 	for i := range len(var0) {
 		var3 := var0[i]
@@ -80,7 +86,7 @@ func FindCacheDir() string {
 				continue
 			}
 		}
-		var4 := path.Join(var3, var1)
+		var4 := var3 + var1 // Java: new File(var3 + var1) — see doc comment
 		_, err := os.Stat(var4)
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
@@ -97,7 +103,9 @@ func FindCacheDir() string {
 				continue
 			}
 		}
-		return path.Join(var3, var1, "/")
+		// Java returns var3 + var1 + "/"; Go callers path.Join, so the
+		// trailing slash is omitted here.
+		return var4
 	}
 	return ""
 }

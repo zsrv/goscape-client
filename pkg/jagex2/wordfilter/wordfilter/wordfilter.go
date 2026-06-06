@@ -13,9 +13,10 @@ var (
 	Domains         [][]rune
 	TLDs            [][]rune
 	TLDType         []int
-	// Java: WordFilter.java:29 @2e62978 — 254 added "faq" (8th entry);
-	// 244 added "woop"/"woops" (225 had 5 entries).
-	ALLOWLIST []string = []string{"cook", "cook's", "cooks", "seeks", "sheet", "woop", "woops", "faq"}
+	// Java: whitelist (WordFilter.java:29 @32f3062; was ALLOWLIST in ≤254 —
+	// Go keeps the 254 name). 274 added "noob"/"noobs" (10 entries); 254
+	// added "faq" (8th); 244 added "woop"/"woops" (225 had 5).
+	ALLOWLIST []string = []string{"cook", "cook's", "cooks", "seeks", "sheet", "woop", "woops", "faq", "noob", "noobs"}
 )
 
 func Unpack(jag *io.JagFile) {
@@ -764,7 +765,8 @@ func Filter2(badCombinations [][]int8, chars []rune, fragment []rune) {
 				alphaCount := 0
 				// Java: alphaIndex tracks the LAST alpha position; before the
 				// masking gate, numeralCount is reduced by the distance from it
-				// to the span end (WordFilter.java:756-771, missing in 225).
+				// to the span end (WordFilter.java:664-677 @32f3062, missing in
+				// 225).
 				alphaIndex := -1
 				for i := start; i < end; i++ {
 					if IsNumber(chars[i]) {
@@ -776,13 +778,20 @@ func Filter2(badCombinations [][]int8, chars []rune, fragment []rune) {
 				}
 
 				if alphaIndex > -1 {
-					numeralCount -= end - alphaIndex + 1
+					// Java: WordFilter.java:676 @32f3062 — 274 flips the trailing
+					// term: -= end - alphaIndex - 1 (254 was ... + 1).
+					numeralCount -= end - alphaIndex - 1
 				}
 
 				if numeralCount <= alphaCount {
 					for i := start; i < end; i++ {
 						chars[i] = '*'
 					}
+				} else {
+					// Java: WordFilter.java:682-684 @32f3062 — new in 274: a
+					// match rejected by the digit-dominance heuristic resets
+					// the scan stride to 1.
+					stride = 1
 				}
 			}
 		}
