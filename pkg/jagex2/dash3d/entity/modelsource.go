@@ -19,3 +19,16 @@ func ModelSourceOf(m *model.Model) ModelSource {
 	}
 	return m
 }
+
+// ObjSourceOf wraps a possibly-nil *ClientObj as a ModelSource, returning a
+// genuine nil interface when o is nil — the same typed-nil trap ModelSourceOf
+// guards (a typed-nil would pass the scene's `!= nil` draw guards and panic
+// in GetModel's nil receiver). Java: sortObjStacks passes its bottomObj/
+// middleObj ClientObj refs, which may be null, straight into
+// World3D.addGroundObject (Client.java:8905-8919 @01f1608).
+func ObjSourceOf(o *ClientObj) ModelSource {
+	if o == nil {
+		return nil
+	}
+	return o
+}
