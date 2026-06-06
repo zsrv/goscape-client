@@ -245,7 +245,7 @@ func Unpack(id int, data []byte) {
 	hasVertexLabels := buf.G1()
 	dataLengthX := buf.G2()
 	dataLengthY := buf.G2()
-	dataLengthZ := buf.G2()
+	buf.G2() // Java: var13 (Model.java:287) — vertex-Z data length; the read advances the stream but the value is never used
 	dataLengthFaceOrientations := buf.G2()
 
 	pos := 0
@@ -305,10 +305,9 @@ func Unpack(id int, data []byte) {
 	info.VertexYOffset = pos
 	pos += dataLengthY
 
+	// Java: Model.unpack ends here (Model.java:334 @32f3062) — the 274 deob
+	// assigns vertexZOffset from a fresh local with no trailing dead add.
 	info.VertexZOffset = pos
-	// Java: Model.unpack ends with `pos += dataLengthZ` even though pos is never
-	// read again; kept verbatim for bug-for-bug fidelity.
-	pos += dataLengthZ //nolint:ineffassign,staticcheck // faithful port of Java Model.unpack
 }
 
 // UnloadOne drops one model's metadata. Java: Model.unload(int).
@@ -1214,25 +1213,28 @@ func (m *Model) Animate2(arg0 int, arg1 []int, arg2 int, arg3 int, arg4 int) {
 					var15 := 0
 					var16 := 0
 					var17 := 0
+					// Java: Model.java:1209-1228 — fixed-point mul-acc is
+					// 32-bit int arithmetic that wraps mod 2^32 before the
+					// >>16 (audit P6 int32-wrap family).
 					if var14 != 0 {
 						var15 = Sin[var14]
 						var16 = Cos[var14]
-						var17 = (m.VertexY[var11]*var15 + m.VertexX[var11]*var16) >> 16
-						m.VertexY[var11] = (m.VertexY[var11]*var16 - m.VertexX[var11]*var15) >> 16
+						var17 = int(int32(m.VertexY[var11]*var15+m.VertexX[var11]*var16)) >> 16
+						m.VertexY[var11] = int(int32(m.VertexY[var11]*var16-m.VertexX[var11]*var15)) >> 16
 						m.VertexX[var11] = var17
 					}
 					if var12 != 0 {
 						var15 = Sin[var12]
 						var16 = Cos[var12]
-						var17 = (m.VertexY[var11]*var16 - m.VertexZ[var11]*var15) >> 16
-						m.VertexZ[var11] = (m.VertexY[var11]*var15 + m.VertexZ[var11]*var16) >> 16
+						var17 = int(int32(m.VertexY[var11]*var16-m.VertexZ[var11]*var15)) >> 16
+						m.VertexZ[var11] = int(int32(m.VertexY[var11]*var15+m.VertexZ[var11]*var16)) >> 16
 						m.VertexY[var11] = var17
 					}
 					if var13 != 0 {
 						var15 = Sin[var13]
 						var16 = Cos[var13]
-						var17 = (m.VertexZ[var11]*var15 + m.VertexX[var11]*var16) >> 16
-						m.VertexZ[var11] = (m.VertexZ[var11]*var16 - m.VertexX[var11]*var15) >> 16
+						var17 = int(int32(m.VertexZ[var11]*var15+m.VertexX[var11]*var16)) >> 16
+						m.VertexZ[var11] = int(int32(m.VertexZ[var11]*var16-m.VertexX[var11]*var15)) >> 16
 						m.VertexX[var11] = var17
 					}
 					m.VertexX[var11] += BaseX
@@ -1288,8 +1290,10 @@ func (m *Model) RotateXAxis(arg1 int) {
 	var3 := Sin[arg1]
 	var4 := Cos[arg1]
 	for i := range m.VertexCount {
-		var6 := (m.VertexY[i]*var4 - m.VertexZ[i]*var3) >> 16
-		m.VertexZ[i] = (m.VertexY[i]*var3 + m.VertexZ[i]*var4) >> 16
+		// Java: Model.java:1289-1290 — 32-bit mul-acc wraps mod 2^32
+		// before the >>16 (audit P6 int32-wrap family).
+		var6 := int(int32(m.VertexY[i]*var4-m.VertexZ[i]*var3)) >> 16
+		m.VertexZ[i] = int(int32(m.VertexY[i]*var3+m.VertexZ[i]*var4)) >> 16
 		m.VertexY[i] = var6
 	}
 }

@@ -137,6 +137,12 @@ func ToSentenceCase(s string) string {
 // not per UTF-8 byte. Go's `len(s)` is byte-based: for any non-ASCII char
 // (e.g. '£' = 2 bytes) it would produce too many stars. Censored chat can
 // include '£', so this matters in practice.
+//
+// Latent (audit jstring-01, accepted): `for range s` counts runes, while
+// Java counts UTF-16 units — these differ only for astral (non-BMP) chars,
+// which encode as surrogate PAIRS in Java (2 stars) but single runes here
+// (1 star). Chat input is CHARSET-gated to BMP characters, so the divergence
+// is unreachable; the exact port would be len(utf16.Encode([]rune(s))).
 func ToAsterisks(s string) string {
 	var sb strings.Builder
 	for range s {

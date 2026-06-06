@@ -5937,9 +5937,9 @@ func (c *Client) UpdateInterfaceContent(arg1 *iftype.IfType) {
 		if var3 == 654 {
 			switch c.DaysSinceRecoveriesChanged {
 			case 201:
-				// Java: Client.java:11633-11638 ("unavailabe" [sic] in the source).
+				// Java: Client.java:2568-2572
 				if c.WarnMembersInNonMembers == 1 {
-					arg1.Text = "@whi@this world but member benefits are unavailabe whilst here."
+					arg1.Text = "@whi@this world but member benefits are unavailable whilst here."
 				} else {
 					arg1.Text = ""
 				}
@@ -5953,15 +5953,16 @@ func (c *Client) UpdateInterfaceContent(arg1 *iftype.IfType) {
 }
 
 func (c *Client) SaveWave(arg0 []byte, arg1 int) bool {
-	// Java: signlink.wavesave rejects payloads over 2,000,000 bytes
-	// (signlink.java:255-257 @2e62978); the busy-slot (savereq) retry path
-	// is intentionally not reproduced by the in-memory audio seam
-	// (audit signlink-02).
-	if arg1 > 2000000 {
-		return false
-	}
+	// Java: Client.java:11206-11208 — `arg0 == null ? true :
+	// signlink.wavesave(arg0, arg1)`, so the nil check wins before
+	// wavesave's >2,000,000-byte reject (signlink.java:256-258 @32f3062);
+	// the busy-slot (savereq) retry path is intentionally not reproduced
+	// by the in-memory audio seam (audit signlink-02).
 	if arg0 == nil {
 		return true
+	}
+	if arg1 > 2000000 {
+		return false
 	}
 	audio.PlayWave(arg0[:arg1])
 	return true
@@ -6366,7 +6367,7 @@ func (c *Client) Load() {
 	modelCount2 := c.OnDemand.GetFileCount(0)
 	for i := range modelCount2 {
 		flags := c.OnDemand.GetModelFlags(i)
-		var priority byte
+		var priority int8 // Java: byte var25 (Client.java:5254 @32f3062)
 		if flags&0x8 != 0 {
 			priority = 10
 		} else if flags&0x20 != 0 {
@@ -9968,7 +9969,9 @@ func (c *Client) GetIfVar(arg0 int, arg2 *iftype.IfType) (result int) {
 			if var12 >= 0 && var12 < objtype.Count && (!objtype.List(var12).Members || MembersWorld) {
 				for var13 := range len(var11.InvSlotObjId) {
 					if var11.InvSlotObjId[var13] == var12+1 {
-						var9 += var11.InvSlotObjCount[var13]
+						// Java: Client.java:2283 — int += wraps mod 2^32
+						// (audit client-01-01).
+						var9 = int(int32(var9 + var11.InvSlotObjCount[var13]))
 					}
 				}
 			}
@@ -9982,7 +9985,9 @@ func (c *Client) GetIfVar(arg0 int, arg2 *iftype.IfType) (result int) {
 			var6++
 		}
 		if var8 == 7 {
-			var9 = c.Varps[var4[var6]] * 100 / 46875
+			// Java: Client.java:2295 — varp*100 is a 32-bit int product that
+			// wraps mod 2^32 before the /46875 (audit client-01-01).
+			var9 = int(int32(c.Varps[var4[var6]]*100)) / 46875
 			var6++
 		}
 		if var8 == 8 {
@@ -10065,17 +10070,20 @@ func (c *Client) GetIfVar(arg0 int, arg2 *iftype.IfType) (result int) {
 			var6++
 		}
 		if var10 == 0 {
+			// Java: Client.java:2358-2369 — the operator-apply ops are 32-bit
+			// int arithmetic wrapping mod 2^32; the /= wrap also reproduces
+			// Java's MIN_INT/-1 overflow (audit client-01-01).
 			if var7 == 0 {
-				var5 += var9
+				var5 = int(int32(var5 + var9))
 			}
 			if var7 == 1 {
-				var5 -= var9
+				var5 = int(int32(var5 - var9))
 			}
 			if var7 == 2 && var9 != 0 {
-				var5 /= var9
+				var5 = int(int32(var5 / var9))
 			}
 			if var7 == 3 {
-				var5 *= var9
+				var5 = int(int32(var5 * var9))
 			}
 			var7 = 0
 		} else {
@@ -11542,10 +11550,11 @@ func (c *Client) TcpIn() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: ptype 255 — FRIENDLIST_LOADED, NEW in 254 (Client.java:6919-6924
-	// @2e62978). g1 friend-server status (0 none / 1 connecting / 2 loaded).
+	// Java: ptype 185 — FRIENDLIST_LOADED (Client.java:8648-8653 @32f3062).
+	// g1 friend-server status (0 none / 1 connecting / 2 loaded).
 	if c.PacketType == SERVERPROT_FRIENDLIST_LOADED {
 		c.FriendListStatus = c.In.G1()
+		c.RedrawSidebar = true
 		c.PacketType = -1
 		return true
 	}
@@ -11711,11 +11720,11 @@ func (c *Client) TcpIn() (ok bool) {
 		c.PacketType = -1
 		return true
 	}
-	// Java: opcode 110 — skill XP/level update (Client.java:7837)
+	// Java: ptype 105 — skill XP/level update (Client.java:8471-8486)
 	if c.PacketType == SERVERPROT_UPDATE_STAT {
 		c.RedrawSidebar = true
 		var26 := c.In.G1()
-		var4 := c.In.G4()
+		var4 := int(int32(c.In.G4())) // Java: g4() signed int32 (audit client-08b-B)
 		var5 := c.In.G1()
 		c.SkillExperience[var26] = var4
 		c.SkillLevel[var26] = var5

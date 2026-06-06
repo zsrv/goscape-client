@@ -128,12 +128,12 @@ func NewClientBuild(arg0 int, arg1 [][][]int8, arg2 int, arg3 [][][]int) *Client
 	return &w
 }
 
-// Java: spreadHeight (ClientBuild.java:108-133) — new in 244, replacing 225's
-// clearLandscape (water-fill, deleted in 244) for absent neighbouring
-// mapsquares: clears the shadow and copies the ground heightmap inward from
-// the loaded edges so terrain slopes off smoothly instead of dropping to sea
-// level. Note the inclusive (<=) loop bounds: the spread covers 65 rows/cols
-// for a 64-tile square, faithful to Java.
+// Java: fadeAdjacent (ClientBuild.java:436-456 @32f3062; named spreadHeight
+// in the 244 deob) — new in 244, replacing 225's clearLandscape (water-fill,
+// deleted in 244) for absent neighbouring mapsquares: clears the shadow and
+// copies the ground heightmap inward from the loaded edges so terrain slopes
+// off smoothly instead of dropping to sea level. Note the inclusive (<=) loop
+// bounds: the spread covers 65 rows/cols for a 64-tile square, faithful to Java.
 func (w *ClientBuild) SpreadHeight(startX, startZ, endX, endZ int) {
 	for z := startZ; z <= startZ+endZ; z++ {
 		for x := startX; x <= startX+endX; x++ {

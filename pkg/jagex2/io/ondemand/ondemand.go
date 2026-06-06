@@ -100,8 +100,9 @@ type OnDemand struct {
 	versions [4][]int
 	// Java: vb.i — per-archive file CRC tables (4 archives)
 	crcs [4][]int
-	// Java: vb.j — per-archive per-file download priority — written in Unpack, read by the prefetch logic
-	priorities [4][]byte
+	// Java: vb.j — per-archive per-file download priority (byte[][], signed)
+	// — written in Unpack, read by the prefetch logic
+	priorities [4][]int8
 	// Java: vb.k
 	topPriority int
 
@@ -217,7 +218,7 @@ func (od *OnDemand) Unpack(versionlist Archive) {
 		buf := jio.NewPacket(data)
 
 		od.versions[i] = make([]int, count)
-		od.priorities[i] = make([]byte, count)
+		od.priorities[i] = make([]int8, count)
 
 		for j := range count {
 			od.versions[i][j] = buf.G2()
@@ -482,7 +483,7 @@ func (od *OnDemand) Cycle() *OnDemandRequest {
 //
 // A nil cache (the bundle-only default) makes this a no-op, matching Java's
 // app.fileStreams[0] == null guard.
-func (od *OnDemand) PrefetchPriority(archive, file int, priority byte) {
+func (od *OnDemand) PrefetchPriority(archive, file int, priority int8) {
 	if od.cache == nil || od.versions[archive][file] == 0 {
 		return
 	}
@@ -549,6 +550,9 @@ func (od *OnDemand) Stop() {
 // The socket-resend / waitCycles / stream / heartbeat tail of Client-TS run()
 // is intentionally not ported (WS1): with the modernized send() being a no-op
 // it would do nothing useful, since data arrives via read()/downloadZip().
+// The one exception is the idle UI clear from that tail's else branch
+// (OnDemand.java:438-440 @32f3062): once nothing is pending, the
+// "Loading extra files" status line must reset, or it sticks forever.
 func (od *OnDemand) Run() {
 	if !od.running {
 		return
@@ -570,6 +574,13 @@ func (od *OnDemand) Run() {
 
 		od.handleExtras()
 		od.read()
+	}
+
+	// Java: OnDemand.java:405-441 — the resend walk sets var3 iff the pending
+	// list is non-empty; the if half (packetCycle/socket reset) is the WS1
+	// seam above, only the else half's message clear is ported.
+	if od.pending.Head() == nil {
+		od.message = ""
 	}
 }
 

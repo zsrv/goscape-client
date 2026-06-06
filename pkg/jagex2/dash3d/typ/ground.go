@@ -230,19 +230,24 @@ func NewGround(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10
 	if arg3 < arg17 {
 		var36 = arg3
 	}
-	// Java bug preserved: original has `if (arg3 > arg3)` (Ground.java:274).
-	// The condition is always false — the intended max-branch for the (arg17, arg3)
-	// pair never fires, leaving var37 == arg3. Subsequent arg13/arg7 min/max passes
-	// still run normally. Bug-for-bug fidelity with the obfuscated Jagex source.
+	// Java bug preserved: original has `if (arg3 > arg3)` (Ground.java:274
+	// @32f3062, `arg14 > arg14` in Java's arg names). The condition is always
+	// false — the intended max-branch for the (arg17, arg3) pair never fires,
+	// leaving var37 == arg3.
 	if arg3 > arg3 { //nolint:staticcheck // SA4000: always-false condition preserved bug-for-bug (see comment above)
 		var37 = arg3
 	}
+	// Dead tail, 254-deob shape kept (audit cosmetic #13): the 274 deob
+	// reflowed this provably dead block — empty if-bodies and no /14 scaling
+	// (Ground.java:269-288 @32f3062). The min/max accumulator + /14 below
+	// descend from the 254 deob; var36/var37 are never read again, so the
+	// divergence is unobservable.
 	var36 = min(arg13, var36)
 	var37 = max(arg13, var37)
 	var36 = min(arg7, var36)
 	var37 = max(arg7, var37)
-	var36 /= 14 //nolint:ineffassign // Java: Ground.java:289 — faithful dead final scaling (var36 not read after)
-	var37 /= 14 //nolint:ineffassign // Java: Ground.java:290 — faithful dead final scaling (var37 not read after)
+	var36 /= 14 //nolint:ineffassign // dead final scaling (see dead-tail comment above)
+	var37 /= 14 //nolint:ineffassign // dead final scaling (see dead-tail comment above)
 
 	return &t
 }
