@@ -22,3 +22,16 @@ func ModelSourceOf(m *model.Model) ModelSource {
 	}
 	return m
 }
+
+// ObjSourceOf wraps a possibly-nil *ClientObj as a ModelSource, returning a
+// genuine nil interface when o is nil — the same typed-nil trap ModelSourceOf
+// guards (a typed-nil would pass the scene's `!= nil` draw guards and panic
+// in GetTempModel's nil receiver). Java: showObject passes its second/third
+// ClientObj refs, which may be null, straight into World.setObj
+// (Client.java:3904-3915 @32f3062).
+func ObjSourceOf(o *ClientObj) ModelSource {
+	if o == nil {
+		return nil
+	}
+	return o
+}
