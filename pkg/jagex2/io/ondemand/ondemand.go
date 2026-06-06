@@ -1,27 +1,36 @@
 // Package ondemand ports Java's jagex2.io.OnDemand.
-// Types, versionlist parse, Validate, getters, the request/cycle/prefetch/run/read
-// state machine, and the modernized /ondemand.zip bundle read path all live here.
+// Types, versionlist parse, Validate, getters, the request/cycle/prefetch
+// state machine, and the socket transport (send / read part-reassembly) all
+// live here.
 //
-// Only the modernized (non-applet) transport is ported. The Java/Client-TS
-// socket transport (the modernized===false branch of read(), the socket body
-// of send(), the ClientStream, partial-part reassembly, and the heartbeat) is
-// intentionally not ported (WS1); the data instead arrives via /ondemand.zip.
-// 274's socket-reopen backoff change (5000→4000 ms, OnDemand.java:696
-// @32f3062) lives entirely inside that non-ported socket body — no Go
-// counterpart. 274's failCount accounting IS mapped onto the zip transport
-// (see FailCount).
+// Transport: the genuine Java 274 socket protocol (OnDemand.java @32f3062) —
+// handshake byte 15 on the world port, 4-byte requests, 6-byte response
+// headers with 500-byte part reassembly. The pre-274 "modernized"
+// /ondemand.zip bundle shim (a Client-TS-era convention served by Engine-TS
+// ≤254) was removed when Engine-TS 274 dropped the route in favour of the
+// real protocol.
+//
+// Threading: Java runs OnDemand on a worker thread (startThread(this, 2),
+// OnDemand.java:216) sleeping 20|50 ms between pump iterations; this port
+// drives Run() once per game frame instead (established WS1 decision), so
+// Java's synchronized blocks are dropped — all state lives on the game-loop
+// goroutine. Two exceptions: clientstream's internal reader/writer
+// goroutines (own only stream internals), and the one-shot dial+handshake
+// connector goroutine (see send), which would otherwise stall the frame.
 package ondemand
 
 import (
-	"archive/zip"
 	"bytes"
 	"compress/gzip"
 	"fmt"
 	"hash/crc32"
 	"io"
+	"net"
+	"time"
 
 	"github.com/zsrv/goscape-client/pkg/jagex2/datastruct"
 	jio "github.com/zsrv/goscape-client/pkg/jagex2/io"
+	"github.com/zsrv/goscape-client/pkg/jagex2/io/clientstream"
 )
 
 // OnDemandRequest mirrors Java's jagex2.io.OnDemandRequest (extends Linkable2).
@@ -43,7 +52,10 @@ type OnDemandRequest struct {
 	File int
 	// Java: nb.k
 	Data []byte
-	// Java: nb.l — used only by the socket stall-detection loop; not ported (WS1).
+	// Java: nb.l — frames since this pending request was last (re)sent; the
+	// Run() resend walk re-sends and zeroes it past 50 (OnDemand.java:406-425
+	// @32f3062), and read() zeroes it on any response at-or-after this
+	// request in the pending list (OnDemand.java:599-606).
 	Cycle int
 	// Java: nb.m
 	Urgent bool
@@ -66,10 +78,17 @@ func newRequest() *OnDemandRequest {
 
 // ---- seam interfaces -------------------------------------------------------
 
-// Downloader fetches an absolute path from the on-demand server.
-// Client wires signlink.OpenURL here.
-type Downloader interface {
-	Get(path string) ([]byte, error)
+// App is the surface OnDemand needs from the client (Java: ub.q app —
+// init() receives the Client itself; only these two members are read by
+// the transport).
+type App interface {
+	// OpenSocket dials the world server for the ondemand service.
+	// Java: app.openSocket(Client.portOff + 43594) (OnDemand.java:700
+	// @32f3062) — portOff+43594 is the game port.
+	OpenSocket() (net.Conn, error)
+	// InGame mirrors Java app.ingame: read by send()'s priority byte and
+	// the Run() keepalive gate.
+	InGame() bool
 }
 
 // Cache is the per-file persistent store.
@@ -133,8 +152,7 @@ type OnDemand struct {
 	// pending counters recomputed each handlePending().
 	importantCount int
 	requestCount   int
-	// current mirrors Client-TS OnDemand.current — the pending request the
-	// modernized read() is currently servicing.
+	// Java: ub.I — the pending request read() is currently reassembling.
 	current *OnDemandRequest
 
 	// ---- request queues (Java: vb.x/y/z/A/B/C) ----------------------------
@@ -152,11 +170,6 @@ type OnDemand struct {
 	// prefetches: low-priority background prefetch requests.
 	prefetches *datastruct.LinkList[*OnDemandRequest]
 
-	// zip holds the unzipped ondemand bundle (nil until downloadZip succeeds).
-	// Java: not present (Java used a TCP socket; the modernized client uses
-	// /ondemand.zip, mirroring Client-TS OnDemand.zip).
-	zip map[string][]byte
-
 	// Java: vb.E/F
 	loadedPrefetchFiles int
 	totalPrefetchFiles  int
@@ -166,28 +179,56 @@ type OnDemand struct {
 
 	// FailCount counts consecutive failed transport attempts; Client.load's
 	// first two on-demand wait loops bail to showLoadError("ondemand") when
-	// it exceeds 3. Java: failCount (OnDemand.java:105 @32f3062, NEW in
-	// 274) — set to -10000 after a successful socket send write
-	// (OnDemand.java:721) and incremented in send()'s IOException catch
-	// (:731). The socket transport is not ported (data arrives via
-	// /ondemand.zip), so the Go mapping hangs the same accounting on the
-	// zip fetch: ++ per failed Get, -10000 on success (see downloadZip).
+	// it exceeds 3. Java: failCount (OnDemand.java:105 @32f3062, NEW in 274)
+	// — set to -10000 after a successful request write (OnDemand.java:721)
+	// and incremented in send()'s IOException catch (:731), which here also
+	// covers a failed dial or handshake.
 	FailCount int
 
+	// ---- socket transport state (Java: ub.E/F/G/J/K/L/N/O/P) ---------------
+
+	// Java: ub.L — 500-byte wire scratch (request frames, response headers,
+	// orphaned parts whose request is no longer pending)
+	buf [500]byte
+	// Java: ub.J — byte offset of the current part within current.Data
+	partOffset int
+	// Java: ub.K — bytes of the current part still unread (0 = expecting a
+	// 6-byte header next)
+	partAvailable int
+	// Java: ub.N — frames the pending list has gone unanswered; > 750 tears
+	// the connection down so send() redials
+	packetCycle int
+	// Java: ub.O — frames since the last request write; > 500 emits the
+	// keepalive frame while in game
+	noTimeoutCycle int
+	// Java: ub.P — wall-clock ms of the last dial attempt; enforces the 4 s
+	// redial backoff (274 tightened 5000→4000, OnDemand.java:697)
+	socketOpenTime int64
+	// stream wraps the ondemand socket. Java holds the raw Socket plus its
+	// two streams (ub.E/F/G); the Go port reuses clientstream.ClientStream
+	// because it reproduces InputStream.available()'s eager-buffering
+	// semantics over a net.Conn (see that package's doc) with the same
+	// read/readFully/write surface. nil = not connected (Java: socket==null).
+	stream *clientstream.ClientStream
+	// connecting is non-nil while the one-shot dial+handshake goroutine is
+	// in flight; it delivers exactly one result, polled by send(). Java
+	// performs the open synchronously on its worker thread
+	// (OnDemand.java:696-707); this port is frame-driven on the game-loop
+	// goroutine, so the blocking dial + 8-byte drain must not run inline.
+	connecting chan connectResult
+
 	// ---- injected seams (no client/* imports) ------------------------------
-	dl    Downloader
+	app   App
 	cache Cache // may be nil
-	// Java: app.ingame used only by the socket heartbeat — not ported.
 }
 
 // ---- constructor -----------------------------------------------------------
 
 // New allocates an OnDemand, wires seams, and calls Unpack.
-// Java: OnDemand constructor + unpack() (vb.a(Lyb;Lclient;)V).
-//
-// The Java app.ingame flag fed only the socket heartbeat, which is not ported
-// (the modernized transport uses /ondemand.zip), so it is not a parameter here.
-func New(versionlist Archive, dl Downloader, cache Cache) *OnDemand {
+// Java: OnDemand constructor + init() (OnDemand.java:133-217 @32f3062).
+// init()'s trailing startThread call is not ported — Run() is driven once
+// per frame instead (see the package doc).
+func New(versionlist Archive, app App, cache Cache) *OnDemand {
 	od := &OnDemand{
 		requests:   datastruct.NewLinkList2[*OnDemandRequest](),
 		queue:      datastruct.NewLinkList[*OnDemandRequest](),
@@ -196,7 +237,7 @@ func New(versionlist Archive, dl Downloader, cache Cache) *OnDemand {
 		completed:  datastruct.NewLinkList[*OnDemandRequest](),
 		prefetches: datastruct.NewLinkList[*OnDemandRequest](),
 		running:    true,
-		dl:         dl,
+		app:        app,
 		cache:      cache,
 	}
 	od.Unpack(versionlist)
@@ -543,16 +584,10 @@ func (od *OnDemand) Stop() {
 }
 
 // Run pumps the request state machine once. It is called once per game frame
-// (Java ran it on a dedicated worker thread; Client-TS drives it from the frame
-// loop, which this port mirrors).
-// Client-TS: run().
-//
-// The socket-resend / waitCycles / stream / heartbeat tail of Client-TS run()
-// is intentionally not ported (WS1): with the modernized send() being a no-op
-// it would do nothing useful, since data arrives via read()/downloadZip().
-// The one exception is the idle UI clear from that tail's else branch
-// (OnDemand.java:438-440 @32f3062): once nothing is pending, the
-// "Loading extra files" status line must reset, or it sticks forever.
+// (≈20 ms); Java ran the same body on a worker thread sleeping 20|50 ms per
+// iteration (OnDemand.java:380-460 @32f3062). The resend walk, packetCycle
+// teardown, and keepalive tail (Java :406-456) land with a following commit;
+// until then only the idle message clear from that tail is ported.
 func (od *OnDemand) Run() {
 	if !od.running {
 		return
@@ -577,8 +612,8 @@ func (od *OnDemand) Run() {
 	}
 
 	// Java: OnDemand.java:405-441 — the resend walk sets var3 iff the pending
-	// list is non-empty; the if half (packetCycle/socket reset) is the WS1
-	// seam above, only the else half's message clear is ported.
+	// list is non-empty; the walk and its if half (packetCycle/socket reset)
+	// land with a following commit, only the else half's message clear is here.
 	if od.pending.Head() == nil {
 		od.message = ""
 	}
@@ -712,100 +747,112 @@ func (od *OnDemand) handleExtras() {
 	}
 }
 
-// read services the head of the pending list from the /ondemand.zip bundle.
-// Client-TS: read() — only the modernized (this.modernized) branch is ported.
-//
-// The Client-TS modernized===false branch (socket part-reassembly via
-// ClientStream) is intentionally not ported (WS1).
-func (od *OnDemand) read() {
-	n := od.pending.Head()
-	if n == nil {
-		return
-	}
-	od.current = n.Value
+// read consumes ondemand socket responses; the full part-reassembly port of
+// Java read() (OnDemand.java:583-670 @32f3062) lands with the next commit.
+func (od *OnDemand) read() {}
 
-	od.downloadZip()
-
-	if od.zip == nil {
-		// od.current is intentionally left set; read() overwrites it on the next call (matches Client-TS).
-		return
-	}
-
-	od.current.Data = od.zip[fmt.Sprintf("%d.%d", od.current.Archive+1, od.current.File)]
-
-	if od.current.Data == nil {
-		od.current.node.Unlink() // drop from pending
-		od.current = nil
-		return
-	}
-
-	if od.cache != nil {
-		od.cache.Write(od.current.Archive+1, od.current.File, od.current.Data)
-	}
-
-	// archive-3 → 93 promotion (Client-TS read()): a non-urgent map archive
-	// fetch is promoted to an urgent archive-93 completion.
-	if !od.current.Urgent && od.current.Archive == 3 {
-		od.current.Urgent = true
-		od.current.Archive = 93
-	}
-
-	if od.current.Urgent {
-		od.completed.Push(od.current.node.Linkable)
-	} else {
-		od.current.node.Unlink()
-	}
-
-	od.current = nil
+// connectResult carries the outcome of one async dial+handshake attempt.
+type connectResult struct {
+	stream *clientstream.ClientStream
+	err    error
 }
 
-// send is a no-op in the modernized transport.
-// Client-TS modernized: handled by read(); socket send not ported (WS1).
-func (od *OnDemand) send(_ *OnDemandRequest) {
-}
-
-// downloadZip fetches and unzips /ondemand.zip once, caching it in od.zip.
-// Client-TS: downloadZip().
-//
-// Client-TS retried in a sleep-loop; here Run() is called per frame, so on a
-// fetch or unzip error we leave od.zip nil and return — the next Run() retries.
-func (od *OnDemand) downloadZip() {
-	if od.zip != nil {
-		return
-	}
-	if od.dl == nil {
-		return
-	}
-
-	data, err := od.dl.Get("/ondemand.zip")
+// openStream dials the world server and performs the ondemand handshake:
+// write service byte 15, drain the 8 response bytes.
+// Java: OnDemand.java:700-707 @32f3062 — synchronous on the worker thread
+// there; here it runs on the connector goroutine (see the connecting field).
+// Java ignores the drained bytes' values (including a -1 EOF), so only
+// stream errors abort; clientstream's 30 s read bound turns the half-open
+// hang Java could suffer into a counted failure.
+func openStream(app App) connectResult {
+	conn, err := app.OpenSocket()
 	if err != nil {
-		// Java: failCount++ in send()'s IOException catch (OnDemand.java:731
-		// @32f3062) — the modernized-transport analogue of a failed send.
+		return connectResult{err: err}
+	}
+	cs := clientstream.NewClientStream(conn)
+	hello := []byte{15}
+	if err := cs.Write(hello, 1, 0); err != nil {
+		cs.Close()
+		return connectResult{err: err}
+	}
+	for range 8 {
+		if _, err := cs.Read(); err != nil {
+			cs.Close()
+			return connectResult{err: err}
+		}
+	}
+	return connectResult{stream: cs}
+}
+
+// closeStream tears down the ondemand connection. Java inlines this
+// socket.close() + socket/in/out=null + partAvailable=0 sequence at all
+// three failure sites (OnDemand.java:428-435 run, :661-668 read,
+// :723-730 send).
+func (od *OnDemand) closeStream() {
+	if od.stream != nil {
+		od.stream.Close()
+		od.stream = nil
+	}
+	od.partAvailable = 0
+}
+
+// send transmits one 4-byte request frame, lazily (re)opening the ondemand
+// socket. Java: send(OnDemandRequest) (OnDemand.java:692-733 @32f3062).
+// Java's single IOException catch (close + failCount++) maps onto the
+// per-call error paths below; the dial+handshake runs on a one-shot
+// goroutine instead of inline (see the connecting field), during which
+// send() returns early — the request stays pending and the Run() resend
+// walk retries it once the connection lands.
+//
+// Note clientstream.Write is asynchronous (ring buffer + writer goroutine):
+// a wire failure surfaces on a LATER Write call, exactly like Java's
+// buffered OutputStream surfacing the IOException on a later flush.
+func (od *OnDemand) send(r *OnDemandRequest) {
+	if od.stream == nil {
+		if od.connecting != nil {
+			select {
+			case res := <-od.connecting:
+				od.connecting = nil
+				if res.err != nil {
+					od.FailCount++ // Java: failCount++ in the catch (OnDemand.java:731)
+					return
+				}
+				od.stream = res.stream
+				od.packetCycle = 0 // Java: OnDemand.java:707
+			default:
+				return // dial+handshake still in flight
+			}
+		} else {
+			// Java: 4 s redial backoff (OnDemand.java:696-699).
+			now := time.Now().UnixMilli() // Java: System.currentTimeMillis()
+			if now-od.socketOpenTime < 4000 {
+				return
+			}
+			od.socketOpenTime = now
+			ch := make(chan connectResult, 1)
+			od.connecting = ch
+			app := od.app
+			go func() { ch <- openStream(app) }()
+			return
+		}
+	}
+
+	// Java: OnDemand.java:709-719 — [archive, file>>8, file, priority].
+	od.buf[0] = byte(r.Archive)
+	od.buf[1] = byte(r.File >> 8)
+	od.buf[2] = byte(r.File)
+	if r.Urgent {
+		od.buf[3] = 2
+	} else if od.app.InGame() {
+		od.buf[3] = 0
+	} else {
+		od.buf[3] = 1
+	}
+	if err := od.stream.Write(od.buf[:], 4, 0); err != nil {
+		od.closeStream()
 		od.FailCount++
 		return
 	}
-	// Java: failCount = -10000 after a successful send write
-	// (OnDemand.java:721 @32f3062).
-	od.FailCount = -10000
-
-	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-	if err != nil {
-		return
-	}
-
-	unzipped := make(map[string][]byte, len(zr.File))
-	for _, f := range zr.File {
-		rc, err := f.Open()
-		if err != nil {
-			return
-		}
-		contents, err := io.ReadAll(rc)
-		_ = rc.Close()
-		if err != nil {
-			return
-		}
-		unzipped[f.Name] = contents
-	}
-
-	od.zip = unzipped
+	od.noTimeoutCycle = 0
+	od.FailCount = -10000 // Java: OnDemand.java:720-721
 }

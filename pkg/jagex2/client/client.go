@@ -6266,7 +6266,7 @@ func (c *Client) Load() {
 	// versionlist + per-id blobs. The OnDemand is created here and the model/anim
 	// index tables are sized from it; the actual blobs are faulted in at runtime
 	// by the request loops (WS1 Inc 3b).
-	c.OnDemand = ondemand.New(jagVersionList, onDemandDownloader{c}, nil)
+	c.OnDemand = ondemand.New(jagVersionList, onDemandApp{c}, nil)
 	animframe.Init(c.OnDemand.GetAnimCount())
 	model.Init(c.OnDemand.GetFileCount(0), c.OnDemand)
 
@@ -7322,17 +7322,21 @@ func (c *Client) ShowLoadError(arg0 string) {
 	}
 }
 
-// onDemandDownloader adapts the client's OpenURL to ondemand.Downloader.
-// Client-TS: downloadUrl('/ondemand.zip'). OpenURL prepends the codebase + "/".
-type onDemandDownloader struct{ c *Client }
+// onDemandApp adapts the client to ondemand.App.
+// Java: OnDemand.app (ub.q) — init() receives the Client itself
+// (OnDemand.java:214 @32f3062).
+type onDemandApp struct{ c *Client }
 
-func (d onDemandDownloader) Get(path string) ([]byte, error) {
-	r, err := d.c.OpenURL(strings.TrimPrefix(path, "/"))
-	if err != nil {
-		return nil, err
-	}
-	return io2.ReadAll(r)
+// OpenSocket dials the world server for the ondemand service.
+// Java: app.openSocket(Client.portOff + 43594) (OnDemand.java:700 @32f3062)
+// — portOff+43594 is the game port; the Go client carries the full port in
+// clientextras.WorldPort (from -world-server).
+func (a onDemandApp) OpenSocket() (net.Conn, error) {
+	return a.c.OpenSocket(clientextras.WorldPort)
 }
+
+// InGame mirrors Java app.ingame.
+func (a onDemandApp) InGame() bool { return a.c.InGame }
 
 func (c *Client) PrepareTitle() {
 	// Nil the in-game pixmaps unconditionally — Java does this inside

@@ -1,12 +1,17 @@
 package ondemand
 
 import (
-	"archive/zip"
 	"bytes"
 	"compress/gzip"
 	"encoding/binary"
+	"errors"
 	"hash/crc32"
+	"io"
+	"net"
+	"slices"
+	"sync"
 	"testing"
+	"time"
 )
 
 // fakeArchiveInternal satisfies the Archive interface for internal tests.
@@ -158,62 +163,6 @@ func gzipTrailer(t *testing.T, payload []byte, version int) []byte {
 	return append(out, byte(version>>8), byte(version))
 }
 
-// fakeDownloader returns fixed bytes for any path.
-type fakeDownloader struct {
-	data []byte
-	err  error
-}
-
-func (d fakeDownloader) Get(_ string) ([]byte, error) {
-	return d.data, d.err
-}
-
-// buildMapVersionlist returns a versionlist where the map archive (index 3) has
-// `mapCount` files, each with the given version and crc, plus minimal empty
-// tables for the other archives. This lets tests place requests against archive 3.
-func buildMapVersionlist(mapCount, version, crc int) fakeArchiveInternal {
-	p2 := func(vals ...int) []byte {
-		buf := make([]byte, len(vals)*2)
-		for i, v := range vals {
-			binary.BigEndian.PutUint16(buf[i*2:], uint16(v))
-		}
-		return buf
-	}
-	p4 := func(vals ...int) []byte {
-		buf := make([]byte, len(vals)*4)
-		for i, v := range vals {
-			binary.BigEndian.PutUint32(buf[i*4:], uint32(v))
-		}
-		return buf
-	}
-
-	mapVersions := make([]int, mapCount)
-	mapCRCs := make([]int, mapCount)
-	for i := range mapCount {
-		mapVersions[i] = version
-		mapCRCs[i] = crc
-	}
-
-	a := fakeArchiveInternal{}
-	a["model_version"] = p2(0)
-	a["model_crc"] = p4(0)
-	a["model_index"] = []byte{0}
-
-	a["anim_version"] = p2(0)
-	a["anim_crc"] = p4(0)
-
-	a["midi_version"] = p2(0)
-	a["midi_crc"] = p4(0)
-
-	a["map_version"] = p2(mapVersions...)
-	a["map_crc"] = p4(mapCRCs...)
-
-	a["map_index"] = []byte{}
-	a["anim_index"] = []byte{}
-	a["midi_index"] = []byte{}
-	return a
-}
-
 // TestRequest_Dedup verifies that requesting the same (archive, file) twice
 // only enqueues a single in-flight request.
 func TestRequest_Dedup(t *testing.T) {
@@ -255,119 +204,170 @@ func TestCycle_GunzipTrailer(t *testing.T) {
 	}
 }
 
-// TestRun_BundleReadEndToEnd drives the full modernized path: Request → Run
-// (handleQueue → missing → handlePending → pending → read → /ondemand.zip) →
-// Cycle, with a nil cache so the file is fetched from the bundle.
-func TestRun_BundleReadEndToEnd(t *testing.T) {
-	payload := []byte("end-to-end model bytes")
-	const version = 7
-	entry := gzipTrailer(t, payload, version)
+// ---- socket transport test harness ------------------------------------------
 
-	// CRC over the gzip+payload bytes (everything but the 2-byte trailer),
-	// narrowed to int32 like Validate.
-	crc := int(int32(crc32.ChecksumIEEE(entry[:len(entry)-2])))
+// fakeApp satisfies App over a pre-seeded queue of net.Pipe client ends.
+// An empty queue makes OpenSocket fail, like an unreachable world server.
+type fakeApp struct {
+	mu     sync.Mutex
+	conns  []net.Conn
+	ingame bool
+}
 
-	// Build a real in-memory zip with entry "1.5" (archive 0 → 1, file 5).
-	var zbuf bytes.Buffer
-	zw := zip.NewWriter(&zbuf)
-	w, err := zw.Create("1.5")
-	if err != nil {
-		t.Fatalf("zip create: %v", err)
+func (a *fakeApp) OpenSocket() (net.Conn, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if len(a.conns) == 0 {
+		return nil, errors.New("fakeApp: no conn available")
 	}
-	if _, err := w.Write(entry); err != nil {
-		t.Fatalf("zip write: %v", err)
-	}
-	if err := zw.Close(); err != nil {
-		t.Fatalf("zip close: %v", err)
-	}
+	c := a.conns[0]
+	a.conns = a.conns[1:]
+	return c, nil
+}
 
-	dl := fakeDownloader{data: zbuf.Bytes()}
-	od := New(buildModelVersionlist(10, version, crc), dl, nil)
+func (a *fakeApp) InGame() bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.ingame
+}
 
-	od.Request(0, 5)
+// odServer drives the server side of one ondemand connection: it validates
+// the 15 handshake byte, replies with 8 zero bytes, then records every
+// 4-byte request frame it receives (including keepalives).
+type odServer struct {
+	conn net.Conn
+	mu   sync.Mutex
+	reqs [][4]byte
+}
 
-	// Pump a few frames; one is enough but a few guards against ordering.
-	for range 3 {
-		od.Run()
-	}
+// startODServer returns a running server and the client end of the pipe.
+func startODServer(t *testing.T) (*odServer, net.Conn) {
+	t.Helper()
+	server, client := net.Pipe()
+	t.Cleanup(func() {
+		_ = server.Close()
+		_ = client.Close()
+	})
+	s := &odServer{conn: server}
+	go s.run()
+	return s, client
+}
 
-	got := od.Cycle()
-	if got == nil {
-		t.Fatal("Cycle() returned nil after Run(); expected the completed request")
+func (s *odServer) run() {
+	one := make([]byte, 1)
+	if _, err := io.ReadFull(s.conn, one); err != nil || one[0] != 15 {
+		return
 	}
-	if !bytes.Equal(got.Data, payload) {
-		t.Fatalf("end-to-end decoded Data = %q, want %q", got.Data, payload)
+	if _, err := s.conn.Write(make([]byte, 8)); err != nil {
+		return
 	}
-	if rem := od.Remaining(); rem != 0 {
-		t.Fatalf("Remaining() = %d after Cycle(), want 0", rem)
+	for {
+		var req [4]byte
+		if _, err := io.ReadFull(s.conn, req[:]); err != nil {
+			return
+		}
+		s.mu.Lock()
+		s.reqs = append(s.reqs, req)
+		s.mu.Unlock()
 	}
 }
 
-// TestRead_Archive3PromotedTo93 verifies the archive-3 → 93 promotion in read():
-// a non-urgent map-archive fetch must emerge from completed with Archive==93 and
-// Urgent==true, matching the Client-TS read() promotion path.
-func TestRead_Archive3PromotedTo93(t *testing.T) {
-	const (
-		mapFile = 4
-		version = 11
-	)
+func (s *odServer) requests() [][4]byte {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return slices.Clone(s.reqs)
+}
 
-	payload := []byte("map tile data")
-	entry := gzipTrailer(t, payload, version)
-	crc := int(int32(crc32.ChecksumIEEE(entry[:len(entry)-2])))
-
-	// Build an in-memory zip containing "4.4" (archive 3+1=4, file 4).
-	var zbuf bytes.Buffer
-	zw := zip.NewWriter(&zbuf)
-	w, err := zw.Create("4.4")
-	if err != nil {
-		t.Fatalf("zip create: %v", err)
+// respond writes one response part: the 6-byte header followed by the chunk.
+// size is the TOTAL file size; part selects the 500-byte window.
+func (s *odServer) respond(t *testing.T, archive, file, size, part int, chunk []byte) {
+	t.Helper()
+	hdr := []byte{byte(archive), byte(file >> 8), byte(file), byte(size >> 8), byte(size), byte(part)}
+	if _, err := s.conn.Write(hdr); err != nil {
+		t.Fatalf("respond header: %v", err)
 	}
-	if _, err := w.Write(entry); err != nil {
-		t.Fatalf("zip write: %v", err)
+	if len(chunk) > 0 {
+		if _, err := s.conn.Write(chunk); err != nil {
+			t.Fatalf("respond chunk: %v", err)
+		}
 	}
-	if err := zw.Close(); err != nil {
-		t.Fatalf("zip close: %v", err)
+}
+
+// waitFor polls cond (driving step each iteration) until it holds or 5s pass.
+func waitFor(t *testing.T, step func(), cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for !cond() {
+		if time.Now().After(deadline) {
+			t.Fatal("waitFor: condition not met within 5s")
+		}
+		step()
+		time.Sleep(time.Millisecond)
 	}
+}
 
-	dl := fakeDownloader{data: zbuf.Bytes()}
-	// Map archive (index 3) needs at least mapFile+1 entries with non-zero versions.
-	od := New(buildMapVersionlist(mapFile+1, version, crc), dl, nil)
+// connectOD drives od.send(probe) until the async dial+handshake completes
+// and the stream is attached. The probe request's bytes reach the server
+// (possibly more than once); tests must account for them or use a distinct
+// file id for assertions.
+func connectOD(t *testing.T, od *OnDemand, probe *OnDemandRequest) {
+	t.Helper()
+	waitFor(t, func() { od.send(probe) }, func() bool { return od.stream != nil })
+}
 
-	// Place a non-urgent request for archive 3, file 4 directly onto pending,
-	// mirroring how handlePending promotes a missing request (Urgent defaults to
-	// true from newRequest; we override it to false to exercise the promotion path).
+// ---- send() ------------------------------------------------------------------
+
+func TestSend_HandshakeAndUrgentRequestBytes(t *testing.T) {
+	server, conn := startODServer(t)
+	app := &fakeApp{conns: []net.Conn{conn}}
+	od := New(buildMinimalVersionlist(1, 0), app, nil)
+
 	r := newRequest()
-	r.Archive = 3
-	r.File = mapFile
+	r.Archive = 0
+	r.File = 1
+	r.Urgent = true
+	connectOD(t, od, r)
+
+	// The server's run() already validated the 15 handshake byte (it records
+	// nothing otherwise). Now the request frame: [archive, file>>8, file, 2].
+	waitFor(t, func() { od.send(r) }, func() bool { return len(server.requests()) >= 1 })
+	want := [4]byte{0, 0, 1, 2}
+	if got := server.requests()[0]; got != want {
+		t.Fatalf("urgent request bytes = %v, want %v", got, want)
+	}
+	if od.FailCount != -10000 {
+		t.Fatalf("FailCount = %d, want -10000 after successful send", od.FailCount)
+	}
+}
+
+func TestSend_PriorityByteNotUrgent(t *testing.T) {
+	server, conn := startODServer(t)
+	app := &fakeApp{conns: []net.Conn{conn}} // ingame=false → priority 1
+	od := New(buildMinimalVersionlist(1, 0), app, nil)
+
+	r := newRequest()
+	r.Archive = 2
+	r.File = 3
 	r.Urgent = false
-	od.requests.Push(r.node)
-	od.pending.Push(r.node.Linkable)
+	connectOD(t, od, r)
+	waitFor(t, func() { od.send(r) }, func() bool { return len(server.requests()) >= 1 })
 
-	// read() services the head of pending; it calls downloadZip() internally.
-	od.read()
+	want := [4]byte{2, 0, 3, 1} // Java: !urgent && !app.ingame → buf[3] = 1
+	if got := server.requests()[0]; got != want {
+		t.Fatalf("pre-game request bytes = %v, want %v", got, want)
+	}
+}
 
-	// The request must have landed on completed with the promoted fields.
-	n := od.completed.PopFront()
-	if n == nil {
-		t.Fatal("completed list is empty after read(); expected the promoted request")
-	}
-	got := n.Value
-	if got.Archive != 93 {
-		t.Errorf("Archive = %d after promotion, want 93", got.Archive)
-	}
-	if !got.Urgent {
-		t.Error("Urgent = false after promotion, want true")
-	}
+func TestSend_DialFailureIncrementsFailCount(t *testing.T) {
+	app := &fakeApp{} // no conns → OpenSocket errors
+	od := New(buildMinimalVersionlist(1, 0), app, nil)
 
-	// Cycle() decodes the gzip+trailer payload.
-	od.requests.Push(got.node)           // re-link so Cycle's Uncache works
-	od.completed.Push(got.node.Linkable) // put it back for Cycle
-	result := od.Cycle()
-	if result == nil {
-		t.Fatal("Cycle() returned nil")
-	}
-	if !bytes.Equal(result.Data, payload) {
-		t.Fatalf("Cycle() decoded Data = %q, want %q", result.Data, payload)
+	r := newRequest()
+	r.Archive = 0
+	r.File = 1
+	// First send kicks the connector; subsequent sends poll its failure.
+	waitFor(t, func() { od.send(r) }, func() bool { return od.FailCount >= 1 })
+	if od.stream != nil {
+		t.Fatal("stream attached despite dial failure")
 	}
 }
