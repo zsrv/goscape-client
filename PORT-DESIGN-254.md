@@ -39,8 +39,12 @@ Reference pins (recorded in `REFERENCES.md` on `main`; **always read via
 |---|---|---|---|
 | Client-Java | **primary** translation source | `254` | `2e629784c3dcb671ee3aab134f9cb91d614d8094` |
 | Client-TS | secondary cross-check | `254` | `d340fc258c8d` |
-| Engine-TS | smoke-test server | `254` | `43e02957f355` |
+| Engine-TS | smoke-test server | `254` | `2e3bcf439220` |
 | Content | game content reference | `254` | `caee3f2eb3eb` |
+
+(Engine-TS pin advanced `43e02957f355` → `2e3bcf439220` on 2026-06-10 — a
+fast-forward on branch `254`; `254 ≡ 254-GOSCAPE` re-verified at the new pin.
+The 2026-06-05 host smoke test ran against the prior pin `43e02957f355`.)
 
 ### Lineage characterization (verified 2026-06-04)
 
