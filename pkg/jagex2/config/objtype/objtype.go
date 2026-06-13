@@ -43,8 +43,8 @@ type ObjType struct {
 	// deletes opcode 9 + its boolean (245.2 field1044) outright.
 	Stackable        bool
 	Cost             int
-	ManWearOffsetY   int8
-	WomanWearOffsetY int8
+	ManWearOffset   int8
+	WomanWearOffset int8
 	ManWear          int
 	ManWear2         int
 	WomanWear        int
@@ -146,10 +146,10 @@ func (t *ObjType) Reset() {
 	t.IOp = nil
 	t.ManWear = -1
 	t.ManWear2 = -1
-	t.ManWearOffsetY = 0
+	t.ManWearOffset = 0
 	t.WomanWear = -1
 	t.WomanWear2 = -1
-	t.WomanWearOffsetY = 0
+	t.WomanWearOffset = 0
 	t.ManWear3 = -1
 	t.WomanWear3 = -1
 	t.ManHead = -1
@@ -210,12 +210,12 @@ func (t *ObjType) Decode(arg1 *io.Packet) {
 			t.Members = true
 		case 23:
 			t.ManWear = arg1.G2()
-			t.ManWearOffsetY = arg1.G1B()
+			t.ManWearOffset = arg1.G1B()
 		case 24:
 			t.ManWear2 = arg1.G2()
 		case 25:
 			t.WomanWear = arg1.G2()
-			t.WomanWearOffsetY = arg1.G1B()
+			t.WomanWearOffset = arg1.G1B()
 		case 26:
 			t.WomanWear2 = arg1.G2()
 		case 30, 31, 32, 33, 34:
@@ -570,11 +570,11 @@ func (t *ObjType) GetWearModelNoCheck(arg1 int) *model.Model {
 			var7 = model.NewModel2(var10, 3)
 		}
 	}
-	if arg1 == 0 && t.ManWearOffsetY != 0 {
-		var7.Translate(0, int(t.ManWearOffsetY), 0) // Java: translate(0, manwearOffset, 0) (ObjType.java:627 @32f3062)
+	if arg1 == 0 && t.ManWearOffset != 0 {
+		var7.Translate(0, int(t.ManWearOffset), 0) // Java: translate(0, manwearOffset, 0) (ObjType.java:627 @32f3062)
 	}
-	if arg1 == 1 && t.WomanWearOffsetY != 0 {
-		var7.Translate(0, int(t.WomanWearOffsetY), 0) // Java: translate(0, womanwearOffset, 0) (ObjType.java:630 @32f3062)
+	if arg1 == 1 && t.WomanWearOffset != 0 {
+		var7.Translate(0, int(t.WomanWearOffset), 0) // Java: translate(0, womanwearOffset, 0) (ObjType.java:630 @32f3062)
 	}
 	if t.RecolS != nil {
 		for i := range len(t.RecolS) {

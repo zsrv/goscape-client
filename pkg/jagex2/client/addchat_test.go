@@ -118,7 +118,7 @@ func TestAddChat_NonZeroTypeNeverCapturesModal(t *testing.T) {
 
 func TestAddChat_NoChatInterfaceRequestsRedrawChatback(t *testing.T) {
 	c := NewClient()
-	// ChatLayerID stays at NewClient's default of -1.
+	// ChatComId stays at NewClient's default of -1.
 	c.RedrawChatback = false
 
 	c.AddChat(2, "hi", "alice")
@@ -130,7 +130,7 @@ func TestAddChat_NoChatInterfaceRequestsRedrawChatback(t *testing.T) {
 
 func TestAddChat_OpenChatInterfaceLeavesRedrawAlone(t *testing.T) {
 	c := NewClient()
-	c.ChatLayerID = 100
+	c.ChatComId = 100
 	c.RedrawChatback = false
 
 	c.AddChat(2, "hi", "alice")

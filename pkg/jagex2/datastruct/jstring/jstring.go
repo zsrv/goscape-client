@@ -131,8 +131,8 @@ func ToSentenceCase(s string) string {
 	return string(chars)
 }
 
-// ToAsterisks returns a string of `*` characters with the same character
-// count as s. Java: JString.toAsterisks (JString.java:108-114) iterates
+// GetRepeatedCharacter returns a string of `*` characters with the same character
+// count as s. Java: JString.getRepeatedCharacter (JString.java:106-112) iterates
 // `arg1.length()`, which is the UTF-16 code-unit count — one star per char,
 // not per UTF-8 byte. Go's `len(s)` is byte-based: for any non-ASCII char
 // (e.g. '£' = 2 bytes) it would produce too many stars. Censored chat can
@@ -143,7 +143,7 @@ func ToSentenceCase(s string) string {
 // which encode as surrogate PAIRS in Java (2 stars) but single runes here
 // (1 star). Chat input is CHARSET-gated to BMP characters, so the divergence
 // is unreachable; the exact port would be len(utf16.Encode([]rune(s))).
-func ToAsterisks(s string) string {
+func GetRepeatedCharacter(s string) string {
 	var sb strings.Builder
 	for range s {
 		sb.WriteString("*")

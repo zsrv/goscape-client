@@ -457,7 +457,7 @@ func (p *Pix32) ScanlineRotatePlotSprite(arg0 int, w int, lineStart []int, h int
 
 // Java: drawRotated (244 Pix32.java:414-451) — new in 244; plotSprite-style
 // rotated blit that skips transparent (0) pixels. First consumer is the
-// minimap hint-arrow edge sprite (Client.DrawMinimapArrow). Like
+// minimap hint-arrow edge sprite (Client.MinimapDrawArrow). Like
 // scanlineRotatePlotSprite (254 name; was drawRotatedMasked), Java wraps the body in try { ... } catch (Exception) {}
 // — the recover mirrors that silent swallow for out-of-bounds source coords.
 func (p *Pix32) RotatePlotSprite(y int, theta float64, zoom, anchorX, anchorY, w, h, x int) {

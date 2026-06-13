@@ -91,16 +91,16 @@ func (t *Tone) Generate(samples, length int) []int {
 
 	samplesPerStep := float64(samples) / (float64(length) + 0.0)
 
-	t.FrequencyBase.Reset()
-	t.AmplitudeBase.Reset()
+	t.FrequencyBase.GenInit()
+	t.AmplitudeBase.GenInit()
 
 	frequencyStart := 0
 	frequencyDuration := 0
 	frequencyPhase := 0
 
 	if t.FrequencyModRate != nil {
-		t.FrequencyModRate.Reset()
-		t.FrequencyModRange.Reset()
+		t.FrequencyModRate.GenInit()
+		t.FrequencyModRange.GenInit()
 		frequencyStart = int(float64(t.FrequencyModRate.End-t.FrequencyModRate.Start) * 32.768 / samplesPerStep)
 		frequencyDuration = int(float64(t.FrequencyModRate.Start) * 32.768 / samplesPerStep)
 	}
@@ -110,8 +110,8 @@ func (t *Tone) Generate(samples, length int) []int {
 	amplitudePhase := 0
 
 	if t.AmplitudeModRate != nil {
-		t.AmplitudeModRate.Reset()
-		t.AmplitudeModRange.Reset()
+		t.AmplitudeModRate.GenInit()
+		t.AmplitudeModRange.GenInit()
 		amplitudeStart = int(float64(t.AmplitudeModRate.End-t.AmplitudeModRate.Start) * 32.768 / samplesPerStep)
 		amplitudeDuration = int(float64(t.AmplitudeModRate.Start) * 32.768 / samplesPerStep)
 	}
@@ -127,19 +127,19 @@ func (t *Tone) Generate(samples, length int) []int {
 	}
 
 	for sample := range samples {
-		frequency := t.FrequencyBase.Evaluate(samples)
-		amplitude := t.AmplitudeBase.Evaluate(samples)
+		frequency := t.FrequencyBase.GenNext(samples)
+		amplitude := t.AmplitudeBase.GenNext(samples)
 
 		if t.FrequencyModRate != nil {
-			rate := t.FrequencyModRate.Evaluate(samples)
-			rng := t.FrequencyModRange.Evaluate(samples)
+			rate := t.FrequencyModRate.GenNext(samples)
+			rng := t.FrequencyModRange.GenNext(samples)
 			frequency += t.Generate2(rng, frequencyPhase, t.FrequencyModRate.Form) >> 1
 			frequencyPhase += ((rate * frequencyStart) >> 16) + frequencyDuration
 		}
 
 		if t.AmplitudeModRate != nil {
-			rate := t.AmplitudeModRate.Evaluate(samples)
-			rng := t.AmplitudeModRange.Evaluate(samples)
+			rate := t.AmplitudeModRate.GenNext(samples)
+			rng := t.AmplitudeModRange.GenNext(samples)
 			amplitude = (amplitude * ((t.Generate2(rng, amplitudePhase, t.AmplitudeModRate.Form) >> 1) + 32768)) >> 15
 			amplitudePhase += ((rate * amplitudeStart) >> 16) + amplitudeDuration
 		}
@@ -156,15 +156,15 @@ func (t *Tone) Generate(samples, length int) []int {
 	}
 
 	if t.Release != nil {
-		t.Release.Reset()
-		t.Attack.Reset()
+		t.Release.GenInit()
+		t.Attack.GenInit()
 
 		counter := 0
 		muted := true
 
 		for sample := range samples {
-			releaseValue := t.Release.Evaluate(samples)
-			attackValue := t.Attack.Evaluate(samples)
+			releaseValue := t.Release.GenNext(samples)
+			attackValue := t.Attack.GenNext(samples)
 
 			threshold := 0
 			if muted {
@@ -201,8 +201,8 @@ func (t *Tone) Generate(samples, length int) []int {
 	// (long) and the >>16 result back to (int); Go keeps 64-bit int per the
 	// Theme C note at the top of this file.
 	if t.Filter.Pairs[0] > 0 || t.Filter.Pairs[1] > 0 {
-		t.FilterRange.Reset()
-		scale := t.FilterRange.Evaluate(samples + 1)                          // Java: var30
+		t.FilterRange.GenInit()
+		scale := t.FilterRange.GenNext(samples + 1)                          // Java: var30
 		numFeedforward := t.Filter.CalculateCoeffs(0, float32(scale)/65536.0) // Java: var31
 		numFeedback := t.Filter.CalculateCoeffs(1, float32(scale)/65536.0)    // Java: var32
 		if samples >= numFeedforward+numFeedback {
@@ -220,7 +220,7 @@ func (t *Tone) Generate(samples, length int) []int {
 					filtered -= int((int64(Buffer[sample-i-1]) * int64(filter.CoeffInt[1][i])) >> 16)
 				}
 				Buffer[sample] = filtered
-				scale = t.FilterRange.Evaluate(samples + 1)
+				scale = t.FilterRange.GenNext(samples + 1)
 				sample++
 			}
 			chunkSize := 128        // Java: var38
@@ -238,7 +238,7 @@ func (t *Tone) Generate(samples, length int) []int {
 						filtered -= int((int64(Buffer[sample-i-1]) * int64(filter.CoeffInt[1][i])) >> 16)
 					}
 					Buffer[sample] = filtered
-					scale = t.FilterRange.Evaluate(samples + 1)
+					scale = t.FilterRange.GenNext(samples + 1)
 					sample++
 				}
 				if sample >= samples-numFeedforward {
@@ -251,7 +251,7 @@ func (t *Tone) Generate(samples, length int) []int {
 							filtered -= int((int64(Buffer[sample-i-1]) * int64(filter.CoeffInt[1][i])) >> 16)
 						}
 						Buffer[sample] = filtered
-						t.FilterRange.Evaluate(samples + 1)
+						t.FilterRange.GenNext(samples + 1)
 						sample++
 					}
 					break

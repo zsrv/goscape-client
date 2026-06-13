@@ -41,8 +41,9 @@ func (e *Envelope) LoadPoints(buf *io.Packet) {
 	}
 }
 
-// GenInit
-func (e *Envelope) Reset() {
+// GenInit resets the envelope's generator state before a fresh pass.
+// Java: Envelope.genInit().
+func (e *Envelope) GenInit() {
 	e.Threshold = 0
 	e.Position = 0
 	e.Delta = 0
@@ -50,8 +51,9 @@ func (e *Envelope) Reset() {
 	e.Ticks = 0
 }
 
-// GenNext
-func (e *Envelope) Evaluate(delta int) int {
+// GenNext advances the generator by one step and returns the next value.
+// Java: Envelope.genNext(int).
+func (e *Envelope) GenNext(delta int) int {
 	if e.Ticks >= e.Threshold {
 		e.Amplitude = e.ShapePeak[e.Position] << 15
 		e.Position++

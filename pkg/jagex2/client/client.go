@@ -310,7 +310,7 @@ type Client struct {
 	SCROLLBAR_GRIP_HIGHLIGHT      int
 	BFSStepX                      []int
 	BFSStepZ                      []int
-	ChatLayerID                   int
+	ChatComId                   int
 	ProjectX                      int
 	ProjectY                      int
 	TutLayerID                    int
@@ -356,7 +356,7 @@ type Client struct {
 	CameraOffsetZModifier         int
 	MinimapMaskLineOffsets        []int
 	CameraOffsetYawModifier       int
-	ChatTyped                     string
+	ChatInput                     string
 	ImageMapFunction              []*pix32.Pix32
 	MenuParamB                    []int
 	MenuParamC                    []int
@@ -688,7 +688,7 @@ func NewClient() *Client {
 		SCROLLBAR_GRIP_HIGHLIGHT:  7759444,
 		BFSStepX:                  make([]int, 4000),
 		BFSStepZ:                  make([]int, 4000),
-		ChatLayerID:               -1,
+		ChatComId:               -1,
 		ProjectX:                  -1,
 		ProjectY:                  -1,
 		TutLayerID:                -1,
@@ -982,8 +982,8 @@ func (c *Client) CloseModal() {
 		c.PressedContinueOption = false
 		c.RedrawSideIcons = true
 	}
-	if c.ChatLayerID != -1 {
-		c.ChatLayerID = -1
+	if c.ChatComId != -1 {
+		c.ChatComId = -1
 		c.RedrawChatback = true
 		c.PressedContinueOption = false
 	}
@@ -2365,27 +2365,27 @@ func (c *Client) HandleInputKey() {
 						c.ChatbackInputOpen = false
 						c.RedrawChatback = true
 					}
-				} else if c.ChatLayerID == -1 {
+				} else if c.ChatComId == -1 {
 					// Java: Client.java:10285 @32f3062 — 274 drops 254's ::command
 					// extension (chatTyped.startsWith("::") && c <= 126 for { | } ~);
 					// only 32..122 is accepted now.
-					if var2 >= 32 && var2 <= 122 && len(c.ChatTyped) < 80 {
-						c.ChatTyped = c.ChatTyped + string(rune(var2))
+					if var2 >= 32 && var2 <= 122 && len(c.ChatInput) < 80 {
+						c.ChatInput = c.ChatInput + string(rune(var2))
 						c.RedrawChatback = true
 					}
-					if var2 == 8 && len(c.ChatTyped) > 0 {
-						c.ChatTyped = c.ChatTyped[0 : len(c.ChatTyped)-1]
+					if var2 == 8 && len(c.ChatInput) > 0 {
+						c.ChatInput = c.ChatInput[0 : len(c.ChatInput)-1]
 						c.RedrawChatback = true
 					}
-					if (var2 == 13 || var2 == 10) && len(c.ChatTyped) > 0 {
+					if (var2 == 13 || var2 == 10) && len(c.ChatInput) > 0 {
 						// Java 244 (Client.java:4700-4716): the local commands are
 						// gated by staffmodlevel == 2 (no host check in 244), and the
 						// CLIENT_CHEAT send is a SEPARATE non-else if — every
 						// ::-prefixed line goes to the server regardless.
 						if c.StaffModLevel == 2 {
-							if c.ChatTyped == "::clientdrop" {
+							if c.ChatInput == "::clientdrop" {
 								c.LostCon()
-							} else if c.ChatTyped == "::prefetchmusic" {
+							} else if c.ChatInput == "::prefetchmusic" {
 								for i := range c.OnDemand.GetFileCount(2) {
 									c.OnDemand.PrefetchPriority(2, i, 1)
 								}
@@ -2399,79 +2399,79 @@ func (c *Client) HandleInputKey() {
 							// mapped away by the host-shell RunShell. ::lag still
 							// reaches the server CLIENT_CHEAT below.
 						}
-						if strings.HasPrefix(c.ChatTyped, "::") {
+						if strings.HasPrefix(c.ChatInput, "::") {
 							c.Out.P1Isaac(CLIENTPROT_CLIENT_CHEAT) // Java: pIsaac(11) Client.java:4709
-							c.Out.P1(len(c.ChatTyped) - 1)
-							c.Out.PJStr(c.ChatTyped[2:])
+							c.Out.P1(len(c.ChatInput) - 1)
+							c.Out.PJStr(c.ChatInput[2:])
 						} else {
 							var3 := 0
-							if strings.HasPrefix(c.ChatTyped, "yellow:") {
+							if strings.HasPrefix(c.ChatInput, "yellow:") {
 								var3 = 0
-								c.ChatTyped = c.ChatTyped[7:]
+								c.ChatInput = c.ChatInput[7:]
 							}
-							if strings.HasPrefix(c.ChatTyped, "red:") {
+							if strings.HasPrefix(c.ChatInput, "red:") {
 								var3 = 1
-								c.ChatTyped = c.ChatTyped[4:]
+								c.ChatInput = c.ChatInput[4:]
 							}
-							if strings.HasPrefix(c.ChatTyped, "green:") {
+							if strings.HasPrefix(c.ChatInput, "green:") {
 								var3 = 2
-								c.ChatTyped = c.ChatTyped[6:]
+								c.ChatInput = c.ChatInput[6:]
 							}
-							if strings.HasPrefix(c.ChatTyped, "cyan:") {
+							if strings.HasPrefix(c.ChatInput, "cyan:") {
 								var3 = 3
-								c.ChatTyped = c.ChatTyped[5:]
+								c.ChatInput = c.ChatInput[5:]
 							}
-							if strings.HasPrefix(c.ChatTyped, "purple:") {
+							if strings.HasPrefix(c.ChatInput, "purple:") {
 								var3 = 4
-								c.ChatTyped = c.ChatTyped[7:]
+								c.ChatInput = c.ChatInput[7:]
 							}
-							if strings.HasPrefix(c.ChatTyped, "white:") {
+							if strings.HasPrefix(c.ChatInput, "white:") {
 								var3 = 5
-								c.ChatTyped = c.ChatTyped[6:]
+								c.ChatInput = c.ChatInput[6:]
 							}
-							if strings.HasPrefix(c.ChatTyped, "flash1:") {
+							if strings.HasPrefix(c.ChatInput, "flash1:") {
 								var3 = 6
-								c.ChatTyped = c.ChatTyped[7:]
+								c.ChatInput = c.ChatInput[7:]
 							}
-							if strings.HasPrefix(c.ChatTyped, "flash2:") {
+							if strings.HasPrefix(c.ChatInput, "flash2:") {
 								var3 = 7
-								c.ChatTyped = c.ChatTyped[7:]
+								c.ChatInput = c.ChatInput[7:]
 							}
-							if strings.HasPrefix(c.ChatTyped, "flash3:") {
+							if strings.HasPrefix(c.ChatInput, "flash3:") {
 								var3 = 8
-								c.ChatTyped = c.ChatTyped[7:]
+								c.ChatInput = c.ChatInput[7:]
 							}
-							if strings.HasPrefix(c.ChatTyped, "glow1:") {
+							if strings.HasPrefix(c.ChatInput, "glow1:") {
 								var3 = 9
-								c.ChatTyped = c.ChatTyped[6:]
+								c.ChatInput = c.ChatInput[6:]
 							}
-							if strings.HasPrefix(c.ChatTyped, "glow2:") {
+							if strings.HasPrefix(c.ChatInput, "glow2:") {
 								var3 = 10
-								c.ChatTyped = c.ChatTyped[6:]
+								c.ChatInput = c.ChatInput[6:]
 							}
-							if strings.HasPrefix(c.ChatTyped, "glow3:") {
+							if strings.HasPrefix(c.ChatInput, "glow3:") {
 								var3 = 11
-								c.ChatTyped = c.ChatTyped[6:]
+								c.ChatInput = c.ChatInput[6:]
 							}
 							var4 := 0
-							if strings.HasPrefix(c.ChatTyped, "wave:") {
+							if strings.HasPrefix(c.ChatInput, "wave:") {
 								var4 = 1
-								c.ChatTyped = c.ChatTyped[5:]
+								c.ChatInput = c.ChatInput[5:]
 							}
-							if strings.HasPrefix(c.ChatTyped, "scroll:") {
+							if strings.HasPrefix(c.ChatInput, "scroll:") {
 								var4 = 2
-								c.ChatTyped = c.ChatTyped[7:]
+								c.ChatInput = c.ChatInput[7:]
 							}
 							c.Out.P1Isaac(CLIENTPROT_MESSAGE_PUBLIC) // Java: pIsaac(78) Client.java:4762
 							c.Out.P1(0)
 							var5 := c.Out.Pos
 							c.Out.P1(var3)
 							c.Out.P1(var4)
-							wordpack.Pack(c.Out, c.ChatTyped)
+							wordpack.Pack(c.Out, c.ChatInput)
 							c.Out.PSize1(c.Out.Pos - var5)
-							c.ChatTyped = jstring.ToSentenceCase(c.ChatTyped)
-							c.ChatTyped = wordfilter.Filter(c.ChatTyped)
-							c.LocalPlayer.Chat = c.ChatTyped
+							c.ChatInput = jstring.ToSentenceCase(c.ChatInput)
+							c.ChatInput = wordfilter.Filter(c.ChatInput)
+							c.LocalPlayer.Chat = c.ChatInput
 							c.LocalPlayer.ChatColor = var3
 							c.LocalPlayer.ChatStyle = var4
 							c.LocalPlayer.ChatTimer = 150
@@ -2493,7 +2493,7 @@ func (c *Client) HandleInputKey() {
 								c.Out.P1(c.TradeChatSetting)
 							}
 						}
-						c.ChatTyped = ""
+						c.ChatInput = ""
 						c.RedrawChatback = true
 					}
 				}
@@ -2938,7 +2938,7 @@ func (c *Client) MinimapDraw() {
 	for i := range c.ActiveMapFunctionCount {
 		var3 = c.ActiveMapFunctionX[i]*4 + 2 - c.LocalPlayer.X/32
 		var4 = c.ActiveMapFunctionZ[i]*4 + 2 - c.LocalPlayer.Z/32
-		c.DrawOnMinimap(var4, c.ActiveMapFunctions[i], var3)
+		c.MinimapDrawDot(var4, c.ActiveMapFunctions[i], var3)
 	}
 	for i := range 104 {
 		for j := range 104 {
@@ -2946,7 +2946,7 @@ func (c *Client) MinimapDraw() {
 			if var8 != nil {
 				var3 = i*4 + 2 - c.LocalPlayer.X/32
 				var4 = j*4 + 2 - c.LocalPlayer.Z/32
-				c.DrawOnMinimap(var4, c.ImageMapdot0, var3)
+				c.MinimapDrawDot(var4, c.ImageMapdot0, var3)
 			}
 		}
 	}
@@ -2955,7 +2955,7 @@ func (c *Client) MinimapDraw() {
 		if var14 != nil && var14.IsReady() && var14.Type.Minimap {
 			var3 = var14.X/32 - c.LocalPlayer.X/32
 			var4 = var14.Z/32 - c.LocalPlayer.Z/32
-			c.DrawOnMinimap(var4, c.ImageMapdot1, var3)
+			c.MinimapDrawDot(var4, c.ImageMapdot1, var3)
 		}
 	}
 	for i := range c.PlayerCount {
@@ -2972,9 +2972,9 @@ func (c *Client) MinimapDraw() {
 				}
 			}
 			if var10 {
-				c.DrawOnMinimap(var4, c.ImageMapdot3, var3)
+				c.MinimapDrawDot(var4, c.ImageMapdot3, var3)
 			} else {
-				c.DrawOnMinimap(var4, c.ImageMapdot2, var3)
+				c.MinimapDrawDot(var4, c.ImageMapdot2, var3)
 			}
 		}
 	}
@@ -2987,18 +2987,18 @@ func (c *Client) MinimapDraw() {
 			if var14 != nil {
 				var3 = var14.X/32 - c.LocalPlayer.X/32
 				var4 = var14.Z/32 - c.LocalPlayer.Z/32
-				c.DrawMinimapArrow(var3, var4, c.ImageMapmarker1)
+				c.MinimapDrawArrow(var3, var4, c.ImageMapmarker1)
 			}
 		} else if c.HintType == 2 {
 			var3 = (c.HintTileX-c.SceneBaseTileX)*4 + 2 - c.LocalPlayer.X/32
 			var4 = (c.HintTileZ-c.SceneBaseTileZ)*4 + 2 - c.LocalPlayer.Z/32
-			c.DrawMinimapArrow(var3, var4, c.ImageMapmarker1)
+			c.MinimapDrawArrow(var3, var4, c.ImageMapmarker1)
 		} else if c.HintType == 10 && c.HintPlayer >= 0 && c.HintPlayer < len(c.Players) {
 			var9 := c.Players[c.HintPlayer]
 			if var9 != nil {
 				var3 = var9.X/32 - c.LocalPlayer.X/32
 				var4 = var9.Z/32 - c.LocalPlayer.Z/32
-				c.DrawMinimapArrow(var3, var4, c.ImageMapmarker1)
+				c.MinimapDrawArrow(var3, var4, c.ImageMapmarker1)
 			}
 		}
 	}
@@ -3008,7 +3008,7 @@ func (c *Client) MinimapDraw() {
 		var4 = c.FlagSceneTileZ*4 + 2 - c.LocalPlayer.Z/32
 		// Java: Client.java:12044-12048 — imageMapmarker0 is the destination
 		// flag (the role 225's imageMapflag played).
-		c.DrawOnMinimap(var4, c.ImageMapmarker0, var3)
+		c.MinimapDrawDot(var4, c.ImageMapmarker0, var3)
 	}
 	// Java: Pix2D.fillRect(16777215, 3, 3, 97, 78) (Client.java:12050) — the
 	// white player dot moves with the 244 (+4,-4) minimap origin shift
@@ -3681,7 +3681,7 @@ func (c *Client) TitleScreenDraw() {
 		if c.TitleLoginField == 1 && clientextras.LoopCycle%40 < 20 {
 			tmp2 = "@yel@|"
 		}
-		c.B12.DrawStringTaggable(var2/2-88, var4, "Password: "+jstring.ToAsterisks(c.Password)+tmp2, true, 0xFFFFFF)
+		c.B12.DrawStringTaggable(var2/2-88, var4, "Password: "+jstring.GetRepeatedCharacter(c.Password)+tmp2, true, 0xFFFFFF)
 		var4 += 15 //nolint:ineffassign // Java: faithful dead final layout increment (var4 not read after)
 		// Java: 254's `if (!arg0)` guard (hide Login/Cancel during an
 		// in-flight login attempt) is gone in 274 — the buttons are always
@@ -4693,7 +4693,7 @@ func (c *Client) DrawGame() {
 	// repaint on c.RedrawSidebar but unconditionally blits AreaSidebar
 	// via PixMap.Draw so the GPU always sees the current state.
 	c.DrawSidebar()
-	if c.ChatLayerID == -1 {
+	if c.ChatComId == -1 {
 		c.ChatInterface.ScrollPosition = c.ChatScrollHeight - c.ChatScrollOffset - 77
 		if c.MouseX > 448 && c.MouseX < 560 && c.MouseY > 332 {
 			c.HandleScrollInput(c.MouseX-17, c.MouseY-357, c.ChatScrollHeight, 77, false, 463, 0, c.ChatInterface)
@@ -4706,8 +4706,8 @@ func (c *Client) DrawGame() {
 			c.RedrawChatback = true
 		}
 	}
-	if c.ChatLayerID != -1 {
-		var2 = c.UpdateInterfaceAnimation(c.ChatLayerID, c.SceneDelta)
+	if c.ChatComId != -1 {
+		var2 = c.UpdateInterfaceAnimation(c.ChatComId, c.SceneDelta)
 		if var2 {
 			c.RedrawChatback = true
 		}
@@ -5035,7 +5035,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		if iftype.List[var4].Layer == c.MainLayerID {
 			c.SelectedArea = 1
 		}
-		if iftype.List[var4].Layer == c.ChatLayerID {
+		if iftype.List[var4].Layer == c.ChatComId {
 			c.SelectedArea = 3
 		}
 	}
@@ -5116,7 +5116,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		if iftype.List[var4].Layer == c.MainLayerID {
 			c.SelectedArea = 1
 		}
-		if iftype.List[var4].Layer == c.ChatLayerID {
+		if iftype.List[var4].Layer == c.ChatComId {
 			c.SelectedArea = 3
 		}
 	}
@@ -5133,7 +5133,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		if iftype.List[var4].Layer == c.MainLayerID {
 			c.SelectedArea = 1
 		}
-		if iftype.List[var4].Layer == c.ChatLayerID {
+		if iftype.List[var4].Layer == c.ChatComId {
 			c.SelectedArea = 3
 		}
 	}
@@ -5418,7 +5418,7 @@ func (c *Client) UseMenuOption(arg1 int) {
 		if iftype.List[var4].Layer == c.MainLayerID {
 			c.SelectedArea = 1
 		}
-		if iftype.List[var4].Layer == c.ChatLayerID {
+		if iftype.List[var4].Layer == c.ChatComId {
 			c.SelectedArea = 3
 		}
 	}
@@ -6435,7 +6435,7 @@ func (c *Client) Load() {
 
 	// Java: Client.java:1755-1756 — mapedge is new in 244 (the minimap
 	// hint-arrow edge sprite); drawn rotated at the minimap rim by
-	// DrawMinimapArrow from MinimapDraw's hint-arrow block.
+	// MinimapDrawArrow from MinimapDraw's hint-arrow block.
 	c.ImageMapedge = pix32.NewPix323(jagMedia, "mapedge", 0)
 	c.ImageMapedge.Trim()
 
@@ -6713,13 +6713,13 @@ func (c *Client) HandleInput() {
 	// hit-box to x<496 (interface input); plain chat rows stay re-guarded
 	// to y<434 && x<426.
 	if c.MouseX > 17 && c.MouseY > 357 && c.MouseX < 496 && c.MouseY < 453 {
-		if c.ChatLayerID != -1 {
-			c.HandleComponentInput(c.MouseY, c.MouseX, 357, iftype.List[c.ChatLayerID], 17, 0)
+		if c.ChatComId != -1 {
+			c.HandleComponentInput(c.MouseY, c.MouseX, 357, iftype.List[c.ChatComId], 17, 0)
 		} else if c.MouseY < 434 && c.MouseX < 426 { // Java: Client.java:3694 @176a85f — message rows only
 			c.HandleChatMouseInput(c.MouseY - 357)
 		}
 	}
-	if c.ChatLayerID != -1 && c.LastHoveredInterfaceID != c.ChatHoveredInterfaceIndex {
+	if c.ChatComId != -1 && c.LastHoveredInterfaceID != c.ChatHoveredInterfaceIndex {
 		c.RedrawChatback = true
 		c.ChatHoveredInterfaceIndex = c.LastHoveredInterfaceID
 	}
@@ -6958,11 +6958,11 @@ func (c *Client) RefreshFunc() {
 // hint target is moderately far away (65..300 map units) the imageMapedge
 // arrow is drawn rotated at the minimap rim pointing toward it; nearer or
 // very distant targets fall back to the plain on-minimap marker.
-func (c *Client) DrawMinimapArrow(dx int, dy int, image *pix32.Pix32) {
+func (c *Client) MinimapDrawArrow(dx int, dy int, image *pix32.Pix32) {
 	distance := dx*dx + dy*dy
 	if distance <= 4225 || distance >= 90000 {
-		// Go DrawOnMinimap keeps the 225-deob arg order (dy, image, dx).
-		c.DrawOnMinimap(dy, image, dx)
+		// Go MinimapDrawDot keeps the 225-deob arg order (dy, image, dx).
+		c.MinimapDrawDot(dy, image, dx)
 		return
 	}
 
@@ -6984,7 +6984,7 @@ func (c *Client) DrawMinimapArrow(dx int, dy int, image *pix32.Pix32) {
 
 // Java: drawOnMinimap (Client.java:12083-12108). 244 shifts the plot origin
 // by (+4,-4) versus 225, pairing with the (25,5) minimap mask/blit origin.
-func (c *Client) DrawOnMinimap(arg0 int, arg2 *pix32.Pix32, arg3 int) {
+func (c *Client) MinimapDrawDot(arg0 int, arg2 *pix32.Pix32, arg3 int) {
 	var5 := (c.OrbitCameraYaw + c.MinimapAnticheatAngle) & 0x7FF
 	var6 := arg3*arg3 + arg0*arg0
 	if var6 > 6400 {
@@ -7679,7 +7679,7 @@ func (c *Client) LoginFunc(arg0 string, arg1 string, arg2 bool) {
 		c.FriendListStatus = 0                                     // Java: Client.java:2510 @2e62978 (NEW in 254)
 		c.FriendCount = 0
 		c.TutLayerID = -1
-		c.ChatLayerID = -1
+		c.ChatComId = -1
 		c.MainLayerID = -1
 		c.SideLayerID = -1
 		c.MainOverlayLayerID = -1 // Java: Client.java:2748
@@ -9005,7 +9005,7 @@ func (c *Client) AddChat(arg0 int, arg1 string, arg3 string) {
 		c.ModalMessage = arg1
 		c.MouseClickButton = 0
 	}
-	if c.ChatLayerID == -1 {
+	if c.ChatComId == -1 {
 		c.RedrawChatback = true
 	}
 	for i := 99; i > 0; i-- {
@@ -9151,7 +9151,7 @@ func (c *Client) HandleMouseInput() {
 					if iftype.List[var5].Layer == c.MainLayerID {
 						c.ObjDragArea = 1
 					}
-					if iftype.List[var5].Layer == c.ChatLayerID {
+					if iftype.List[var5].Layer == c.ChatComId {
 						c.ObjDragArea = 3
 					}
 					return
@@ -9854,7 +9854,7 @@ func (c *Client) OnDemandLoop() {
 			model.Unpack(req.File, req.Data)
 			if c.OnDemand.GetModelFlags(req.File)&0x62 != 0 {
 				c.RedrawSidebar = true
-				if c.ChatLayerID != -1 {
+				if c.ChatComId != -1 {
 					c.RedrawChatback = true
 				}
 			}
@@ -10553,8 +10553,8 @@ func (c *Client) DrawChatback() {
 	} else if c.ModalMessage != "" {
 		c.B12.CentreString(40, 0, c.ModalMessage, 239)
 		c.B12.CentreString(60, 128, "Click to continue", 239)
-	} else if c.ChatLayerID != -1 {
-		c.DrawInterface(0, 0, iftype.List[c.ChatLayerID], 0)
+	} else if c.ChatComId != -1 {
+		c.DrawInterface(0, 0, iftype.List[c.ChatComId], 0)
 	} else if c.TutLayerID == -1 {
 		var2 := c.P12
 		var3 := 0
@@ -10655,7 +10655,7 @@ func (c *Client) DrawChatback() {
 			var13 = c.LocalPlayer.Name
 		}
 		var2.DrawString(4, 90, 0, var13+":")
-		var2.DrawString(var2.StringWidth(var13+": ")+6, 90, 0xFF, c.ChatTyped+"*")
+		var2.DrawString(var2.StringWidth(var13+": ")+6, 90, 0xFF, c.ChatInput+"*")
 		pix2d.HLine(0, 77, 479, 0)
 	} else {
 		c.DrawInterface(0, 0, iftype.List[c.TutLayerID], 0)
@@ -11218,8 +11218,8 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_IF_OPENMAIN_SIDE {
 		var26 := c.In.G2()
 		var4 := c.In.G2()
-		if c.ChatLayerID != -1 {
-			c.ChatLayerID = -1
+		if c.ChatComId != -1 {
+			c.ChatComId = -1
 			c.RedrawChatback = true
 		}
 		if c.ChatbackInputOpen {
@@ -11408,8 +11408,8 @@ func (c *Client) TcpIn() (ok bool) {
 	if c.PacketType == SERVERPROT_IF_OPENSIDE {
 		var26 := c.In.G2()
 		c.ResetInterfaceAnimation(var26)
-		if c.ChatLayerID != -1 {
-			c.ChatLayerID = -1
+		if c.ChatComId != -1 {
+			c.ChatComId = -1
 			c.RedrawChatback = true
 		}
 		if c.ChatbackInputOpen {
@@ -11433,7 +11433,7 @@ func (c *Client) TcpIn() (ok bool) {
 			c.RedrawSidebar = true
 			c.RedrawSideIcons = true
 		}
-		c.ChatLayerID = var26
+		c.ChatComId = var26
 		c.RedrawChatback = true
 		c.MainLayerID = -1
 		c.PressedContinueOption = false
@@ -11598,8 +11598,8 @@ func (c *Client) TcpIn() (ok bool) {
 			c.RedrawSidebar = true
 			c.RedrawSideIcons = true
 		}
-		if c.ChatLayerID != -1 {
-			c.ChatLayerID = -1
+		if c.ChatComId != -1 {
+			c.ChatComId = -1
 			c.RedrawChatback = true
 		}
 		if c.ChatbackInputOpen {
@@ -11713,8 +11713,8 @@ func (c *Client) TcpIn() (ok bool) {
 			c.RedrawSidebar = true
 			c.RedrawSideIcons = true
 		}
-		if c.ChatLayerID != -1 {
-			c.ChatLayerID = -1
+		if c.ChatComId != -1 {
+			c.ChatComId = -1
 			c.RedrawChatback = true
 		}
 		if c.ChatbackInputOpen {
