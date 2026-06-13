@@ -202,7 +202,7 @@ func (t *Tone) Generate(samples, length int) []int {
 	// Theme C note at the top of this file.
 	if t.Filter.Pairs[0] > 0 || t.Filter.Pairs[1] > 0 {
 		t.FilterRange.GenInit()
-		scale := t.FilterRange.GenNext(samples + 1)                          // Java: var30
+		scale := t.FilterRange.GenNext(samples + 1)                           // Java: var30
 		numFeedforward := t.Filter.CalculateCoeffs(0, float32(scale)/65536.0) // Java: var31
 		numFeedback := t.Filter.CalculateCoeffs(1, float32(scale)/65536.0)    // Java: var32
 		if samples >= numFeedforward+numFeedback {

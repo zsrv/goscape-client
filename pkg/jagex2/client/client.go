@@ -310,7 +310,7 @@ type Client struct {
 	SCROLLBAR_GRIP_HIGHLIGHT      int
 	BFSStepX                      []int
 	BFSStepZ                      []int
-	ChatComId                   int
+	ChatComId                     int
 	ProjectX                      int
 	ProjectY                      int
 	TutLayerID                    int
@@ -688,7 +688,7 @@ func NewClient() *Client {
 		SCROLLBAR_GRIP_HIGHLIGHT:  7759444,
 		BFSStepX:                  make([]int, 4000),
 		BFSStepZ:                  make([]int, 4000),
-		ChatComId:               -1,
+		ChatComId:                 -1,
 		ProjectX:                  -1,
 		ProjectY:                  -1,
 		TutLayerID:                -1,
