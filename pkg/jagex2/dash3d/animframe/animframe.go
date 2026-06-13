@@ -16,13 +16,13 @@ var List []*AnimFrame
 // excludes pure deob artifacts.
 
 type AnimFrame struct {
-	Delay  int
-	Base   *animbase.AnimBase
-	Length int
-	Groups []int
-	X      []int
-	Y      []int
-	Z      []int
+	Delay int
+	Base  *animbase.AnimBase
+	Size  int   // Java: size
+	Ti    []int // Java: ti
+	Tx    []int // Java: tx
+	Ty    []int // Java: ty
+	Tz    []int // Java: tz
 }
 
 func NewAnimFrame() *AnimFrame {
@@ -108,9 +108,9 @@ func Unpack(data []byte) {
 		for j := range groupCount {
 			flags := tran1.G1()
 			if flags > 0 {
-				if base.Types[j] != 0 {
+				if base.Type[j] != 0 {
 					for group := j - 1; group > lastGroup; group-- {
-						if base.Types[group] == 0 {
+						if base.Type[group] == 0 {
 							tempTi[current] = group
 							tempTx[current] = 0
 							tempTy[current] = 0
@@ -124,7 +124,7 @@ func Unpack(data []byte) {
 				tempTi[current] = j
 
 				defaultValue := 0
-				if base.Types[tempTi[current]] == 3 {
+				if base.Type[tempTi[current]] == 3 {
 					defaultValue = 128
 				}
 
@@ -154,17 +154,17 @@ func Unpack(data []byte) {
 			}
 		}
 
-		frame.Length = current
-		frame.Groups = make([]int, current)
-		frame.X = make([]int, current)
-		frame.Y = make([]int, current)
-		frame.Z = make([]int, current)
+		frame.Size = current
+		frame.Ti = make([]int, current)
+		frame.Tx = make([]int, current)
+		frame.Ty = make([]int, current)
+		frame.Tz = make([]int, current)
 
 		for j := range current {
-			frame.Groups[j] = tempTi[j]
-			frame.X[j] = tempTx[j]
-			frame.Y[j] = tempTy[j]
-			frame.Z[j] = tempTz[j]
+			frame.Ti[j] = tempTi[j]
+			frame.Tx[j] = tempTx[j]
+			frame.Ty[j] = tempTy[j]
+			frame.Tz[j] = tempTz[j]
 		}
 	}
 }

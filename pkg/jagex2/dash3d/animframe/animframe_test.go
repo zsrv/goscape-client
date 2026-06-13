@@ -40,19 +40,19 @@ func TestUnpackOneFrameBlob(t *testing.T) {
 	if f == nil {
 		t.Fatal("List[0] is nil after Unpack")
 	}
-	if f.Base == nil || f.Base.Length != 1 || f.Base.Types[0] != 0 {
+	if f.Base == nil || f.Base.Size != 1 || f.Base.Type[0] != 0 {
 		t.Fatalf("base = %+v, want size 1 type[0]=0", f.Base)
 	}
 	if f.Delay != 7 {
 		t.Errorf("Delay = %d, want 7", f.Delay)
 	}
-	if f.Length != 1 {
-		t.Fatalf("Length = %d, want 1", f.Length)
+	if f.Size != 1 {
+		t.Fatalf("Size = %d, want 1", f.Size)
 	}
-	if f.Groups[0] != 0 {
-		t.Errorf("Groups[0] = %d, want 0", f.Groups[0])
+	if f.Ti[0] != 0 {
+		t.Errorf("Ti[0] = %d, want 0", f.Ti[0])
 	}
-	if f.X[0] != 5 || f.Y[0] != -3 || f.Z[0] != 10 {
-		t.Errorf("transform = (%d,%d,%d), want (5,-3,10)", f.X[0], f.Y[0], f.Z[0])
+	if f.Tx[0] != 5 || f.Ty[0] != -3 || f.Tz[0] != 10 {
+		t.Errorf("transform = (%d,%d,%d), want (5,-3,10)", f.Tx[0], f.Ty[0], f.Tz[0])
 	}
 }

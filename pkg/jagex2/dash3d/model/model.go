@@ -222,9 +222,9 @@ func Unpack(id int, data []byte) {
 	if data == nil {
 		info := metadata.NewMetadata()
 		Metadata[id] = info
-		info.VertexCount = 0
-		info.FaceCount = 0
-		info.TexturedFaceCount = 0
+		info.NumPoints = 0
+		info.NumFaces = 0
+		info.NumT = 0
 		return
 	}
 
@@ -233,10 +233,10 @@ func Unpack(id int, data []byte) {
 
 	info := metadata.NewMetadata()
 	Metadata[id] = info
-	info.Data = data
-	info.VertexCount = buf.G2()
-	info.FaceCount = buf.G2()
-	info.TexturedFaceCount = buf.G1()
+	info.Src = data
+	info.NumPoints = buf.G2()
+	info.NumFaces = buf.G2()
+	info.NumT = buf.G1()
 
 	hasInfo := buf.G1()
 	priority := buf.G1()
@@ -249,55 +249,55 @@ func Unpack(id int, data []byte) {
 	dataLengthFaceOrientations := buf.G2()
 
 	pos := 0
-	info.VertexFlagsOffset = pos
-	pos += info.VertexCount
+	info.VertexOrderOffset = pos
+	pos += info.NumPoints
 
-	info.FaceOrientationsOffset = pos
-	pos += info.FaceCount
+	info.FaceIndexOrderOffset = pos
+	pos += info.NumFaces
 
-	info.FacePrioritiesOffset = pos
+	info.FacePriorityOffset = pos
 	if priority == 255 {
-		pos += info.FaceCount
+		pos += info.NumFaces
 	} else {
-		info.FacePrioritiesOffset = -priority - 1
+		info.FacePriorityOffset = -priority - 1
 	}
 
-	info.FaceLabelsOffset = pos
+	info.FaceLabelOffset = pos
 	if hasFaceLabels == 1 {
-		pos += info.FaceCount
+		pos += info.NumFaces
 	} else {
-		info.FaceLabelsOffset = -1
+		info.FaceLabelOffset = -1
 	}
 
-	info.FaceInfosOffset = pos
+	info.FaceRenderTypeOffset = pos
 	if hasInfo == 1 {
-		pos += info.FaceCount
+		pos += info.NumFaces
 	} else {
-		info.FaceInfosOffset = -1
+		info.FaceRenderTypeOffset = -1
 	}
 
-	info.VertexLabelsOffset = pos
+	info.VertexLabelOffset = pos
 	if hasVertexLabels == 1 {
-		pos += info.VertexCount
+		pos += info.NumPoints
 	} else {
-		info.VertexLabelsOffset = -1
+		info.VertexLabelOffset = -1
 	}
 
-	info.FaceAlphasOffset = pos
+	info.FaceAlphaOffset = pos
 	if hasAlpha == 1 {
-		pos += info.FaceCount
+		pos += info.NumFaces
 	} else {
-		info.FaceAlphasOffset = -1
+		info.FaceAlphaOffset = -1
 	}
 
-	info.FaceVerticesOffset = pos
+	info.FaceIndexOffset = pos
 	pos += dataLengthFaceOrientations
 
-	info.FaceColoursOffset = pos
-	pos += info.FaceCount * 2
+	info.FaceColourOffset = pos
+	pos += info.NumFaces * 2
 
 	info.FaceTextureAxisOffset = pos
-	pos += info.TexturedFaceCount * 6
+	pos += info.NumT * 6
 
 	info.VertexXOffset = pos
 	pos += dataLengthX
@@ -360,9 +360,9 @@ func NewModel1(arg1 int) *Model {
 		fmt.Printf("Error model:%d not found!\n", arg1)
 		return &m
 	}
-	m.VertexCount = var3.VertexCount
-	m.FaceCount = var3.FaceCount
-	m.TexturedFaceCount = var3.TexturedFaceCount
+	m.VertexCount = var3.NumPoints
+	m.FaceCount = var3.NumFaces
+	m.TexturedFaceCount = var3.NumT
 	m.VertexX = make([]int, m.VertexCount)
 	m.VertexY = make([]int, m.VertexCount)
 	m.VertexZ = make([]int, m.VertexCount)
@@ -372,36 +372,36 @@ func NewModel1(arg1 int) *Model {
 	m.TexturedVertexA = make([]int, m.TexturedFaceCount)
 	m.TexturedVertexB = make([]int, m.TexturedFaceCount)
 	m.TexturedVertexC = make([]int, m.TexturedFaceCount)
-	if var3.VertexLabelsOffset >= 0 {
+	if var3.VertexLabelOffset >= 0 {
 		m.VertexLabel = make([]int, m.VertexCount)
 	}
-	if var3.FaceInfosOffset >= 0 {
+	if var3.FaceRenderTypeOffset >= 0 {
 		m.FaceInfo = make([]int, m.FaceCount)
 	}
-	if var3.FacePrioritiesOffset >= 0 {
+	if var3.FacePriorityOffset >= 0 {
 		m.FacePriority = make([]int, m.FaceCount)
 	} else {
-		m.Priority = -var3.FacePrioritiesOffset - 1
+		m.Priority = -var3.FacePriorityOffset - 1
 	}
-	if var3.FaceAlphasOffset >= 0 {
+	if var3.FaceAlphaOffset >= 0 {
 		m.FaceAlpha = make([]int, m.FaceCount)
 	}
-	if var3.FaceLabelsOffset >= 0 {
+	if var3.FaceLabelOffset >= 0 {
 		m.FaceLabel = make([]int, m.FaceCount)
 	}
 	m.FaceColour = make([]int, m.FaceCount)
 	// Java: rev-244 builds every decode cursor as a LOCAL Packet over
 	// info.data (no shared package streams as in 225).
-	point1 := io.NewPacket(var3.Data)
-	point1.Pos = var3.VertexFlagsOffset
-	point2 := io.NewPacket(var3.Data)
+	point1 := io.NewPacket(var3.Src)
+	point1.Pos = var3.VertexOrderOffset
+	point2 := io.NewPacket(var3.Src)
 	point2.Pos = var3.VertexXOffset
-	point3 := io.NewPacket(var3.Data)
+	point3 := io.NewPacket(var3.Src)
 	point3.Pos = var3.VertexYOffset
-	point4 := io.NewPacket(var3.Data)
+	point4 := io.NewPacket(var3.Src)
 	point4.Pos = var3.VertexZOffset
-	point5 := io.NewPacket(var3.Data)
-	point5.Pos = var3.VertexLabelsOffset
+	point5 := io.NewPacket(var3.Src)
+	point5.Pos = var3.VertexLabelOffset
 	var4 := 0
 	var5 := 0
 	var6 := 0
@@ -432,16 +432,16 @@ func NewModel1(arg1 int) *Model {
 			m.VertexLabel[i] = point5.G1()
 		}
 	}
-	face1 := io.NewPacket(var3.Data)
-	face1.Pos = var3.FaceColoursOffset
-	face2 := io.NewPacket(var3.Data)
-	face2.Pos = var3.FaceInfosOffset
-	face3 := io.NewPacket(var3.Data)
-	face3.Pos = var3.FacePrioritiesOffset
-	face4 := io.NewPacket(var3.Data)
-	face4.Pos = var3.FaceAlphasOffset
-	face5 := io.NewPacket(var3.Data)
-	face5.Pos = var3.FaceLabelsOffset
+	face1 := io.NewPacket(var3.Src)
+	face1.Pos = var3.FaceColourOffset
+	face2 := io.NewPacket(var3.Src)
+	face2.Pos = var3.FaceRenderTypeOffset
+	face3 := io.NewPacket(var3.Src)
+	face3.Pos = var3.FacePriorityOffset
+	face4 := io.NewPacket(var3.Src)
+	face4.Pos = var3.FaceAlphaOffset
+	face5 := io.NewPacket(var3.Src)
+	face5.Pos = var3.FaceLabelOffset
 	for i := range m.FaceCount {
 		m.FaceColour[i] = face1.G2()
 		if m.FaceInfo != nil {
@@ -457,10 +457,10 @@ func NewModel1(arg1 int) *Model {
 			m.FaceLabel[i] = face5.G1()
 		}
 	}
-	vertex1 := io.NewPacket(var3.Data)
-	vertex1.Pos = var3.FaceVerticesOffset
-	vertex2 := io.NewPacket(var3.Data)
-	vertex2.Pos = var3.FaceOrientationsOffset
+	vertex1 := io.NewPacket(var3.Src)
+	vertex1.Pos = var3.FaceIndexOffset
+	vertex2 := io.NewPacket(var3.Src)
+	vertex2.Pos = var3.FaceIndexOrderOffset
 	var9 = 0
 	var10 = 0
 	var11 = 0
@@ -508,7 +508,7 @@ func NewModel1(arg1 int) *Model {
 			m.FaceVertexC[i] = var11
 		}
 	}
-	axis := io.NewPacket(var3.Data)
+	axis := io.NewPacket(var3.Src)
 	// Java: rev-244 stores FaceTextureAxisOffset as a byte offset directly —
 	// NO `* 6` (225 stored a texture-face count and multiplied at use).
 	axis.Pos = var3.FaceTextureAxisOffset
@@ -1092,9 +1092,9 @@ func (m *Model) Animate(arg1 int) {
 	BaseX = 0
 	BaseY = 0
 	BaseZ = 0
-	for i := range var3.Length {
-		var6 := var3.Groups[i]
-		m.Animate2(var4.Types[var6], var4.Labels[var6], var3.X[i], var3.Y[i], var3.Z[i])
+	for i := range var3.Size {
+		var6 := var3.Ti[i]
+		m.Animate2(var4.Type[var6], var4.Labels[var6], var3.Tx[i], var3.Ty[i], var3.Tz[i])
 	}
 }
 
@@ -1125,14 +1125,14 @@ func (m *Model) MaskAnimate(arg0 int, arg2 int, arg3 []int) {
 	var8 := 0
 	var13 := var8 + 1
 	var9 := arg3[var8]
-	for i := range var5.Length {
-		var11 := var5.Groups[i]
+	for i := range var5.Size {
+		var11 := var5.Ti[i]
 		for var11 > var9 {
 			var9 = arg3[var13]
 			var13++
 		}
-		if var11 != var9 || var7.Types[var11] == 0 {
-			m.Animate2(var7.Types[var11], var7.Labels[var11], var5.X[i], var5.Y[i], var5.Z[i])
+		if var11 != var9 || var7.Type[var11] == 0 {
+			m.Animate2(var7.Type[var11], var7.Labels[var11], var5.Tx[i], var5.Ty[i], var5.Tz[i])
 		}
 	}
 	BaseX = 0
@@ -1141,14 +1141,14 @@ func (m *Model) MaskAnimate(arg0 int, arg2 int, arg3 []int) {
 	var8 = 0
 	var13 = var8 + 1
 	var9 = arg3[var8]
-	for i := range var6.Length {
-		var12 := var6.Groups[i]
+	for i := range var6.Size {
+		var12 := var6.Ti[i]
 		for var12 > var9 {
 			var9 = arg3[var13]
 			var13++
 		}
-		if var12 == var9 || var7.Types[var12] == 0 {
-			m.Animate2(var7.Types[var12], var7.Labels[var12], var6.X[i], var6.Y[i], var6.Z[i])
+		if var12 == var9 || var7.Type[var12] == 0 {
+			m.Animate2(var7.Type[var12], var7.Labels[var12], var6.Tx[i], var6.Ty[i], var6.Tz[i])
 		}
 	}
 }

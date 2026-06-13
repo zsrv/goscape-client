@@ -3,9 +3,9 @@ package animbase
 import "github.com/zsrv/goscape-client/pkg/jagex2/io"
 
 type AnimBase struct {
-	Length int
-	Types  []int
-	Labels [][]int
+	Size   int     // Java: size
+	Type   []int   // Java: type
+	Labels [][]int // Java: labels
 }
 
 // NewAnimBase ports Java's AnimBase(Packet) (rev-244). In 244 the animation
@@ -32,5 +32,5 @@ func NewAnimBase(buf *io.Packet) *AnimBase {
 		}
 	}
 
-	return &AnimBase{Length: size, Types: types, Labels: labels}
+	return &AnimBase{Size: size, Type: types, Labels: labels}
 }
