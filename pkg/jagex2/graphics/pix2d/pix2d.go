@@ -25,7 +25,7 @@ func SetPixels(width int, data []int, height int) {
 }
 
 // Reset clears every package-level binding to its zero value. Intended for
-// tests that need to start from a clean slate so a previous test's Bind
+// tests that need to start from a clean slate so a previous test's SetPixels
 // can't leak into the next (the rendering pipeline keeps its state as
 // package vars by design — see CLAUDE.md "Global State Pattern").
 func Reset() {

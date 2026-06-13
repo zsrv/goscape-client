@@ -2910,7 +2910,7 @@ func (c *Client) UpdateFlames() {
 
 // Java: minimapDraw (Client.java:7463 @32f3062) — 274 rename of 254 drawMinimap.
 func (c *Client) MinimapDraw() {
-	c.AreaMapback.Bind()
+	c.AreaMapback.SetPixels()
 	// Java: Client.java:7465-7477 @32f3062 — NEW in 274: minimap blackout
 	// (state 2). Zero every pixel the mapback frame doesn't cover (mask
 	// byte 0 = inside the round window), draw only the compass, rebind the
@@ -2925,7 +2925,7 @@ func (c *Client) MinimapDraw() {
 			}
 		}
 		c.ImageCompass.ScanlineRotatePlotSprite(c.OrbitCameraYaw, 33, c.CompassMaskLineOffsets, 33, 25, 256, 25, 0, 0, c.CompassMaskLineLengths)
-		c.AreaViewport.Bind()
+		c.AreaViewport.SetPixels()
 		return
 	}
 	var2 := (c.OrbitCameraYaw + c.MinimapAnticheatAngle) & 0x7FF
@@ -3014,7 +3014,7 @@ func (c *Client) MinimapDraw() {
 	// white player dot moves with the 244 (+4,-4) minimap origin shift
 	// (225: (93,82)).
 	pix2d.FillRect(78, 97, 0xFFFFFF, 3, 3)
-	c.AreaViewport.Bind()
+	c.AreaViewport.SetPixels()
 }
 
 // Decision: getBaseComponent is NOT being ported. See viewbox.go for the
@@ -3144,7 +3144,7 @@ func (c *Client) CreateMinimap(arg0 int) {
 			}
 		}
 	}
-	c.AreaViewport.Bind()
+	c.AreaViewport.SetPixels()
 	c.ActiveMapFunctionCount = 0
 	for i := range 104 {
 		for j := range 104 {
@@ -3639,7 +3639,7 @@ func (c *Client) SetMidiVolume(active bool, volume int) {
 // loginscreen==2 buttons are now always drawn.
 func (c *Client) TitleScreenDraw() {
 	c.PrepareTitle()
-	c.ImageTitle4.Bind()
+	c.ImageTitle4.SetPixels()
 	c.Titlebox.PlotSprite(0, 0)
 	var2 := 360
 	var3 := 200
@@ -4740,7 +4740,7 @@ func (c *Client) DrawGame() {
 			c.Out.P1(c.SideTab)
 		}
 		c.RedrawSideIcons = false
-		c.AreaBackhmid1.Bind()
+		c.AreaBackhmid1.SetPixels()
 		c.ImageBackhmid1.PlotSprite(0, 0)
 		if c.SideLayerID == -1 {
 			if c.TabInterfaceID[c.SideTab] != -1 {
@@ -4783,7 +4783,7 @@ func (c *Client) DrawGame() {
 				c.ImageSideIcons[6].PlotSprite(13, 208)
 			}
 		}
-		c.AreaBackbase2.Bind()
+		c.AreaBackbase2.SetPixels()
 		c.ImageBackbase2.PlotSprite(0, 0)
 		if c.SideLayerID == -1 {
 			if c.TabInterfaceID[c.SideTab] != -1 {
@@ -4829,7 +4829,7 @@ func (c *Client) DrawGame() {
 				c.ImageSideIcons[12].PlotSprite(2, 226)
 			}
 		}
-		c.AreaViewport.Bind()
+		c.AreaViewport.SetPixels()
 	}
 	// Always upload the two SideIcons pixmaps. Pixel content edits
 	// above were gated by RedrawSideIcons; the GPU upload runs every
@@ -4838,7 +4838,7 @@ func (c *Client) DrawGame() {
 	c.AreaBackbase2.Draw(496, 466)
 	if c.RedrawPrivacySettings {
 		c.RedrawPrivacySettings = false
-		c.AreaBackbase1.Bind()
+		c.AreaBackbase1.SetPixels()
 		c.ImageBackbase1.PlotSprite(0, 0)
 		c.P12.DrawStringTaggableCenter(55, 0xFFFFFF, true, 28, "Public chat")
 		switch c.PublicChatSetting {
@@ -4870,7 +4870,7 @@ func (c *Client) DrawGame() {
 			c.P12.DrawStringTaggableCenter(324, 0xFF0000, true, 41, "Off")
 		}
 		c.P12.DrawStringTaggableCenter(458, 0xFFFFFF, true, 33, "Report abuse")
-		c.AreaViewport.Bind()
+		c.AreaViewport.SetPixels()
 	}
 	// Always upload the PrivacySettings pixmap. Pixel content edits
 	// above were gated by RedrawPrivacySettings.
@@ -9523,7 +9523,7 @@ func (c *Client) LostCon() {
 		c.Logout()
 		return
 	}
-	c.AreaViewport.Bind()
+	c.AreaViewport.SetPixels()
 	c.P12.CentreString(144, 0, "Connection lost", 257)
 	c.P12.CentreString(143, 0xFFFFFF, "Connection lost", 256)
 	c.P12.CentreString(159, 0, "Please wait - attempting to reestablish", 257)
@@ -9646,7 +9646,7 @@ func (c *Client) SortObjStacks(arg0, arg1 int) {
 // minimap re-create when the current level changes.
 func (c *Client) UpdateSceneState() {
 	if LowMemory && c.SceneState == 2 && clientbuild.LevelBuilt != c.CurrentLevel {
-		c.AreaViewport.Bind()
+		c.AreaViewport.SetPixels()
 		c.P12.CentreString(151, 0, "Loading - please wait.", 257)
 		c.P12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
 		c.presentLoadingMessage()
@@ -9775,7 +9775,7 @@ func (c *Client) MapBuild() {
 	}
 	c.Out.P1Isaac(CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(206)
 	var3.Build(c.Scene, c.LevelCollisionMap)
-	c.AreaViewport.Bind()
+	c.AreaViewport.SetPixels()
 	c.Out.P1Isaac(CLIENTPROT_NO_TIMEOUT) // Java: pIsaac(206)
 	// Java: rev-244 buildScene has no LocList bridge-level post-pass — animated
 	// locs are stored directly as scene-node ModelSources (self-animating
@@ -10128,7 +10128,7 @@ func (c *Client) GetIfVar(arg0 int, arg2 *iftype.IfType) (result int) {
 // drawString was immediately visible.
 func (c *Client) DrawError() {
 	c.ensureOverlay()
-	c.OverlayPixMap.Bind()
+	c.OverlayPixMap.SetPixels()
 	pix2d.FillRect(0, 0, 0x000000, c.ScreenWidth, c.ScreenHeight)
 
 	c.SetFrameRate(1)
@@ -10193,31 +10193,31 @@ func (c *Client) LoadTitleBackground() {
 	src := c.Title.Read("title.dat", nil)
 	background := pix32.NewPix322(src)
 
-	c.TitleLeft.Bind()
+	c.TitleLeft.SetPixels()
 	background.QuickPlotSprite(0, 0)
 
-	c.TitleRight.Bind()
+	c.TitleRight.SetPixels()
 	background.QuickPlotSprite(-637, 0)
 
-	c.ImageTitle2.Bind()
+	c.ImageTitle2.SetPixels()
 	background.QuickPlotSprite(-128, 0)
 
-	c.ImageTitle3.Bind()
+	c.ImageTitle3.SetPixels()
 	background.QuickPlotSprite(-202, -371)
 
-	c.ImageTitle4.Bind()
+	c.ImageTitle4.SetPixels()
 	background.QuickPlotSprite(-202, -171)
 
-	c.ImageTitle5.Bind()
+	c.ImageTitle5.SetPixels()
 	background.QuickPlotSprite(0, -265)
 
-	c.ImageTitle6.Bind()
+	c.ImageTitle6.SetPixels()
 	background.QuickPlotSprite(-562, -265)
 
-	c.ImageTitle7.Bind()
+	c.ImageTitle7.SetPixels()
 	background.QuickPlotSprite(-128, -171)
 
-	c.ImageTitle8.Bind()
+	c.ImageTitle8.SetPixels()
 	background.QuickPlotSprite(-562, -171)
 
 	// draw right side (mirror image)
@@ -10232,35 +10232,35 @@ func (c *Client) LoadTitleBackground() {
 		}
 	}
 
-	c.TitleLeft.Bind()
+	c.TitleLeft.SetPixels()
 	background.QuickPlotSprite(382, 0)
 
-	c.TitleRight.Bind()
+	c.TitleRight.SetPixels()
 	background.QuickPlotSprite(-255, 0)
 
-	c.ImageTitle2.Bind()
+	c.ImageTitle2.SetPixels()
 	background.QuickPlotSprite(254, 0)
 
-	c.ImageTitle3.Bind()
+	c.ImageTitle3.SetPixels()
 	background.QuickPlotSprite(180, -371)
 
-	c.ImageTitle4.Bind()
+	c.ImageTitle4.SetPixels()
 	background.QuickPlotSprite(180, -171)
 
-	c.ImageTitle5.Bind()
+	c.ImageTitle5.SetPixels()
 	background.QuickPlotSprite(382, -265)
 
-	c.ImageTitle6.Bind()
+	c.ImageTitle6.SetPixels()
 	background.QuickPlotSprite(-180, -265)
 
-	c.ImageTitle7.Bind()
+	c.ImageTitle7.SetPixels()
 	background.QuickPlotSprite(254, -171)
 
-	c.ImageTitle8.Bind()
+	c.ImageTitle8.SetPixels()
 	background.QuickPlotSprite(-180, -171)
 
 	logo := pix32.NewPix323(c.Title, "logo", 0)
-	c.ImageTitle2.Bind()
+	c.ImageTitle2.SetPixels()
 	logo.PlotSprite(18, 382-logo.Wi/2-128) // Java: hard 382 (= 765/2), Client.java:5391
 }
 
@@ -10541,7 +10541,7 @@ func (c *Client) DrawChatback() {
 		return
 	}
 	c.RedrawChatback = false
-	c.AreaChatback.Bind()
+	c.AreaChatback.SetPixels()
 	pix3d.LineOffset = c.AreaChatbackOffsets
 	c.ImageChatback.PlotSprite(0, 0)
 	if c.ShowSocialInput {
@@ -10663,7 +10663,7 @@ func (c *Client) DrawChatback() {
 	if c.MenuVisible && c.MenuArea == 2 {
 		c.DrawMenu()
 	}
-	c.AreaViewport.Bind()
+	c.AreaViewport.SetPixels()
 	pix3d.LineOffset = c.AreaViewportOffsets
 	c.AreaChatback.Draw(17, 357)
 }
@@ -10993,7 +10993,7 @@ func (c *Client) TcpIn() (ok bool) {
 		}
 		c.SceneState = 1
 		c.SceneLoadStartTime = time.Now().UnixMilli()
-		c.AreaViewport.Bind()
+		c.AreaViewport.SetPixels()
 		c.P12.CentreString(151, 0, "Loading - please wait.", 257)
 		c.P12.CentreString(150, 0xFFFFFF, "Loading - please wait.", 256)
 		c.presentLoadingMessage()
@@ -11812,7 +11812,7 @@ func (c *Client) DrawSidebar() {
 	// platform.Active.Blit must re-issue each frame.
 	if c.RedrawSidebar {
 		c.RedrawSidebar = false
-		c.AreaSidebar.Bind()
+		c.AreaSidebar.SetPixels()
 		pix3d.LineOffset = c.AreaSidebarOffsets
 		c.ImageInvback.PlotSprite(0, 0)
 		if c.SideLayerID != -1 {
@@ -11823,7 +11823,7 @@ func (c *Client) DrawSidebar() {
 		if c.MenuVisible && c.MenuArea == 1 {
 			c.DrawMenu()
 		}
-		c.AreaViewport.Bind()
+		c.AreaViewport.SetPixels()
 		pix3d.LineOffset = c.AreaViewportOffsets
 	}
 	c.AreaSidebar.Draw(553, 205)
@@ -12023,7 +12023,7 @@ func (c *Client) MessageBox(message string, percent int) {
 	// GetJagFile's retry loop before the main loop takes over). Present
 	// explicitly since we're not in the per-frame Draw call.
 	c.present(func() {
-		c.ImageTitle4.Bind()
+		c.ImageTitle4.SetPixels()
 
 		x := 360
 		y := 200
