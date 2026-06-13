@@ -1660,7 +1660,7 @@ func (c *Client) DrawScene() {
 // SetLowMem is Java: setLowMemory (deob/client.java:2184).
 func SetLowMem() {
 	world.LowMemory = true
-	pix3d.LowDetail = true
+	pix3d.LowMem = true
 	LowMemory = true
 	clientbuild.LowMemory = true
 }
@@ -8727,7 +8727,7 @@ func (c *Client) GetCodeBase() string {
 // SetHighMem is Java: setHighMemory (deob/client.java:7632).
 func SetHighMem() {
 	world.LowMemory = false
-	pix3d.LowDetail = false
+	pix3d.LowMem = false
 	LowMemory = false
 	clientbuild.LowMemory = false
 }

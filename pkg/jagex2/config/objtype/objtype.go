@@ -420,7 +420,7 @@ func GetSprite(id int, outlineRgb int, count int) *pix32.Pix32 {
 	var12 := pix2d.ClipMaxX
 	var13 := pix2d.ClipMinY
 	var14 := pix2d.ClipMaxY
-	pix3d.Jagged = false
+	pix3d.LowDetail = false
 	pix2d.SetPixels(32, var3.Pixels, 32)
 	pix2d.FillRect(0, 0, 0, 32, 32)
 	pix3d.Init()
@@ -501,7 +501,7 @@ func GetSprite(id int, outlineRgb int, count int) *pix32.Pix32 {
 	pix3d.CenterW3D = var5
 	pix3d.CenterH3D = var6
 	pix3d.LineOffset = var7
-	pix3d.Jagged = true
+	pix3d.LowDetail = true
 	if var4.Stackable {
 		var3.OWi = 33
 	} else {
