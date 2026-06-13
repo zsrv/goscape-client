@@ -604,3 +604,61 @@ func TestEndToEnd_RequestRunCycle(t *testing.T) {
 		t.Fatalf("Remaining = %d, want 0", od.Remaining())
 	}
 }
+
+// ---- F2: unwritten-send retry cadence (async-connector compensation) ----------
+
+func TestSend_ReportsWhetherItWrote(t *testing.T) {
+	od, _ := newConnectedOD(t)
+
+	r := newRequest()
+	r.Archive = 0
+	r.File = 3
+	r.Urgent = true
+	if !od.send(r) {
+		t.Fatal("send over a live stream should report true")
+	}
+
+	// Stream torn down + the 4 s redial backoff still active → send() writes
+	// nothing this frame.
+	od.closeStream()
+	if od.send(r) {
+		t.Fatal("send with no live stream should report false")
+	}
+}
+
+func TestRun_UnwrittenResendKeepsRetrying(t *testing.T) {
+	// No conns → send() can never write. A pending urgent request that crosses
+	// the >50 resend threshold but fails to write must NOT reset its cycle to 0
+	// (which would force a fresh ~50-frame wait); it retries every frame until
+	// the socket is back. Compensates the async-connector deviation.
+	app := &fakeApp{}
+	od := New(buildMinimalVersionlist(1, 0), app, nil)
+	r := pushPending(od, 0, 5, true)
+	r.Cycle = 50 // next frame's resend walk crosses >50
+
+	for range 3 {
+		od.Run()
+	}
+	if r.Cycle <= 50 {
+		t.Fatalf("Cycle = %d; want > 50 (unwritten resend must keep retrying, not reset)", r.Cycle)
+	}
+}
+
+func TestHandlePending_UnwrittenInitialSendRetriesNextFrame(t *testing.T) {
+	// A request promoted out of `missing` whose initial send cannot be written
+	// must be armed (Cycle > 50) so the resend walk retries it next frame rather
+	// than after a full ~50-frame cycle.
+	app := &fakeApp{}
+	od := New(buildMinimalVersionlist(1, 0), app, nil)
+	r := newRequest()
+	r.Archive = 0
+	r.File = 0
+	r.Urgent = true
+	od.missing.Push(r.node.Linkable)
+
+	od.Run() // handlePending promotes r; its initial send cannot write
+
+	if r.Cycle <= 50 {
+		t.Fatalf("Cycle = %d; want > 50 so the resend walk retries next frame", r.Cycle)
+	}
+}

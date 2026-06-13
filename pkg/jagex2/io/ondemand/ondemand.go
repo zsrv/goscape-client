@@ -627,8 +627,14 @@ func (od *OnDemand) Run() {
 			resent = true
 			n.Value.Cycle++
 			if n.Value.Cycle > 50 {
-				n.Value.Cycle = 0
-				od.send(n.Value)
+				// Java resets cycle unconditionally (OnDemand.java:410-411)
+				// because its send() reopens synchronously and always writes.
+				// Our async send() may write nothing while a dial is in flight;
+				// reset only on a real write so an unwritten request retries
+				// next frame instead of waiting another 50.
+				if od.send(n.Value) {
+					n.Value.Cycle = 0
+				}
 			}
 		}
 	}
@@ -637,8 +643,9 @@ func (od *OnDemand) Run() {
 			resent = true
 			n.Value.Cycle++
 			if n.Value.Cycle > 50 {
-				n.Value.Cycle = 0
-				od.send(n.Value)
+				if od.send(n.Value) {
+					n.Value.Cycle = 0
+				}
 			}
 		}
 	}
@@ -735,7 +742,13 @@ func (od *OnDemand) handlePending() {
 		od.priorities[r.Archive][r.File] = 0
 		od.pending.Push(r.node.Linkable)
 		od.importantCount++
-		od.send(r)
+		if !od.send(r) {
+			// Async dial in flight → nothing written. Arm cycle past the >50
+			// threshold so the resend walk retries next frame instead of after
+			// a full ~50-frame cycle. Java's synchronous send always writes
+			// here, so it never needs this (compensates the async deviation).
+			r.Cycle = 51
+		}
 		od.active = true
 	}
 }
@@ -981,7 +994,14 @@ func (od *OnDemand) closeStream() {
 // Note clientstream.Write is asynchronous (ring buffer + writer goroutine):
 // a wire failure surfaces on a LATER Write call, exactly like Java's
 // buffered OutputStream surfacing the IOException on a later flush.
-func (od *OnDemand) send(r *OnDemandRequest) {
+//
+// send reports whether the request frame was actually written this call. Java's
+// send() reopens the socket synchronously and always writes (or throws), so the
+// caller can unconditionally reset cycle. This port dials asynchronously (the
+// frame-driven Run() must never block), so send can return without writing
+// while a dial is in flight; callers use the bool to retry next frame instead
+// of resetting the 50-frame cadence on an unwritten request.
+func (od *OnDemand) send(r *OnDemandRequest) bool {
 	if od.stream == nil {
 		if od.connecting != nil {
 			select {
@@ -989,25 +1009,25 @@ func (od *OnDemand) send(r *OnDemandRequest) {
 				od.connecting = nil
 				if res.err != nil {
 					od.FailCount++ // Java: failCount++ in the catch (OnDemand.java:731)
-					return
+					return false
 				}
 				od.stream = res.stream
 				od.packetCycle = 0 // Java: OnDemand.java:707
 			default:
-				return // dial+handshake still in flight
+				return false // dial+handshake still in flight
 			}
 		} else {
 			// Java: 4 s redial backoff (OnDemand.java:696-699).
 			now := time.Now().UnixMilli() // Java: System.currentTimeMillis()
 			if now-od.socketOpenTime < 4000 {
-				return
+				return false
 			}
 			od.socketOpenTime = now
 			ch := make(chan connectResult, 1)
 			od.connecting = ch
 			app := od.app
 			go func() { ch <- openStream(app) }()
-			return
+			return false
 		}
 	}
 
@@ -1025,8 +1045,9 @@ func (od *OnDemand) send(r *OnDemandRequest) {
 	if err := od.stream.Write(od.buf[:], 4, 0); err != nil {
 		od.closeStream()
 		od.FailCount++
-		return
+		return false
 	}
 	od.noTimeoutCycle = 0
 	od.FailCount = -10000 // Java: OnDemand.java:720-721
+	return true
 }
