@@ -92,18 +92,18 @@ func TestInitType6DeferredModel(t *testing.T) {
 	}
 }
 
-func TestLoadModelType5Uncached(t *testing.T) {
+func TestGetModelType5Uncached(t *testing.T) {
 	ModelCache = datastruct.NewLruCache[*model.Model](30)
 	defer func() { ModelCache = nil }()
 
 	com := &IfType{}
 	// type 5 returns nil and does not deref localPlayer.
-	if got := com.LoadModel(5, 0, nil); got != nil {
-		t.Errorf("LoadModel(5, 0, nil) = %v, want nil", got)
+	if got := com.GetModel(5, 0, nil); got != nil {
+		t.Errorf("GetModel(5, 0, nil) = %v, want nil", got)
 	}
 }
 
-func TestLoadModelCacheKeyByTypeAndId(t *testing.T) {
+func TestGetModelCacheKeyByTypeAndId(t *testing.T) {
 	ModelCache = datastruct.NewLruCache[*model.Model](30)
 	defer func() { ModelCache = nil }()
 
@@ -115,12 +115,12 @@ func TestLoadModelCacheKeyByTypeAndId(t *testing.T) {
 
 	com := &IfType{}
 	// cache-check-first short-circuits before the type-5 nil case.
-	if got := com.LoadModel(typ, modelID, nil); got != m {
-		t.Errorf("LoadModel(%d, %d, nil) = %v, want cached %v", typ, modelID, got, m)
+	if got := com.GetModel(typ, modelID, nil); got != m {
+		t.Errorf("GetModel(%d, %d, nil) = %v, want cached %v", typ, modelID, got, m)
 	}
 
 	// A different key must miss (type 5 → nil) rather than return the cached model.
-	if got := com.LoadModel(typ, modelID+1, nil); got != nil {
-		t.Errorf("LoadModel(%d, %d, nil) = %v, want nil (cache miss)", typ, modelID+1, got)
+	if got := com.GetModel(typ, modelID+1, nil); got != nil {
+		t.Errorf("GetModel(%d, %d, nil) = %v, want nil (cache miss)", typ, modelID+1, got)
 	}
 }

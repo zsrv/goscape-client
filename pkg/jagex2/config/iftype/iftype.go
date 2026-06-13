@@ -100,9 +100,9 @@ func NewIfType() *IfType {
 	return new(IfType)
 }
 
-// SwapObj swaps the inventory slots src and dst (id + count).
-// Java: IfType.swapObj (IfType.java:447-455, new in 244).
-func (c *IfType) SwapObj(src, dst int) {
+// SwapSlots swaps the inventory slots src and dst (id + count).
+// Java: IfType.swapSlots (IfType.java:444 @32f3062; was swapObj in 244).
+func (c *IfType) SwapSlots(src, dst int) {
 	c.InvSlotObjId[src], c.InvSlotObjId[dst] = c.InvSlotObjId[dst], c.InvSlotObjId[src]
 	c.InvSlotObjCount[src], c.InvSlotObjCount[dst] = c.InvSlotObjCount[dst], c.InvSlotObjCount[src]
 }
@@ -356,9 +356,9 @@ func Init(arg0 *io.JagFile, arg1 *io.JagFile, arg2 []*pixfont.PixFont) {
 func (c *IfType) GetTempModel(arg0 int, arg1 int, arg2 bool, localPlayer *playerentity.ClientPlayer) *model.Model {
 	var m *model.Model // Java: model — resolved deferred (type,id) pair
 	if arg2 {
-		m = c.LoadModel(c.ActiveModelType, c.ActiveModel, localPlayer)
+		m = c.GetModel(c.ActiveModelType, c.ActiveModel, localPlayer)
 	} else {
-		m = c.LoadModel(c.ModelType, c.Model, localPlayer)
+		m = c.GetModel(c.ModelType, c.Model, localPlayer)
 	}
 	if m == nil {
 		return nil
@@ -383,8 +383,8 @@ func (c *IfType) GetTempModel(arg0 int, arg1 int, arg2 bool, localPlayer *player
 	return var5
 }
 
-// Java: IfType.loadModel (IfType.java:458-483 @176a85f).
-func (c *IfType) LoadModel(arg0 int, arg1 int, localPlayer *playerentity.ClientPlayer) *model.Model {
+// Java: IfType.getModel (IfType.java:482 @32f3062; was loadModel ≤245.2).
+func (c *IfType) GetModel(arg0 int, arg1 int, localPlayer *playerentity.ClientPlayer) *model.Model {
 	// Java: (long) ((arg0 << 16) + arg1) — 245.2 does int arithmetic and widens
 	// AFTER the add (244 widened type before the shift); int32 wrap preserves
 	// Java int overflow. Equivalent for valid ids.
@@ -418,7 +418,7 @@ func CacheModel(m *model.Model, id int, typ int) {
 	ModelCache.Clear()
 	if m != nil && typ != 4 {
 		// Java: (long)((arg3 << 16) + arg1) — the add runs in 32-bit int and
-		// wraps before widening, like LoadModel's key (audit config-B-04).
+		// wraps before widening, like GetModel's key (audit config-B-04).
 		ModelCache.Put(int64(int32((typ<<16)+id)), m)
 	}
 }

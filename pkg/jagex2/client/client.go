@@ -8518,15 +8518,15 @@ func (c *Client) GameLoop() {
 						dst := c.HoveredSlot
 						for src != dst {
 							if src > dst {
-								var13.SwapObj(src, src-1)
+								var13.SwapSlots(src, src-1)
 								src--
 							} else if src < dst {
-								var13.SwapObj(src, src+1)
+								var13.SwapSlots(src, src+1)
 								src++
 							}
 						}
 					} else {
-						var13.SwapObj(c.ObjDragSlot, c.HoveredSlot)
+						var13.SwapSlots(c.ObjDragSlot, c.HoveredSlot)
 					}
 					c.Out.P1Isaac(CLIENTPROT_INV_BUTTOND) // Java: pIsaac(7) Client.java:3048
 					c.Out.P2(c.ObjDragInterfaceID)
