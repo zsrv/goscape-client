@@ -362,27 +362,27 @@ func (p *PixFont) DrawChar(arg0 []int8, arg1, arg2, arg3, arg4, arg5 int) {
 	var9 := 0
 	var10 := 0
 	var11 := 0
-	if arg2 < pix2d.Top {
-		var11 = pix2d.Top - arg2
+	if arg2 < pix2d.ClipMinY {
+		var11 = pix2d.ClipMinY - arg2
 		arg4 -= var11
-		arg2 = pix2d.Top
+		arg2 = pix2d.ClipMinY
 		var10 += var11 * arg3
 		var7 += var11 * pix2d.Width2D
 	}
-	if arg2+arg4 >= pix2d.Bottom {
-		arg4 -= arg2 + arg4 - pix2d.Bottom + 1
+	if arg2+arg4 >= pix2d.ClipMaxY {
+		arg4 -= arg2 + arg4 - pix2d.ClipMaxY + 1
 	}
-	if arg1 < pix2d.Left {
-		var11 = pix2d.Left - arg1
+	if arg1 < pix2d.ClipMinX {
+		var11 = pix2d.ClipMinX - arg1
 		arg3 -= var11
-		arg1 = pix2d.Left
+		arg1 = pix2d.ClipMinX
 		var10 += var11
 		var7 += var11
 		var9 += var11
 		var8 += var11
 	}
-	if arg1+arg3 >= pix2d.Right {
-		var11 = arg1 + arg3 - pix2d.Right + 1
+	if arg1+arg3 >= pix2d.ClipMaxX {
+		var11 = arg1 + arg3 - pix2d.ClipMaxX + 1
 		arg3 -= var11
 		var9 += var11
 		var8 += var11
@@ -446,27 +446,27 @@ func (p *PixFont) DrawCharAlpha(arg0 []int8, arg2, arg3, arg4, arg5, arg6, arg7 
 	var11 := 0
 	var12 := 0
 	var13 := 0
-	if arg5 < pix2d.Top {
-		var13 = pix2d.Top - arg5
+	if arg5 < pix2d.ClipMinY {
+		var13 = pix2d.ClipMinY - arg5
 		arg3 -= var13
-		arg5 = pix2d.Top
+		arg5 = pix2d.ClipMinY
 		var12 += var13 * arg7
 		var9 += var13 * pix2d.Width2D
 	}
-	if arg5+arg3 >= pix2d.Bottom {
-		arg3 -= arg5 + arg3 - pix2d.Bottom + 1
+	if arg5+arg3 >= pix2d.ClipMaxY {
+		arg3 -= arg5 + arg3 - pix2d.ClipMaxY + 1
 	}
-	if arg2 < pix2d.Left {
-		var13 = pix2d.Left - arg2
+	if arg2 < pix2d.ClipMinX {
+		var13 = pix2d.ClipMinX - arg2
 		arg7 -= var13
-		arg2 = pix2d.Left
+		arg2 = pix2d.ClipMinX
 		var12 += var13
 		var9 += var13
 		var11 += var13
 		var10 += var13
 	}
-	if arg2+arg7 >= pix2d.Right {
-		var13 = arg2 + arg7 - pix2d.Right + 1
+	if arg2+arg7 >= pix2d.ClipMaxX {
+		var13 = arg2 + arg7 - pix2d.ClipMaxX + 1
 		arg7 -= var13
 		var11 += var13
 		var10 += var13

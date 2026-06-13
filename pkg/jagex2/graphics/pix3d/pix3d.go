@@ -403,9 +403,9 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 		var14 = ((arg6 - arg8) << 15) / (arg0 - arg2)
 	}
 	if arg0 <= arg1 && arg0 <= arg2 {
-		if arg0 < pix2d.Bottom {
-			arg1 = min(arg1, pix2d.Bottom)
-			arg2 = min(arg2, pix2d.Bottom)
+		if arg0 < pix2d.ClipMaxY {
+			arg1 = min(arg1, pix2d.ClipMaxY)
+			arg2 = min(arg2, pix2d.ClipMaxY)
 			if arg1 < arg2 {
 				arg3 <<= 0x10
 				arg5 = arg3
@@ -557,9 +557,9 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 			}
 		}
 	} else if arg1 <= arg2 {
-		if arg1 < pix2d.Bottom {
-			arg2 = min(arg2, pix2d.Bottom)
-			arg0 = min(arg0, pix2d.Bottom)
+		if arg1 < pix2d.ClipMaxY {
+			arg2 = min(arg2, pix2d.ClipMaxY)
+			arg0 = min(arg0, pix2d.ClipMaxY)
 			if arg2 < arg0 {
 				arg4 <<= 0x10
 				arg3 = arg4
@@ -710,9 +710,9 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 				}
 			}
 		}
-	} else if arg2 < pix2d.Bottom {
-		arg0 = min(arg0, pix2d.Bottom)
-		arg1 = min(arg1, pix2d.Bottom)
+	} else if arg2 < pix2d.ClipMaxY {
+		arg0 = min(arg0, pix2d.ClipMaxY)
+		arg1 = min(arg1, pix2d.ClipMaxY)
 		if arg0 < arg1 {
 			arg5 <<= 0x10
 			arg4 = arg5
@@ -1012,9 +1012,9 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 		var9 = ((arg3 - arg5) << 16) / (arg0 - arg2)
 	}
 	if arg0 <= arg1 && arg0 <= arg2 {
-		if arg0 < pix2d.Bottom {
-			arg1 = min(arg1, pix2d.Bottom)
-			arg2 = min(arg2, pix2d.Bottom)
+		if arg0 < pix2d.ClipMaxY {
+			arg1 = min(arg1, pix2d.ClipMaxY)
+			arg2 = min(arg2, pix2d.ClipMaxY)
 			if arg1 < arg2 {
 				arg3 <<= 0x10
 				arg5 = arg3
@@ -1138,9 +1138,9 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 			}
 		}
 	} else if arg1 <= arg2 {
-		if arg1 < pix2d.Bottom {
-			arg2 = min(arg2, pix2d.Bottom)
-			arg0 = min(arg0, pix2d.Bottom)
+		if arg1 < pix2d.ClipMaxY {
+			arg2 = min(arg2, pix2d.ClipMaxY)
+			arg0 = min(arg0, pix2d.ClipMaxY)
 			if arg2 < arg0 {
 				arg4 <<= 0x10
 				arg3 = arg4
@@ -1263,9 +1263,9 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 				}
 			}
 		}
-	} else if arg2 < pix2d.Bottom {
-		arg0 = min(arg0, pix2d.Bottom)
-		arg1 = min(arg1, pix2d.Bottom)
+	} else if arg2 < pix2d.ClipMaxY {
+		arg0 = min(arg0, pix2d.ClipMaxY)
+		arg1 = min(arg1, pix2d.ClipMaxY)
 		if arg0 < arg1 {
 			arg5 <<= 0x10
 			arg4 = arg5
@@ -1494,9 +1494,9 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 	}
 	var35 := int32(0)
 	if arg0 <= arg1 && arg0 <= arg2 {
-		if arg0 < pix2d.Bottom {
-			arg1 = min(arg1, pix2d.Bottom)
-			arg2 = min(arg2, pix2d.Bottom)
+		if arg0 < pix2d.ClipMaxY {
+			arg1 = min(arg1, pix2d.ClipMaxY)
+			arg2 = min(arg2, pix2d.ClipMaxY)
 			if arg1 < arg2 {
 				arg3 <<= 0x10
 				arg5 = arg3
@@ -1680,9 +1680,9 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 			}
 		}
 	} else if arg1 <= arg2 {
-		if arg1 < pix2d.Bottom {
-			arg2 = min(arg2, pix2d.Bottom)
-			arg0 = min(arg0, pix2d.Bottom)
+		if arg1 < pix2d.ClipMaxY {
+			arg2 = min(arg2, pix2d.ClipMaxY)
+			arg0 = min(arg0, pix2d.ClipMaxY)
 			if arg2 < arg0 {
 				arg4 <<= 0x10
 				arg3 = arg4
@@ -1865,9 +1865,9 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 				}
 			}
 		}
-	} else if arg2 < pix2d.Bottom {
-		arg0 = min(arg0, pix2d.Bottom)
-		arg1 = min(arg1, pix2d.Bottom)
+	} else if arg2 < pix2d.ClipMaxY {
+		arg0 = min(arg0, pix2d.ClipMaxY)
+		arg1 = min(arg1, pix2d.ClipMaxY)
 		if arg0 < arg1 {
 			arg5 <<= 0x10
 			arg4 = arg5

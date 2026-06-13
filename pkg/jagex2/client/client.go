@@ -3838,10 +3838,10 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 	if arg3.Type != 0 || arg3.ChildID == nil || arg3.Hide && c.ViewportHoveredInterfaceIndex != arg3.Id && c.SidebarHoveredInterfaceIndex != arg3.Id && c.ChatHoveredInterfaceIndex != arg3.Id {
 		return
 	}
-	var6 := pix2d.Left
-	var7 := pix2d.Top
-	var8 := pix2d.Right
-	var9 := pix2d.Bottom
+	var6 := pix2d.ClipMinX
+	var7 := pix2d.ClipMinY
+	var8 := pix2d.ClipMaxX
+	var9 := pix2d.ClipMaxY
 	pix2d.SetClipping(arg0+arg3.Height, arg0, arg1+arg3.Width, arg1)
 	var10 := len(arg3.ChildID)
 	for i := range var10 {
@@ -3889,7 +3889,7 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 							var22 = var14.InvSlotObjId[var27] - 1
 							// Java: slot visibility uses the CURRENT clip rectangle
 							// (Client.java:10574), not hardcoded bounds.
-							if var18 > pix2d.Left-32 && var18 < pix2d.Right && var32 > pix2d.Top-32 && var32 < pix2d.Bottom || c.ObjDragArea != 0 && c.ObjDragSlot == var27 {
+							if var18 > pix2d.ClipMinX-32 && var18 < pix2d.ClipMaxX && var32 > pix2d.ClipMinY-32 && var32 < pix2d.ClipMaxY || c.ObjDragArea != 0 && c.ObjDragSlot == var27 {
 								// Java: Client.java:10575-10580 (new in 244) — white
 								// outline on the selected/being-used inventory item.
 								outline := 0
@@ -3916,8 +3916,8 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 										var23.TransPlotSprite(128, var18+var33, var32+var21)
 										// Java: Client.java:10602-10628 — drag-to-edge
 										// autoscroll of the parent scrollable.
-										if var32+var21 < pix2d.Top && arg3.ScrollPosition > 0 {
-											var35 := (pix2d.Top - var32 - var21) * c.SceneDelta / 3
+										if var32+var21 < pix2d.ClipMinY && arg3.ScrollPosition > 0 {
+											var35 := (pix2d.ClipMinY - var32 - var21) * c.SceneDelta / 3
 											if var35 > c.SceneDelta*10 {
 												var35 = c.SceneDelta * 10
 											}
@@ -3927,8 +3927,8 @@ func (c *Client) DrawInterface(arg0 int, arg1 int, arg3 *iftype.IfType, arg4 int
 											arg3.ScrollPosition -= var35
 											c.ObjGrabY += var35
 										}
-										if var32+var21+32 > pix2d.Bottom && arg3.ScrollPosition < arg3.Scroll-arg3.Height {
-											var35 := (var32 + var21 + 32 - pix2d.Bottom) * c.SceneDelta / 3
+										if var32+var21+32 > pix2d.ClipMaxY && arg3.ScrollPosition < arg3.Scroll-arg3.Height {
+											var35 := (var32 + var21 + 32 - pix2d.ClipMaxY) * c.SceneDelta / 3
 											if var35 > c.SceneDelta*10 {
 												var35 = c.SceneDelta * 10
 											}

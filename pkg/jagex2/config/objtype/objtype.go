@@ -416,10 +416,10 @@ func GetSprite(id int, outlineRgb int, count int) *pix32.Pix32 {
 	var8 := pix2d.Data
 	var9 := pix2d.Width2D
 	var10 := pix2d.Height2D
-	var11 := pix2d.Left
-	var12 := pix2d.Right
-	var13 := pix2d.Top
-	var14 := pix2d.Bottom
+	var11 := pix2d.ClipMinX
+	var12 := pix2d.ClipMaxX
+	var13 := pix2d.ClipMinY
+	var14 := pix2d.ClipMaxY
 	pix3d.Jagged = false
 	pix2d.SetPixels(32, var3.Pixels, 32)
 	pix2d.FillRect(0, 0, 0, 32, 32)
