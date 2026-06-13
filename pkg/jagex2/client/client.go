@@ -6266,7 +6266,13 @@ func (c *Client) Load() {
 	// versionlist + per-id blobs. The OnDemand is created here and the model/anim
 	// index tables are sized from it; the actual blobs are faulted in at runtime
 	// by the request loops.
-	c.OnDemand = ondemand.New(jagVersionList, onDemandApp{c}, nil)
+	//
+	// The cache is the native main_file_cache.dat/.idx store (nil on the browser,
+	// or when it can't be opened). A non-nil cache enables disk persistence and
+	// the background prefetch path ("Loading extra files"); a nil cache degrades
+	// to fetch-only, exactly as Java tolerates a null signlink.cache_dat. Java:
+	// maininit creates fileStreams[] then passes the client to onDemand.init.
+	c.OnDemand = ondemand.New(jagVersionList, onDemandApp{c}, newOnDemandCache())
 	animframe.Init(c.OnDemand.GetAnimCount())
 	model.Init(c.OnDemand.GetFileCount(0), c.OnDemand)
 
@@ -6370,7 +6376,10 @@ func (c *Client) Load() {
 	// Background model-priority prefetch.
 	// Java: Client.load (Client.java:1698–1736).
 	// Client-TS: load (Client.ts:706–745).
-	// PrefetchPriority is a no-op when cache==nil (bundle-only) — faithful.
+	// With a disk cache present these calls populate priorities/topPriority and
+	// drive the "Loading extra files" prefetch; with a nil cache (browser, or an
+	// unopenable store) PrefetchPriority is a no-op, matching Java's
+	// fileStreams[0] == null guard.
 	modelCount2 := c.OnDemand.GetFileCount(0)
 	for i := range modelCount2 {
 		flags := c.OnDemand.GetModelFlags(i)
