@@ -33,9 +33,8 @@ func (e *ClientNpc) GetTempModel() *model.Model {
 	if var2 == nil {
 		return nil
 	}
-	// Java: super.height = model.minY — 244 Model.minY is Go Model.MaxY
-	// (the deob lineages name the -y bound oppositely).
-	e.Height = var2.MaxY
+	// Java: super.height = model.minY.
+	e.Height = var2.MinY
 	if e.SpotanimID != -1 && e.SpotanimFrame != -1 {
 		var3 := spottype.List[e.SpotanimID]
 		if spotModel := var3.GetTempModel(); spotModel != nil {

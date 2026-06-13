@@ -165,7 +165,7 @@ func (e *ClientPlayer) GetTempModel() *model.Model {
 	if var2 == nil {
 		return nil
 	}
-	e.Height = var2.MaxY // Java: super.height = model.minY (244 Model.minY ≡ Go Model.MaxY)
+	e.Height = var2.MinY // Java: super.height = model.minY
 	var2.UseAABBMouseCheck = true
 	if e.LowMemory {
 		return var2

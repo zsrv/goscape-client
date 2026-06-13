@@ -41,27 +41,27 @@ type ObjType struct {
 	// deobfuscator residue; field omitted per the deob-artifact
 	// exclusion policy; Decode keeps the G2 read as a discard. 254
 	// deletes opcode 9 + its boolean (245.2 field1044) outright.
-	Stackable        bool
-	Cost             int
+	Stackable       bool
+	Cost            int
 	ManWearOffset   int8
 	WomanWearOffset int8
-	ManWear          int
-	ManWear2         int
-	WomanWear        int
-	WomanWear2       int
-	ManWear3         int
-	WomanWear3       int
-	ManHead          int
-	ManHead2         int
-	WomanHead        int
-	WomanHead2       int
-	CertLink         int
-	CertTemplate     int
-	Members          bool
-	CountObj         []int
-	CountCo          []int
-	Op               []string
-	IOp              []string
+	ManWear         int
+	ManWear2        int
+	WomanWear       int
+	WomanWear2      int
+	ManWear3        int
+	WomanWear3      int
+	ManHead         int
+	ManHead2        int
+	WomanHead       int
+	WomanHead2      int
+	CertLink        int
+	CertTemplate    int
+	Members         bool
+	CountObj        []int
+	CountCo         []int
+	Op              []string
+	IOp             []string
 	// Java: ObjType resizex/resizey/resizez/ambient/contrast (rev-244 opcodes
 	// 110-114). Consumed by Scale + CalculateNormals in GetInterfaceModel.
 	ResizeX  int
@@ -437,7 +437,7 @@ func GetSprite(id int, outlineRgb int, count int) *pix32.Pix32 {
 	// would otherwise skip. Same fix as DrawInterface type-6 (client.go).
 	var16 := int(int32(pix3d.SinTable[var4.Xan2D]*zoom)) >> 16
 	var17 := int(int32(pix3d.CosTable[var4.Xan2D]*zoom)) >> 16
-	var15.DrawSimple(0, var4.Yan2D, var4.Zan2D, var4.Xan2D, var4.Xof2D, var16+var15.MaxY/2+var4.Yof2D, var17+var4.Yof2D)
+	var15.DrawSimple(0, var4.Yan2D, var4.Zan2D, var4.Xan2D, var4.Xof2D, var16+var15.MinY/2+var4.Yof2D, var17+var4.Yof2D)
 	for i := 31; i >= 0; i-- {
 		for j := 31; j >= 0; j-- {
 			if var3.Pixels[i+j*32] == 0 {
