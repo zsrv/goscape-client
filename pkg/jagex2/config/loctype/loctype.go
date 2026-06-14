@@ -334,7 +334,7 @@ func (loc *LocType) GetModel(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) *mode
 		}
 		var18.CalculateNormals(int(loc.Ambient)+64, int(loc.Contrast)*5+768, -50, -10, -50, !loc.ShareLight)
 		if loc.BlockWalk {
-			var18.ObjRaise = var18.MaxY
+			var18.ObjRaise = var18.MinY
 		}
 		ModelCacheDynamic.Put(var10, var18)
 		if loc.HillSkew || loc.ShareLight {

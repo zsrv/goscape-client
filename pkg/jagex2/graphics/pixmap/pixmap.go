@@ -40,13 +40,14 @@ func NewPixMap(width, height int) *PixMap {
 	m.Data = make([]int, width*height)
 	m.imgBuf = image.NewRGBA(image.Rect(0, 0, width, height))
 	m.tex = platform.Active.NewTexture(width, height)
-	m.Bind()
+	m.SetPixels()
 	return &m
 }
 
-// Bind sets this PixMap as the active pix2d draw target.
-func (p *PixMap) Bind() {
-	pix2d.Bind(p.Width, p.Data, p.Height)
+// SetPixels sets this PixMap as the active pix2d draw target.
+// Java: PixMap.setPixels (PixMap.java:45).
+func (p *PixMap) SetPixels() {
+	pix2d.SetPixels(p.Width, p.Data, p.Height)
 }
 
 // Draw uploads the pixels (only if changed since last Draw) and blits the
