@@ -133,7 +133,7 @@ func (e *PlayerEntity) Draw() *model.Model {
 		return nil
 	}
 	var2 := e.GetSequencedModel()
-	e.Height = var2.MaxY
+	e.Height = var2.MinY
 	var2.Pickable = true
 	if e.LowMemory {
 		return var2

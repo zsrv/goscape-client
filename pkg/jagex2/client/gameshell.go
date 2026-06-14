@@ -52,7 +52,7 @@ func (c *Client) PollKey() int {
 // 7x13 — pixfont's RuneScape font isn't available at this phase.
 func (c *Client) DrawProgressGameShell(message string, percent int) {
 	c.ensureOverlay()
-	c.OverlayPixMap.Bind()
+	c.OverlayPixMap.SetPixels()
 
 	if c.Refresh {
 		pix2d.FillRect(0, 0, 0x000000, c.ScreenWidth, c.ScreenHeight)

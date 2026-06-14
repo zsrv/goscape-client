@@ -785,7 +785,7 @@ func (w *World3D) MergeNormals(modelA, modelB *model.Model, arg2, offsetY, arg4 
 
 		if originalNormalA.W != 0 {
 			y := modelA.VertexY[vertexA] - offsetY
-			if y <= modelB.MinY {
+			if y <= modelB.MaxY {
 				x := modelA.VertexX[vertexA] - arg2
 				if x >= modelB.MinX && x <= modelB.MaxX {
 					z := modelA.VertexZ[vertexA] - arg4
@@ -1333,7 +1333,7 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 											}
 										}
 
-										if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.Model.MaxY) {
+										if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.Model.MinY) {
 											if decor.Type&frontWallTypes != 0 {
 												decor.Model.Draw1(decor.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, decor.X-EyeX, decor.Y-EyeY, decor.Z-EyeZ, decor.BitSet)
 											} else if decor.Type&0x300 != 0 {
@@ -1530,7 +1530,7 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 											farthestModel = farthest.Entity.Draw()
 										}
 
-										if !w.LocVisible(originalLevel, farthest.MinSceneTileX, farthest.MaxSceneTileX, farthest.MinSceneTileZ, farthest.MaxSceneTileZ, farthestModel.MaxY) {
+										if !w.LocVisible(originalLevel, farthest.MinSceneTileX, farthest.MaxSceneTileX, farthest.MinSceneTileZ, farthest.MaxSceneTileZ, farthestModel.MinY) {
 											farthestModel.Draw1(farthest.Yaw, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, farthest.X-EyeX, farthest.Y-EyeY, farthest.Z-EyeZ, farthest.BitSet)
 										}
 
@@ -1594,7 +1594,7 @@ func (w *World3D) DrawTile(next *typ.Ground, checkAdjacent bool) {
 
 		if tile.BackWallTypes != 0 {
 			decor := tile.Decor
-			if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.Model.MaxY) {
+			if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.Model.MinY) {
 				if decor.Type&tile.BackWallTypes != 0 {
 					decor.Model.Draw1(decor.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, decor.X-EyeX, decor.Y-EyeY, decor.Z-EyeZ, decor.BitSet)
 				} else if decor.Type&0x300 != 0 {

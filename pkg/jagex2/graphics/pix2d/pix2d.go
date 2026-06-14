@@ -4,10 +4,10 @@ var (
 	Data      []int
 	Width2D   int
 	Height2D  int
-	Top       int // was BoundTop
-	Bottom    int // was BoundBottom
-	Left      int // was BoundLeft
-	Right     int // was BoundRight
+	ClipMinY  int // Java: Pix2D.clipMinY
+	ClipMaxY  int // Java: Pix2D.clipMaxY
+	ClipMinX  int // Java: Pix2D.clipMinX
+	ClipMaxX  int // Java: Pix2D.clipMaxX
 	SafeWidth int
 	CenterW2D int
 	CenterH2D int
@@ -17,7 +17,7 @@ var (
 //	datastruct.DoublyLinkable[Pix2D]
 //}
 
-func Bind(width int, data []int, height int) {
+func SetPixels(width int, data []int, height int) {
 	Data = data
 	Width2D = width
 	Height2D = height
@@ -25,29 +25,29 @@ func Bind(width int, data []int, height int) {
 }
 
 // Reset clears every package-level binding to its zero value. Intended for
-// tests that need to start from a clean slate so a previous test's Bind
+// tests that need to start from a clean slate so a previous test's SetPixels
 // can't leak into the next (the rendering pipeline keeps its state as
 // package vars by design — see CLAUDE.md "Global State Pattern").
 func Reset() {
 	Data = nil
 	Width2D = 0
 	Height2D = 0
-	Top = 0
-	Bottom = 0
-	Left = 0
-	Right = 0
+	ClipMinY = 0
+	ClipMaxY = 0
+	ClipMinX = 0
+	ClipMaxX = 0
 	SafeWidth = 0
 	CenterW2D = 0
 	CenterH2D = 0
 }
 
 func ResetClipping() {
-	Left = 0
-	Top = 0
-	Right = Width2D
-	Bottom = Height2D
-	SafeWidth = Right - 1
-	CenterW2D = Right / 2
+	ClipMinX = 0
+	ClipMinY = 0
+	ClipMaxX = Width2D
+	ClipMaxY = Height2D
+	SafeWidth = ClipMaxX - 1
+	CenterW2D = ClipMaxX / 2
 }
 
 func SetClipping(bottom int, top int, right int, left int) {
@@ -55,13 +55,13 @@ func SetClipping(bottom int, top int, right int, left int) {
 	top = max(top, 0)
 	right = min(right, Width2D)
 	bottom = min(bottom, Height2D)
-	Left = left
-	Top = top
-	Right = right
-	Bottom = bottom
-	SafeWidth = Right - 1
-	CenterW2D = Right / 2
-	CenterH2D = Bottom / 2
+	ClipMinX = left
+	ClipMinY = top
+	ClipMaxX = right
+	ClipMaxY = bottom
+	SafeWidth = ClipMaxX - 1
+	CenterW2D = ClipMaxX / 2
+	CenterH2D = ClipMaxY / 2
 }
 
 func Clear() {
@@ -72,19 +72,19 @@ func Clear() {
 }
 
 func FillRect(y int, x int, colour int, width int, height int) {
-	if x < Left {
-		width -= Left - x
-		x = Left
+	if x < ClipMinX {
+		width -= ClipMinX - x
+		x = ClipMinX
 	}
-	if y < Top {
-		height -= Top - y
-		y = Top
+	if y < ClipMinY {
+		height -= ClipMinY - y
+		y = ClipMinY
 	}
-	if x+width > Right {
-		width = Right - x
+	if x+width > ClipMaxX {
+		width = ClipMaxX - x
 	}
-	if y+height > Bottom {
-		height = Bottom - y
+	if y+height > ClipMaxY {
+		height = ClipMaxY - y
 	}
 	step := Width2D - width
 	offset := x + y*Width2D
@@ -105,15 +105,15 @@ func DrawRect(x int, hexColour int, height int, y int, width int) {
 }
 
 func HLine(colour int, y int, width int, x int) {
-	if y < Top || y >= Bottom {
+	if y < ClipMinY || y >= ClipMaxY {
 		return
 	}
-	if x < Left {
-		width -= Left - x
-		x = Left
+	if x < ClipMinX {
+		width -= ClipMinX - x
+		x = ClipMinX
 	}
-	if x+width > Right {
-		width = Right - x
+	if x+width > ClipMaxX {
+		width = ClipMaxX - x
 	}
 	offset := x + y*Width2D
 	for i := range width {
@@ -122,15 +122,15 @@ func HLine(colour int, y int, width int, x int) {
 }
 
 func VLine(colour int, y int, height int, x int) {
-	if x < Left || x >= Right {
+	if x < ClipMinX || x >= ClipMaxX {
 		return
 	}
-	if y < Top {
-		height -= Top - y
-		y = Top
+	if y < ClipMinY {
+		height -= ClipMinY - y
+		y = ClipMinY
 	}
-	if y+height > Bottom {
-		height = Bottom - y
+	if y+height > ClipMaxY {
+		height = ClipMaxY - y
 	}
 	offset := x + y*Width2D
 	for i := range height {

@@ -71,7 +71,7 @@ func (e *NpcEntity) GetSequencedModel() *model.Model {
 		e.seqModel = &model.Model{}
 	}
 	var3 := e.Type.GetSequencedModel(e.seqModel, var2, -1, nil)
-	e.Height = var3.MaxY
+	e.Height = var3.MinY
 	return var3
 }
 
