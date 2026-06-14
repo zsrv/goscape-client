@@ -6,7 +6,7 @@ import "testing"
 func TestInitPoolReusesAfterClearTexels(t *testing.T) {
 	// Mirror the scene-rebuild cycle: InitPool -> (textures bound) -> ClearTexels
 	// -> InitPool. The second InitPool must REUSE the existing buffers.
-	LowDetail = true
+	LowMem = true
 	TexelPool = nil
 	for i := range ActiveTexels {
 		ActiveTexels[i] = nil
@@ -52,10 +52,10 @@ func TestInitPoolReusesAfterClearTexels(t *testing.T) {
 }
 
 func TestInitPoolReallocatesOnDetailChange(t *testing.T) {
-	// If LowDetail changes (required buffer length differs), the guard must fall
+	// If LowMem changes (required buffer length differs), the guard must fall
 	// through and reallocate rather than reuse wrong-sized buffers.
-	defer func() { LowDetail = true }()
-	LowDetail = true
+	defer func() { LowMem = true }()
+	LowMem = true
 	TexelPool = nil
 	for i := range ActiveTexels {
 		ActiveTexels[i] = nil
@@ -63,7 +63,7 @@ func TestInitPoolReallocatesOnDetailChange(t *testing.T) {
 	InitPool(2) // 16384-length buffers
 	old0 := &TexelPool[0][0]
 
-	LowDetail = false // now wants 65536-length buffers
+	LowMem = false // now wants 65536-length buffers
 	InitPool(2)
 	if len(TexelPool[0]) != 65536 {
 		t.Fatalf("slot len=%d after detail change, want 65536 (should have reallocated)", len(TexelPool[0]))

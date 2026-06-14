@@ -145,8 +145,8 @@ type Model struct {
 	FaceColour           []int
 	VertexNormal         []vertexnormal.VertexNormal
 	VertexNormalOriginal []vertexnormal.VertexNormal
-	MaxY                 int
 	MinY                 int
+	MaxY                 int
 	Radius               int
 	MinDepth             int
 	MaxDepth             int
@@ -847,8 +847,8 @@ func NewModel5(arg0 *Model, arg2 bool, arg3 bool) *Model {
 	m.TexturedVertexA = arg0.TexturedVertexA
 	m.TexturedVertexB = arg0.TexturedVertexB
 	m.TexturedVertexC = arg0.TexturedVertexC
-	m.MaxY = arg0.MaxY
 	m.MinY = arg0.MinY
+	m.MaxY = arg0.MaxY
 	m.Radius = arg0.Radius
 	m.MinDepth = arg0.MinDepth
 	m.MaxDepth = arg0.MaxDepth
@@ -962,39 +962,39 @@ func (m *Model) AddVertex(arg0 *Model, arg1 int) int {
 }
 
 func (m *Model) CalculateBoundsCylinder() {
-	m.MaxY = 0
-	m.Radius = 0
 	m.MinY = 0
+	m.Radius = 0
+	m.MaxY = 0
 	for i := range m.VertexCount {
 		var3 := m.VertexX[i]
 		var4 := m.VertexY[i]
 		var5 := m.VertexZ[i]
-		m.MaxY = max(-var4, m.MaxY)
-		m.MinY = max(var4, m.MinY)
+		m.MinY = max(-var4, m.MinY)
+		m.MaxY = max(var4, m.MaxY)
 		var6 := var3*var3 + var5*var5
 		m.Radius = max(var6, m.Radius)
 	}
 	m.Radius = int(math.Sqrt(float64(m.Radius)) + 0.99)
-	m.MinDepth = int(math.Sqrt(float64(m.Radius*m.Radius+m.MaxY*m.MaxY)) + 0.99)
-	m.MaxDepth = m.MinDepth + int(math.Sqrt(float64(m.Radius*m.Radius+m.MinY*m.MinY))+0.99)
+	m.MinDepth = int(math.Sqrt(float64(m.Radius*m.Radius+m.MinY*m.MinY)) + 0.99)
+	m.MaxDepth = m.MinDepth + int(math.Sqrt(float64(m.Radius*m.Radius+m.MaxY*m.MaxY))+0.99)
 }
 
 func (m *Model) CalculateBoundsY() {
-	m.MaxY = 0
 	m.MinY = 0
+	m.MaxY = 0
 	for i := range m.VertexCount {
 		var3 := m.VertexY[i]
-		m.MaxY = max(-var3, m.MaxY)
-		m.MinY = max(var3, m.MinY)
+		m.MinY = max(-var3, m.MinY)
+		m.MaxY = max(var3, m.MaxY)
 	}
-	m.MinDepth = int(math.Sqrt(float64(m.Radius*m.Radius+m.MaxY*m.MaxY)) + 0.99)
-	m.MaxDepth = m.MinDepth + int(math.Sqrt(float64(m.Radius*m.Radius+m.MinY*m.MinY))+0.99)
+	m.MinDepth = int(math.Sqrt(float64(m.Radius*m.Radius+m.MinY*m.MinY)) + 0.99)
+	m.MaxDepth = m.MinDepth + int(math.Sqrt(float64(m.Radius*m.Radius+m.MaxY*m.MaxY))+0.99)
 }
 
 func (m *Model) CalculateBoundsAABB() {
-	m.MaxY = 0
-	m.Radius = 0
 	m.MinY = 0
+	m.Radius = 0
+	m.MaxY = 0
 	m.MinX = 999999
 	m.MaxX = -999999
 	m.MaxZ = -99999
@@ -1007,14 +1007,14 @@ func (m *Model) CalculateBoundsAABB() {
 		m.MaxX = max(var3, m.MaxX)
 		m.MinZ = min(var5, m.MinZ)
 		m.MaxZ = max(var5, m.MaxZ)
-		m.MaxY = max(-var4, m.MaxY)
-		m.MinY = max(var4, m.MinY)
+		m.MinY = max(-var4, m.MinY)
+		m.MaxY = max(var4, m.MaxY)
 		var6 := var3*var3 + var5*var5
 		m.Radius = max(var6, m.Radius)
 	}
 	m.Radius = int(math.Sqrt(float64(m.Radius)))
-	m.MinDepth = int(math.Sqrt(float64(m.Radius*m.Radius + m.MaxY*m.MaxY)))
-	m.MaxDepth = m.MinDepth + int(math.Sqrt(float64(m.Radius*m.Radius+m.MinY*m.MinY)))
+	m.MinDepth = int(math.Sqrt(float64(m.Radius*m.Radius + m.MinY*m.MinY)))
+	m.MaxDepth = m.MinDepth + int(math.Sqrt(float64(m.Radius*m.Radius+m.MaxY*m.MaxY)))
 }
 
 func (m *Model) CreateLabelReferences() {
@@ -1521,12 +1521,12 @@ func (m *Model) Draw1(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) 
 	if var19/var13 <= -pix2d.CenterH2D {
 		return
 	}
-	var20 := var18 + ((m.MaxY * arg2) >> 16)
+	var20 := var18 + ((m.MinY * arg2) >> 16)
 	var21 := (var17 - var20) << 9
 	if var21/var13 >= pix2d.CenterH2D {
 		return
 	}
-	var22 := var12 + ((m.MaxY * arg1) >> 16)
+	var22 := var12 + ((m.MinY * arg1) >> 16)
 	var23 := false //nolint:staticcheck // QF1007: separate declaration + conditional assignment mirrors the Java source
 	if var11-var22 <= 50 {
 		var23 = true

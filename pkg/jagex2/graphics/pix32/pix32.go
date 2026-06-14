@@ -121,8 +121,8 @@ func NewPix323(jag *io.Jagfile, name string, sprite int) *Pix32 {
 	return &p
 }
 
-func (p *Pix32) Bind() {
-	pix2d.Bind(p.Wi, p.Pixels, p.Hi)
+func (p *Pix32) SetPixels() {
+	pix2d.SetPixels(p.Wi, p.Pixels, p.Hi)
 }
 
 // was Translate
@@ -184,27 +184,27 @@ func (p *Pix32) QuickPlotSprite(arg1, arg2 int) {
 	var7 := p.Wi
 	var8 := pix2d.Width2D - var7
 	var9 := 0
-	if arg2 < pix2d.Top {
-		var10 := pix2d.Top - arg2
+	if arg2 < pix2d.ClipMinY {
+		var10 := pix2d.ClipMinY - arg2
 		var6 -= var10
-		arg2 = pix2d.Top
+		arg2 = pix2d.ClipMinY
 		var5 += var10 * var7
 		var4 += var10 * pix2d.Width2D
 	}
-	if arg2+var6 > pix2d.Bottom {
-		var6 -= arg2 + var6 - pix2d.Bottom
+	if arg2+var6 > pix2d.ClipMaxY {
+		var6 -= arg2 + var6 - pix2d.ClipMaxY
 	}
-	if arg1 < pix2d.Left {
-		var10 := pix2d.Left - arg1
+	if arg1 < pix2d.ClipMinX {
+		var10 := pix2d.ClipMinX - arg1
 		var7 -= var10
-		arg1 = pix2d.Left
+		arg1 = pix2d.ClipMinX
 		var5 += var10
 		var4 += var10
 		var9 += var10
 		var8 += var10
 	}
-	if arg1+var7 > pix2d.Right {
-		var10 := arg1 + var7 - pix2d.Right
+	if arg1+var7 > pix2d.ClipMaxX {
+		var10 := arg1 + var7 - pix2d.ClipMaxX
 		var7 -= var10
 		var9 += var10
 		var8 += var10
@@ -257,30 +257,30 @@ func (p *Pix32) PlotSprite(y int, x int) {
 	dstStep := pix2d.Width2D - w
 	srcStep := 0
 
-	if y < pix2d.Top {
-		cutoff := pix2d.Top - y
+	if y < pix2d.ClipMinY {
+		cutoff := pix2d.ClipMinY - y
 		h -= cutoff
-		y = pix2d.Top
+		y = pix2d.ClipMinY
 		srcOff += cutoff * w
 		dstOff += cutoff * pix2d.Width2D
 	}
 
-	if y+h > pix2d.Bottom {
-		h -= y + h - pix2d.Bottom
+	if y+h > pix2d.ClipMaxY {
+		h -= y + h - pix2d.ClipMaxY
 	}
 
-	if x < pix2d.Left {
-		cutoff := pix2d.Left - x
+	if x < pix2d.ClipMinX {
+		cutoff := pix2d.ClipMinX - x
 		w -= cutoff
-		x = pix2d.Left
+		x = pix2d.ClipMinX
 		srcOff += cutoff
 		dstOff += cutoff
 		srcStep += cutoff
 		dstStep += cutoff
 	}
 
-	if x+w > pix2d.Right {
-		cutoff := x + w - pix2d.Right
+	if x+w > pix2d.ClipMaxX {
+		cutoff := x + w - pix2d.ClipMaxX
 		w -= cutoff
 		srcStep += cutoff
 		dstStep += cutoff
@@ -363,30 +363,30 @@ func (p *Pix32) DrawAlpha(arg0, x, y int) {
 	dstStep := pix2d.Width2D - w
 	srcStep := 0
 
-	if y < pix2d.Top {
-		cutoff := pix2d.Top - y
+	if y < pix2d.ClipMinY {
+		cutoff := pix2d.ClipMinY - y
 		h -= cutoff
-		y = pix2d.Top
+		y = pix2d.ClipMinY
 		srcOff += cutoff * w
 		dstOff += cutoff * pix2d.Width2D
 	}
 
-	if y+h > pix2d.Bottom {
-		h -= y + h - pix2d.Bottom
+	if y+h > pix2d.ClipMaxY {
+		h -= y + h - pix2d.ClipMaxY
 	}
 
-	if x < pix2d.Left {
-		cutoff := pix2d.Left - x
+	if x < pix2d.ClipMinX {
+		cutoff := pix2d.ClipMinX - x
 		w -= cutoff
-		x = pix2d.Left
+		x = pix2d.ClipMinX
 		srcOff += cutoff
 		dstOff += cutoff
 		srcStep += cutoff
 		dstStep += cutoff
 	}
 
-	if x+w > pix2d.Right {
-		cutoff := x + w - pix2d.Right
+	if x+w > pix2d.ClipMaxX {
+		cutoff := x + w - pix2d.ClipMaxX
 		w -= cutoff
 		srcStep += cutoff
 		dstStep += cutoff
@@ -504,27 +504,27 @@ func (p *Pix32) DrawMasked(arg0 *pix8.Pix8, arg1 int, arg2 int) {
 	var8 := p.Wi
 	var9 := pix2d.Width2D - var8
 	var10 := 0
-	if arg1 < pix2d.Top {
-		var11 := pix2d.Top - arg1
+	if arg1 < pix2d.ClipMinY {
+		var11 := pix2d.ClipMinY - arg1
 		var7 -= var11
-		arg1 = pix2d.Top
+		arg1 = pix2d.ClipMinY
 		var6 += var11 * var8
 		var5 += var11 * pix2d.Width2D
 	}
-	if arg1+var7 > pix2d.Bottom {
-		var7 -= arg1 + var7 - pix2d.Bottom
+	if arg1+var7 > pix2d.ClipMaxY {
+		var7 -= arg1 + var7 - pix2d.ClipMaxY
 	}
-	if arg2 < pix2d.Left {
-		var11 := pix2d.Left - arg2
+	if arg2 < pix2d.ClipMinX {
+		var11 := pix2d.ClipMinX - arg2
 		var8 -= var11
-		arg2 = pix2d.Left
+		arg2 = pix2d.ClipMinX
 		var6 += var11
 		var5 += var11
 		var10 += var11
 		var9 += var11
 	}
-	if arg2+var8 > pix2d.Right {
-		var11 := arg2 + var8 - pix2d.Right
+	if arg2+var8 > pix2d.ClipMaxX {
+		var11 := arg2 + var8 - pix2d.ClipMaxX
 		var8 -= var11
 		var10 += var11
 		var9 += var11

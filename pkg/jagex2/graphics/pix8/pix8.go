@@ -176,27 +176,27 @@ func (p *Pix8) PlotSprite(y int, x int) {
 	var8 := pix2d.Width2D - var7
 	var9 := 0
 	var10 := 0
-	if y < pix2d.Top {
-		var10 = pix2d.Top - y
+	if y < pix2d.ClipMinY {
+		var10 = pix2d.ClipMinY - y
 		var6 -= var10
-		y = pix2d.Top
+		y = pix2d.ClipMinY
 		var5 += var10 * var7
 		var4 += var10 * pix2d.Width2D
 	}
-	if y+var6 > pix2d.Bottom {
-		var6 -= y + var6 - pix2d.Bottom
+	if y+var6 > pix2d.ClipMaxY {
+		var6 -= y + var6 - pix2d.ClipMaxY
 	}
-	if x < pix2d.Left {
-		var10 = pix2d.Left - x
+	if x < pix2d.ClipMinX {
+		var10 = pix2d.ClipMinX - x
 		var7 -= var10
-		x = pix2d.Left
+		x = pix2d.ClipMinX
 		var5 += var10
 		var4 += var10
 		var9 += var10
 		var8 += var10
 	}
-	if x+var7 > pix2d.Right {
-		var10 = x + var7 - pix2d.Right
+	if x+var7 > pix2d.ClipMaxX {
+		var10 = x + var7 - pix2d.ClipMaxX
 		var7 -= var10
 		var9 += var10
 		var8 += var10

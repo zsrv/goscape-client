@@ -412,12 +412,12 @@ func GetIcon(outlineRgb int, count int, id int) *pix32.Pix32 {
 	var8 := pix2d.Data
 	var9 := pix2d.Width2D
 	var10 := pix2d.Height2D
-	var11 := pix2d.Left
-	var12 := pix2d.Right
-	var13 := pix2d.Top
-	var14 := pix2d.Bottom
-	pix3d.Jagged = false
-	pix2d.Bind(32, var3.Pixels, 32)
+	var11 := pix2d.ClipMinX
+	var12 := pix2d.ClipMaxX
+	var13 := pix2d.ClipMinY
+	var14 := pix2d.ClipMaxY
+	pix3d.LowDetail = false
+	pix2d.SetPixels(32, var3.Pixels, 32)
 	pix2d.FillRect(0, 0, 0, 32, 32)
 	pix3d.Init2D()
 	// Java: zoom scaling per variant (ObjType.java:539-544, new in 244).
@@ -433,7 +433,7 @@ func GetIcon(outlineRgb int, count int, id int) *pix32.Pix32 {
 	// would otherwise skip. Same fix as DrawInterface type-6 (client.go).
 	var16 := int(int32(pix3d.SinTable[var4.Xan2D]*zoom)) >> 16
 	var17 := int(int32(pix3d.CosTable[var4.Xan2D]*zoom)) >> 16
-	var15.DrawSimple(0, var4.Yan2D, var4.Zan2D, var4.Xan2D, var4.Xof2D, var16+var15.MaxY/2+var4.Yof2D, var17+var4.Yof2D)
+	var15.DrawSimple(0, var4.Yan2D, var4.Zan2D, var4.Xan2D, var4.Xof2D, var16+var15.MinY/2+var4.Yof2D, var17+var4.Yof2D)
 	for i := 31; i >= 0; i-- {
 		for j := 31; j >= 0; j-- {
 			if var3.Pixels[i+j*32] == 0 {
@@ -492,12 +492,12 @@ func GetIcon(outlineRgb int, count int, id int) *pix32.Pix32 {
 	if outlineRgb == 0 { // Java: ObjType.java:602-604
 		IconCache.Put(int64(id), var3)
 	}
-	pix2d.Bind(var9, var8, var10)
+	pix2d.SetPixels(var9, var8, var10)
 	pix2d.SetClipping(var14, var13, var12, var11)
 	pix3d.CenterW3D = var5
 	pix3d.CenterH3D = var6
 	pix3d.LineOffset = var7
-	pix3d.Jagged = true
+	pix3d.LowDetail = true
 	if var4.Stackable {
 		var3.OWi = 33
 	} else {

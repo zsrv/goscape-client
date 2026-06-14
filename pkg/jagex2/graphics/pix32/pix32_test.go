@@ -16,7 +16,7 @@ import (
 func TestDrawRotatedMaskedRecoversOnOutOfBounds(t *testing.T) {
 	pix2d.Reset()
 	t.Cleanup(pix2d.Reset)
-	pix2d.Bind(4, make([]int, 16), 4)
+	pix2d.SetPixels(4, make([]int, 16), 4)
 
 	p := NewPix321(2, 2) // Pixels len 4, Wi 2
 
