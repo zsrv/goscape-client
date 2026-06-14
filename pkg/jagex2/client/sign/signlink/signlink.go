@@ -393,9 +393,13 @@ func SetMidiCommand(s string) {
 	MidiData = nil
 }
 
-// SetMidiFade publishes the fade flag (0 = immediate, 1 = fade + loop)
-// read by the consumer's playMidi at dispatch time. In 244 the flag
-// doubles as the loop flag (MidiPlayer.play's setLoopCount). Java:
+// SetMidiFade publishes the fade flag (0 = immediate cut, 1 = crossfade)
+// read by the consumer's playMidi at dispatch time. It selects ONLY the
+// transition between tracks — fade=1 fades the current track out and the
+// next in via the audioLoop fade machine; fade=0 cuts immediately. It is
+// NOT a loop flag: music never loops (the canonical client's MIDI playback
+// lived in the unported signed-applet wrapper, and its TS reconstruction
+// tinymidipcm.js disables looping — see audioloop.go midiSink.play). Java:
 // midifade (SignLink.java:55).
 func SetMidiFade(v int) {
 	mu.Lock()
