@@ -3316,6 +3316,15 @@ func (c *Client) SaveMidi(arg0 []byte, arg2 int, arg3 bool) {
 	} else {
 		signlink.SetMidiFade(0)
 	}
+	// Java: signlink.midisave silently drops tracks whose declared length
+	// exceeds 2,000,000 bytes (signlink.java:343-345 @225-clean), after
+	// midifade is already published — matching savemidi's ordering. The
+	// guard is on arg2 (Java's saveLen), not len(arg0). The savereq
+	// busy-slot half is not reproduced: the Go port routes bytes straight
+	// to audio.PlayMIDI instead of through the disk slot.
+	if arg2 > 2000000 {
+		return
+	}
 	audio.PlayMIDI(arg0[:arg2], arg3)
 }
 
