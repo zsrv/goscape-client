@@ -11,7 +11,6 @@ import (
 // audioLoop state machine produces.
 type playCall struct {
 	data []byte
-	loop bool
 	vol  int
 }
 
@@ -22,8 +21,8 @@ type fakeSink struct {
 	runningV  bool
 }
 
-func (f *fakeSink) play(d []byte, loop bool, vol int) {
-	f.playCalls = append(f.playCalls, playCall{data: d, loop: loop, vol: vol})
+func (f *fakeSink) play(d []byte, vol int) {
+	f.playCalls = append(f.playCalls, playCall{data: d, vol: vol})
 	f.runningV = true
 }
 func (f *fakeSink) stop()           { f.stopCalls++; f.runningV = false }
@@ -46,7 +45,8 @@ func resetSignlinkAudio(t *testing.T) {
 // TestTrackChangeFadesOutThenIn pins the full Java fade cycle for a track
 // change with midifade=1 while music is playing (SignLink.java:369-411):
 // fade-out trigger (track latched), 12 ticks of -8 steps to 0, the new track
-// starting at volume 0 and looping, then 12 ticks of +8 steps back to 96.
+// starting at volume 0, then 12 ticks of +8 steps back to 96. midifade
+// drives the fade only — never a loop (see midiSink.play).
 func TestTrackChangeFadesOutThenIn(t *testing.T) {
 	resetSignlinkAudio(t)
 	signlink.SetMidiFade(1)
@@ -70,8 +70,8 @@ func TestTrackChangeFadesOutThenIn(t *testing.T) {
 	if !slices.Equal(sink.volCalls, wantDown) {
 		t.Fatalf("fade-out steps: got %v, want %v", sink.volCalls, wantDown)
 	}
-	if len(sink.playCalls) != 1 || sink.playCalls[0].vol != 0 || !sink.playCalls[0].loop {
-		t.Fatalf("new track must start at vol 0 looping: %+v", sink.playCalls)
+	if len(sink.playCalls) != 1 || sink.playCalls[0].vol != 0 {
+		t.Fatalf("new track must start at vol 0: %+v", sink.playCalls)
 	}
 	if cmd, _ := signlink.PeekMidi(); cmd != "" {
 		t.Fatalf("slot must clear once the fade-out ends, got %q", cmd)
@@ -105,8 +105,8 @@ func TestFirstPlayNoFadeStartsAtFullVolume(t *testing.T) {
 		t.Fatalf("want immediate play, got %d calls", len(sink.playCalls))
 	}
 	got := sink.playCalls[0]
-	if got.vol != 96 || !got.loop {
-		t.Fatalf("first play: vol=%d loop=%v, want vol=96 loop=true", got.vol, got.loop)
+	if got.vol != 96 {
+		t.Fatalf("first play: vol=%d, want vol=96", got.vol)
 	}
 	if cmd, _ := signlink.PeekMidi(); cmd != "" {
 		t.Fatalf("slot must clear, got %q", cmd)
@@ -114,7 +114,7 @@ func TestFirstPlayNoFadeStartsAtFullVolume(t *testing.T) {
 }
 
 // TestJingleReplacesImmediately: midifade=0 (jingles) replaces the playing
-// track at once, non-looping, full volume — no fade at all.
+// track at once, full volume — no fade at all.
 func TestJingleReplacesImmediately(t *testing.T) {
 	resetSignlinkAudio(t)
 	sink := &fakeSink{runningV: true}
@@ -122,8 +122,8 @@ func TestJingleReplacesImmediately(t *testing.T) {
 
 	signlink.SetMidiTrack([]byte{0xC})
 	l.tick()
-	if len(sink.playCalls) != 1 || sink.playCalls[0].loop || sink.playCalls[0].vol != 96 {
-		t.Fatalf("jingle: %+v, want one immediate non-loop play at 96", sink.playCalls)
+	if len(sink.playCalls) != 1 || sink.playCalls[0].vol != 96 {
+		t.Fatalf("jingle: %+v, want one immediate play at 96", sink.playCalls)
 	}
 }
 

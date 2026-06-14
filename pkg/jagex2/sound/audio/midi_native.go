@@ -36,7 +36,7 @@ const playerBufferBytes = SampleRate * ChannelCount * 2 / 10
 // four primitives from its 50ms tick goroutine:
 //
 //	Java MidiPlayer (MidiPlayer.java)      midiDriver
-//	play(seq, loop, volume)  :36-44   →    play(midData, loop, vol)
+//	play(seq, volume)        :36-44   →    play(midData, vol)
 //	stop()                   :46-49   →    stop()
 //	setVolume(0, volume)     :32-34   →    setVolume(vol)
 //	running()                :51-53   →    running()
@@ -52,21 +52,17 @@ type midiDriver struct {
 	mu       sync.Mutex
 	src      *midiSource
 	player   *oto.Player
-	looping  bool
 	playedAt time.Time
 	trackLen time.Duration
 }
 
 func newMidiDriver(ctx *oto.Context) *midiDriver { return &midiDriver{ctx: ctx} }
 
-// play parses and starts a Standard MIDI File at linear gain vol/128.
-//
-// Java: MidiPlayer.play(Sequence, int loop, int volume) (MidiPlayer.java:
-// 36-44) — sequencer.setSequence (the new track replaces the old
-// immediately; any audible crossfade is the audioLoop's doing, not play's),
-// setLoopCount(loop == 1 ? -1 : 0) (the fade flag doubles as loop-forever:
-// MIDI_SONG region tracks loop, jingles play once), and setVolume runs
-// before sequencer.start() so the first samples are at the right gain.
+// play parses and starts a Standard MIDI File at linear gain vol/128. The
+// track plays once and then stops — music never loops (see midiSink.play for
+// why; the TS reference disables looping). Any audible crossfade on a track
+// change is the audioLoop's stepped setVolume, not play's. setVolume runs
+// before the sequencer starts so the first samples are at the right gain.
 // A parse/synth failure maps to Java's swallowed InvalidMidiDataException.
 //
 // "Replaces immediately" needs help on the swap path: oto's player has
@@ -79,7 +75,7 @@ func newMidiDriver(ctx *oto.Context) *midiDriver { return &midiDriver{ctx: ctx} 
 // prefill then starts the new track from tick 0 — the same machinery stop()
 // uses. Java needed none of this because setSequence drops the old
 // sequence's undelivered events inside the sequencer itself.
-func (d *midiDriver) play(midData []byte, loop bool, vol int) {
+func (d *midiDriver) play(midData []byte, vol int) {
 	if d.ctx == nil {
 		return
 	}
@@ -100,11 +96,11 @@ func (d *midiDriver) play(midData []byte, loop bool, vol int) {
 		return
 	}
 	seq := meltysynth.NewMidiFileSequencer(synth)
-	// Java: sequencer.setLoopCount(loop == 1 ? -1 : 0) (MidiPlayer.java:39).
-	seq.Play(midiFile, loop)
+	// Play once, no loop: the second arg is meltysynth's loop flag — always
+	// false (music never loops; see midiSink.play).
+	seq.Play(midiFile, false)
 
 	d.mu.Lock()
-	d.looping = loop
 	d.playedAt = time.Now()
 	d.trackLen = midiFile.GetLength()
 	if d.src == nil {
@@ -142,7 +138,6 @@ func (d *midiDriver) play(midData []byte, loop bool, vol int) {
 func (d *midiDriver) stop() {
 	d.mu.Lock()
 	src, player := d.src, d.player
-	d.looping = false
 	d.trackLen = 0
 	d.mu.Unlock()
 	if src == nil {
@@ -177,14 +172,13 @@ func (d *midiDriver) setVolume(vol int) {
 // running reports whether a sequence is still playing.
 //
 // Java: Sequencer.isRunning() (via MidiPlayer.running(), MidiPlayer.java:
-// 51-53) — true from start() until the sequence's musical end or stop(); a
-// looping sequence never ends. meltysynth exposes no equivalent getter, so
-// the musical end is tracked by wall clock: play() records the MIDI file's
-// length; stop() zeroes it.
+// 51-53) — true from start() until the sequence's musical end or stop().
+// meltysynth exposes no equivalent getter, so the musical end is tracked by
+// wall clock: play() records the MIDI file's length; stop() zeroes it.
 func (d *midiDriver) running() bool {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	return d.looping || (d.trackLen > 0 && time.Since(d.playedAt) < d.trackLen)
+	return d.trackLen > 0 && time.Since(d.playedAt) < d.trackLen
 }
 
 // haltAndFlush stops player AND discards oto's internal pre-read buffer —

@@ -27,10 +27,15 @@ import (
 // (native: oto + meltysynth) and *webMidiDriver (js: Web Audio prerender);
 // nullSink stands in when no audio backend is available.
 type midiSink interface {
-	// play starts a track at linear gain vol/128, replacing any current
-	// one. loop mirrors Java MidiPlayer.play's setLoopCount(loop==1 ? -1 : 0)
-	// (MidiPlayer.java:36-44): the fade flag doubles as loop-forever.
-	play(midData []byte, loop bool, vol int)
+	// play starts a track at linear gain vol/128, replacing any current one.
+	// The track plays once and then stops — music never loops. The canonical
+	// client's MIDI playback lived in the unported signed-applet wrapper; of
+	// its two surviving reconstructions the TS client's tinymidipcm.js is the
+	// arbiter (see feedback_porting_signlink_wrapper_gap), and it disables
+	// looping outright ("midi looping // note: this was buggy with some midi
+	// files", tinymidipcm.js). midifade therefore drives only the cross-fade
+	// transition (the audioLoop fade machine), never a loop count.
+	play(midData []byte, vol int)
 	// stop halts playback immediately (Java: MidiPlayer.stop(),
 	// MidiPlayer.java:46-49).
 	stop()
@@ -49,10 +54,10 @@ type midiSink interface {
 // harmlessly is strictly better.
 type nullSink struct{}
 
-func (nullSink) play([]byte, bool, int) {}
-func (nullSink) stop()                  {}
-func (nullSink) setVolume(int)          {}
-func (nullSink) running() bool          { return false }
+func (nullSink) play([]byte, int) {}
+func (nullSink) stop()            {}
+func (nullSink) setVolume(int)    {}
+func (nullSink) running() bool    { return false }
 
 // audioLoopInterval is the consumer cadence AND the fade step rate: the Java
 // wrapper thread sleeps 50ms per iteration (SignLink.java:197-200), so the
@@ -153,8 +158,8 @@ func (l *audioLoop) playMidi(data []byte) {
 	if midifade != 0 && l.midiFadingIn {
 		l.midiFadingOut = false
 		l.midiFadeVol = 0
-		l.sink.play(data, midifade == 1, l.midiFadeVol)
+		l.sink.play(data, l.midiFadeVol)
 	} else {
-		l.sink.play(data, midifade == 1, midivol)
+		l.sink.play(data, midivol)
 	}
 }
