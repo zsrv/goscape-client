@@ -450,10 +450,10 @@ func (loc *LocType) BuildModel(arg0, arg2, arg3 int) *model.Model {
 	}
 	var21.CalculateNormals(int(loc.Ambient)+64, int(loc.Contrast)*5+768, -50, -10, -50, !loc.ShareLight)
 	// Java: raiseobject == 1 gate (LocType.java:526 @2e62978) — was
-	// blockwalk at 245.2. Go MaxY holds Java's minY (max model height;
-	// the deob bound names are inverted — see Model.CalcHeight).
+	// blockwalk at 245.2. var21.MinY is Java's model.minY (max model
+	// height above origin).
 	if loc.RaiseObject == 1 {
-		var21.ObjRaise = var21.MaxY
+		var21.ObjRaise = var21.MinY
 	}
 	ModelCacheDynamic.Put(var7, var21)
 	return var21

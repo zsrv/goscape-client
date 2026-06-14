@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	LowDetail          bool         = true
-	Jagged             bool         = true
+	LowMem             bool         = true // Java: Pix3D.lowMem (was LowDetail)
+	LowDetail          bool         = true // Java: Pix3D.lowDetail (was Jagged)
 	DivTable           []int        = make([]int, 512)
 	DivTable2          []int        = make([]int, 2048)
 	SinTable           []int        = make([]int, 2048)
@@ -57,8 +57,8 @@ func init() {
 // Excluded: DivTable, DivTable2, SinTable, CosTable — const-shaped lookup
 // tables populated once at package init().
 func Reset() {
+	LowMem = true
 	LowDetail = true
-	Jagged = true
 	Textures = make([]*pix8.Pix8, 50)
 	TextureTranslucent = make([]bool, 50)
 	AverageTextureRGB = make([]int, 50)
@@ -132,7 +132,7 @@ func ClearTexels() {
 
 func InitPool(size int) {
 	texelLen := 65536
-	if LowDetail {
+	if LowMem {
 		texelLen = 16384
 	}
 	// Reuse an existing pool only when it already matches the requested slot
@@ -168,7 +168,7 @@ func UnpackTextures(jag *io.JagFile) {
 		func() {
 			defer func() { _ = recover() }()
 			Textures[i] = pix8.NewPix8(jag, strconv.Itoa(i), 0)
-			if LowDetail && Textures[i].OWi == 128 {
+			if LowMem && Textures[i].OWi == 128 {
 				Textures[i].HalveSize()
 			} else {
 				Textures[i].Trim()
@@ -241,7 +241,7 @@ func GetTexels(arg0 int) []int {
 	// data only ever stores palette indices < 128, so the two agree; the Go
 	// form is deliberately kept (it cannot crash on corrupt data) rather than
 	// reproducing Java's out-of-bounds throw — Pix3D.java:219/231/236.
-	if LowDetail {
+	if LowMem {
 		TextureTranslucent[arg0] = false
 		for i := range 4096 {
 			var1[i] = var7[var6.Pixels[i]] & 0xF8F8FF
@@ -391,9 +391,9 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 		var14 = ((arg6 - arg8) << 15) / (arg0 - arg2)
 	}
 	if arg0 <= arg1 && arg0 <= arg2 {
-		if arg0 < pix2d.Bottom {
-			arg1 = min(arg1, pix2d.Bottom)
-			arg2 = min(arg2, pix2d.Bottom)
+		if arg0 < pix2d.ClipMaxY {
+			arg1 = min(arg1, pix2d.ClipMaxY)
+			arg2 = min(arg2, pix2d.ClipMaxY)
 			if arg1 < arg2 {
 				arg3 <<= 0x10
 				arg5 = arg3
@@ -545,9 +545,9 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 			}
 		}
 	} else if arg1 <= arg2 {
-		if arg1 < pix2d.Bottom {
-			arg2 = min(arg2, pix2d.Bottom)
-			arg0 = min(arg0, pix2d.Bottom)
+		if arg1 < pix2d.ClipMaxY {
+			arg2 = min(arg2, pix2d.ClipMaxY)
+			arg0 = min(arg0, pix2d.ClipMaxY)
 			if arg2 < arg0 {
 				arg4 <<= 0x10
 				arg3 = arg4
@@ -698,9 +698,9 @@ func GouraudTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 int) {
 				}
 			}
 		}
-	} else if arg2 < pix2d.Bottom {
-		arg0 = min(arg0, pix2d.Bottom)
-		arg1 = min(arg1, pix2d.Bottom)
+	} else if arg2 < pix2d.ClipMaxY {
+		arg0 = min(arg0, pix2d.ClipMaxY)
+		arg1 = min(arg1, pix2d.ClipMaxY)
 		if arg0 < arg1 {
 			arg5 <<= 0x10
 			arg4 = arg5
@@ -859,7 +859,7 @@ func GouraudRaster(arg0 []int, arg1, arg4, arg5, arg6, arg7 int) {
 	var10 := 0
 	var11 := 0
 	var17 := 0
-	if Jagged {
+	if LowDetail {
 		arg3 := 0
 		if HClip {
 			if arg5-arg4 > 3 {
@@ -1000,9 +1000,9 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 		var9 = ((arg3 - arg5) << 16) / (arg0 - arg2)
 	}
 	if arg0 <= arg1 && arg0 <= arg2 {
-		if arg0 < pix2d.Bottom {
-			arg1 = min(arg1, pix2d.Bottom)
-			arg2 = min(arg2, pix2d.Bottom)
+		if arg0 < pix2d.ClipMaxY {
+			arg1 = min(arg1, pix2d.ClipMaxY)
+			arg2 = min(arg2, pix2d.ClipMaxY)
 			if arg1 < arg2 {
 				arg3 <<= 0x10
 				arg5 = arg3
@@ -1126,9 +1126,9 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 			}
 		}
 	} else if arg1 <= arg2 {
-		if arg1 < pix2d.Bottom {
-			arg2 = min(arg2, pix2d.Bottom)
-			arg0 = min(arg0, pix2d.Bottom)
+		if arg1 < pix2d.ClipMaxY {
+			arg2 = min(arg2, pix2d.ClipMaxY)
+			arg0 = min(arg0, pix2d.ClipMaxY)
 			if arg2 < arg0 {
 				arg4 <<= 0x10
 				arg3 = arg4
@@ -1251,9 +1251,9 @@ func FlatTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6 int) {
 				}
 			}
 		}
-	} else if arg2 < pix2d.Bottom {
-		arg0 = min(arg0, pix2d.Bottom)
-		arg1 = min(arg1, pix2d.Bottom)
+	} else if arg2 < pix2d.ClipMaxY {
+		arg0 = min(arg0, pix2d.ClipMaxY)
+		arg1 = min(arg1, pix2d.ClipMaxY)
 		if arg0 < arg1 {
 			arg5 <<= 0x10
 			arg4 = arg5
@@ -1482,9 +1482,9 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 	}
 	var35 := int32(0)
 	if arg0 <= arg1 && arg0 <= arg2 {
-		if arg0 < pix2d.Bottom {
-			arg1 = min(arg1, pix2d.Bottom)
-			arg2 = min(arg2, pix2d.Bottom)
+		if arg0 < pix2d.ClipMaxY {
+			arg1 = min(arg1, pix2d.ClipMaxY)
+			arg2 = min(arg2, pix2d.ClipMaxY)
 			if arg1 < arg2 {
 				arg3 <<= 0x10
 				arg5 = arg3
@@ -1668,9 +1668,9 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 			}
 		}
 	} else if arg1 <= arg2 {
-		if arg1 < pix2d.Bottom {
-			arg2 = min(arg2, pix2d.Bottom)
-			arg0 = min(arg0, pix2d.Bottom)
+		if arg1 < pix2d.ClipMaxY {
+			arg2 = min(arg2, pix2d.ClipMaxY)
+			arg0 = min(arg0, pix2d.ClipMaxY)
 			if arg2 < arg0 {
 				arg4 <<= 0x10
 				arg3 = arg4
@@ -1853,9 +1853,9 @@ func TextureTriangle(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9,
 				}
 			}
 		}
-	} else if arg2 < pix2d.Bottom {
-		arg0 = min(arg0, pix2d.Bottom)
-		arg1 = min(arg1, pix2d.Bottom)
+	} else if arg2 < pix2d.ClipMaxY {
+		arg0 = min(arg0, pix2d.ClipMaxY)
+		arg1 = min(arg1, pix2d.ClipMaxY)
 		if arg0 < arg1 {
 			arg5 <<= 0x10
 			arg4 = arg5
@@ -2083,7 +2083,7 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 	var32 := 0
 	var33 := 0
 	var34 := 0
-	if LowDetail {
+	if LowMem {
 		var17 = 0
 		var18 = 0
 		var20 = arg5 - CenterW3D

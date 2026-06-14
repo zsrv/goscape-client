@@ -338,7 +338,7 @@ func (w *World) SetWallDecoration(y, z, zOffset, typecode, angle2, angle1, xOffs
 	// ModelSource.minY for the decor visibility cull). Animated ClientLocAnim
 	// nodes keep the ctor default 1000 until first drawn.
 	if m, ok := modelSrc.(*model.Model); ok {
-		decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
+		decor.MinY = m.MinY // Java: minY = model.minY (height above origin)
 	}
 	decor.Type = angle1
 	decor.Angle = angle2
@@ -426,7 +426,7 @@ func (w *World) AddLoc2(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 int, arg8
 	// ModelSource.minY for the loc visibility cull). Animated ClientLocAnim
 	// nodes keep the ctor default 1000 until first drawn.
 	if m, ok := arg8.(*model.Model); ok {
-		var22.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
+		var22.MinY = m.MinY // Java: minY = model.minY (height above origin)
 	}
 	var22.Yaw = arg10
 	var22.MinSceneTileX = arg1
@@ -815,7 +815,7 @@ func (w *World) MergeNormals(modelA, modelB *model.Model, arg2, offsetY, arg4 in
 
 		if originalNormalA.W != 0 {
 			y := modelA.VertexY[vertexA] - offsetY
-			if y <= modelB.MinY {
+			if y <= modelB.MaxY {
 				x := modelA.VertexX[vertexA] - arg2
 				if x >= modelB.MinX && x <= modelB.MaxX {
 					z := modelA.VertexZ[vertexA] - arg4
@@ -1296,7 +1296,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 												var12 = var9.Locs[i]
 												if var12 != nil {
 													if m := var12.Model.GetTempModel(); m != nil {
-														var12.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
+														var12.MinY = m.MinY // Java: minY = model.minY (height above origin)
 														m.Draw1(var12.Yaw, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, var12.X-EyeX, var12.Y-EyeY, var12.Z-EyeZ, var12.BitSet)
 													}
 												}
@@ -1374,7 +1374,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 										if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.MinY) {
 											if decor.Type&frontWallTypes != 0 {
 												if m := decor.Model.GetTempModel(); m != nil {
-													decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
+													decor.MinY = m.MinY // Java: minY = model.minY (height above origin)
 													m.Draw1(decor.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, decor.X-EyeX, decor.Y-EyeY, decor.Z-EyeZ, decor.BitSet)
 												}
 											} else if decor.Type&0x300 != 0 {
@@ -1401,7 +1401,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 													drawX := x + WALL_DECORATION_INSET_X[angle]
 													drawZ := z + WALL_DECORATION_INSET_Z[angle]
 													if m := decor.Model.GetTempModel(); m != nil {
-														decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
+														decor.MinY = m.MinY // Java: minY = model.minY (height above origin)
 														m.Draw1(angle*512+256, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
 													}
 												}
@@ -1409,7 +1409,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 													drawX := x + WALL_DECORATION_OUTSET_X[angle]
 													drawZ := z + WALL_DECORATION_OUTSET_Z[angle]
 													if m := decor.Model.GetTempModel(); m != nil {
-														decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
+														decor.MinY = m.MinY // Java: minY = model.minY (height above origin)
 														m.Draw1((angle*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
 													}
 												}
@@ -1600,7 +1600,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 										// and draws — vs rev-225's resolved model.maxY.
 										if !w.LocVisible(originalLevel, farthest.MinSceneTileX, farthest.MaxSceneTileX, farthest.MinSceneTileZ, farthest.MaxSceneTileZ, farthest.MinY) {
 											if m := farthest.Model.GetTempModel(); m != nil {
-												farthest.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
+												farthest.MinY = m.MinY // Java: minY = model.minY (height above origin)
 												m.Draw1(farthest.Yaw, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, farthest.X-EyeX, farthest.Y-EyeY, farthest.Z-EyeZ, farthest.BitSet)
 											}
 										}
@@ -1674,7 +1674,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 			if decor != nil && !w.Visible(originalLevel, tileX, tileZ, decor.MinY) {
 				if decor.Type&tile.BackWallTypes != 0 {
 					if m := decor.Model.GetTempModel(); m != nil {
-						decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
+						decor.MinY = m.MinY // Java: minY = model.minY (height above origin)
 						m.Draw1(decor.Angle, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, decor.X-EyeX, decor.Y-EyeY, decor.Z-EyeZ, decor.BitSet)
 					}
 				} else if decor.Type&0x300 != 0 {
@@ -1701,7 +1701,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 						drawX := x + WALL_DECORATION_INSET_X[angle]
 						drawZ := z + WALL_DECORATION_INSET_Z[angle]
 						if m := decor.Model.GetTempModel(); m != nil {
-							decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
+							decor.MinY = m.MinY // Java: minY = model.minY (height above origin)
 							m.Draw1(angle*512+256, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
 						}
 					}
@@ -1709,7 +1709,7 @@ func (w *World) DrawTile(next *typ.Square, checkAdjacent bool) {
 						drawX := x + WALL_DECORATION_OUTSET_X[angle]
 						drawZ := z + WALL_DECORATION_OUTSET_Z[angle]
 						if m := decor.Model.GetTempModel(); m != nil {
-							decor.MinY = m.MaxY // Java: model.minY == Go Model.MaxY (lineage inversion; height above origin)
+							decor.MinY = m.MinY // Java: minY = model.minY (height above origin)
 							m.Draw1((angle*512+1280)&0x7FF, SinEyePitch, CosEyePitch, SinEyeYaw, CosEyeYaw, drawX, y, drawZ, decor.BitSet)
 						}
 					}
