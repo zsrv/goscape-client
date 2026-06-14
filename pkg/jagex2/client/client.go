@@ -3484,6 +3484,14 @@ func (c *Client) SaveMidi(fade bool, src []byte) {
 	} else {
 		signlink.SetMidiFade(0)
 	}
+	// Java: signlink.midisave silently drops payloads over 2,000,000 bytes
+	// (signlink.java:281-284 @176a85f) — after midifade is already
+	// published, matching Java's caller ordering. The busy-slot (savereq)
+	// half of the guard is intentionally not reproduced by the in-memory
+	// seam.
+	if len(src) > 2000000 {
+		return
+	}
 	signlink.SetMidiTrack(src)
 }
 
