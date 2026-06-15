@@ -80,10 +80,10 @@ lint: ## Run golangci-lint (config: .golangci.yml)
 # formatting but deliberately avoid -s simplifications, which rewrite constructs
 # that intentionally mirror the Java source (see PORTING.md / .golangci.yml).
 fmt: ## Format all Go code (gofmt)
-	gofmt -w .
+	gofmt -w $$(find . -path ./.gocache -prune -o -name '*.go' -print)
 
 check-fmt: ## Fail if any Go file is not gofmt-formatted
-	@unformatted=$$(gofmt -l .); \
+	@unformatted=$$(gofmt -l $$(find . -path ./.gocache -prune -o -name '*.go' -print)); \
 	if [ -n "$$unformatted" ]; then \
 		echo "These files are not gofmt-formatted:"; echo "$$unformatted"; \
 		echo "Run 'make fmt'."; exit 1; \
