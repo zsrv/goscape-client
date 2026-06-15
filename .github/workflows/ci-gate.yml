@@ -63,5 +63,8 @@ jobs:
             -e CGO_ENABLED=1 \
             -e GOPATH=/work/.gocache/go \
             -e GOCACHE=/work/.gocache/build \
+            -e GIT_CONFIG_COUNT=1 \
+            -e GIT_CONFIG_KEY_0=safe.directory \
+            -e GIT_CONFIG_VALUE_0=/work \
             goscape-client-dev:ci \
             make ci
