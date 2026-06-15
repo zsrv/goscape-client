@@ -45,11 +45,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { target: linux-amd64,   os: ubuntu-24.04,     goos: linux,   goarch: amd64, cgo: "1", ext: tar.gz }
-          - { target: linux-arm64,   os: ubuntu-24.04-arm, goos: linux,   goarch: arm64, cgo: "1", ext: tar.gz }
-          - { target: darwin-amd64,  os: macos-13,         goos: darwin,  goarch: amd64, cgo: "1", ext: tar.gz }
-          - { target: darwin-arm64,  os: macos-14,         goos: darwin,  goarch: arm64, cgo: "1", ext: tar.gz }
-          - { target: windows-amd64, os: windows-2022,     goos: windows, goarch: amd64, cgo: "1", ext: zip }
+          - { target: linux-amd64,   os: ubuntu-26.04,     goos: linux,   goarch: amd64, cgo: "1", ext: tar.gz }
+          - { target: linux-arm64,   os: ubuntu-26.04-arm, goos: linux,   goarch: arm64, cgo: "1", ext: tar.gz }
+          - { target: darwin-amd64,  os: macos-26-intel,   goos: darwin,  goarch: amd64, cgo: "1", ext: tar.gz }
+          - { target: darwin-arm64,  os: macos-15,         goos: darwin,  goarch: arm64, cgo: "1", ext: tar.gz }
+          - { target: windows-amd64, os: windows-2025,     goos: windows, goarch: amd64, cgo: "1", ext: zip }
     steps:
       - name: Checkout
         uses: actions/checkout@v5
