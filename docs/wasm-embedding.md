@@ -83,5 +83,6 @@ A working browser client is exactly three files served from one directory:
 - Bringing `github.com/zsrv/goscape-client` into your `go.mod` does pull the
   native dependencies into your module graph (they appear in `go.sum`) even
   though they are not compiled for `js`. This is harmless module-graph weight.
-- Storage in the browser build is in-memory only; audio is not yet wired. See
-  the browser-build notes in the [`main` README](../README.md).
+- Storage in the browser build is in-memory only. Audio plays via the Web Audio
+  API (sound starts after the first user gesture, per browser autoplay policy).
+  See the browser-build notes in the [`main` README](../README.md).

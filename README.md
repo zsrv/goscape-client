@@ -121,7 +121,9 @@ Notes on the browser build:
   a server argument.
 - Storage is **in-memory only**: the cache and client id do not survive a page
   reload (IndexedDB persistence is planned).
-- Audio is not yet wired for the browser build.
+- Audio plays through the Web Audio API (music and sound effects, pre-rendered
+  to audio buffers). Per browser autoplay policy, sound starts after the first
+  user interaction with the page.
 
 To build and serve this wasm client from **another Go project** (e.g. a server
 serving its own client), see
