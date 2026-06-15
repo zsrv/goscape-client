@@ -13,8 +13,11 @@ project (https://github.com/LostCityRS):
   assets or content.
 
 - Client-TS (https://github.com/LostCityRS/Client-TS) — the MIT-licensed
-  TypeScript client, used as a secondary cross-check for ambiguous Java -> Go
-  translations. Its license is reproduced below as required by its terms.
+  TypeScript client. Used both as a cross-check for ambiguous Java -> Go
+  translations and as the reference for browser/WebAssembly features and
+  behaviors that have no Java counterpart (e.g. developer mode, same-origin
+  networking, IndexedDB cache persistence, and Web Audio playback). Its license
+  is reproduced below as required by its terms.
 
 -----------------------------------------------------------------------
 LostCityRS/Client-TS
