@@ -18,6 +18,11 @@ test_results.txt
 # SIGUSR1 pprof captures written by pkg/profiling.
 /profiles/
 
+# === CI Go module + build cache ===
+# The devcontainer CI mounts GOPATH/GOCACHE here (see .github/workflows/ci-gate.yml)
+# so actions/cache can persist them; never commit or lint these.
+/.gocache/
+
 # === Local / private config — never push ===
 # CLAUDE.local.md is private per its own header (CLAUDE.md, by contrast, is
 # meant to be committed — do not add it here).
