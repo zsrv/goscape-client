@@ -231,8 +231,9 @@ func (b *glfwBackend) installCallbacks() {
 		b.events = append(b.events, CharInput{Rune: r})
 	})
 	b.win.SetKeyCallback(func(_ *glfw.Window, key glfw.Key, _ int, action glfw.Action, mods glfw.ModifierKey) {
-		if action == glfw.Repeat {
-			return // Java had no auto-repeat for these sentinels
+		down, emit := keyDownFromAction(action)
+		if !emit {
+			return
 		}
 		k, r := glfwKeyToNeutral(key)
 		if k == KeyNone {
@@ -242,9 +243,30 @@ func (b *glfwBackend) installCallbacks() {
 			Key:  k,
 			Rune: r,
 			Mods: glfwMods(mods),
-			Down: action == glfw.Press,
+			Down: down,
 		})
 	})
+}
+
+// keyDownFromAction maps a GLFW key action to the neutral KeyPress Down flag and
+// whether the event should be emitted at all.
+//
+// glfw.Repeat (the OS auto-repeat while a key is held) counts as Down, mirroring
+// AWT keyPressed and the TS client onkeydown — both fire on every auto-repeat
+// and neither filters it. Non-printable sentinel keys (Backspace, Tab, Enter,
+// the F-keys, Home/End/PgUp/PgDn) reach the keyQueue only through this callback
+// (they emit no CharCallback rune), so dropping Repeat made e.g. a held
+// Backspace clear just one character. Printable keys are unaffected: they queue
+// via the separate CharCallback (which auto-repeats), and their Repeat KeyPress
+// only re-asserts keyHeld in handleKey — it is never pushed to the keyQueue.
+func keyDownFromAction(action glfw.Action) (down, emit bool) {
+	switch action {
+	case glfw.Press, glfw.Repeat:
+		return true, true
+	case glfw.Release:
+		return false, true
+	}
+	return false, false
 }
 
 func glfwMods(m glfw.ModifierKey) Mod {
