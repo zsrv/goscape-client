@@ -1,30 +1,23 @@
-# Modifications
+# goscape-client — rev-245.2
 
-Java's `jagex2.datastruct.HashTable` has been replaced by Go's built-in map.
+The Go port of the **RuneScape 2** client, revision 245.2. This branch holds
+the runnable client code.
 
-## Browser (WebAssembly) build
+For the project overview, requirements, full build & run instructions (including
+the command-line flag reference and the browser / WebAssembly build), and the
+project documentation, see the
+**[`main` branch README](https://github.com/zsrv/goscape-client/blob/main/README.md)**.
 
-The client can run in a browser via its `js/wasm` target (syscall/js + WebGL). The game data and
-WebSocket server are expected to be served from the **same origin** as the page;
-the client derives its server target from `window.location` automatically.
+## Quick start
 
 ```bash
-# 1. Build the wasm bundle into build/web/ (plain `go build`, no gogio).
-make wasm
-
-# 2. Serve it locally (maps .wasm to application/wasm, required for streaming).
-make wasm-serve
-
-# 3. Open the client, passing the non-host args via the ?argv= query parameter
-#    (same -flag syntax as the desktop build; the server target is auto-derived):
-#    -node-id 10 -mem high -world-type members
-#    http://localhost:8080/?argv=-node-id 10 -mem high -world-type members
+go build ./...
+go run ./cmd/client          # connect to a local server using default ports
 ```
 
-Notes:
-- The server **host/scheme are auto-derived** from the page origin (`ws://` over
-  HTTP, `wss://` over HTTPS), so — unlike the desktop build — you do **not** pass
-  a host argument.
-- Storage is **in-memory only** in this build: the cache and client id do not
-  survive a page reload (IndexedDB persistence is planned).
-- Audio is not yet wired for the browser build.
+See the [`main` README](https://github.com/zsrv/goscape-client/blob/main/README.md)
+for all command-line flags and the browser (WebAssembly) build.
+
+## Modifications
+
+- Java's `jagex2.datastruct.HashTable` has been replaced by Go's built-in map.
