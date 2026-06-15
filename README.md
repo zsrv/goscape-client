@@ -168,5 +168,7 @@ This port is indebted to the [Lost City](https://github.com/LostCityRS) project:
 - [Client-Java](https://github.com/LostCityRS/Client-Java) — the deobfuscated
   Java RuneScape 2 client, used as the authoritative reference for the translation.
 - [Client-TS](https://github.com/LostCityRS/Client-TS) — the MIT-licensed
-  TypeScript client, used as a secondary cross-check for ambiguous Java → Go
-  translations.
+  TypeScript client, used both as a cross-check for ambiguous Java → Go
+  translations and as the reference for browser/WebAssembly features that have no
+  Java counterpart — notably developer mode, same-origin networking, IndexedDB
+  cache persistence, and Web Audio playback behavior.
