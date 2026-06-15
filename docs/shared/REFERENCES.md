@@ -14,7 +14,7 @@ Local working-copy paths are machine-specific and live in `CLAUDE.local.md`
 | Repo | Role | URL | Branch | Pinned commit |
 |---|---|---|---|---|
 | Client-Java | **primary** — authoritative translation source; every Go change maps to a Java function | https://github.com/LostCityRS/Client-Java | `225-clean` | `cc3781de9e45265c52711dca850cd154f03c3a2c` |
-| Client-TS | secondary cross-check for ambiguous Java→Go translations | https://github.com/LostCityRS/Client-TS | `225` | `8e0fca6d1b01cee8e1f23603ddc78cf009a6ce38` |
+| Client-TS | secondary translation cross-check + reference for browser/wasm features (dev mode, IndexedDB, Web Audio) | https://github.com/LostCityRS/Client-TS | `225` | `8e0fca6d1b01cee8e1f23603ddc78cf009a6ce38` |
 | Engine | engine reference | https://github.com/LostCityRS/Engine | `main` | `5b5584280d910511ac5635e1025b9fd2912a8264` |
 | Engine-TS | engine reference (TypeScript) | https://github.com/LostCityRS/Engine-TS | `225` | `e1dea19f256c7ff1a89d47024c811c755ad2184d` |
 | Content | game content reference | https://github.com/LostCityRS/Content | `225` | `9901aa27b60198afac49012f45f32e4eb4d5c012` |
@@ -29,7 +29,7 @@ those branches have since moved.)
 | Repo | Role | URL | Branch | Pinned commit |
 |---|---|---|---|---|
 | Client-Java | **primary** — authoritative translation source; every Go change maps to a Java function | https://github.com/LostCityRS/Client-Java | `244` | `01f1608842acb12901f7e4f3df25553f641cc86e` |
-| Client-TS | secondary cross-check for ambiguous Java→Go translations | https://github.com/LostCityRS/Client-TS | `244` | `1cfb57bff1a4a5dc9ca36cdbe76a302fed4fa532` |
+| Client-TS | secondary translation cross-check + reference for browser/wasm features (dev mode, IndexedDB, Web Audio) | https://github.com/LostCityRS/Client-TS | `244` | `1cfb57bff1a4a5dc9ca36cdbe76a302fed4fa532` |
 | Engine-TS | engine reference (TypeScript) | https://github.com/LostCityRS/Engine-TS | `244` | `9aadcec4e9560b810b5e5eee31aadc67f3b206cd` |
 | Content | game content reference | https://github.com/LostCityRS/Content | `244` | `e5d0282e03b383efd3b2a81e63090e703ffb5399` |
 
@@ -71,7 +71,7 @@ rev-225 pins remain the last-known reference.)
 | Repo | Role | URL | Branch | Pinned commit |
 |---|---|---|---|---|
 | Client-Java | **primary** — authoritative translation source; every Go change maps to a Java function | https://github.com/LostCityRS/Client-Java | `245.2` | `176a85f7b423111c878a476e1ead048745e377c0` |
-| Client-TS | secondary cross-check for ambiguous Java→Go translations | https://github.com/LostCityRS/Client-TS | `245.2` | `bd29ce0127e1810a0b5bba43bc143461ce0ee4a1` |
+| Client-TS | secondary translation cross-check + reference for browser/wasm features (dev mode, IndexedDB, Web Audio) | https://github.com/LostCityRS/Client-TS | `245.2` | `bd29ce0127e1810a0b5bba43bc143461ce0ee4a1` |
 | Engine-TS | engine reference (TypeScript) + smoke-test server | https://github.com/LostCityRS/Engine-TS | `245.2` | `3c16994ca4ba51b4e04f88316c1f7395b0c4bb8a` |
 | Content | game content reference | https://github.com/LostCityRS/Content | `245.2` | `cbcfe6706ef9f4093e5b8e4c9cfee93577346993` |
 
@@ -113,7 +113,7 @@ references via `git show 176a85f:…`**, never the working tree.)
 | Repo | Role | URL | Branch | Pinned commit |
 |---|---|---|---|---|
 | Client-Java | **primary** — authoritative translation source; every Go change maps to a Java function | https://github.com/LostCityRS/Client-Java | `254` | `2e629784c3dcb671ee3aab134f9cb91d614d8094` |
-| Client-TS | secondary cross-check for ambiguous Java→Go translations | https://github.com/LostCityRS/Client-TS | `254` | `d340fc258c8d3becb1b7680793415621b40064e2` |
+| Client-TS | secondary translation cross-check + reference for browser/wasm features (dev mode, IndexedDB, Web Audio) | https://github.com/LostCityRS/Client-TS | `254` | `d340fc258c8d3becb1b7680793415621b40064e2` |
 | Engine-TS | engine reference (TypeScript) + smoke-test server | https://github.com/LostCityRS/Engine-TS | `254` | `2e3bcf4392200e84dd15ce67008c5d41fa4537aa` |
 | Content | game content reference | https://github.com/LostCityRS/Content | `254` | `caee3f2eb3eb3df60126e2be88c436dc2dc98e43` |
 
@@ -148,7 +148,7 @@ via `git show 2e62978:…`**, never the working tree.)
 | Repo | Role | URL | Branch | Pinned commit |
 |---|---|---|---|---|
 | Client-Java | **primary** — authoritative translation source; every Go change maps to a Java function | https://github.com/LostCityRS/Client-Java | `274` | `32f30626156783de9f142306eb73a2243909dacf` |
-| Client-TS | secondary cross-check for ambiguous Java→Go translations | https://github.com/LostCityRS/Client-TS | `274` | `b67894260fb06ae6162ed3a8adab506abcd7faa9` |
+| Client-TS | secondary translation cross-check + reference for browser/wasm features (dev mode, IndexedDB, Web Audio) | https://github.com/LostCityRS/Client-TS | `274` | `b67894260fb06ae6162ed3a8adab506abcd7faa9` |
 | Engine-TS | engine reference (TypeScript) + smoke-test server | https://github.com/LostCityRS/Engine-TS | `274` | `4c0d036f940c8c7e11b0ed714dcf40c88f9de200` |
 | Content | game content reference | https://github.com/LostCityRS/Content | `274` | `85d62c8bdb9005cc02a784a31337c7df052d6469` |
 
