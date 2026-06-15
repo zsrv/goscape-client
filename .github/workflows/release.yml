@@ -4,14 +4,14 @@
 # `rev225-v1.0.0`. The revision lives in the tag name (and a tag points at a
 # commit on that revision's branch), so releases across revisions never collide
 # and every artifact name carries its revision (client-rev225-v1.0.0-<target>).
-# Builds the client for 6 platforms on NATIVE
+# Builds the client for 5 platforms on NATIVE
 # GitHub-hosted runners — no cross-compilation. The native GLFW/go-gl backend
 # needs CGO on every OS — Linux (X11/GL), macOS (Cocoa/GL), and Windows
 # (opengl32 + a C toolchain) — which makes cross-CGO painful; native runners
 # sidestep that entirely. Free arm64 hosted runners (public repos, since
-# 2025-08) cover the arm64 targets. NOTE: windows/arm64 cgo support is
-# unverified — that leg is marked experimental + continue-on-error, so a failure
-# there does not block releasing the other targets.
+# 2025-08) cover the linux/arm64 and macOS/arm64 targets. windows/arm64 is not
+# built: the cgo toolchain on hosted ARM Windows runners targets x86-64, and
+# Windows-on-ARM runs the windows/amd64 build via x64 emulation.
 #
 # Three stages:
 #   test    — the shared CI gate (ci-gate.yml: `make ci`). Blocks the build, so
@@ -41,8 +41,6 @@ jobs:
     needs: test
     name: build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
-    # Experimental targets (see matrix) may fail without blocking the release.
-    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       fail-fast: false
       matrix:
@@ -52,7 +50,6 @@ jobs:
           - { target: darwin-amd64,  os: macos-13,         goos: darwin,  goarch: amd64, cgo: "1", ext: tar.gz }
           - { target: darwin-arm64,  os: macos-14,         goos: darwin,  goarch: arm64, cgo: "1", ext: tar.gz }
           - { target: windows-amd64, os: windows-2022,     goos: windows, goarch: amd64, cgo: "1", ext: zip }
-          - { target: windows-arm64, os: windows-11-arm,   goos: windows, goarch: arm64, cgo: "1", ext: zip, experimental: true }
     steps:
       - name: Checkout
         uses: actions/checkout@v5
