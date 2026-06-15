@@ -119,8 +119,10 @@ Notes on the browser build:
 - The server **host/scheme are auto-derived** from the page origin (`ws://` over
   HTTP, `wss://` over HTTPS), so — unlike the desktop build — you do **not** pass
   a server argument.
-- Storage is **in-memory only**: the cache and client id do not survive a page
-  reload (IndexedDB persistence is planned).
+- The downloaded cache **persists across page reloads** via IndexedDB, with an
+  automatic in-memory fallback when IndexedDB is unavailable (e.g. private
+  browsing). The client id is a fixed value in this build, not a persisted
+  per-client id.
 - Audio plays through the Web Audio API (music and sound effects, pre-rendered
   to audio buffers). Per browser autoplay policy, sound starts after the first
   user interaction with the page.
