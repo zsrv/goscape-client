@@ -143,6 +143,8 @@ Project documentation lives under [`docs/`](docs/) on this branch:
   lessons learned.
 - [`docs/wasm-embedding.md`](docs/wasm-embedding.md) — building and serving the
   browser client from another Go module.
+- [`docs/releasing.md`](docs/releasing.md) — how to tag and publish a release of
+  a revision.
 - `docs/rev-*/` — per-revision parity audits, rename maps, and design notes.
 - [`docs/design/`](docs/design/) — feature design specs and implementation plans.
 
