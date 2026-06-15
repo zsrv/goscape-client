@@ -4,8 +4,6 @@
 # Anchored with a leading slash so ONLY root-level binaries match — the
 # `cmd/client/` SOURCE directory must NOT be ignored.
 /client
-/client1
-/client2
 /bin/
 *.exe
 
