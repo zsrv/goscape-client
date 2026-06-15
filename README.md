@@ -17,7 +17,3 @@ go run ./cmd/client          # connect to a local server using default ports
 
 See the [`main` README](https://github.com/zsrv/goscape-client/blob/main/README.md)
 for all command-line flags and the browser (WebAssembly) build.
-
-## Modifications
-
-- Java's `jagex2.datastruct.HashTable` has been replaced by Go's built-in map.
