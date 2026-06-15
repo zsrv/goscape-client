@@ -143,3 +143,20 @@ reference, and every Go change is expected to map to a corresponding piece of
 Java. Each `rev-*` branch also carries a `CLAUDE.md` with an architecture
 overview and the package layout. Start with [`docs/shared/PORTING.md`](docs/shared/PORTING.md)
 for the conventions before making changes.
+
+## License
+
+goscape-client's original Go code is released under the [MIT License](LICENSE).
+Because it is a port that builds on the [Lost City](https://github.com/LostCityRS)
+project's clients, see [`NOTICE`](NOTICE) for third-party attribution — including
+the reproduced MIT license of the upstream TypeScript client.
+
+## Acknowledgements
+
+This port is indebted to the [Lost City](https://github.com/LostCityRS) project:
+
+- [Client-Java](https://github.com/LostCityRS/Client-Java) — the deobfuscated
+  Java RuneScape 2 client, used as the authoritative reference for the translation.
+- [Client-TS](https://github.com/LostCityRS/Client-TS) — the MIT-licensed
+  TypeScript client, used as a secondary cross-check for ambiguous Java → Go
+  translations.
