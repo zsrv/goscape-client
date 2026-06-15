@@ -61,11 +61,12 @@ On a `rev*-v*` tag push, `release.yml` runs three stages:
 
 1. **test** — the shared CI gate (`make ci`: gofmt check, `go vet`, race tests,
    golangci-lint). A tag that fails the gate **never publishes** artifacts.
-2. **build** — builds the client on six native GitHub-hosted runners (no
-   cross-compilation): Linux/macOS/Windows × amd64/arm64, each archived
-   (`.tar.gz` on Unix, `.zip` on Windows) and uploaded. `windows-arm64` is
-   marked experimental, so a failure there does not block the rest of the
-   release.
+2. **build** — builds the client on five native GitHub-hosted runners (no
+   cross-compilation): `linux/amd64`, `linux/arm64`, `darwin/amd64`,
+   `darwin/arm64`, and `windows/amd64`; each archived (`.tar.gz` on Unix, `.zip`
+   on Windows) and uploaded. (`windows/arm64` is intentionally not built — its
+   cgo toolchain on hosted runners targets x86-64, and Windows-on-ARM runs the
+   `windows/amd64` build via x64 emulation.)
 3. **release** — downloads all artifacts, writes `SHA256SUMS`, and creates the
    GitHub Release with auto-generated notes.
 
