@@ -36,10 +36,17 @@ Pick a revision branch to build and run; `rev-274` is the most recent.
   compiler plus the X11/Wayland and OpenGL development packages; GLFW also
   supports macOS and Windows. The browser build needs none of these.
 - **A compatible RS2 server and game cache.** The client connects to an
-  RS2-protocol server over TCP (or WebSocket) and downloads cache data from an
-  on-demand HTTP server. A compatible server implementation is
-  [LostCityRS / Engine-TS](https://github.com/LostCityRS/Engine-TS). The
-  defaults below assume such a server running locally.
+  RS2-protocol server over TCP (or WebSocket) and fetches game cache data from an
+  on-demand server. A compatible server implementation is
+  [LostCityRS / Engine-TS](https://github.com/LostCityRS/Engine-TS); pair each
+  revision branch with the matching server revision. The defaults below assume
+  such a server running locally.
+  - **The on-demand transport is revision-dependent.** `rev-225` fetches the
+    cache over plain HTTP from `-ondemand-server`; `rev-244`–`rev-254` use the
+    socket-based on-demand protocol alongside an HTTP `/ondemand.zip` bulk path;
+    `rev-274` uses the socket protocol exclusively (streamed over the world-server
+    connection — the HTTP `/ondemand.zip` path was retired). The `-ondemand-server`
+    URL is still used for HTTP "codebase" fetches on every revision.
 
 ## Build & run (native desktop)
 
