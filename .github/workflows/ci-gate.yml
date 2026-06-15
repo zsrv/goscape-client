@@ -18,6 +18,9 @@ name: CI gate
 on:
   workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
   gate:
     runs-on: ubuntu-latest
