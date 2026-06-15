@@ -55,10 +55,10 @@ jobs:
           - { target: windows-arm64, os: windows-11-arm,   goos: windows, goarch: arm64, cgo: "1", ext: zip, experimental: true }
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
@@ -99,7 +99,7 @@ jobs:
         run: Compress-Archive -Path dist/client.exe -DestinationPath "client-$env:VERSION-$env:TARGET.zip"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.target }}
           path: client-*.${{ matrix.ext }}
@@ -112,7 +112,7 @@ jobs:
       contents: write # create the GitHub Release
     steps:
       - name: Download all build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
@@ -122,7 +122,7 @@ jobs:
         run: sha256sum client-* > SHA256SUMS
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
           files: |
             artifacts/client-*

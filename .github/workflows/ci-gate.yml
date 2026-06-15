@@ -26,17 +26,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # Build the dev image (toolchain + native/ALSA deps + golangci-lint). The
       # context is .devcontainer/ so the Dockerfile's `COPY apt-packages.txt`
       # resolves. GHA layer cache keeps rebuilds cheap when the Dockerfile and
       # package list are unchanged.
       - name: Build dev image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .devcontainer
           file: .devcontainer/Dockerfile
@@ -47,7 +47,7 @@ jobs:
 
       # Persist the Go module + build cache between runs.
       - name: Cache Go modules and build cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .gocache
           key: gocache-${{ runner.os }}-${{ hashFiles('go.sum') }}
