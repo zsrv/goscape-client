@@ -123,6 +123,10 @@ Notes on the browser build:
   reload (IndexedDB persistence is planned).
 - Audio is not yet wired for the browser build.
 
+To build and serve this wasm client from **another Go project** (e.g. a server
+serving its own client), see
+[`docs/wasm-embedding.md`](docs/wasm-embedding.md).
+
 ## Documentation
 
 Project documentation lives under [`docs/`](docs/) on this branch:
@@ -133,6 +137,8 @@ Project documentation lives under [`docs/`](docs/) on this branch:
   repositories (Java/TypeScript clients, server) with pinned commits.
 - [`docs/shared/PORTING-LESSONS.md`](docs/shared/PORTING-LESSONS.md) — cross-revision
   lessons learned.
+- [`docs/wasm-embedding.md`](docs/wasm-embedding.md) — building and serving the
+  browser client from another Go module.
 - `docs/rev-*/` — per-revision parity audits, rename maps, and design notes.
 - [`docs/design/`](docs/design/) — feature design specs and implementation plans.
 
