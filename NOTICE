@@ -1,0 +1,43 @@
+goscape-client — third-party notices and attribution
+=====================================================
+
+goscape-client is a Go port of the RuneScape 2 client. It was produced by
+translating and cross-referencing the clients maintained by the Lost City
+project (https://github.com/LostCityRS):
+
+- Client-Java (https://github.com/LostCityRS/Client-Java) — the deobfuscated
+  Java RuneScape 2 client, used as the authoritative reference for the
+  translation. The original RuneScape 2 client is the intellectual property of
+  Jagex Ltd. This project is an unofficial, fan-made preservation/study effort,
+  is not affiliated with or endorsed by Jagex, and distributes no Jagex game
+  assets or content.
+
+- Client-TS (https://github.com/LostCityRS/Client-TS) — the MIT-licensed
+  TypeScript client, used as a secondary cross-check for ambiguous Java -> Go
+  translations. Its license is reproduced below as required by its terms.
+
+-----------------------------------------------------------------------
+LostCityRS/Client-TS
+-----------------------------------------------------------------------
+
+MIT License
+
+Copyright (c) 2023-2026 Lost City
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

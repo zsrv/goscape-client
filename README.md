@@ -17,3 +17,9 @@ go run ./cmd/client          # connect to a local server using default ports
 
 See the [`main` README](https://github.com/zsrv/goscape-client/blob/main/README.md)
 for all command-line flags and the browser (WebAssembly) build.
+
+## License
+
+Released under the [MIT License](LICENSE). This port builds on the
+[Lost City](https://github.com/LostCityRS) project; see [`NOTICE`](NOTICE) for
+third-party attribution.
