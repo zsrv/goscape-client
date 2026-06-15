@@ -10,7 +10,8 @@
 # (opengl32 + a C toolchain) — which makes cross-CGO painful; native runners
 # sidestep that entirely. Free arm64 hosted runners (public repos, since
 # 2025-08) cover the arm64 targets. NOTE: windows/arm64 cgo support is
-# unverified — that target may need explicit toolchain setup.
+# unverified — that leg is marked experimental + continue-on-error, so a failure
+# there does not block releasing the other targets.
 #
 # Three stages:
 #   test    — the shared CI gate (ci-gate.yml: `make ci`). Blocks the build, so
@@ -28,6 +29,9 @@ on:
   push:
     tags: ['rev*-v*']
 
+permissions:
+  contents: read
+
 jobs:
   test:
     # Shared CI gate — a tag that fails it never reaches the build matrix.
@@ -37,6 +41,8 @@ jobs:
     needs: test
     name: build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    # Experimental targets (see matrix) may fail without blocking the release.
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       fail-fast: false
       matrix:
@@ -46,7 +52,7 @@ jobs:
           - { target: darwin-amd64,  os: macos-13,         goos: darwin,  goarch: amd64, cgo: "1", ext: tar.gz }
           - { target: darwin-arm64,  os: macos-14,         goos: darwin,  goarch: arm64, cgo: "1", ext: tar.gz }
           - { target: windows-amd64, os: windows-2022,     goos: windows, goarch: amd64, cgo: "1", ext: zip }
-          - { target: windows-arm64, os: windows-11-arm,   goos: windows, goarch: arm64, cgo: "1", ext: zip }
+          - { target: windows-arm64, os: windows-11-arm,   goos: windows, goarch: arm64, cgo: "1", ext: zip, experimental: true }
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -116,7 +122,7 @@ jobs:
         run: sha256sum client-* > SHA256SUMS
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           files: |
             artifacts/client-*
