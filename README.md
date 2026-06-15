@@ -67,8 +67,11 @@ go run ./cmd/client -node-id 10 -mem high -world-type members \
 | `-world-type`      | `members`                   | World type: `free` or `members`.                        |
 | `-world-server`    | `tcp://127.0.0.1:43594`     | World server URL. Scheme `tcp://`, `ws://`, or `wss://`.|
 | `-ondemand-server` | `http://127.0.0.1:8888`     | On-demand (cache) server URL. Scheme `http://` or `https://`. |
-| `-store-id`        | `32`                        | Disk cache directory id (`.file_store_<id>`, clamped to 32–34). |
+| `-store-id` †      | `32`                        | Disk cache directory id (`.file_store_<id>`, clamped to 32–34). |
 | `-version`         | `false`                     | Print build version information and exit.               |
+
+† `-store-id` is available on `rev-244` and later; it does **not** exist on
+`rev-225`. All other flags (and their defaults) apply to every revision branch.
 
 To connect over WebSocket (e.g. for a remote or browser-style deployment):
 
