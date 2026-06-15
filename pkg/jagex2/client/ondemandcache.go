@@ -45,9 +45,9 @@ func openFileStreamCache(dir string) ondemand.Cache {
 		f, err := os.OpenFile(filepath.Join(dir, "main_file_cache.idx"+strconv.Itoa(i)), os.O_RDWR|os.O_CREATE, 0o644)
 		if err != nil {
 			log.Printf("ondemand cache: cannot open main_file_cache.idx%d: %v", i, err)
-			dat.Close()
+			_ = dat.Close()
 			for j := range i {
-				idx[j].Close()
+				_ = idx[j].Close()
 			}
 			return nil
 		}
