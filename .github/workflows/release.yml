@@ -73,11 +73,33 @@ jobs:
           CGO_ENABLED: ${{ matrix.cgo }}
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
+          VERSION: ${{ github.ref_name }}
         run: |
           mkdir -p dist
           bin=client
           [ "$GOOS" = windows ] && bin=client.exe
-          go build -trimpath -ldflags "-s -w" -o "dist/$bin" ./cmd/client
+
+          # Stamp build metadata into the binary via -ldflags -X, mirroring the
+          # Makefile's GO_LDFLAGS block (keep the two in sync) — without it the
+          # released binary's `-version` prints "unknown" for every field.
+          # CI-specific values: Version is the release tag; Branch is derived
+          # from the tag's rev prefix (rev244-v… -> rev-244) because the tag is
+          # checked out in detached HEAD, so `git rev-parse --abbrev-ref HEAD`
+          # would just yield "HEAD"; BuildUser is the CI identity rather than a
+          # runner-local whoami@hostname. None of these values contain spaces,
+          # so the assembled ldflags string splits cleanly for the linker.
+          vprefix=github.com/zsrv/goscape-client/pkg/util/build
+          revision=$(git rev-parse --short HEAD)
+          branch=$(sed -E 's/^rev([0-9][0-9.]*)-v.*/rev-\1/' <<<"$VERSION")
+          build_user="${GITHUB_ACTOR:-ci}@github-actions"
+          build_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          ldflags="-s -w"
+          ldflags="$ldflags -X $vprefix.Version=$VERSION"
+          ldflags="$ldflags -X $vprefix.Revision=$revision"
+          ldflags="$ldflags -X $vprefix.Branch=$branch"
+          ldflags="$ldflags -X $vprefix.BuildUser=$build_user"
+          ldflags="$ldflags -X $vprefix.BuildDate=$build_date"
+          go build -trimpath -ldflags "$ldflags" -o "dist/$bin" ./cmd/client
 
       - name: Archive (tar.gz)
         if: matrix.ext == 'tar.gz'
