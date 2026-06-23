@@ -58,7 +58,7 @@ func servesFromBundle(dir, reqPath string) bool {
 func main() {
 	dir := flag.String("dir", "build/web", "directory with the wasm build (index.html, main.wasm, wasm_exec.js)")
 	addr := flag.String("addr", ":8080", "listen address")
-	backend := flag.String("backend", "http://localhost:8888", "cache-data backend to proxy non-bundle requests to")
+	backend := flag.String("backend", "http://localhost:8080", "cache-data backend to proxy non-bundle requests to")
 	flag.Parse()
 
 	bu, err := url.Parse(*backend)

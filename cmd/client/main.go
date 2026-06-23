@@ -30,7 +30,7 @@ func main() {
 	worldType := flag.String("world-type", "members", "world type: free|members")
 	worldServer := flag.String("world-server", "tcp://127.0.0.1:43594",
 		"game server as [tcp|ws|wss]://host:port")
-	ondemandServer := flag.String("ondemand-server", "http://127.0.0.1:8888",
+	ondemandServer := flag.String("ondemand-server", "http://127.0.0.1:8080",
 		"on-demand/cache server as [http|https]://host:port")
 	showVersion := flag.Bool("version", false, "print build version information and exit")
 	flag.Parse()
