@@ -15,7 +15,7 @@ go build ./...
 # Run (all flags optional; defaults shown). Java's `port-offset` arg is not
 # ported — -world-server / -ondemand-server take a full scheme://host:port each.
 go run ./cmd/client -node-id 10 -mem high -world-type members \
-    -world-server tcp://127.0.0.1:43594 -ondemand-server http://127.0.0.1:8888
+    -world-server tcp://127.0.0.1:43594 -ondemand-server http://127.0.0.1:8080
 
 # Minimal (defaults are localhost):
 go run ./cmd/client
