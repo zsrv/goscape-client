@@ -45,7 +45,7 @@ package client
 //   - GetHost (client.go) returns the configured host — Java standalone
 //     getHost(), not the applet document-base host.
 //   - GetCodeBase (client.go) returns the configured cache-server base URL
-//     (clientextras.OndemandBaseURL; default http://127.0.0.1:8888) — Java
+//     (clientextras.OndemandBaseURL; default http://127.0.0.1:8080) — Java
 //     standalone getCodeBase(), not the applet doc-base URL. (The Java port
 //     offset is intentionally not ported; see cmd/client/main.go.)
 //   - The "::clientdrop" debug gate (client.go) always reconnects — Java
