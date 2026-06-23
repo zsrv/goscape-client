@@ -9,15 +9,15 @@ func TestParseOndemandServer(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"http localhost", "http://127.0.0.1:8888", "http://127.0.0.1:8888", false},
+		{"http localhost", "http://127.0.0.1:8080", "http://127.0.0.1:8080", false},
 		{"https host", "https://cache.example.com:443", "https://cache.example.com:443", false},
-		{"root path stripped", "http://cache.example.com:8888/", "http://cache.example.com:8888", false},
-		{"ipv6", "http://[::1]:8888", "http://[::1]:8888", false},
-		{"missing scheme", "cache.example.com:8888", "", true},
+		{"root path stripped", "http://cache.example.com:8080/", "http://cache.example.com:8080", false},
+		{"ipv6", "http://[::1]:8080", "http://[::1]:8080", false},
+		{"missing scheme", "cache.example.com:8080", "", true},
 		{"missing port", "http://cache.example.com", "", true},
 		{"unsupported scheme", "ftp://cache:21", "", true},
-		{"has path", "http://cache:8888/path", "", true},
-		{"empty host", "http://:8888", "", true},
+		{"has path", "http://cache:8080/path", "", true},
+		{"empty host", "http://:8080", "", true},
 		{"bad port", "http://cache:notaport", "", true},
 		{"port out of range", "http://cache:70000", "", true},
 	}
