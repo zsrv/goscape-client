@@ -62,7 +62,7 @@ go run ./cmd/client
 
 # Or specify everything explicitly:
 go run ./cmd/client -node-id 10 -mem high -world-type members \
-    -world-server tcp://127.0.0.1:43594 -ondemand-server http://127.0.0.1:8888
+    -world-server tcp://127.0.0.1:43594 -ondemand-server http://127.0.0.1:8080
 ```
 
 ### Command-line flags
@@ -73,7 +73,7 @@ go run ./cmd/client -node-id 10 -mem high -world-type members \
 | `-mem`             | `high`                      | Memory mode: `high` or `low`.                           |
 | `-world-type`      | `members`                   | World type: `free` or `members`.                        |
 | `-world-server`    | `tcp://127.0.0.1:43594`     | World server URL. Scheme `tcp://`, `ws://`, or `wss://`.|
-| `-ondemand-server` | `http://127.0.0.1:8888`     | On-demand (cache) server URL. Scheme `http://` or `https://`. |
+| `-ondemand-server` | `http://127.0.0.1:8080`     | On-demand (cache) server URL. Scheme `http://` or `https://`. |
 | `-store-id` †      | `32`                        | Disk cache directory id (`.file_store_<id>`, clamped to 32–34). |
 | `-version`         | `false`                     | Print build version information and exit.               |
 
