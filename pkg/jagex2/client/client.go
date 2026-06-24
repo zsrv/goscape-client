@@ -559,6 +559,13 @@ type Client struct {
 	AreaViewport           *pixmap.PixMap
 	AreaChatback           *pixmap.PixMap
 	Title                  *io.JagFile
+	// Cache is the shared native main_file_cache.dat/.idx store (Java
+	// fileStreams[], one per index sharing signlink.cache_dat). Index 0 holds
+	// the startup archives (GetJagFile); indices 1-4 back OnDemand's
+	// models/anims/midi/maps. nil when the store can't be opened, or always on
+	// the browser (where archives persist via the IndexedDB seam instead). Java:
+	// maininit creates fileStreams[0..4] before getJagChecksums/getJagFile.
+	Cache ondemand.Cache
 	// OnDemand is the rev-244 model/anim/map on-demand loader, created from the
 	// versionlist archive at boot. Java: client.onDemand (OnDemand).
 	OnDemand *ondemand.OnDemand
@@ -2620,17 +2627,21 @@ func (c *Client) TitleScreenLoop() {
 	}
 }
 
-// Java: getJagFile (Client.java:2283-2426 @176a85f) — adapted to the Go
-// transport/storage seam: fileStreams[0] read/write ↔ signlink.CacheLoad/
-// CacheSave, exceptions ↔ explicit error returns. Java's NullPointerException/
-// ArrayIndexOutOfBoundsException/generic catches ("Null error"/"Bounds error"/
-// "Unexpected error", each bailing out when !reporterror) have no Go
-// equivalent — every Go failure surfaces on the connection path. The Java
-// signature gained an explicit fileStreams index (arg2) in 245.2; the Go seam
-// keys the store by name instead, so no extra param.
-func (c *Client) GetJagFile(displayName string, crc int, name string, progress int) *io.JagFile {
+// Java: getJagFile (Client.java:4817-4920 @32f3062). The Java signature carries
+// an explicit FileStore file-id (arg1: title=1, config=2, interface=3, media=4,
+// versionlist=5, textures=6, wordenc=7, sounds=8) used by
+// fileStreams[0].readFromFile/writeToFile. The Go port keeps that fileId and
+// routes it through archiveCacheLoad/archiveCacheSave: on native those hit the
+// shared FileStore at index 0 (faithful to Java, so main_file_cache.idx0 is
+// populated), and on the browser they hit the IndexedDB seam under the TS-style
+// "0.<fileId>" key (matching Client-TS db.read/write(0, fileId)). Exceptions ↔
+// explicit error returns; Java's NullPointerException/ArrayIndexOutOfBoundsException/
+// generic catches ("Null error"/"Bounds error"/"Unexpected error", each bailing
+// out when !reporterror) have no Go equivalent — every Go failure surfaces on the
+// connection path.
+func (c *Client) GetJagFile(displayName string, fileId int, crc int, name string, progress int) *io.JagFile {
 	retry := 5 // Java: retry
-	data := signlink.CacheLoad(name)
+	data := c.archiveCacheLoad(fileId)
 
 	if data != nil {
 		checksum := int(crc32.ChecksumIEEE(data)) // Java: checksum
@@ -2731,10 +2742,10 @@ func (c *Client) GetJagFile(displayName string, crc int, name string, progress i
 			continue
 		}
 
-		// Java: Client.java:2355-2371 @176a85f — the store write happens BEFORE
+		// Java: Client.java:4872-4878 @32f3062 — the store write happens BEFORE
 		// the CRC re-validation (a corrupt copy may be stored; a later good
 		// download overwrites it).
-		signlink.CacheSave(name, data)
+		c.archiveCacheSave(fileId, data)
 		checksum := int(crc32.ChecksumIEEE(data)) // Java: checksum
 		if checksum != crc {
 			loops++
@@ -6212,11 +6223,20 @@ func (c *Client) Load() {
 			c.ErrorLoading = true
 		}
 	}()
+	// Open the shared main_file_cache store before any archive load, mirroring
+	// Java maininit, which creates fileStreams[0..4] (sharing signlink.cache_dat)
+	// before getJagChecksums/getJagFile (Client.java:5131-5137 @32f3062). Index 0
+	// then backs the startup archives (GetJagFile -> archiveCacheLoad/Save) and
+	// indices 1-4 back OnDemand below. nil (open failure, or always on the
+	// browser) degrades to fetch-only, exactly as Java tolerates a null
+	// signlink.cache_dat.
+	c.Cache = newOnDemandCache()
+
 	// 274 splits the checksum fetch out of load() into getJagChecksums()
 	// with a rewritten body (call site: Client.java:5137 @32f3062).
 	c.GetJagChecksums()
 
-	c.Title = c.GetJagFile("title screen", c.JagChecksum[1], "title", 25)
+	c.Title = c.GetJagFile("title screen", 1, c.JagChecksum[1], "title", 25)
 	// Java: Client.java:5139-5142 @32f3062 — 274 renames the font archive
 	// entries p11/p12/b12/q8 → *_full and the ctor gains the "wide" bool
 	// (true only for q8, selecting the 'I' space advance; see NewPixFont).
@@ -6229,12 +6249,12 @@ func (c *Client) Load() {
 	c.LoadTitleBackground()
 	c.LoadTitleImages()
 
-	jagConfig := c.GetJagFile("config", c.JagChecksum[2], "config", 30)
-	jagInterface := c.GetJagFile("interface", c.JagChecksum[3], "interface", 35)
-	jagMedia := c.GetJagFile("2d graphics", c.JagChecksum[4], "media", 40)
-	jagTextures := c.GetJagFile("textures", c.JagChecksum[6], "textures", 45)
-	jagWordEnc := c.GetJagFile("chat system", c.JagChecksum[7], "wordenc", 50)
-	jagSounds := c.GetJagFile("sound effects", c.JagChecksum[8], "sounds", 55)
+	jagConfig := c.GetJagFile("config", 2, c.JagChecksum[2], "config", 30)
+	jagInterface := c.GetJagFile("interface", 3, c.JagChecksum[3], "interface", 35)
+	jagMedia := c.GetJagFile("2d graphics", 4, c.JagChecksum[4], "media", 40)
+	jagTextures := c.GetJagFile("textures", 6, c.JagChecksum[6], "textures", 45)
+	jagWordEnc := c.GetJagFile("chat system", 7, c.JagChecksum[7], "wordenc", 50)
+	jagSounds := c.GetJagFile("sound effects", 8, c.JagChecksum[8], "sounds", 55)
 
 	c.LevelTileFlags = make([][][]int8, 4)
 	for level := range c.LevelTileFlags {
@@ -6259,7 +6279,7 @@ func (c *Client) Load() {
 
 	c.ImageMinimap = pix32.NewPix321(512, 512)
 
-	jagVersionList := c.GetJagFile("update list", c.JagChecksum[5], "versionlist", 60)
+	jagVersionList := c.GetJagFile("update list", 5, c.JagChecksum[5], "versionlist", 60)
 
 	c.MessageBox("Connecting to update server", 60)
 	// Java: rev-244 replaces the 225 bulk model/anim archives with an on-demand
@@ -6267,12 +6287,13 @@ func (c *Client) Load() {
 	// index tables are sized from it; the actual blobs are faulted in at runtime
 	// by the request loops.
 	//
-	// The cache is the native main_file_cache.dat/.idx store (nil on the browser,
-	// or when it can't be opened). A non-nil cache enables disk persistence and
-	// the background prefetch path ("Loading extra files"); a nil cache degrades
-	// to fetch-only, exactly as Java tolerates a null signlink.cache_dat. Java:
-	// maininit creates fileStreams[] then passes the client to onDemand.init.
-	c.OnDemand = ondemand.New(jagVersionList, onDemandApp{c}, newOnDemandCache())
+	// OnDemand shares the same main_file_cache store opened above (c.Cache); it
+	// uses indices 1-4 (archive+1) for models/anims/midi/maps while GetJagFile
+	// uses index 0. A non-nil cache enables disk persistence and the background
+	// prefetch path ("Loading extra files"); a nil cache degrades to fetch-only,
+	// exactly as Java tolerates a null signlink.cache_dat. Java: maininit creates
+	// fileStreams[] then passes the client to onDemand.init.
+	c.OnDemand = ondemand.New(jagVersionList, onDemandApp{c}, c.Cache)
 	animframe.Init(c.OnDemand.GetAnimCount())
 	model.Init(c.OnDemand.GetFileCount(0), c.OnDemand)
 
