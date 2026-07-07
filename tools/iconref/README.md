@@ -119,3 +119,25 @@ npx tsx dump.ts --cache <ref cache dir> --out ../../cmd/icondump/testdata
 
 `node_modules/` and `scratch/` are git-ignored; the committed artifacts are the
 harness sources plus the goldens under `cmd/icondump/testdata/`.
+
+## The Go side — `cmd/icondump`
+
+`cmd/icondump` is the headless Go tool these goldens gate. It drives the ported
+render packages (`objtype` + `pix3d` + `model`) over a real cache to dump every
+item icon to a `<id>.png`, applying the same RGBA rule above:
+
+```bash
+go run ./cmd/icondump -cache <ref cache dir> -out <out dir> [-id N]
+# writes <out>/<id>.png per renderable obj + <out>/index.tsv (id<TAB>name),
+# then prints: rendered=N skipped=M total=T
+```
+
+Its golden test (`cmd/icondump/icondump_test.go`, `TestIcondumpMatchesGoldens`)
+byte-compares each `icons274/<debugname>.rgba` against the tool's PNG output;
+point it at the reference cache with the `ICONDUMP_TEST_CACHE` env var (the test
+skips when unset). `run()` mirrors this harness's call order exactly: config jag
+(0,2) → `objtype.Init`; textures jag (0,6) → `pix3d.UnpackTextures` →
+`InitColourTableDeterministic(0.8)` → `InitPool(20)`; then it pre-unpacks every
+archive-1 model blob (gunzip after slicing the 2-byte version trailer) so
+`model.Load` never faults, and calls `objtype.GetSprite(id, 0, 1)` per obj (the
+Go/Java arg order — `id, outlineRgb, count` — for the TS `getSprite(id, 1, 0)`).
