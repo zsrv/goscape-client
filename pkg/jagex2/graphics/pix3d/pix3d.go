@@ -910,7 +910,12 @@ func GouraudRaster(arg0 []int, arg1, arg4, arg5, arg6, arg7 int) {
 			arg1 += arg4
 			arg3 = (arg5 - arg4) >> 2
 			if arg3 > 0 {
-				var8 = ((arg7 - arg6) * DivTable[arg3]) >> 15
+				// Java: Pix3D.java:889 (pin 01f16088) — 32-bit product wraps before
+				// the >>15 (overflows on steep colour deltas over short spans; audit
+				// pix3d-B-01, parity backport of rev-254's wrap). Masked for the tri
+				// goldens/icons: overflow needs |arg7-arg6| >= 2^31/32768 = 65_536,
+				// far above any golden colour delta.
+				var8 = int(int32((arg7-arg6)*DivTable[arg3])) >> 15
 			} else {
 				var8 = 0
 			}
@@ -2090,7 +2095,13 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 	} else {
 		if arg6-arg5 > 7 {
 			var16 = (arg6 - arg5) >> 3
-			var15 = ((arg8 - arg7) * DivTable[var16]) >> 6
+			// Java: Pix3D.java:2076 (pin 01f16088) — 32-bit product wraps before
+			// the >>6 (overflows on bright wide textured triangles; audit
+			// pix3d-3-03, backport of 0700e33 audit G3). Masked for the tri
+			// goldens/icons: overflow needs |arg8-arg7|*DivTable[var16] >= 2^31,
+			// i.e. |arg8-arg7| >= 65_536 at DivTable max 32768; the goldens'
+			// shade span (<= 200<<8 = 51_200) stays below it.
+			var15 = int(int32((arg8-arg7)*DivTable[var16])) >> 6
 		} else {
 			var16 = 0
 			var15 = 0
