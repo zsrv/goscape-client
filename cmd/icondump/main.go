@@ -98,6 +98,14 @@ func main() {
 // run executes the full pipeline: load config + textures + palette, pre-unpack
 // every model blob, then render each obj's 32x32 icon and write it. It mirrors
 // the reference harness (tools/iconref/dump.ts) call order exactly.
+//
+// SINGLE-SHOT per process: run must be called at most once. The render packages
+// keep client state in package-level vars (CLAUDE.md "Global State Pattern"),
+// and not all of it has a reset path — in particular objtype.SpriteCache and
+// objtype.ModelCache are package-level LRUs with no objtype.Reset, so a second
+// run in the same process would serve icons/models cached from the FIRST run's
+// cache and palette (plus stale pix3d texture and model metadata state). A
+// caller needing a second dump must exec a fresh process.
 func run(cfg iconConfig) (stats, error) {
 	if cfg.cacheDir == "" {
 		return stats{}, errors.New("cache directory is required")
@@ -148,6 +156,12 @@ func run(cfg iconConfig) (stats, error) {
 	// reallocates it, so it stays valid there). Without this rebind, Palette would
 	// point at the stale zero-filled table and every flat face would render black.
 	// It also nils Metadata, so it must precede model.Init.
+	//
+	// Same species of cross-invocation alias, with NO reset path: the
+	// objtype.SpriteCache / objtype.ModelCache package-level LRUs. They cache
+	// rendered Pix32 icons and lit models keyed by obj id across GetSprite
+	// calls; nothing clears them. That is fine here only because run() is
+	// single-shot per process (see its doc comment).
 	model.Reset()
 	model.Init(numModels, noopProvider{})
 	for mid := range numModels {
@@ -155,7 +169,7 @@ func run(cfg iconConfig) (stats, error) {
 		if blob == nil {
 			continue
 		}
-		unpackModel(mid, blob)
+		unpackModel(mid, blob, cfg.verbose)
 	}
 
 	if err := os.MkdirAll(cfg.outDir, 0o755); err != nil {
@@ -173,7 +187,7 @@ func run(cfg iconConfig) (stats, error) {
 	st := stats{total: hi - lo}
 	var index strings.Builder
 	for oid := lo; oid < hi; oid++ {
-		spr := renderSprite(oid)
+		spr := renderSprite(oid, cfg.verbose)
 		if spr == nil {
 			st.skipped++
 			if cfg.verbose {
@@ -186,7 +200,7 @@ func run(cfg iconConfig) (stats, error) {
 		}
 		index.WriteString(strconv.Itoa(oid))
 		index.WriteByte('\t')
-		index.WriteString(objName(oid))
+		index.WriteString(objName(oid, cfg.verbose))
 		index.WriteByte('\n')
 		st.rendered++
 	}
@@ -261,20 +275,26 @@ func loadModelBlob(cache *jio.FileStreamCache, id int) []byte {
 
 // unpackModel decodes one model blob's metadata, guarding against a panic on
 // malformed data (leaving the id's metadata unset → Model.Load returns nil →
-// that obj skips).
-func unpackModel(id int, blob []byte) {
-	defer func() { _ = recover() }()
+// that obj skips). Under -v the recovered value is logged so a real decoder bug
+// is distinguishable from a legitimately absent/corrupt blob.
+func unpackModel(id int, blob []byte, verbose bool) {
+	defer logRecover("model.Unpack", id, verbose)
 	model.Unpack(id, blob)
 }
 
 // renderSprite renders obj id's plain 32x32 icon (outlineRgb 0, count 1), or nil
 // if there is no renderable model. GetSprite can panic on hostile geometry
 // (DrawSimple has its own recover in the client, but List/decode could still
-// fault), so the call is guarded and a panic counts as a skip.
-func renderSprite(id int) (spr *pix32.Pix32) {
+// fault), so the call is guarded and a panic counts as a skip. Under -v the
+// recovered value is logged so a real render bug is distinguishable from a
+// legitimate skip.
+func renderSprite(id int, verbose bool) (spr *pix32.Pix32) {
 	defer func() {
-		if recover() != nil {
+		if r := recover(); r != nil {
 			spr = nil
+			if verbose {
+				fmt.Fprintf(os.Stderr, "recovered in GetSprite: id=%d value=%v\n", id, r)
+			}
 		}
 	}()
 	return objtype.GetSprite(id, 0, 1)
@@ -282,9 +302,18 @@ func renderSprite(id int) (spr *pix32.Pix32) {
 
 // objName returns obj id's display name (ObjType.Name), or "" if it cannot be
 // read. Guarded because List decodes on demand.
-func objName(id int) (name string) {
-	defer func() { _ = recover() }()
+func objName(id int, verbose bool) (name string) {
+	defer logRecover("objtype.List", id, verbose)
 	return objtype.List(id).Name
+}
+
+// logRecover is a deferred recover guard that, under -v, logs the panicking
+// call site, obj/model id, and recovered value to stderr. Non-verbose output is
+// unchanged (the panic is still swallowed either way).
+func logRecover(site string, id int, verbose bool) {
+	if r := recover(); r != nil && verbose {
+		fmt.Fprintf(os.Stderr, "recovered in %s: id=%d value=%v\n", site, id, r)
+	}
 }
 
 // writePNG encodes a Pix32 icon to a 32x32 NRGBA PNG applying the client's
