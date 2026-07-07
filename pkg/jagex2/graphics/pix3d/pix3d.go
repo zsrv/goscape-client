@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	LowMem             bool         = true // Java: Pix3D.lowMem (was LowDetail)
-	LowDetail          bool         = true // Java: Pix3D.lowDetail (was Jagged)
+	LowMem             bool         = true // Java @cc3781de: Pix3D.lowDetail — texture detail (unpackTextures shrink/crop, initPool 16384/65536; no lowMem field exists at this pin)
+	LowDetail          bool         = true // Java @cc3781de: Pix3D.jagged — raster detail (toggled inside ObjType.getIcon)
 	DivTable           []int        = make([]int, 512)
 	DivTable2          []int        = make([]int, 2048)
 	SinTable           []int        = make([]int, 2048)
