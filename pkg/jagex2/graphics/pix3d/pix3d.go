@@ -283,8 +283,32 @@ func GetTexels(arg0 int) []int {
 // InitColourTable builds the HSL→RGB colour table and the gamma-corrected
 // texture palettes. Java: Pix3D.initColourTable (Pix3D.java:271 @32f3062;
 // same name at 254 — the old Go name SetBrightness was pre-254 legacy).
+//
+// The reference clients jitter the brightness by a random term
+// (rand.Float64()*0.03-0.015, mirroring the Java/TS Math.random() jitter) so
+// each run varies slightly; this faithful entry point preserves that. The
+// shared, jitter-free body lives in initColourTable.
 func InitColourTable(arg1 float64) {
-	var28 := arg1 + (rand.Float64()*0.03 - 0.015)
+	initColourTable(arg1 + (rand.Float64()*0.03 - 0.015))
+}
+
+// InitColourTableDeterministic builds the same colour table and texture
+// palettes as InitColourTable but with NO brightness jitter: the given
+// brightness is used verbatim, making the result bit-reproducible. The golden
+// palette.bin pins brightness = 0.8 exactly (the reference forces its
+// Math.random() jitter to zero to obtain the same value).
+//
+// EXTENSION: not present in the Java/TS clients — added so the item-icon
+// rasterizer's palette and triangle goldens can be pinned deterministically.
+func InitColourTableDeterministic(brightness float64) {
+	initColourTable(brightness)
+}
+
+// initColourTable is the shared body of InitColourTable / InitColourTableDeterministic.
+// brightness is the already-resolved gamma exponent (jittered by the faithful
+// caller, exact for the deterministic one).
+func initColourTable(brightness float64) {
+	var28 := brightness
 	var3 := 0
 	for i := range 512 {
 		var5 := float64(i/8)/64.0 + 0.0078125
