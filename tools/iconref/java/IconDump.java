@@ -196,7 +196,8 @@ public final class IconDump {
 
         String[] names = {
                 "gouraud_small", "gouraud_large", "gouraud_degenerate", "flat",
-                "gouraud_alpha128", "textured_tex1", "textured_shaded", "textured_trans7"
+                "gouraud_alpha128", "textured_tex1", "textured_shaded", "textured_trans7",
+                "textured_overflow", "textured_distinct"
         };
         for (String name : names) {
             int prefill = name.equals("gouraud_alpha128") ? 0x303030 : 0;
@@ -253,6 +254,32 @@ public final class IconDump {
                     routine = "texture";
                     Pix3D.textureTriangle(6, 8, 28, 6, 26, 10, 32, 128, 200, -50, 50, -50, -50, -50, 50, 240, 240, 240, 7);
                     argsJson = textureArgs(6, 26, 10, 6, 8, 28, 32, 128, 200, -50, -50, 240, 50, -50, -50, 50, 240, 240, 7);
+                }
+                // INT32-ACCUMULATOR OVERFLOW (rev-274 "audit P6" discriminator, F2).
+                // View triangle A=(-1000,-1000,4800) B=(1000,-1000,4800)
+                // C=(-1000,1000,4800): uStride=(horizontalY*originZ)<<8 =
+                // 2_457_600_000 (> int32 max) is folded to a negative int32 by
+                // Java in textureTriangle (2-01 stride setup), and the u
+                // accumulator reaches a pre-wrap |3_429_105_664| = 1.60x int32
+                // max in textureRaster (P6). Java int wraps mod 2^32
+                // intrinsically, so this golden is the WRAPPED truth; the Go port
+                // must fold identically at the 2-01/C-01/P6 sites. Geometry copied
+                // verbatim from rev-274 dump.ts.
+                case "textured_overflow" -> {
+                    routine = "texture";
+                    Pix3D.textureTriangle(6, 8, 28, 6, 26, 10, 128, 128, 128, -1000, 1000, -1000, -1000, -1000, 1000, 4800, 4800, 4800, 2);
+                    argsJson = textureArgs(6, 26, 10, 6, 8, 28, 128, 128, 128, -1000, -1000, 4800, 1000, -1000, -1000, 1000, 4800, 4800, 2);
+                }
+                // FULLY ASYMMETRIC view triangle — argument-slot-swap discriminator
+                // (rev-274 F2). All six view-space coord pairs pairwise distinct
+                // (originX!=originY, tzB!=tzC, txB!=txC, tyB!=tyC) so any single
+                // arg-slot swap perturbs the pixels; u/v/w peak ~1.7e8, inside
+                // int32 (this is the asymmetry gate, not the overflow gate).
+                // Geometry copied verbatim from rev-274 dump.ts.
+                case "textured_distinct" -> {
+                    routine = "texture";
+                    Pix3D.textureTriangle(6, 8, 28, 6, 26, 10, 32, 128, 200, -60, 55, -35, -40, -45, 50, 240, 210, 260, 2);
+                    argsJson = textureArgs(6, 26, 10, 6, 8, 28, 32, 128, 200, -60, -40, 240, 55, -35, -45, 50, 210, 260, 2);
                 }
                 default -> throw new IllegalStateException(name);
             }
