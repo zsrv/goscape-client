@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image/color"
 	"image/png"
@@ -121,6 +122,39 @@ func runPipelineOnce(t *testing.T, cacheDir string) (string, stats) {
 		t.Fatalf("run: %v", pipelineErr)
 	}
 	return pipelineOut, pipelineSt
+}
+
+// TestIDRange pins the -id range resolution and, crucially, its exit-code
+// contract: a non-negative id past the loaded obj count is a bad invocation
+// and must surface as *usageError so main() exits 2 (usage) rather than 1
+// (runtime). Negative ids stay the documented "dump every obj" sentinel. The
+// helper is pure (no cache, no global render state), so this runs unconditionally.
+func TestIDRange(t *testing.T) {
+	const count = 50
+
+	// Negative id = "dump every obj" sentinel -> full range, no error.
+	if lo, hi, err := idRange(-1, count); err != nil || lo != 0 || hi != count {
+		t.Fatalf("idRange(-1,%d) = (%d,%d,%v), want (0,%d,nil)", count, lo, hi, err, count)
+	}
+	// Valid single id -> [id,id+1), no error.
+	if lo, hi, err := idRange(3, count); err != nil || lo != 3 || hi != 4 {
+		t.Fatalf("idRange(3,%d) = (%d,%d,%v), want (3,4,nil)", count, lo, hi, err)
+	}
+	// Last valid id.
+	if lo, hi, err := idRange(count-1, count); err != nil || lo != count-1 || hi != count {
+		t.Fatalf("idRange(%d,%d) = (%d,%d,%v), want (%d,%d,nil)", count-1, count, lo, hi, err, count-1, count)
+	}
+	// Out of range (== count and beyond) -> *usageError (main -> exit 2).
+	for _, id := range []int{count, count + 100} {
+		_, _, err := idRange(id, count)
+		if err == nil {
+			t.Fatalf("idRange(%d,%d): want error, got nil", id, count)
+		}
+		var ue *usageError
+		if !errors.As(err, &ue) {
+			t.Fatalf("idRange(%d,%d): want *usageError, got %T (%v)", id, count, err, err)
+		}
+	}
 }
 
 func readSamples(t *testing.T) []sampleEntry {

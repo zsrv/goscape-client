@@ -431,6 +431,102 @@ function dumpTriangles(): void {
                 7,
             ),
         },
+        {
+            // INT32-ACCUMULATOR OVERFLOW (rev-274 "audit P6" discriminator).
+            //
+            // The perspective walk in textureRaster keeps three 32-bit integer
+            // accumulators u/v/w. In Java they are int, so every `u += uStride`
+            // wraps mod 2^32 intrinsically; the vendored Client-TS reproduces
+            // that with an explicit `u |= 0` after each add, and rev-274's Go
+            // port with `int32(...)` casts at six commented "audit P6" sites
+            // (pkg/jagex2/graphics/pix3d/pix3d.go — the non-lowMem >>14 family at
+            // ~2336-2338, ~2389-2391, ~2468-2470). Earlier branches lack those
+            // casts (task F2 backports them). Every EXISTING textured golden
+            // above keeps u/v/w comfortably inside int32, so none can tell a
+            // branch WITH the P6 wrap from one WITHOUT it. This case is built to
+            // drive one accumulator past int32 so the golden discriminates.
+            //
+            // DERIVATION (view triangle A=(-1000,-1000,4800), B=(1000,-1000,4800),
+            // C=(-1000,1000,4800); textureTriangle at Pix3D.ts:1622):
+            //   horizontalY = tyC - originY   = 1000 - (-1000) = 2000
+            //   uStride = (horizontalY*originZ - horizontalZ*originY) << 8
+            //           = (2000*4800 - 0)          << 8
+            //           = 9_600_000                << 8 = 2_457_600_000
+            // uStride ALONE (2.46e9) already exceeds int32 max (2_147_483_647).
+            // Inside textureRaster the entry `arg9 = int32(var32 + arg12)` and the
+            // per-stride `arg9 = int32(arg9 + arg12)` (the P6 sum sites) then push
+            // the U accumulator to a pre-wrap magnitude of 3_429_105_664 — 1.60x
+            // int32 max — captured by instrumenting the real vendored textureRaster
+            // (see report; a faithful verbatim-body simulator agrees to the bit).
+            // V peaks at 2_088_828_928 (just under 2^31) and W stays 1_111_490_560,
+            // so U is the accumulator that overflows. TS `|= 0` and Go `int32()`
+            // fold it mod 2^32 identically -> rev-274 renders byte-for-byte and
+            // stays GREEN; a branch missing the P6 casts keeps the 64-bit value,
+            // divides by the same curW, and samples 66 of 219 texels differently.
+            // Texture 2 (opaque, 62 unique colours) so those 66 index deltas land
+            // on visibly different pixels. Args AXIS-major after origin, as above.
+            name: 'textured_overflow', routine: 'texture', prefill: 0, lowDetail: false, hclip: false, trans: 0,
+            args: {
+                xA: 6, xB: 26, xC: 10, yA: 6, yB: 8, yC: 28,
+                shadeA: 128, shadeB: 128, shadeC: 128,
+                originX: -1000, originY: -1000, originZ: 4800,
+                txB: 1000, txC: -1000,
+                tyB: -1000, tyC: 1000,
+                tzB: 4800, tzC: 4800,
+                texture: 2,
+                screenOriginX: 16, screenOriginY: 16,
+            },
+            run: () => Pix3D.textureTriangle(
+                6, 26, 10, 6, 8, 28,
+                128, 128, 128,
+                -1000, -1000, 4800, // originX, originY, originZ (vertex A)
+                1000, -1000,        // txB, txC
+                -1000, 1000,        // tyB, tyC
+                4800, 4800,         // tzB, tzC
+                2,
+            ),
+        },
+        {
+            // FULLY ASYMMETRIC view triangle — argument-slot-swap discriminator.
+            //
+            // Every textured case above shares originX==originY (both -50) and
+            // tzB==tzC (both 240), so a hypothetical swap of those argument slots
+            // in the Go port would leave the golden unchanged and slip through.
+            // Here all six view-space coordinate pairs are pairwise distinct so
+            // any single slot swap perturbs the pixels:
+            //   A = (originX,originY,originZ) = (-60, -40, 240)   originX != originY
+            //   B = (txB,tyB,tzB)            = ( 55, -45, 210)
+            //   C = (txC,tyC,tzC)            = (-35,  50, 260)   tzB(210) != tzC(260)
+            //   txB(55) != txC(-35);  tyB(-45) != tyC(50)
+            // Verified with the verbatim-body simulator: swapping originX<->originY,
+            // tzB<->tzC, txB<->txC, or tyB<->tyC each yields a DIFFERENT drawn-texel
+            // sequence (distinct FNV hashes) from the base — so a slot mix-up
+            // cannot render identical output. u/v/w peak at ~1.7e8, well inside
+            // int32 (this case is the asymmetry gate, not the overflow gate).
+            // Varying shades (32/128/200) exercise shade interpolation; texture 2
+            // (opaque) so the whole 219-pixel footprint is written. Args AXIS-major
+            // after origin, as above.
+            name: 'textured_distinct', routine: 'texture', prefill: 0, lowDetail: false, hclip: false, trans: 0,
+            args: {
+                xA: 6, xB: 26, xC: 10, yA: 6, yB: 8, yC: 28,
+                shadeA: 32, shadeB: 128, shadeC: 200,
+                originX: -60, originY: -40, originZ: 240,
+                txB: 55, txC: -35,
+                tyB: -45, tyC: 50,
+                tzB: 210, tzC: 260,
+                texture: 2,
+                screenOriginX: 16, screenOriginY: 16,
+            },
+            run: () => Pix3D.textureTriangle(
+                6, 26, 10, 6, 8, 28,
+                32, 128, 200,
+                -60, -40, 240, // originX, originY, originZ (vertex A)
+                55, -35,       // txB, txC
+                -45, 50,       // tyB, tyC
+                210, 260,      // tzB, tzC
+                2,
+            ),
+        },
     ];
 
     for (const c of cases) {

@@ -90,9 +90,38 @@ func main() {
 	st, err := run(iconConfig{cacheDir: *cacheDir, outDir: *outDir, id: *id, verbose: *verbose})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "icondump: %v\n", err)
+		// A bad -id is a usage error (exit 2), not a runtime failure (exit 1) —
+		// same class as the missing-flags check above.
+		var ue *usageError
+		if errors.As(err, &ue) {
+			os.Exit(2)
+		}
 		os.Exit(1)
 	}
 	fmt.Printf("rendered=%d skipped=%d total=%d\n", st.rendered, st.skipped, st.total)
+}
+
+// usageError marks an error caused by a bad invocation (e.g. -id out of range)
+// rather than a runtime failure, so main maps it to exit code 2 (usage) instead
+// of 1 (runtime). run() returns it wrapped so errors.As recovers it at main.
+type usageError struct{ err error }
+
+func (e *usageError) Error() string { return e.err.Error() }
+func (e *usageError) Unwrap() error { return e.err }
+
+// idRange resolves the half-open [lo,hi) obj-id range to dump for the -id flag
+// against the loaded obj count. A negative id is the documented "dump every obj"
+// sentinel (the flag default is -1). A non-negative id selects a single obj and
+// must be a valid index [0,count); anything past the end is a bad invocation, so
+// it returns a *usageError (main -> exit 2) rather than a plain runtime error.
+func idRange(id, count int) (lo, hi int, err error) {
+	if id < 0 {
+		return 0, count, nil
+	}
+	if id >= count {
+		return 0, 0, &usageError{fmt.Errorf("id %d out of range [0,%d)", id, count)}
+	}
+	return id, id + 1, nil
 }
 
 // run executes the full pipeline: load config + textures + palette, pre-unpack
@@ -176,12 +205,9 @@ func run(cfg iconConfig) (stats, error) {
 		return stats{}, fmt.Errorf("create out dir: %w", err)
 	}
 
-	lo, hi := 0, objtype.Count
-	if cfg.id >= 0 {
-		if cfg.id >= objtype.Count {
-			return stats{}, fmt.Errorf("id %d out of range [0,%d)", cfg.id, objtype.Count)
-		}
-		lo, hi = cfg.id, cfg.id+1
+	lo, hi, err := idRange(cfg.id, objtype.Count)
+	if err != nil {
+		return stats{}, err
 	}
 
 	st := stats{total: hi - lo}
