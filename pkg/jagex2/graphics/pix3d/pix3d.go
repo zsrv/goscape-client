@@ -2113,9 +2113,13 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 		var17 = 0
 		var18 = 0
 		var20 = arg5 - CenterW3D
-		var32 = arg9 + (arg12>>3)*var20
-		var33 = arg10 + (arg13>>3)*var20
-		var34 = arg11 + (arg14>>3)*var20
+		// Java: Pix3D.java:2240-2242 (pin 176a85f7) — perspective numerators are
+		// 32-bit int products that wrap mod 2^32 (audit pix3d-C-01). Masked by the
+		// arg2 clamp on the F2 overflow golden, but wrapped for Java parity with
+		// rev-254/274; the following P6 sums depend on the wrapped value.
+		var32 = int(int32(arg9 + (arg12>>3)*var20))
+		var33 = int(int32(arg10 + (arg13>>3)*var20))
+		var34 = int(int32(arg11 + (arg14>>3)*var20))
 		var19 = var34 >> 12
 		if var19 != 0 {
 			arg2 = var32 / var19
@@ -2126,9 +2130,11 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 				arg2 = 4032
 			}
 		}
-		arg9 = var32 + arg12
-		arg10 = var33 + arg13
-		arg11 = var34 + arg14
+		// Java: Pix3D.java:2253-2255 (pin 176a85f7) — int sums wrap mod 2^32
+		// before the >>12 divisor (backport of rev-274 audit P6 family).
+		arg9 = int(int32(var32 + arg12))
+		arg10 = int(int32(var33 + arg13))
+		arg11 = int(int32(var34 + arg14))
 		var19 = arg11 >> 12
 		if var19 != 0 {
 			var17 = arg9 / var19
@@ -2188,9 +2194,11 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 				arg0[var25] = arg1[(arg3&0xFC0)+(arg2>>6)] >> var23
 				arg2 = var17
 				arg3 = var18
-				arg9 += arg12
-				arg10 += arg13
-				arg11 += arg14
+				// Java: Pix3D.java:2296-2298 (pin 176a85f7) — int += wraps
+				// mod 2^32 before the >>12 divisor (backport of rev-274 audit P6).
+				arg9 = int(int32(arg9 + arg12))
+				arg10 = int(int32(arg10 + arg13))
+				arg11 = int(int32(arg11 + arg14))
 				var19 = arg11 >> 12
 				if var19 != 0 {
 					var17 = arg9 / var19
@@ -2264,9 +2272,11 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 				arg4 = var25 + 1
 				arg2 = var17
 				arg3 = var18
-				arg9 += arg12
-				arg10 += arg13
-				arg11 += arg14
+				// Java: Pix3D.java:2380-2382 (pin 176a85f7) — int += wraps
+				// mod 2^32 before the >>12 divisor (backport of rev-274 audit P6).
+				arg9 = int(int32(arg9 + arg12))
+				arg10 = int(int32(arg10 + arg13))
+				arg11 = int(int32(arg11 + arg14))
 				var19 = arg11 >> 12
 				if var19 != 0 {
 					var17 = arg9 / var19
@@ -2298,9 +2308,13 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 	var17 = 0
 	var18 = 0
 	var20 = arg5 - CenterW3D
-	var32 = arg9 + (arg12>>3)*var20
-	var33 = arg10 + (arg13>>3)*var20
-	var34 = arg11 + (arg14>>3)*var20
+	// Java: Pix3D.java:2066-2068 (pin 176a85f7) — perspective numerators are
+	// 32-bit int products that wrap mod 2^32 (audit pix3d-C-01). Masked by the
+	// arg2 clamp on the F2 overflow golden, but wrapped for Java parity with
+	// rev-254/274; the following P6 sums depend on the wrapped value.
+	var32 = int(int32(arg9 + (arg12>>3)*var20))
+	var33 = int(int32(arg10 + (arg13>>3)*var20))
+	var34 = int(int32(arg11 + (arg14>>3)*var20))
 	var19 = var34 >> 14
 	if var19 != 0 {
 		arg2 = var32 / var19
@@ -2311,9 +2325,11 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 			arg2 = 16256
 		}
 	}
-	arg9 = var32 + arg12
-	arg10 = var33 + arg13
-	arg11 = var34 + arg14
+	// Java: Pix3D.java:2079-2081 (pin 176a85f7) — int sums wrap mod 2^32
+	// before the >>14 divisor (backport of rev-274 audit P6 family).
+	arg9 = int(int32(var32 + arg12))
+	arg10 = int(int32(var33 + arg13))
+	arg11 = int(int32(var34 + arg14))
 	var19 = arg11 >> 14
 	if var19 != 0 {
 		var17 = arg9 / var19
@@ -2362,9 +2378,11 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 			arg0[var31] = arg1[(arg3&0x3F80)+(arg2>>7)] >> var23
 			arg2 = var17
 			arg3 = var18
-			arg9 += arg12
-			arg10 += arg13
-			arg11 += arg14
+			// Java: Pix3D.java:2122-2124 (pin 176a85f7) — int += wraps
+			// mod 2^32 before the >>14 divisor (backport of rev-274 audit P6).
+			arg9 = int(int32(arg9 + arg12))
+			arg10 = int(int32(arg10 + arg13))
+			arg11 = int(int32(arg11 + arg14))
 			var19 = arg11 >> 14
 			if var19 != 0 {
 				var17 = arg9 / var19
@@ -2439,9 +2457,11 @@ func TextureRaster(arg0 []int, arg1 []int, arg2, arg3, arg4, arg5, arg6, arg7, a
 		arg4 = var25 + 1
 		arg2 = var17
 		arg3 = var18
-		arg9 += arg12
-		arg10 += arg13
-		arg11 += arg14
+		// Java: Pix3D.java:2205-2207 (pin 176a85f7) — int += wraps
+		// mod 2^32 before the >>14 divisor (backport of rev-274 audit P6).
+		arg9 = int(int32(arg9 + arg12))
+		arg10 = int(int32(arg10 + arg13))
+		arg11 = int(int32(arg11 + arg14))
 		var19 = arg11 >> 14
 		if var19 != 0 {
 			var17 = arg9 / var19
