@@ -4,15 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
-	"sync"
 
-	"github.com/zsrv/goscape-client/pkg/jagex2/client"
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
-	"github.com/zsrv/goscape-client/pkg/jagex2/client/sign/signlink"
-	"github.com/zsrv/goscape-client/pkg/jagex2/platform"
-	"github.com/zsrv/goscape-client/pkg/jagex2/sound/audio"
-	"github.com/zsrv/goscape-client/pkg/profiling"
+	"github.com/zsrv/goscape-client/pkg/jagex2/launch"
 	"github.com/zsrv/goscape-client/pkg/util/build"
 )
 
@@ -45,19 +38,16 @@ func main() {
 		return
 	}
 
-	fmt.Println("RS2 user client - release #" + strconv.Itoa(244)) // Java: Client.java:1281
-
-	// Java: SignLink.storeid — selects .file_store_<id>; must be set before
-	// the signlink store first resolves its directory (lazily, on first use).
-	signlink.StoreID = *storeID
-
-	client.NodeID = *nodeID
+	opts := launch.Options{
+		NodeID:  *nodeID,
+		StoreID: *storeID,
+	}
 
 	switch *mem {
 	case "high":
-		client.SetHighMem()
+		opts.LowMemory = false
 	case "low":
-		client.SetLowMem()
+		opts.LowMemory = true
 	default:
 		fmt.Printf("invalid -mem %q (want high|low)\n", *mem)
 		os.Exit(1)
@@ -65,89 +55,33 @@ func main() {
 
 	switch *worldType {
 	case "free":
-		client.MembersWorld = false
+		opts.Members = false
 	case "members":
-		client.MembersWorld = true
+		opts.Members = true
 	default:
 		fmt.Printf("invalid -world-type %q (want free|members)\n", *worldType)
 		os.Exit(1)
 	}
 
-	// -world-server selects the game-server transport, host, port, and (for
-	// ws/wss) path. The parsed bare hostname is stored in clientextras.Host so
-	// GetHost/GetCodeBase stay valid; WorldPort/WSPath/Transport drive OpenSocket.
 	kind, host, port, path, err := parseWorldServer(*worldServer)
 	if err != nil {
 		fmt.Printf("invalid -world-server: %v\n", err)
 		os.Exit(1)
 	}
-	clientextras.Host = host
-	clientextras.Transport = kind
-	clientextras.WorldPort = port
-	clientextras.WSPath = path
+	opts.Transport = kind
+	opts.Host = host
+	opts.WorldPort = port
+	opts.WSPath = path
 
-	// -ondemand-server selects the cache/asset server base URL that
-	// signlink.OpenURL and client.GetCodeBase fetch against (native build).
 	base, err := parseOndemandServer(*ondemandServer)
 	if err != nil {
 		fmt.Printf("invalid -ondemand-server: %v\n", err)
 		os.Exit(1)
 	}
-	clientextras.OndemandBaseURL = base
+	opts.OndemandBaseURL = base
 
-	// Browser builds derive the WebSocket target from window.location here;
-	// no-op on native, where the transport comes from the flags above.
-	signlink.ConfigureTransport()
-
-	// Register SIGUSR1 profile-capture handler. Non-blocking; returns
-	// after signal listener goroutine is spawned. See
-	// docs/superpowers/specs/2026-05-22-perf-profiling-design.md.
-	profiling.Start()
-
-	// These three subsystems run for the lifetime of the process. There is no
-	// explicit shutdown handshake: platform.Main blocks (native: the game loop
-	// on the main OS thread; browser: select{}). When RunShell exits the loop
-	// closure calls os.Exit(0), which tears down the background signlink and
-	// audio goroutines — so no wg.Wait() or cancellation dance is needed here.
-	var wg sync.WaitGroup
-	wg.Go(func() {
-		signlink.StartPriv()
-	})
-	wg.Go(func() {
-		// audio.Start brings up the oto context and spawns the shared
-		// audioLoop ticker (the faithful SignLink consumer) for the
-		// lifetime of the process; SFX play synchronously via
-		// audio.PlayWave (no watcher). Started after signlink so the
-		// soundfont fetch (via signlink.OpenURL) doesn't race the
-		// protocol coming up.
-		//
-		// In low-memory mode we bring up no audio at all, matching the
-		// Java client: it never starts the MIDI thread, never unpacks
-		// sounds.dat, and gates every playback path behind !lowMemory
-		// (deob/client.java:5949/6163/7374/...). Initializing oto there
-		// would open an audio device for a queue nothing ever fills.
-		// client.LowMemory is set synchronously by SetLowMem above,
-		// well before this goroutine reads it.
-		if client.LowMemory {
-			audio.DisableForLowMemory()
-			return
-		}
-		audio.Start()
-	})
-
-	// platform.Main owns the threading model: native locks the OS thread,
-	// builds the GLFW backend, and runs the loop on the main goroutine; the
-	// browser build builds the WebGL backend and runs the loop in a goroutine,
-	// blocking on select{}. The client is created INSIDE the loop closure so it
-	// exists only once a backend is Active (NewClient / RunShell allocate
-	// PixMaps, which create backend textures via platform.Active). RunShell
-	// returns when the loop exits (window close / State == -1), then os.Exit(0)
-	// tears down the background signlink + audio goroutines.
-	// Java: 244 standalone is the classic 765x503 frame (GameShell
-	// initApplication(503, 765)); the 225-era port used 789x532.
-	platform.Main(765, 503, "Jagex", func() {
-		c := client.NewClient()
-		c.RunShell()
-		os.Exit(0)
-	})
+	// launch.Run prints the release banner, applies opts to the process-global
+	// client state, starts signlink/audio, and blocks in the game loop on this
+	// (main) goroutine. It leaves via clientextras.ExitFunc.
+	launch.Run(opts)
 }
