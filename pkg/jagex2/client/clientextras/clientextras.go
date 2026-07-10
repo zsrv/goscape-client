@@ -1,6 +1,8 @@
 // Package clientextras contains variables from client that resulted in circular dependencies.
 package clientextras
 
+import "os"
+
 var Field1307 [][]int = [][]int{{6798, 107, 10283, 16, 4797, 7744, 5799, 4634, 33697, 22433, 2983, 54193}, {8741, 12, 64030, 43162, 7735, 8404, 1701, 38430, 24094, 10153, 56621, 4783, 1341, 16578, 35003, 25239}, {25238, 8742, 12, 64030, 43162, 7735, 8404, 1701, 38430, 24094, 10153, 56621, 4783, 1341, 16578, 35003}, {4626, 11146, 6439, 12, 4758, 10270}, {4550, 4537, 5681, 5673, 5790, 6806, 8076, 4574}}
 
 var Field1438 []int = []int{9104, 10275, 7595, 3610, 7975, 8526, 918, 38802, 24466, 10145, 58654, 5027, 1457, 16565, 34991, 25486}
@@ -47,3 +49,11 @@ var WSPath string
 // is not mirrored — the Go default is configured directly.) The js/wasm build
 // ignores this and derives the origin from window.location instead.
 var OndemandBaseURL = "http://127.0.0.1:8080"
+
+// ExitFunc terminates the process and defaults to os.Exit. GameShell.Shutdown
+// and the standalone launch loop exit through it. Embedders that co-host other
+// subsystems in the process (e.g. goscape-singleplayer's in-process server)
+// replace it at startup — before the client runs — to perform a graceful
+// shutdown of those subsystems first. Lives here rather than in pkg/jagex2/launch
+// because package client (GameShell) must reach it without an import cycle.
+var ExitFunc func(code int) = os.Exit
