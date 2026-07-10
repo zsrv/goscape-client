@@ -1,9 +1,9 @@
 package client
 
 import (
-	"os"
 	"time"
 
+	"github.com/zsrv/goscape-client/pkg/jagex2/client/clientextras"
 	"github.com/zsrv/goscape-client/pkg/jagex2/client/inputtracking"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/bootfont"
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
@@ -17,11 +17,13 @@ func (c *Client) Shutdown() {
 	c.State = -2
 	c.Unload()
 	time.Sleep(1 * time.Second)
-	// os.Exit halts the Go program cleanly on wasm too (handled by the
-	// wasm_exec.js exit callback). Reviewed for the browser and intentionally
-	// unchanged: DestroyEvent only fires on tab/canvas teardown, when the page
-	// is going away regardless, so the best-effort Unload above is sufficient.
-	os.Exit(0)
+	// os.Exit (the ExitFunc default) halts the Go program cleanly on wasm too
+	// (handled by the wasm_exec.js exit callback). Reviewed for the browser and
+	// intentionally unchanged: DestroyEvent only fires on tab/canvas teardown,
+	// when the page is going away regardless, so the best-effort Unload above
+	// is sufficient. The indirection through clientextras.ExitFunc lets an
+	// embedder (goscape-singleplayer) stop its in-process server before exit.
+	clientextras.ExitFunc(0)
 }
 
 func (c *Client) SetFrameRate(arg1 int) {
