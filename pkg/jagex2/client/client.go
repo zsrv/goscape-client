@@ -2482,7 +2482,7 @@ func (c *Client) UpdateTitle() {
 		if c.MouseClickButton == 1 && c.MouseClickY >= var2-15 && c.MouseClickY < var2 {
 			c.TitleLoginField = 1
 		}
-		var2 += 15 //nolint:ineffassign // Java: faithful dead final layout increment (var2 not read after)
+		var2 += 15 //nolint:ineffassign,staticcheck // Java: faithful dead final layout increment (var2 not read after)
 		var3 = c.ScreenWidth/2 - 80
 		var4 := c.ScreenHeight/2 + 50
 		var9 := var4 + 20
@@ -3575,7 +3575,7 @@ func (c *Client) DrawTitleScreen() {
 			tmp2 = "@yel@|"
 		}
 		c.FontBold12.DrawStringTaggable(var2/2-88, var4, "Password: "+jstring.ToAsterisks(c.Password)+tmp2, true, 0xFFFFFF)
-		var4 += 15 //nolint:ineffassign // Java: faithful dead final layout increment (var4 not read after)
+		var4 += 15 //nolint:ineffassign,staticcheck // Java: faithful dead final layout increment (var4 not read after)
 		var5 = var2/2 - 80
 		var6 = var3/2 + 50
 		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
@@ -3594,7 +3594,7 @@ func (c *Client) DrawTitleScreen() {
 		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "and choose the red 'create account'")
 		var4 += 15
 		c.FontBold12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "button at the top right of that page.")
-		var4 += 15 //nolint:ineffassign // Java: faithful dead final layout increment (var4 not read after)
+		var4 += 15 //nolint:ineffassign,staticcheck // Java: faithful dead final layout increment (var4 not read after)
 		var5 = var2 / 2
 		var6 = var3/2 + 50
 		c.ImageTitleButton.PlotSprite(var6-20, var5-73)
