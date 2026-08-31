@@ -30,7 +30,7 @@ Pick a revision branch to build and run; `rev-274` is the most recent.
 
 ## Requirements
 
-- **Go 1.26 or newer.**
+- **Go 1.27 or newer.**
 - **A C toolchain and OpenGL/GLFW system libraries** for the native build (the
   renderer uses cgo via `go-gl/glfw` and `go-gl/gl`). On Linux that means a C
   compiler plus the X11/Wayland and OpenGL development packages; GLFW also
