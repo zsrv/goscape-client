@@ -93,7 +93,7 @@ func TestRandReseedMatchesFreshSource(t *testing.T) {
 	fresh := rand.New(rand.NewSource(seed))
 	reused := rand.New(rand.NewSource(1))
 	reused.Seed(seed)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		if a, b := fresh.Int(), reused.Int(); a != b {
 			t.Fatalf("draw %d: fresh=%d reused=%d (reseed diverges from fresh source)", i, a, b)
 		}

@@ -13,8 +13,5 @@ const renderTailFrames = SampleRate
 // given musical length: length rounded to frames, plus the release tail.
 func renderFrameCount(length time.Duration) int {
 	frames := int(length.Seconds()*float64(SampleRate)) + renderTailFrames
-	if frames < renderTailFrames {
-		frames = renderTailFrames
-	}
-	return frames
+	return max(frames, renderTailFrames)
 }
