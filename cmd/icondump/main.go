@@ -92,8 +92,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "icondump: %v\n", err)
 		// A bad -id is a usage error (exit 2), not a runtime failure (exit 1) —
 		// same class as the missing-flags check above.
-		var ue *usageError
-		if errors.As(err, &ue) {
+		if _, ok := errors.AsType[*usageError](err); ok {
 			os.Exit(2)
 		}
 		os.Exit(1)

@@ -180,10 +180,7 @@ func TestSignlinkConcurrentStress(t *testing.T) {
 
 	if len(mismatches) > 0 {
 		// Cap output to keep test logs readable.
-		limit := 10
-		if len(mismatches) < limit {
-			limit = len(mismatches)
-		}
+		limit := min(10, len(mismatches))
 		t.Fatalf("%d mismatches across concurrent signlink calls; first %d:\n%s",
 			len(mismatches), limit, strings.Join(mismatches[:limit], "\n"))
 	}

@@ -150,8 +150,7 @@ func TestIDRange(t *testing.T) {
 		if err == nil {
 			t.Fatalf("idRange(%d,%d): want error, got nil", id, count)
 		}
-		var ue *usageError
-		if !errors.As(err, &ue) {
+		if _, ok := errors.AsType[*usageError](err); !ok {
 			t.Fatalf("idRange(%d,%d): want *usageError, got %T (%v)", id, count, err, err)
 		}
 	}
