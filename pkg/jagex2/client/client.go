@@ -2554,7 +2554,7 @@ func (c *Client) TitleScreenLoop() {
 		if c.MouseClickButton == 1 && c.MouseClickY >= var2-15 && c.MouseClickY < var2 {
 			c.TitleLoginField = 1
 		}
-		var2 += 15 //nolint:ineffassign // Java: faithful dead final layout increment (var2 not read after)
+		var2 += 15 //nolint:ineffassign,staticcheck // Java: faithful dead final layout increment (var2 not read after)
 		var3 = c.ScreenWidth/2 - 80
 		var4 := c.ScreenHeight/2 + 50
 		var9 := var4 + 20
@@ -3693,7 +3693,7 @@ func (c *Client) TitleScreenDraw() {
 			tmp2 = "@yel@|"
 		}
 		c.B12.DrawStringTaggable(var2/2-88, var4, "Password: "+jstring.GetRepeatedCharacter(c.Password)+tmp2, true, 0xFFFFFF)
-		var4 += 15 //nolint:ineffassign // Java: faithful dead final layout increment (var4 not read after)
+		var4 += 15 //nolint:ineffassign,staticcheck // Java: faithful dead final layout increment (var4 not read after)
 		// Java: 254's `if (!arg0)` guard (hide Login/Cancel during an
 		// in-flight login attempt) is gone in 274 — the buttons are always
 		// drawn (Client.java:3954-3960 @32f3062).
@@ -3715,7 +3715,7 @@ func (c *Client) TitleScreenDraw() {
 		c.B12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "and choose the red 'create account'")
 		var4 += 15
 		c.B12.DrawStringTaggableCenter(var2/2, 0xFFFFFF, true, var4, "button at the top right of that page.")
-		var4 += 15 //nolint:ineffassign // Java: faithful dead final layout increment (var4 not read after)
+		var4 += 15 //nolint:ineffassign,staticcheck // Java: faithful dead final layout increment (var4 not read after)
 		var5 = var2 / 2
 		var6 = var3/2 + 50
 		c.Titlebutton.PlotSprite(var6-20, var5-73)

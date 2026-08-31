@@ -246,8 +246,8 @@ func NewGround(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10
 	var37 = max(arg13, var37)
 	var36 = min(arg7, var36)
 	var37 = max(arg7, var37)
-	var36 /= 14 //nolint:ineffassign // dead final scaling (see dead-tail comment above)
-	var37 /= 14 //nolint:ineffassign // dead final scaling (see dead-tail comment above)
+	var36 /= 14 //nolint:ineffassign,staticcheck // dead final scaling (see dead-tail comment above)
+	var37 /= 14 //nolint:ineffassign,staticcheck // dead final scaling (see dead-tail comment above)
 
 	return &t
 }

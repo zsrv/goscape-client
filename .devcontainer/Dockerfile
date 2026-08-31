@@ -15,7 +15,7 @@
 # Matches the base previously pinned in devcontainer.json (official Go image,
 # Debian trixie). The golang image is buildpack-deps based, so gcc/pkg-config/
 # curl are already present; they are listed below anyway for explicitness.
-FROM docker.io/golang:1.26.3-trixie
+FROM docker.io/golang:1.27.0-trixie
 
 # CGO is mandatory for the native GLFW/go-gl backend on Linux (cgo bindings to
 # the windowing/GL libs).
@@ -34,8 +34,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* /tmp/apt-packages.txt
 
 # golangci-lint v2 (the v2 config schema is used in .golangci.yml). Must be a
-# release with Go 1.26 support (>= the 2026-02 release; v2.12.2 is current as
-# of 2026-05). Installed to /usr/local/bin so it is on PATH.
-ARG GOLANGCI_LINT_VERSION=v2.12.2
+# release with Go 1.27 support (v2.13.2 is current as of 2026-08).
+# Installed to /usr/local/bin so it is on PATH.
+ARG GOLANGCI_LINT_VERSION=v2.13.2
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
     | sh -s -- -b /usr/local/bin "${GOLANGCI_LINT_VERSION}"
