@@ -234,8 +234,8 @@ func NewGround(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10
 	var37 = max(arg13, var37)
 	var36 = min(arg7, var36)
 	var37 = max(arg7, var37)
-	var36 /= 14 //nolint:ineffassign // Java: Ground.java:289 — faithful dead final scaling (var36 not read after)
-	var37 /= 14 //nolint:ineffassign // Java: Ground.java:290 — faithful dead final scaling (var37 not read after)
+	var36 /= 14 //nolint:ineffassign,staticcheck // Java: Ground.java:289 — faithful dead final scaling (var36 not read after)
+	var37 /= 14 //nolint:ineffassign,staticcheck // Java: Ground.java:290 — faithful dead final scaling (var37 not read after)
 
 	return &t
 }
