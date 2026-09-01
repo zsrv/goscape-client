@@ -1,6 +1,8 @@
 package pix8
 
 import (
+	"fmt"
+
 	"github.com/zsrv/goscape-client/pkg/jagex2/graphics/pix2d"
 	"github.com/zsrv/goscape-client/pkg/jagex2/io"
 )
@@ -47,6 +49,27 @@ func NewPix8(jag *io.Jagfile, name string, sprite int) *Pix8 {
 	pixelOrder := idx.G1()
 
 	length := p.Wi * p.Hi
+
+	// Go-original guard; no Java counterpart. Client.Load's sprite loops run to
+	// a fixed bound (100 for mapscene/mapfunction, 20 for hitmarks/headicons)
+	// and rely on this constructor throwing once the archive's real sprite
+	// count is passed — Java's catch(Exception) around each loop then ends it.
+	// That works only while the read loop below actually runs: past the end,
+	// pixelOrder is garbage too, and a value outside {0,1} skips BOTH branches,
+	// so nothing throws, the garbage-sized Pixels slice is retained by the
+	// caller, and the loop advances and allocates again. Java got away with the
+	// omission because such an allocation exhausts a fixed JVM heap and dies on
+	// OutOfMemoryError; Go's lazily-committed heap absorbs it silently.
+	//
+	// A genuine sprite always has length pixel bytes remaining in .dat (both
+	// pixelOrder branches read exactly one byte per pixel), so this is the
+	// earliest reliable end-of-sprites signal. Panicking restores the control
+	// flow Java got from its read loop throwing.
+	if remaining := len(dat.Data) - dat.Pos; length < 0 || length > remaining {
+		panic(fmt.Sprintf("pix8: %s sprite %d has out-of-range size %dx%d (%d bytes, %d remaining)",
+			name, sprite, p.Wi, p.Hi, length, remaining))
+	}
+
 	p.Pixels = make([]byte, length)
 
 	if pixelOrder == 0 {
