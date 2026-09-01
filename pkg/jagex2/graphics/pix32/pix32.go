@@ -105,6 +105,25 @@ func NewPix323(jag *io.JagFile, name string, sprite int) *Pix32 {
 	p.Hi = idx.G2()
 	pixelOrder := idx.G1()
 	length := p.Wi * p.Hi
+
+	// Go-original guard; no Java counterpart. See the twin in pix8.NewPix8 for
+	// the full rationale. In short: Client.Load's sprite loops run to a fixed
+	// bound and rely on this constructor throwing once the archive's real
+	// sprite count is passed. Past the end pixelOrder is garbage too, and a
+	// value outside {0,1} falls through the switch below without reading, so
+	// nothing throws and the garbage-sized Pixels slice is retained by the
+	// caller, which then advances and allocates again. Pix32 is the costlier
+	// of the two: Pixels is []int (8 bytes per pixel), so one phantom 8192x8192
+	// sprite reserves 512MB.
+	//
+	// A genuine sprite always has length pixel bytes remaining in .dat (both
+	// switch arms read exactly one byte per pixel via dat.G1()), so this is the
+	// earliest reliable end-of-sprites signal.
+	if remaining := len(dat.Data) - dat.Pos; length < 0 || length > remaining {
+		panic(fmt.Sprintf("pix32: %s sprite %d has out-of-range size %dx%d (%d pixels, %d bytes remaining)",
+			name, sprite, p.Wi, p.Hi, length, remaining))
+	}
+
 	p.Pixels = make([]int, length)
 	switch pixelOrder {
 	case 0:
